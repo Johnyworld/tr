@@ -1380,6 +1380,25 @@ mission_hints:
   buddy: ["혼자 (깊이 )?(들어가지|다니지|나가지) 마", "혼자 두지", "둘이서", "2인 1조"]
   learns: ["어디서 왔는지", "어디로 가는지", "알아 온다", "알아 와", "알아내(?![^.]*아닙)"]
 
+# 장소 종류 (12-300, 공통 규칙 15, docs/map-expansion-plan.md 1단계): 장소마다 kinds 1~2개, 이야기는 when.place_kinds로 "이런 자리"를 적는다.
+# road·jail은 장소의 road·jail 표시로 저절로 붙는다. 물가인지는 장소의 wade로
+place_kinds:
+  - { id: gate, label: 담 문·정문·검문 }
+  - { id: road, label: 구역에 드나드는 길 }
+  - { id: yard, label: 마당·광장·운동장 }
+  - { id: mess, label: 먹는 곳 }
+  - { id: sleep, label: 자는 곳 }
+  - { id: store, label: 창고·재고 }
+  - { id: work, label: 일하는 곳 }
+  - { id: care, label: 치료 }
+  - { id: command, label: 지휘·회의 }
+  - { id: watch, label: 망루·담 위 }
+  - { id: jail, label: 가두는 곳 }
+  - { id: field, label: 밭·물가 바깥 일터 }
+  - { id: ruin, label: 무너진 건물 안 }
+  - { id: street, label: 바깥 길·골목·장터 }
+  - { id: hall, label: 모이는 실내 }
+
 # 공통 규칙 19 관계 오름 (12-295, rules/regard.ts): 같은 사람·축·까닭으로 window_days 안에 다시 오르면 0, 한 사람·한 축 하루 daily_cap까지.
 # heavy: 상한을 넘는 무거운 까닭 (구출·목숨을 구함·위험한 분대 일·비밀을 털어놓음·해낸 의뢰·풀어 줌). 이야기 효과는 상한 없이 같은 까닭 간격만 (까닭은 kind, 없으면 이야기 id)
 # daily_only: 같은 까닭 간격 없이 하루 상한만 받는 까닭. 판정이 걸린 임무를 해냄(mission_done)은 다른 날이면 되풀이가 아니라 복무다 (12-298, PT27: 임무로는 상관 신뢰가 3일에 +1이라 진급 신뢰까지 18일)

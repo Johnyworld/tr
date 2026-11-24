@@ -175,6 +175,8 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [store]
     indoor: true
     zone_owner: [other]
     owners: [faction_d]
@@ -229,6 +231,8 @@
   # 같은 경보는 시나리오의 rest.alarm만큼 쉰다 (공통 규칙 5). 그사이 들키면 al_patrol_any가 받는다
   cooldown_days: 1
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     indoor: false
     zone_owner: [other]
     owners: [faction_e]

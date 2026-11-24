@@ -64,7 +64,8 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
       const needsOrders = !!role.squad?.length;
       const needsCouncil = !!content.scenario.command?.council_ranks.includes(role.rank);
       // 12-292·293: 이야기 배역을 그 자리(ids는 같은 구역)의 사람으로 좁히자 붉은연합 약탈조·하얀매가 두세 판에 시나리오 이야기 하나뿐이었다 (다섯째 판까지 본다. 하얀매는 여덟 시드 합계가 예전과 같다: 17 대 19편)
-      for (const seed of [111, 113, 115, 101, 103]) {
+      // 12-300: 장소 종류로 이야기 자격이 조금씩 바뀌자 자동 플레이의 길이 달라져 붉은연합 약탈조가 다섯 판에 하나뿐이었다 (자리 조건은 그대로, 시드 105에서 둘). 일곱째 판까지 본다
+      for (const seed of [111, 113, 115, 101, 103, 105, 107]) {
         const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
         const world = m.create("mcp", role.id);
         expect(world.state().playerZone).toBe(role.start_location ?? world.state().playerZone);

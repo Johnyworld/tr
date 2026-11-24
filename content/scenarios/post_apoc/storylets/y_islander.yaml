@@ -46,6 +46,8 @@
   title: 보이지 않은 배
   tags: [y_islander]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     indoor: "any"
     zones: [yeoul_isle]
     segments: [night, dawn]
@@ -113,7 +115,7 @@
   tags: [y_islander]
   when:
     indoor: false
-    places: [farm_shore]
+    place_kinds: [field]  # 장소 종류 (12-300), 전에는 places: [farm_shore]
     zones: [yeoul_isle]
     segments: [night]
     day_gte: 3
@@ -229,7 +231,7 @@
   tags: [y_islander]
   when:
     indoor: false
-    places: [farm_shore]
+    place_kinds: [field]  # 장소 종류 (12-300), 전에는 places: [farm_shore]
     zones: [yeoul_isle]
     segments: [night]
     flags_all: [y_feast_seen]
@@ -272,7 +274,7 @@
   urgent: true
   when:
     indoor: true
-    places: [quarters]
+    place_kinds: [sleep]  # 장소 종류 (12-300), 전에는 places: [quarters]
     zones: [yeoul_isle]
     segments: [night]
     flags_all: [y_suspected]
@@ -342,14 +344,14 @@
   cast:
     girl: { ids: [y_haesol] }
   setup: "{girl:이/가} 신이 나서 뛰어온다. \"의장님이 나 겨울 잔치에 부른대! 엄마는 아직 몰라. 비밀이야!\""
-  ai_direction: 의회는 윤미옥이 무언가를 안다고 의심한다. 해솔을 부른 것은 경고이거나 그 이상이다. 해솔은 아무것도 모른다. 무엇을 하든 해솔 앞에서 진실을 늘어놓지는 않는다.
+  ai_direction: 의회는 윤미옥이 무언가를 안다고 의심한다. {girl:을/를} 부른 것은 경고이거나 그 이상이다. {girl:은/는} 아무것도 모른다. 무엇을 하든 {girl} 앞에서 진실을 늘어놓지는 않는다.
   choices:
     - id: tell_mother
       label: 윤미옥에게 알린다
       effects:
         - set_flag: y_haesol_done
         - relation: { who: girl, axis: affection, delta: -1 }
-        - belief: { fact: "해솔이 겨울 잔치에 불렸다는 것을 윤미옥에게 알렸다. 윤미옥의 얼굴이 하얘졌다", source: seen }
+        - belief: { fact: "{girl:이/가} 겨울 잔치에 불렸다는 것을 윤미옥에게 알렸다. 윤미옥의 얼굴이 하얘졌다", source: seen }
     - id: hide
       label: 잔치 날 아프다고 하라고 가르친다
       check: persuade

@@ -536,6 +536,8 @@
   tags: [world]
   repeatable: false
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     resolve: { kinds: [atone], stage: 0 }
     own_territory: true
     segments: [evening]

@@ -9,6 +9,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     indoor: "any"
     own_territory: true
     segments: [morning, evening]
@@ -52,6 +54,8 @@
   cooldown_days: 8
   weight: 2
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [watch, gate]
     indoor: false
     own_territory: true
     segments: [night]

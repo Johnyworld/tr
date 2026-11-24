@@ -106,7 +106,7 @@
   tags: [world]
   when:
     zones: [b_base]
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     indoor: false
     segments: [dawn, morning]
     day_gte: 3
@@ -161,7 +161,7 @@
   tags: [world]
   when:
     zones: [b_base]
-    places: [rooftop_watch]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [rooftop_watch]
     indoor: false
     segments: [evening, night]
     day_gte: 2

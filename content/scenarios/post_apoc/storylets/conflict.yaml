@@ -9,6 +9,8 @@
   repeatable: true
   cooldown_days: 8
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep, yard]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     indoor: "any"
     own_territory: true
@@ -55,6 +57,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [store, sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     indoor: "any"
     own_territory: true
@@ -104,6 +108,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, yard]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     indoor: "any"
     own_territory: true
@@ -224,6 +230,8 @@
   repeatable: true
   cooldown_days: 15
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     own_territory: true
     own_morale_lte: -2
     ranks: [officer]

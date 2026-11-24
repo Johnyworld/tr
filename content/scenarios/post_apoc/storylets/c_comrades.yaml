@@ -9,6 +9,8 @@
   title: 불가의 옛이야기
   tags: [c_comrades]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [c_warehouse]
@@ -26,7 +28,7 @@
         - relation: { who: friend, axis: affection, delta: 1 }
         - belief: { fact: "여덟 명은 구시가 초등학교 체육관에서 처음 만나 첫 겨울을 함께 버텼다", source: seen }
     - id: ask_friend
-      label: 재호가 왜 말이 없어지는지 묻는다
+      label: "{friend:이/가} 왜 말이 없어지는지 묻는다"
       effects:
         - relation: { who: friend, axis: trust, delta: 1 }
         - belief: { fact: "{friend:은/는} 첫 겨울 이야기가 나오면 말을 돌린다. \"지난 일이야. 우린 살아남았잖아.\"", source: seen }
@@ -40,6 +42,8 @@
   practice: true
   tags: [c_comrades]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [c_warehouse, c_base]
@@ -80,7 +84,7 @@
     zones: [c_warehouse]
     segments: [morning, evening]
     indoor: true
-    places: [barracks]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [barracks]
   cast:
     cook: { ids: [c_cm_sunae] }
   setup: "배식 줄. {cook:이/가} 국자로 당신 그릇을 툭 친다. 건더기가 하나 더 들어 있다. \"얘, 너 요즘 얼굴이 못쓰겠다. 잠은 자니?\" 뒤에 선 낯선 조원이 그릇을 들여다보고 혀를 찬다."
@@ -134,6 +138,8 @@
   title: 수용소의 작은 그릇
   tags: [c_comrades]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     zones: [c_warehouse]
     segments: [morning, evening]
     indoor: "any"

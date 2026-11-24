@@ -243,6 +243,7 @@ export const TEST_SCENARIO: Scenario = {
   mission_move_groups: [],
   mission_hints: { buddy: [], learns: [] },
   rest: {},
+  place_kinds: [{ id: "hall", label: "모이는 실내" }, { id: "yard", label: "마당" }],
   relation_gain: { window_days: 3, daily_cap: 1, heavy: [], daily_only: [] },
   storylet_pacing: { min_gap_hours: 6, expire_hours: 3, first_after_hours: 0, min_any_gap_hours: 0, urgent_per_day: 0, urgent_only_when: {}, practice_max: {}, per_day: 0, threat_per_day: 0, road_per_day: 0, same_threat_gap_days: 0 },
   consumables: {},
@@ -434,7 +435,7 @@ export const TEST_CONTENT: Content = {
     },
   },
   locations: {
-    a_home: { id: "a_home", name: "우리 거점", description: "거점", kind: "base", owner: "faction_a", danger: 1, places: [{ id: "hall", name: "회관", indoor: true, aliases: ["회관"], jail: false, near: [], road: false, to: [], gate: false }, { id: "yard", name: "마당", indoor: false, aliases: [], jail: false, near: [], road: false, to: [], gate: false }], adjacent: ["a_post", "wild"], yields: { food: 10 } },
+    a_home: { id: "a_home", name: "우리 거점", description: "거점", kind: "base", owner: "faction_a", danger: 1, places: [{ id: "hall", name: "회관", indoor: true, aliases: ["회관"], kinds: ["hall"], jail: false, near: [], road: false, to: [], gate: false }, { id: "yard", name: "마당", indoor: false, aliases: [], kinds: ["yard"], jail: false, near: [], road: false, to: [], gate: false }], adjacent: ["a_post", "wild"], yields: { food: 10 } },
     a_post: { id: "a_post", name: "초소", description: "초소", kind: "zone", owner: "faction_a", danger: 1, places: [], adjacent: ["c_home"], yields: {} },
     c_home: { id: "c_home", name: "C 거점", description: "C", kind: "base", owner: "faction_c", danger: 1, places: [], adjacent: ["wild"], yields: { food: 50 } },
     wild: { id: "wild", name: "빈 땅", description: "빈 땅", kind: "zone", owner: null, danger: 1, places: [], adjacent: [], yields: {} },

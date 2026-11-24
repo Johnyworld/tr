@@ -6,8 +6,10 @@ import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { whereIs } from "../rules/place.ts";
 import { REGARD_KINDS } from "../rules/regard.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
+import { checkBareGivenNames } from "../content/loader.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
+import { changeCondition } from "./body.ts";
 import { makeOffer } from "./requests.ts";
 import { learn } from "./reputationTools.ts";
 import { applyEffect, maskUnknownNames } from "./storyletTools.ts";
@@ -19,13 +21,13 @@ const make = (role: string, roll = 0.5, c = quiet) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-299-")), content: c, rngFactory: () => () => roll }).create("mcp", role, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] } as never);
 
 describe("PT27 뒤 고친 것 (12-299)", () => {
-  it("성을 뺀 이름만 쓴 모르는 사람도 호칭으로 가린다", () => {
+  it("성을 뺀 이름은 실행 중에 가리지 않고(보통 낱말이 같다) 콘텐츠 검사가 잡는다 (12-300, PT28)", () => {
     const w = make("role_c_raider");
-    const s = w.state();
-    expect(content.npcs.rs_inn_worker?.name ?? "홍미란").toBe("홍미란");
-    const out = maskUnknownNames(s, content, "붉은연합 사람이라면 미란은 더 조심한다. 그 애 이름? 연옥이. 미란이 웃었다");
-    expect(out).not.toMatch(/미란|연옥/);
-    expect(out).toContain("더 조심한다");
+    expect(maskUnknownNames(w.state(), content, "발 끄는 소리가 난다. 아이 하나가 운다")).toBe("발 끄는 소리가 난다. 아이 하나가 운다");
+    expect(checkBareGivenNames(content)).toEqual([]);
+    const bad = structuredClone(content);
+    bad.storylets.tr_inn_whisper!.ai_direction = "미란은 더 조심한다";
+    expect(checkBareGivenNames(bad).some((p) => p.includes("tr_inn_whisper") && p.includes("미란"))).toBe(true);
   });
 
   it("임무 완수로 오를 몫이 하루 상한에 막히면 GM 한 줄을 돌려준다", () => {
@@ -70,5 +72,36 @@ describe("PT27 뒤 고친 것 (12-299)", () => {
       }
     }
     expect(offered).toBeGreaterThan(0);
+  });
+});
+
+describe("PT28 뒤 고친 것 (12-301)", () => {
+  it("지혈 스킬로 피 흘리는 사람을 판정하면 treatment가 없어도 그 판정대로 피를 멎게 한다", () => {
+    const w = make("role_d_medic", 0.99);
+    const s = w.state();
+    const mate = Object.values(content.npcs).find((n) => n.faction === s.characters[s.playerId]!.factionId && !n.healer && whereIs(s, content, n.id)?.zone === s.playerZone)!.id;
+    if (!s.scene.present.includes(mate)) w.ctx().store.append({ type: "npc_entered", npcId: mate });
+    changeCondition(w.ctx(), mate, "bleeding", 1, "test", "테스트");
+    expect(w.state().characters[mate]!.conditions.bleeding).not.toBe("none");
+    const move = content.scenario.wounds!.staunch_move;
+    const r = w.executeTool("take_action", { intent: "지혈한다", check: { move, stat: content.scenario.moves.find((m) => m.id === move)!.stats[0], difficulty: "normal", harm_on_failure: "none" }, activity: null, deed: null, target: mate, narration_summary: null, for_mission: false, ignore_story: true });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().characters[mate]!.conditions.bleeding).toBe("none");
+  });
+
+  it("쓰러진 주인공 곁의 우리 편이 감염체보다 많으면 그 감염체를 처리하고 돌본다", () => {
+    const w = make("role_a_squad_leader");
+    const s = w.state();
+    const me = s.playerId;
+    const template = Object.keys(content.extras).find((id) => content.extras[id]!.kind === "infected")!;
+    const spawned = w.executeTool("spawn_extra", { template, label: "담 틈의 감염체" });
+    expect(spawned.ok, spawned.ok ? "" : spawned.error).toBe(true);
+    const infected = w.state().scene.present.find((id) => w.state().characters[id]?.extra?.template === template)!;
+    for (const id of ["a_yejin", "a_haneul"]) if (!w.state().scene.present.includes(id)) w.ctx().store.append({ type: "npc_entered", npcId: id });
+    changeCondition(w.ctx(), me, "harm", 5, "test", "테스트");
+    const r = w.executeTool("take_action", { intent: "누워 있다", check: null, activity: { kind: "wait", until: null, hours: 1 }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().characters[infected]!.dead).toBe(true);
+    expect(r.ok && r.resultText).toContain("처리했다");
   });
 });

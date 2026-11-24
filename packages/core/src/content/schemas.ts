@@ -595,6 +595,8 @@ export function createContentSchemas(s: Scenario) {
           name: z.string().min(1),
           indoor: z.boolean(),
           aliases: z.array(z.string().min(1)).default([]),
+          /** 장소 종류 1~2개 (공통 규칙 15, 12-300): 이야기의 when.place_kinds가 이것으로 자리를 고른다. 월드 팩에서는 content:check가 빠짐을 잡는다 */
+          kinds: z.array(contentIdSchema).max(2).default([]),
           /** 묘사 한 줄 (12-251, 플레이 테스트 14: 섬 장소에 GM이 그릴 재료가 없었다). 월드 팩에서는 content:check가 빠짐을 잡는다 */
           description: z.string().min(1).optional(),
           /** 붙잡은 사람을 가두는 곳 (PT14: 붙잡히면 그 무리의 가두는 장소가 있는 구역, 그 장소에 갇힌다) */
@@ -1016,6 +1018,11 @@ export function createContentSchemas(s: Scenario) {
          * 장소를 정하지 않은 자리(막 들어선 자리)에서는 거르지 않는다
          */
         places: z.array(contentIdSchema).min(1).optional(),
+        /**
+         * 이런 종류의 자리에서만 (12-300, 공통 규칙 15): 장소 kinds (시나리오 place_kinds). places를 적지 않았을 때 쓴다.
+         * 그 종류의 장소가 지금 구역에 없으면 열리지 않는다. 장소 id(places)는 그 장소 하나에서만 말이 되는 이야기만
+         */
+        place_kinds: z.array(contentIdSchema).min(1).optional(),
         /** 이 이야기가 열린 지 이만큼 지난 뒤에만 (12-251, 플레이 테스트 14: "하룻밤 담 밖에서" 2시간 뒤 다시 정문 이야기) */
         after_storylet: z.strictObject({ id: contentIdSchema, hours: z.number().positive() }).optional(),
         /** 우리 무리 사람이 본 무거운 짓(시나리오 offense)이 있고 아직 다뤄지지 않았을 때만: 규율 회의 (12-257, 공통 규칙 3) */

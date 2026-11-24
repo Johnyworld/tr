@@ -1787,6 +1787,11 @@ export const scenarioFileSchema = z
      * 한 사람·한 축은 하루 daily_cap까지. heavy의 까닭과 이야기 효과는 상한을 넘는다.
      * daily_only의 까닭은 같은 까닭 간격을 받지 않고 하루 상한만 받는다 (PT27: 임무 완수가 3일에 한 번만 올라 진급이 막혔다)
      */
+    /**
+     * 장소 종류 (공통 규칙 15, 12-300, docs/map-expansion-plan.md 1단계): 장소의 kinds와 이야기의 when.place_kinds가 쓰는 목록.
+     * road·jail은 장소의 road·jail 표시로 저절로 붙는다
+     */
+    place_kinds: z.array(z.strictObject({ id, label: z.string().min(1) })).default([]),
     relation_gain: z
       .strictObject({
         window_days: z.number().min(0).default(3),

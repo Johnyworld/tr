@@ -124,6 +124,8 @@
   repeatable: true
   weight: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [care]
     indoor: true
     mission: [do_pine_ward]
   cast:

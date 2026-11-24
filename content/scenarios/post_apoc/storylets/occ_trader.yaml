@@ -61,7 +61,7 @@
     zones: [e_market]
     segments: [morning, day]
     indoor: false
-    places: [stalls]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [stalls]
     day_gte: 3
     flags_all: [occ_tr_forger_seen]
     flags_none: [occ_tr_forger_done]
@@ -433,6 +433,8 @@
   cooldown_days: 10
   repeatable: true
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, store]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [own]
     segments: [day, evening]

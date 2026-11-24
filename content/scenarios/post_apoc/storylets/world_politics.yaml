@@ -47,7 +47,7 @@
     factions: [faction_b]
     zones: [b_base]
     indoor: true
-    places: [office]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office]
     segments: [evening, night]
     clock_gte: { b_waver: 15 }
     dispositions: [{ from: faction_b, to: faction_a, gte: 1 }]
@@ -94,6 +94,8 @@
   title: 버들마을로 가는 자루
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [store]
     factions: [faction_a]
     own_territory: true
     indoor: "any"
@@ -183,7 +185,7 @@
     own_territory: true
     zones: [a_base]
     indoor: false
-    places: [yard_gate]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard_gate]
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -306,7 +308,7 @@
     factions: [faction_b]
     zones: [b_base]
     indoor: false
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     segments: [morning, day]
     dispositions: [{ from: faction_b, to: faction_a, lte: 0 }]
   cast:
@@ -355,6 +357,8 @@
   title: 새로 뚫린 길
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     factions: [faction_c]
     own_territory: true
     indoor: false

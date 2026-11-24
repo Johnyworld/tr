@@ -5,6 +5,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard, field]
     indoor: false
     own_territory: true
     segments: [morning, day]

@@ -64,6 +64,8 @@
   title: 장터의 밤배
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [field, street]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [e_market]
@@ -95,7 +97,7 @@
   tags: [world]
   when:
     indoor: false
-    places: [bank]
+    place_kinds: [field]  # 장소 종류 (12-300), 전에는 places: [bank]
     zones: [riverside]
     segments: [evening, night]
     flags_all: [ms_island]
@@ -121,6 +123,8 @@
   repeatable: true
   cooldown_days: 12
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [field, street]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [e_market]

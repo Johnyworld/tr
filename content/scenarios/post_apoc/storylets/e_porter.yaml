@@ -257,6 +257,8 @@
   title: 펌프지기의 부탁
   tags: [caravan_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [work]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [water_plant]
@@ -298,6 +300,8 @@
   fright_tags: [enclosed, water]
   tags: [caravan_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [ruin]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [riverside]
@@ -352,6 +356,8 @@
   title: 다락의 얇은 장부
   tags: [e_porter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [store]
     indoor: true
     own_territory: true
     segments: [evening, night]
@@ -629,7 +635,7 @@
   cooldown_days: 2
   when:
     indoor: false
-    places: [stalls]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [stalls]
     zones: [e_market]
     segments: [morning, day]
   setup: >-

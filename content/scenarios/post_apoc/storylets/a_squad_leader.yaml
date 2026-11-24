@@ -57,6 +57,8 @@
   title: 바꿔 쥔 소총
   tags: [a_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [a_base]
@@ -142,6 +144,8 @@
   title: 정문 옆의 쪽지
   tags: [a_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [a_base]
@@ -191,7 +195,7 @@
     own_territory: true
     segments: [night, dawn]
     indoor: true
-    places: [barracks]
+    place_kinds: [sleep]  # 장소 종류 (12-300), 전에는 places: [barracks]
     day_gte: 4
     flags_all: [a_sl_letter_seen]
     flags_none: [a_sl_byungchul_settled]
@@ -258,7 +262,7 @@
     own_territory: true
     segments: [morning, day, evening]
     indoor: true
-    places: [storehouse]
+    place_kinds: [store]  # 장소 종류 (12-300), 전에는 places: [storehouse]
     day_gte: 3
     flags_none: [a_sl_haneul_noticed]
   cast:
@@ -315,7 +319,7 @@
     own_territory: true
     segments: [evening]
     indoor: true
-    places: [mess]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [mess]
     day_gte: 5
     flags_all: [a_sl_haneul_noticed]
   cast:
@@ -358,7 +362,7 @@
     zones: [a_base]
     segments: [evening]
     indoor: true
-    places: [mess]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [mess]
     day_gte: 2
   cast:
     comrade: { ids: [a_jiho, a_seoyeon, a_mansu], known: true }
@@ -469,6 +473,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     own_territory: true
     segments: [night]
     indoor: true

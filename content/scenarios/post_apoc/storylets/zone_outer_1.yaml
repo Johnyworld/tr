@@ -330,7 +330,7 @@
   when:
     zones: [power_plant]
     indoor: true
-    places: [turbine_hall]
+    place_kinds: [ruin]  # 장소 종류 (12-300), 전에는 places: [turbine_hall]
     segments: [morning, day]
     flags_none: [zo1_pp_met]
   cast:
@@ -376,7 +376,7 @@
   when:
     zones: [power_plant]
     indoor: true
-    places: [turbine_hall]
+    place_kinds: [ruin]  # 장소 종류 (12-300), 전에는 places: [turbine_hall]
     segments: [evening, night]
     flags_all: [zo1_pp_wire_given]
     day_gte: 4
@@ -660,7 +660,7 @@
   when:
     zones: [prison]
     indoor: false
-    places: [outer_gate]
+    place_kinds: [gate]  # 장소 종류 (12-300), 전에는 places: [outer_gate]
     flags_none: [zo1_pr_inside]
   cast: {}
   setup: 교도소 담은 생각보다 높다. 철조망 위에 옷가지와 마른 무언가가 걸려 있다. 정문은 안쪽에서 버스 두 대로 막혔고, 버스 옆구리에 페인트로 쓴 글씨가 반쯤 지워져 있다. '우리 땅 — 들어오면 쏜다.' 그 밑에 다른 손으로 덧쓴 글씨. '아무도 없음.'
@@ -714,7 +714,7 @@
   when:
     zones: [prison]
     indoor: true
-    places: [admin]
+    place_kinds: [ruin]  # 장소 종류 (12-300), 전에는 places: [admin]
     flags_all: [zo1_pr_inside]
     flags_none: [zo1_pr_armory_opened]
   cast: {}
@@ -763,7 +763,7 @@
   when:
     zones: [prison]
     indoor: true
-    places: [cellblock]
+    place_kinds: [jail]  # 장소 종류 (12-300), 전에는 places: [cellblock]
     flags_all: [zo1_pr_inside]
     flags_none: [zo1_pr_cell_done]
   cast:
@@ -819,6 +819,8 @@
   urgent: true
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road, gate]
     zones: [prison, power_plant]
     indoor: false
     factions: [none, faction_a, faction_b, faction_d, faction_e]
@@ -911,6 +913,8 @@
   title: 위원회가 교도소를 원한다
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command]
     indoor: "any"
     factions: [faction_c]
     flags_any: [zo1_pr_armory_seen, zo1_pr_armory_opened]
@@ -952,6 +956,8 @@
   title: 무너진 창고의 선반
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [ruin]
     zones: [mall_ruins]
     indoor: true
     segments: [morning, day]
@@ -1184,7 +1190,7 @@
   when:
     zones: [mall_ruins]
     indoor: true
-    places: [stockroom]
+    place_kinds: [store]  # 장소 종류 (12-300), 전에는 places: [stockroom]
     flags_all: [zo1_ml_kids_fed]
     flags_none: [zo1_ml_den_shown]
   cast:
@@ -1236,7 +1242,7 @@
   when:
     zones: [mall_ruins]
     indoor: true
-    places: [stockroom]
+    place_kinds: [store]  # 장소 종류 (12-300), 전에는 places: [stockroom]
     flags_any: [zo1_tunnel_mall, zo1_ml_den_shown]
     flags_none: [zo1_ml_cold_store_done]
   cast:

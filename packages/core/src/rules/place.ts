@@ -24,7 +24,12 @@ import { isCreature } from "../game/kinds.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { routeMinutes } from "./time.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; kinds: readonly string[]; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
+
+/** 장소 종류 (12-300): 콘텐츠의 kinds에 길(road)·가두는 곳(jail) 표시를 더한다 */
+export function kindsOf(p: { kinds?: readonly string[]; road?: boolean; jail?: boolean }): string[] {
+  return [...new Set([...(p.kinds ?? []), ...(p.road ? ["road"] : []), ...(p.jail ? ["jail"] : [])])];
+}
 
 /** 이 구역의 장소들 (콘텐츠 + 즉흥) */
 export function placesIn(state: GameState, content: Content, zone: string | null | undefined): Place[] {
@@ -32,10 +37,10 @@ export function placesIn(state: GameState, content: Content, zone: string | null
   const spawned = Object.entries(state.spawnedPlaces ?? {}).filter(([, p]) => p.zone === zone);
   // 즉흥 장소는 만든 자리의 이웃이다 (장소 개편)
   const fixed = (content.locations[zone]?.places ?? []).map((p) => ({
-    id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, jail: p.jail, wade: p.wade, description: p.description,
+    id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, kinds: kindsOf(p), jail: p.jail, wade: p.wade, description: p.description,
     near: [...(p.near ?? []), ...spawned.filter(([, x]) => x.at === p.id).map(([id]) => id)], road: !!p.road, to: p.to ?? [], gate: !!p.gate,
   }));
-  const extra = spawned.map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[], near: p.at ? [p.at] : [], road: false, to: [] as string[], gate: false }));
+  const extra = spawned.map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[], kinds: [] as string[], near: p.at ? [p.at] : [], road: false, to: [] as string[], gate: false }));
   return [...fixed, ...extra];
 }
 
@@ -143,7 +148,13 @@ export function storyIndoor(when: { indoor?: boolean | "any" }): boolean | undef
 }
 
 /** 이야기의 장소 조건 (when.places·when.indoor·when.summons)과 글 */
-export type StoryWhere = { places?: readonly string[]; indoor?: boolean; summons?: boolean };
+export type StoryWhere = { places?: readonly string[]; place_kinds?: readonly string[]; indoor?: boolean; summons?: boolean };
+/** 이야기가 말하는 자리: 장소 id(places) 또는 종류(place_kinds). 배열이면 장소 id */
+export type PlaceSpec = readonly string[] | { places?: readonly string[]; place_kinds?: readonly string[] } | undefined;
+
+function specOf(spec: PlaceSpec): { places?: readonly string[]; place_kinds?: readonly string[] } {
+  return !spec ? {} : Array.isArray(spec) ? { places: spec as readonly string[] } : (spec as { places?: readonly string[]; place_kinds?: readonly string[] });
+}
 
 /**
  * 실내(true)·바깥(false) 이야기가 지금 자리에 맞는가 (지금 장소의 실내외). 부르는 이야기는 그 장소로 불려 가니 장소의 실내외로 본다.
@@ -155,7 +166,8 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
   if (here.indoor === indoor) return true;
   if (!where.summons) return false;
   // 부르는 이야기는 불려 갈 장소가 있으면 어디서든 연다 (그 장소의 실내외는 보지 않는다)
-  return storyPlaces(state, content, where.places, text).length === 1;
+  const named = storyPlaces(state, content, where, text);
+  return where.place_kinds && !where.places ? named.length > 0 : named.length === 1;
 }
 
 /**
@@ -163,11 +175,15 @@ export function storyPlaceFits(state: GameState, content: Content, indoor: boole
  * places를 적었으면 그 장소, 아니면 이야기 글에 나오는 지금 구역의 장소 이름·aliases. 글이 장소를 말하지 않거나
  * 길(구역에 막 들어온 자리)·즉흥 장소에 있으면 거르지 않는다 (이야기가 그 자리로 데려간다)
  */
-export function storyPlacesFit(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons = false, indoor?: boolean): boolean {
+export function storyPlacesFit(state: GameState, content: Content, places: PlaceSpec, text: string, summons = false, indoor?: boolean): boolean {
+  const spec = specOf(places);
   const here = currentPlace(state, content);
+  // 종류를 적었는데 이 구역에 그 종류의 장소가 없으면 열지 않는다 (12-300)
+  const byKind = !spec.places && !!spec.place_kinds?.length;
+  if (byKind && state.playerZone && placesIn(state, content, state.playerZone).some((p) => !p.spawned) && !storyPlaces(state, content, spec, text, indoor).length) return false;
   // 부르는 이야기는 어디서든 연다: 그 장소로 데려간다 (12-260). 그 밖의 이야기는 주인공이 이미 있는 자리에서만 연다 (공통 규칙 15, 이동 기획: 이야기는 주인공을 옮기지 않는다)
   if (!here || here.spawned || summons) return true;
-  const named = storyPlaces(state, content, places, text, indoor);
+  const named = storyPlaces(state, content, spec, text, indoor);
   return !named.length || named.includes(here.id);
 }
 
@@ -175,12 +191,18 @@ export function storyPlacesFit(state: GameState, content: Content, places: reado
  * 이야기가 주인공을 데려갈 곳: 부르는 이야기(summons, 12-260)만, 그 이야기의 장소 하나로 (이미 거기 있거나 갇혔으면 null).
  * 그 밖의 이야기는 주인공을 옮기지 않는다 (이동 기획, PT20~22: 이야기가 글의 낱말에 맞춰 주인공을 정문·골목·담 안으로 옮겼다)
  */
-export function storySummonsTo(state: GameState, content: Content, places: readonly string[] | undefined, text: string, summons: boolean, indoor?: boolean): string | null {
+export function storySummonsTo(state: GameState, content: Content, places: PlaceSpec, text: string, summons: boolean, indoor?: boolean): string | null {
   if (!summons || heldOf(state.characters[state.playerId])) return null;
   // 부르는 이야기의 장소는 실내외로 거르지 않는다: 불려 가는 곳이 실내든 바깥이든 그리로 (PT22·PT23 섬: 바깥 회의가 실내 회관을 빼 불러 가지 않았다)
   void indoor;
-  const named = storyPlaces(state, content, places, text);
-  return named.length === 1 && named[0] !== state.playerPlace ? named[0]! : null;
+  const spec = specOf(places);
+  const named = storyPlaces(state, content, spec, text);
+  if (named.includes(state.playerPlace ?? "")) return null;
+  // 종류로 부르면 그 종류의 장소가 여럿이어도 가장 가까운 곳으로 (12-300)
+  if (!spec.places && spec.place_kinds?.length && named.length > 1) {
+    return [...named].sort((a, b) => stepsBetween(state, content, state.playerPlace, a) - stepsBetween(state, content, state.playerPlace, b) || a.localeCompare(b))[0]!;
+  }
+  return named.length === 1 ? named[0]! : null;
 }
 
 /** 시작 장면 글이 이 구역의 장소 하나를 말하면 그 장소 (세계를 열 때 처음 놓을 자리, 12-259) */
@@ -189,14 +211,32 @@ export function openingPlace(state: GameState, content: Content, text: string): 
   return named.length === 1 ? named[0]! : null;
 }
 
+// 장소 말 뒤에 붙는 자리말(우물가·담 밑·창고 안)과 조사
+const PARTICLE_TAIL = /^(?:가|앞|옆|뒤|안|밖|위|밑|쪽|근처|께)?(?:으로|에서|에게|에선|까지|부터|처럼|보다|이나|이랑|하고|은|는|이|가|을|를|에|의|로|와|과|도|만|엔|나|랑)?(?![가-힣])/;
+
+/**
+ * 글이 그 장소 말을 낱말로 말하는가 (12-300): 앞은 한글이 아니고 뒤는 조사거나 한글이 아니어야 한다.
+ * "담요"·"담배"의 담, "물류창고"의 창고, "나루상단"의 나루가 장소로 맞던 것을 막는다 (PT27 뒤 장소 종류 검토)
+ */
+export function wordSaid(text: string, word: string): boolean {
+  for (let at = text.indexOf(word); at >= 0; at = text.indexOf(word, at + 1)) {
+    if (at > 0 && /[가-힣]/.test(text[at - 1]!)) continue;
+    if (PARTICLE_TAIL.test(text.slice(at + word.length))) return true;
+  }
+  return false;
+}
+
 /**
  * 이야기가 말하는 지금 구역의 장소 (places를 적었으면 그것, 아니면 글에 나오는 장소 이름·aliases).
  * 글자로 맞춘 장소는 이야기의 실내외(indoor)와 같아야 한다 (B① 2026-11-23: 바위 위 이야기 "저장고 아래 바위"가 실내 식당의 별칭 "저장고"와 맞았다)
  */
-export function storyPlaces(state: GameState, content: Content, places: readonly string[] | undefined, text: string, indoor?: boolean): string[] {
-  if (places) return [...places];
+export function storyPlaces(state: GameState, content: Content, places: PlaceSpec, text: string, indoor?: boolean): string[] {
+  // 고르는 순서 (12-300): 장소 id → 종류 → 글자 맞추기(별칭) → 실내외
+  const spec = specOf(places);
+  if (spec.places) return [...spec.places];
+  if (spec.place_kinds?.length) return placesIn(state, content, state.playerZone).filter((p) => !p.spawned && p.kinds.some((k) => spec.place_kinds!.includes(k))).map((p) => p.id);
   return placesIn(state, content, state.playerZone)
-    .filter((p) => !p.spawned && (indoor === undefined || p.indoor === indoor) && [p.name, ...p.aliases].some((a) => text.includes(a)))
+    .filter((p) => !p.spawned && (indoor === undefined || p.indoor === indoor) && [p.name, ...p.aliases].some((a) => wordSaid(text, a)))
     .map((p) => p.id);
 }
 
@@ -773,7 +813,7 @@ export function storyOpenPlaces(state: GameState, content: Content, zone: string
   if (!places.length) return [null];
   return places.filter((p) => {
     const at = { ...state, playerZone: zone, playerPlace: p.id } as GameState;
-    return (where.indoor === undefined || storyPlaceFits(at, content, where.indoor, where, text)) && storyPlacesFit(at, content, where.places, text, !!where.summons, where.indoor);
+    return (where.indoor === undefined || storyPlaceFits(at, content, where.indoor, where, text)) && storyPlacesFit(at, content, where, text, !!where.summons, where.indoor);
   }).map((p) => p.id);
 }
 

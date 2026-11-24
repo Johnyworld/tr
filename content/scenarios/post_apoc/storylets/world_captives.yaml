@@ -66,7 +66,7 @@
     factions: [faction_c]
     zones: [c_warehouse]
     indoor: true
-    places: [stockade]
+    place_kinds: [jail]  # 장소 종류 (12-300), 전에는 places: [stockade]
     segments: [night, dawn]
     flags_all: [c_prisoners_seen]
   cast:
@@ -112,7 +112,7 @@
   when:
     zones: [c_warehouse]
     indoor: true
-    places: [stockade]
+    place_kinds: [jail]  # 장소 종류 (12-300), 전에는 places: [stockade]
     segments: [day, evening]
   cast:
     prisoner: { captive: true }

@@ -12,6 +12,8 @@
   title: 쪽문의 흰 천
   tags: [b_guard]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [b_base]
@@ -116,7 +118,7 @@
     zones: [b_base]
     segments: [night]
     indoor: false
-    places: [rooftop_watch]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [rooftop_watch]
     day_gte: 5
     flags_all: [b_took_bribe]
     flags_none: [b_jaehyuk_exposed]
@@ -205,7 +207,7 @@
     zones: [b_base]
     segments: [dawn, morning]
     indoor: false
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     day_gte: 2
     flags_none: [b_well_failing]
   cast:
@@ -238,6 +240,8 @@
   title: 우물지기의 셈
   tags: [village_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [b_base]
@@ -285,6 +289,8 @@
   title: 수레를 끌고 온 청솔형제단
   tags: [b_guard]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [field]
     zones: [b_base, south_fields]
     segments: [morning, day]
     indoor: false
@@ -332,6 +338,8 @@
   title: 열여섯 살의 명단
   tags: [village_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [b_base]
@@ -419,6 +427,8 @@
   title: 오미나가 아는 이름들
   tags: [village_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [b_base]
@@ -456,6 +466,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [b_base]
@@ -496,6 +508,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [field]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [south_fields]

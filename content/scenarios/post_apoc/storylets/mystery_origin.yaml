@@ -40,6 +40,8 @@
   title: 감방 문의 글씨
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [jail]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [prison]
@@ -70,6 +72,8 @@
   title: 행정동의 이송 장부
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [ruin]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [prison]

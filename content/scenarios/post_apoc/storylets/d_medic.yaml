@@ -10,6 +10,8 @@
   title: 비는 숫자
   tags: [clinic_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [d_clinic]
@@ -109,6 +111,8 @@
   title: 대표의 방
   tags: [clinic_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store, command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [d_clinic]
@@ -154,6 +158,8 @@
   title: 간부의 부탁
   tags: [clinic_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     zones: [d_clinic]
     segments: [evening, night]
     indoor: "any"
@@ -205,6 +211,8 @@
   title: 소리의 붕대
   tags: [clinic_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]
@@ -264,6 +272,8 @@
   urgent: true
   tags: [clinic_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [d_clinic]
@@ -315,6 +325,8 @@
   title: 아물어 가는 손목
   tags: [clinic_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]
@@ -396,7 +408,7 @@
     indoor: true
     zones: [d_clinic]
     # 글은 진료소 부엌 (PT22: 치료실에서 열렸다)
-    places: [lodging]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [lodging]
     segments: [evening]
     flags_none: [d_pharmacy_map]
   cast:
@@ -533,6 +545,8 @@
   title: 정문의 장교
   tags: [d_medic]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]
@@ -586,6 +600,8 @@
   title: 옛 간호사의 편지
   tags: [d_medic]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]
@@ -704,6 +720,8 @@
   repeatable: true
   cooldown_days: 7  # 12-138: 한 달에 너댓 번씩 같은 장면이 나와 늘렸다
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]

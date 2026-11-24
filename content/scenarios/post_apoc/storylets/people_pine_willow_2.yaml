@@ -13,6 +13,8 @@
   title: 배수로 쪽을 보는 사람
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [field]
     zones: [south_fields]
     indoor: false
     segments: [evening]
@@ -84,7 +86,7 @@
   cast:
     leader: { ids: [pa_jinman], trust_gte: 4 }
     young: { ids: [pa_taeju], enter: false }
-  setup: 자정이 넘은 막사 뒤. {leader:이/가} 혼자 쪼그려 앉아 담배를 피운다. 붕대 감은 왼손이 떨려 불이 자꾸 꺼진다. 당신을 보고도 일어나지 않는다. "태주랑 배수로 얘기했냐."
+  setup: 자정이 넘은 막사 뒤. {leader:이/가} 혼자 쪼그려 앉아 담배를 피운다. 붕대 감은 왼손이 떨려 불이 자꾸 꺼진다. 당신을 보고도 일어나지 않는다. "군번줄 두 개 건 그 녀석이랑 배수로 얘기했냐."
   ai_direction: "{leader:은/는} 엄태석을 산 채로 두고 왔다. 업으면 넷이 다 죽는다고 판단했고, 손을 놓지 않는 태석의 손가락을 떼다 자기 손을 다쳤다. 그 뒤 '버리지 않는다'를 누구보다 많이 말해 왔다. 원칙을 지키다 사람을 잃어 본 사람에게만, 둘만 있는 밤에 털어놓는다. 캐묻기만 하면 판정으로 갈린다. 털어놓은 뒤에도 {young}에게 직접 말할 용기는 아직 없다."
   choices:
     - id: ask_straight
@@ -211,7 +213,7 @@
   tags: [world]
   when:
     zones: [e_market]
-    places: [stalls]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [stalls]
     indoor: false
     segments: [morning, day]
     factions: [faction_a]
@@ -276,6 +278,8 @@
   title: 장부보다 적은 기름
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store]
     zones: [a_base]
     indoor: true
     segments: [night]
@@ -334,6 +338,8 @@
   title: 쪽문 그늘의 두 사람
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     indoor: false
     zones: [b_base]
     segments: [night]

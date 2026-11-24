@@ -117,6 +117,8 @@
   title: 부엌 아가씨의 빈 그릇
   tags: [y_islander]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     indoor: "any"
     zones: [yeoul_isle]
     segments: [evening]
@@ -164,7 +166,7 @@
   tags: [y_islander]
   when:
     indoor: true
-    places: [council_hall]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [council_hall]
     zones: [yeoul_isle]
     segments: [evening, night]
     day_gte: 3

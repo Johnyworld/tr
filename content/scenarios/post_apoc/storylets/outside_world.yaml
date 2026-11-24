@@ -233,7 +233,7 @@
     zones: [rest_stop]
     segments: [day, evening]
     indoor: false
-    places: [canopy]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [canopy]
     day_gte: 70
   cast:
     walker: { extra: highway_traveler, label: 남쪽에서 올라온 사람, keep: ow_walker }

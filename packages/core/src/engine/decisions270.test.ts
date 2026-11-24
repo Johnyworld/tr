@@ -38,7 +38,8 @@ describe("장소 맞추기 (12-270)", () => {
     const s = { ...make().state(), playerZone: "yeoul_isle", playerPlace: null };
     expect(storyPlaces(s, content, undefined, "저장고 아래 바위")).toEqual(["council_hall"]);
     expect(storyPlaces(s, content, undefined, "저장고 아래 바위", false)).toEqual([]);
-    expect(content.storylets.y2_low_tide!.when.places).toEqual(["farm_shore"]);
+    // 12-300: 장소 id 대신 종류로 (섬의 field는 farm_shore 하나)
+    expect(storyPlaces(s, content, content.storylets.y2_low_tide!.when, "")).toEqual(["farm_shore"]);
   });
 
   it("떠돌지 않는 인물의 일과는 모두 장소로 정해지거나 구역 밖이다", () => {

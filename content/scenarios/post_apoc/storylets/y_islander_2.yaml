@@ -10,6 +10,8 @@
   title: 분필 편지
   tags: [y_islander]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     zones: [yeoul_isle]
     indoor: "any"
     segments: [day]
@@ -70,6 +72,8 @@
   title: 쓸모 재기
   tags: [y_islander]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     zones: [yeoul_isle]
     indoor: "any"
     segments: [morning]
@@ -121,6 +125,8 @@
   title: 기름진 저녁상
   tags: [y_islander]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     zones: [yeoul_isle]
     indoor: true
     segments: [evening]
@@ -180,7 +186,7 @@
   when:
     zones: [yeoul_isle]
     # 저장고 아래 바닷가 바위 (B①, PT19: 글의 "저장고"가 실내 의회 회관의 별칭과 맞아 식당에서 열렸다)
-    places: [farm_shore]
+    place_kinds: [field]  # 장소 종류 (12-300), 전에는 places: [farm_shore]
     indoor: false
     segments: [night, dawn]
     # 플레이 테스트 12: 비 오는 밤에 바위에 앉아 "담배를 마는" 사람. 비·눈 오는 날에는 열지 않는다
@@ -234,7 +240,7 @@
   tags: [y_islander]
   when:
     zones: [yeoul_isle]
-    places: [dock]
+    place_kinds: [road]  # 장소 종류 (12-300), 전에는 places: [dock]
     indoor: false
     segments: [night]
     day_gte: 5
@@ -300,6 +306,8 @@
   title: 잔치 전날 밤
   tags: [y_islander]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess, field]
     zones: [yeoul_isle]
     indoor: "any"
     segments: [evening, night]

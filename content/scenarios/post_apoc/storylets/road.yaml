@@ -190,6 +190,8 @@
   repeatable: true
   cooldown_days: 8
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     indoor: false
     day_gte: 2
   cast:
@@ -334,6 +336,8 @@
   cooldown_days: 5  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   weight: 1.3
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     indoor: false
     road_danger_gte: 2
   setup: "{to:을/를} 백 걸음쯤 앞두고, 길이 꺾이는 곳 너머에서 소리가 난다. 발을 끄는 소리, 이빨 부딪치는 소리. 무너진 버스 유리창 너머로 감염체 여럿이 길 한복판에 모여 무언가를 뜯고 있다. 아직 이쪽을 보지 못했다."
@@ -388,6 +392,8 @@
   repeatable: true
   cooldown_days: 6  # 12-138: 자동 플레이에서 너무 자주 되풀이돼 늘렸다
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     # 글에 맞춘 자리 (12-262, content:check story_lint)
     indoor: false
     road_danger_gte: 1
@@ -570,6 +576,8 @@
   repeatable: true
   cooldown_days: 8
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     indoor: true
     road_touches: [subway_hub]
   setup: "선로를 따라 걷는 터널 안. 환기구로 드는 희미한 빛에 젖은 벽이 번들거린다. 벽마다 분필로 그린 표식이 있다. 동그라미, 가위표, 숫자, 이름. {to} 쪽 출구가 가까워질 즈음, 뒤쪽 어둠에서 자갈 구르는 소리가 난다. 한 번. 그리고 조용하다."
@@ -610,6 +618,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     road_touches: [rest_stop]
     indoor: false
     segments: [dawn, morning, day, evening]
@@ -648,6 +658,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     road_touches: [water_plant]
     indoor: false
     segments: [dawn, morning, day]
@@ -689,6 +701,8 @@
   title: 담 밑의 쪽지
   tags: [road]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     indoor: false
     road_touches: [prison]
     flags_none: [rd_prison_note]
@@ -719,6 +733,8 @@
   title: 담 너머의 대답
   tags: [road]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     indoor: false
     road_touches: [prison]
     flags_all: [rd_prison_note]

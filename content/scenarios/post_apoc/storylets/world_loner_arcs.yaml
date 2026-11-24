@@ -90,6 +90,8 @@
   title: 냄비 하나의 저녁
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [ruin]
     indoor: true
     factions: [none]
     zones: [old_town, riverside]
@@ -177,6 +179,8 @@
   urgent: true
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     indoor: false
     factions: [none]
     zones: [old_town, riverside]
@@ -286,7 +290,7 @@
   tags: [world]
   when:
     indoor: true
-    places: [pawnshop]
+    place_kinds: [store]  # 장소 종류 (12-300), 전에는 places: [pawnshop]
     factions: [none]
     zones: [e_market]
     segments: [morning, day]
@@ -531,6 +535,8 @@
   urgent: true
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [ruin]
     indoor: "any"
     factions: [none]
     zone_owner: [none]

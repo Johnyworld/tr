@@ -60,7 +60,8 @@ describe("이야기 전제 (12-251)", () => {
   it("같은 장소를 말하는 이야기는 하루에 하나", () => {
     const w = world("role_b_guard");
     const s = w.state();
-    const base = Object.values(content.storylets).find((x) => !x.essential && !x.when.mission)!;
+    // 글자 맞추기를 보는 테스트라 장소·종류를 적지 않은 이야기를 틀로 (12-300)
+    const base = Object.values(content.storylets).find((x) => !x.essential && !x.when.mission && !x.when.places && !x.when.place_kinds)!;
     const a = story(base, { id: "test_well_a", setup: "우물가에서 두레박이 긁힌다" });
     const b = story(base, { id: "test_well_b", setup: "우물 앞에 줄이 길다" });
     const c = { ...content, storylets: { ...content.storylets, [a.id]: a, [b.id]: b } };

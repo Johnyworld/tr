@@ -201,6 +201,8 @@
   title: 소리 없는 상자
   tags: [occ_scavenger]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [ruin]
     factions: [faction_a, faction_b, faction_c, faction_d, faction_e]
     zone_owner: [none]
     # 플레이 테스트 12: 강변을 지나가기만 했는데 "무너진 벽장 안쪽". 뒤지는 중에만 연다
@@ -251,6 +253,8 @@
   title: 같이 나온 사람의 눈
   tags: [occ_scavenger]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     zone_owner: [own]
     segments: [evening, night]
     indoor: true

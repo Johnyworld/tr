@@ -14,6 +14,8 @@
   fright: 1
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, watch]
     own_territory: true
     indoor: false
     segments: [evening, night]
@@ -179,6 +181,8 @@
   title: 장부에 없는 판자
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     indoor: false
     own_territory: true
     segments: [dawn]
@@ -285,6 +289,8 @@
   title: 우리를 짜라
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [work]
     factions: [faction_c]
     own_territory: true
     indoor: true
@@ -340,6 +346,8 @@
   title: 규율반의 손
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [work]
     own_territory: true
     factions: [faction_c]
     indoor: true
@@ -386,7 +394,7 @@
   when:
     zones: [b_base]
     indoor: true
-    places: [blocks]
+    place_kinds: [sleep]  # 장소 종류 (12-300), 전에는 places: [blocks]
     factions: [faction_b]
     own_territory: true
     segments: [morning, day]
@@ -438,6 +446,8 @@
   title: 새 망루 자리
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [watch, gate]
     occupation_step_gte: 1
     own_territory: true
     indoor: false
@@ -494,6 +504,8 @@
   title: 목수 반장의 종이
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, work]
     occupation_step_gte: 2
     own_territory: true
     indoor: "any"
@@ -558,6 +570,8 @@
   title: 내가 세운 담
   tags: [occ_carpenter]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, watch]
     occupation_step_gte: 2
     own_territory: true
     indoor: false

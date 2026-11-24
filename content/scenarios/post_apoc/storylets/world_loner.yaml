@@ -6,6 +6,8 @@
   title: 청솔형제단 순찰조
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     factions: [none]
     zone_owner: [none]
     segments: [morning, day]
@@ -268,6 +270,8 @@
   title: 경비실의 빈 의자
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     factions: [none]
     zones: [b_base]
     segments: [morning, day]
@@ -294,6 +298,8 @@
   cooldown_days: 3
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [ruin]
     factions: [none]
     zone_owner: [none]
     segments: [morning, day, evening]

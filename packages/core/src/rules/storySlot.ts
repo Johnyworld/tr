@@ -147,10 +147,10 @@ export function pacingBlocks(state: GameState, content: Content, s: StoryletCont
   if (p.threat_per_day && isThreat(content, s) && fired.filter(([id]) => content.storylets[id] && isThreat(content, content.storylets[id]!)).length >= p.threat_per_day) return true;
   const road = content.scenario.travel?.tag;
   if (p.road_per_day && road && s.tags.includes(road) && fired.filter(([id]) => content.storylets[id]?.tags.includes(road)).length >= p.road_per_day) return true;
-  const mine = storyPlaces(state, content, s.when.places, storyText(s), storyIndoor(s.when));
+  const mine = storyPlaces(state, content, s.when, storyText(s), storyIndoor(s.when));
   if (mine.length) {
     const rank = STORY_TIERS[storyTier(content, s)];
-    const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o)] >= rank && storyPlaces(state, content, o.when.places, storyText(o), storyIndoor(o.when)).some((pl) => mine.includes(pl));
+    const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o)] >= rank && storyPlaces(state, content, o.when, storyText(o), storyIndoor(o.when)).some((pl) => mine.includes(pl));
     // 바로 앞 이야기를 잇는 후속(after_storylet)은 그 앞 이야기가 쓴 장소라도 막지 않는다 (설계 목록 10-1, PT16·19·20 튜토리얼: 정문 재시도가 다음 날 새벽에야)
     if (fired.some(([id]) => id !== s.id && id !== s.when.after_storylet?.id && content.storylets[id] && rival(content.storylets[id]!))) return true;
   }

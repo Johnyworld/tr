@@ -39,6 +39,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     indoor: "any"
     resolve: { kinds: [rise], stage_gte: 1 }
     own_territory: true
@@ -122,6 +124,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, hall]
     indoor: true
     resolve: { kinds: [peace], stage_gte: 1 }
     own_territory: true

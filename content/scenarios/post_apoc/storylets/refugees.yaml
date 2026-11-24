@@ -10,6 +10,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     own_territory: true
     ranks: [officer]
     day_gte: 4
@@ -55,6 +57,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, street]
     own_territory: true
     # 여울섬은 정문이 없다 (플레이 테스트 11)
     zones: [a_base, b_base, c_base, d_clinic, e_market]

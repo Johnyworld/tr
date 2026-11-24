@@ -13,6 +13,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, command]
     own_territory: true
     own_distrust_gte: 3
     ranks: [grunt, staff]
@@ -58,6 +60,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     own_territory: true
     own_distrust_gte: 3
     ranks: [squad_leader, officer]
@@ -97,6 +101,8 @@
   repeatable: true
   cooldown_days: 15
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, hall]
     own_territory: true
     indoor: true
     segments: [day, evening]
@@ -144,6 +150,8 @@
   repeatable: true
   cooldown_days: 30
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     own_territory: true
     own_morale_lte: 0
     indoor: true
@@ -272,6 +280,8 @@
   repeatable: true
   cooldown_days: 30
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     own_territory: true
     own_trust_gte: 6
     ranks: [officer]

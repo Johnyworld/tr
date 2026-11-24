@@ -26,7 +26,13 @@ const client = new Client({ name: "playtest", version: "0" });
 await client.connect(transport);
 const text = (r: unknown) => ((r as { content?: { type: string; text?: string }[] }).content ?? []).map((c) => c.text ?? "").join("\n");
 const first = await client.callTool({ name: "start_session", arguments: { world_id: worldId } });
-if (process.env.SHOW_START) console.log("=== start_session\n" + text(first));
+// SHOW_START가 "1"일 때만 세션 시작 전체를 (PT26: "0"도 켜졌다)
+if (process.env.SHOW_START === "1") console.log("=== start_session\n" + text(first));
+else {
+  // 세션을 열 때 처리한 일(쓰러진 동안의 돌봄 등)은 실제 플레이에서 GM이 먼저 받는 글이라 늘 보인다 (PT28 분대장: 돌봄 결과가 안 보여 6시간을 더 의식불명으로 넘겼다)
+  const notes = /\n## 지난번 뒤에 일어난 일[^\n]*\n([\s\S]*?)\n## /.exec(text(first))?.[1];
+  if (notes) console.log("=== start_session: 지난번 뒤에 일어난 일 (먼저 서술한다)\n" + notes);
+}
 for (const c of calls) {
   const r = await client.callTool({ name: c.tool, arguments: c.args });
   console.log(`\n=== ${c.tool} ${JSON.stringify(c.args).slice(0, 200)}${(r as { isError?: boolean }).isError ? " [ERROR]" : ""}\n` + text(r));

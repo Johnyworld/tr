@@ -7,7 +7,7 @@
   tags: [world]
   when:
     indoor: false
-    places: [yard_gate]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard_gate]
     zones: [a_base]
     segments: [evening, night]
     day_gte: 2
@@ -40,6 +40,8 @@
   title: 종탑의 영어 방송
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [cathedral]
@@ -71,7 +73,7 @@
   tags: [world]
   when:
     indoor: false
-    places: [wall]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [wall]
     has_items_any: [old_rifle, shotgun, sawn_shotgun, pistol]
     zones: [c_base]
     segments: [morning, day]
@@ -134,6 +136,8 @@
   title: 그물 창고의 기도
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [field]
     indoor: "any"
     zones: [yeoul_isle]
     segments: [evening, night]

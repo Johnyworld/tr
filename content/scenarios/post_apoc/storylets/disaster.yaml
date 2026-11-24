@@ -243,6 +243,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     indoor: "any"
     disaster: { phase: omen, kinds: [plague] }
   setup: "피난민 막사에서 밤새 기침이 끊이지 않는다. 열이 오른 아이가 둘이라는 말이 돈다. 사람들이 그쪽을 피해 다닌다."
@@ -272,6 +274,8 @@
   repeatable: true
   cooldown_days: 20
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     indoor: "any"
     disaster: { phase: struck, kinds: [plague] }
   setup: "막사 하나에 천을 둘러 막았다. 안에서 누군가 물을 달라고 한다. 들어가는 사람은 없다."

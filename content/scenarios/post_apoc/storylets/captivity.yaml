@@ -18,6 +18,8 @@
   title: 규율반의 장부
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_c]
     # 플레이 테스트 12: 붉은연합과 중립인 하얀매 진료소 경비에게 "너희 쪽이 다음에 어디로 오는지". 붉은연합이 주인공의 무리를 적으로 볼 때만 연다
@@ -139,6 +141,8 @@
   title: 광장의 본보기
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: "any"
     captors: [faction_c]
     segments: [morning]
@@ -183,6 +187,8 @@
   title: 붉은 완장
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_c]
     segments: [day, evening]
@@ -222,6 +228,8 @@
   title: 죽 한 그릇
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_a]
   cast:
@@ -281,6 +289,8 @@
   title: 식당 줄
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_a]
     flags_any: [cp_a_talked, cp_a_respect]
@@ -330,6 +340,8 @@
   title: 문밖의 회의
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_b]
   cast:
@@ -381,6 +393,8 @@
   title: 격리실
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail, care]
     indoor: true
     captors: [faction_d]
   cast:
@@ -419,6 +433,8 @@
   title: 퇴실 장부
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail, care]
     segments: [morning]
     indoor: true
     captors: [faction_d]
@@ -454,6 +470,8 @@
   title: 장부의 한 줄
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_e]
   cast:
@@ -494,6 +512,8 @@
   title: 짐수레 밑
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     captors: [faction_e]
     segments: [dawn, morning]
@@ -750,6 +770,8 @@
   title: 탁자 건너의 셈
   tags: [captivity]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     indoor: true
     dispositions: [{ from: captor, to: own, gte: -2 }]
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
@@ -917,6 +939,8 @@
   title: 하얀 천을 묶은 막대
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, street]
     indoor: false
     zone_owner: [own]
     zones: [a_base, b_base, c_base, d_clinic, e_market]

@@ -40,6 +40,8 @@
   title: 간수의 물통
   tags: [c_raider]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     zones: [c_warehouse]
     indoor: false
     flags_none: [c_prisoners_seen]
@@ -71,6 +73,8 @@
   title: 창살 너머의 부탁
   tags: [c_raider]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     zones: [c_warehouse]
     indoor: false
     segments: [evening, night, dawn]
@@ -100,6 +104,8 @@
   title: 망루 아래 돌무더기
   tags: [c_raider]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [watch]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [c_warehouse, a_east_post]
@@ -141,6 +147,8 @@
   tags: [c_raider]
   urgent: true
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [c_warehouse]
@@ -190,6 +198,8 @@
   title: 막내의 배수로
   tags: [red_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [c_base]
@@ -231,7 +241,7 @@
   urgent: true
   when:
     zones: [c_base]
-    places: [wall]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [wall]
     indoor: false
     segments: [night, dawn]
     flags_all: [c_sora_help]
@@ -282,7 +292,7 @@
   tags: [red_life]
   when:
     zones: [c_base]
-    places: [wall]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [wall]
     indoor: false
     segments: [dawn, morning]
     flags_all: [c_sora_gone]
@@ -329,7 +339,7 @@
   tags: [red_life]
   when:
     zones: [c_base]
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     indoor: false
     segments: [evening]
     flags_all: [c_sora_caught]
@@ -407,6 +417,8 @@
   title: 사무실 뒤 상자
   tags: [red_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     zones: [c_base]
     indoor: false
     segments: [evening, night]
@@ -489,6 +501,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     zones: [c_base]
     indoor: "any"
     segments: [evening]
@@ -565,7 +579,7 @@
   cooldown_days: 3
   when:
     zones: [c_base]
-    places: [kitchen]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [kitchen]
     indoor: true
     segments: [morning, evening]
   cast:

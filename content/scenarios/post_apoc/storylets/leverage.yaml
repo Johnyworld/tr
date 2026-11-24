@@ -10,6 +10,8 @@
   repeatable: true
   cooldown_days: 12
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     indoor: false
     own_territory: true
     own_people_captive: true
@@ -59,6 +61,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     indoor: false
     zone_owner: [other]
     segments: [morning, day, evening, night]

@@ -68,7 +68,7 @@ import { SQUAD_REPORT_PREFIX } from "./command.ts";
 import { activeMissionOf, atMissionPlace, commanderOf as commanderIdOf, MISSION_CHECK_TRIES, MISSION_FAIL_MINUTES } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
 import { endBattle, playBattleRound, validateBattleAction } from "./battleTools.ts";
-import { bleedFromHarm, woundKind } from "./bleeding.ts";
+import { bleedFromHarm, staunch, woundKind } from "./bleeding.ts";
 import { scarFromHarm } from "./scars.ts";
 import { createStoryletCheck, endActiveStorylet, resolveStorylet, storyTitle } from "./storyletTools.ts";
 import { slotOpensBetween } from "../rules/storySlot.ts";
@@ -1174,6 +1174,16 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const unknown = npc ? (store.getState().beliefs[input.target] ?? []).filter((b) => !npc.keeps.includes(b.fact) && !mine.has(b.fact)) : [];
     // 부탁·보고하는 판정에도 붙어 헷갈렸다 (PT21 세 판): 무엇을 물으려던 판정일 때만이라고 밝힌다
     if (unknown.length) lines.push(`(무엇을 캐물으려던 판정이었고 ${josa(playerCalls(store.getState(), content, input.target), "이/가")} 그것을 안다면, 그 사람 카드의 "아는 것"에서 골라 add_belief(source: report)로 남긴다. 부탁·보고였으면 넘긴다)`);
+  }
+  // 지혈하는 스킬로 피 흘리는 사람(target)을 판정했으면 treatment가 없어도 그 판정대로 맨손 지혈한다 (PT28 하얀매 "들것 둘":
+  // 응급처치가 성공했는데 treatment를 빠뜨려 둘 다 밤새 피를 흘렸다). 판정 하나로 둘을 멎게 하지는 않는다
+  const staunchMove = scenario.wounds?.staunch_move;
+  if (input.check && outcome && staunchMove && input.check.move === staunchMove && !input.treatment && input.target && input.target !== start.playerId && !inBattle) {
+    const r = staunch(ctx, { move: input.check.move, outcome }, input.target);
+    if (r.ok) {
+      lines.push(`${playerCalls(store.getState(), content, input.target)}: ${r.lines.join(" ")}`);
+      displays.push(...r.displays);
+    }
   }
   // 2. 행적과 목격자
   // 적대하는 땅에서 그 땅 주인 무리 사람이 봤으면(행적의 목격자, 공격받은 사람) 그 자리에서 경보가 울린다 (12-266, 사용자 결정. PT16~18 졸병: 대낮에 적 지휘소를 뒤지고 장교를 쳐도 아무 일이 없었다)

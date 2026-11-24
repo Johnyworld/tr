@@ -8,7 +8,8 @@ import { darkHere, peopleHere } from "../rules/place.ts";
 import { ableNow, fightingAllies } from "../rules/company.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { isCreature, isInfected } from "../game/kinds.ts";
-import { isIncapacitated } from "./body.ts";
+import { changeCondition, isIncapacitated } from "./body.ts";
+import type { ToolContext } from "./toolkit.ts";
 import { isConfused } from "./ambush.ts";
 import { opposedLabel } from "../rules/skill.ts";
 
@@ -89,6 +90,25 @@ export function infectedFoes(content: Content, state: GameState): string[] {
     const c = state.characters[id];
     return !!c && !c.dead && isInfected(content, c) && !isIncapacitated(content, c);
   });
+}
+
+/**
+ * 우리 편이 감염체를 처리한다 (PT28 분대장: 감염체 하나가 거점 의무실에 9시간 넘게 머물렀고, 그 뒤 소탕 임무가 "쓸어 냈다").
+ * 구역(들)에 남은 감염체 엑스트라를 쓰러뜨린다. 처리한 감염체의 호칭을 돌려준다
+ */
+export function putDownInfected(ctx: ToolContext, zones: readonly string[], cause: string, only?: readonly string[]): string[] {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const harm = content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!;
+  const done: string[] = [];
+  for (const c of Object.values(state.characters)) {
+    if (c.dead || !c.extra || !isInfected(content, c)) continue;
+    if (only ? !only.includes(c.id) : !zones.includes(c.extra.zone ?? "")) continue;
+    const name = playerCalls(store.getState(), content, c.id);
+    const ch = changeCondition(ctx, c.id, harm.id, harm.levels.length, "attack", cause);
+    if (ch?.died) done.push(name);
+  }
+  return done;
 }
 
 /** 무거운 피해를 낼 수 있는 무기 (든 것 먼저, 아니면 지닌 것). 탄약을 쓰는 무기는 탄약이 있거나 탄약 없이 쓰는 스킬이 있어야 */

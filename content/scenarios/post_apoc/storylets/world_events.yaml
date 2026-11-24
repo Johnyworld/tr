@@ -15,6 +15,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, road]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     indoor: false
     weather: [cold_snap]
@@ -126,6 +128,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     indoor: true
     weather: [rain]
@@ -204,6 +208,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, road]
     # 여울섬은 정문도 보초도 없다: 섬의 사람 받기는 섬 이야기가 맡는다 (플레이 테스트 11)
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     indoor: false
@@ -241,6 +247,8 @@
   title: 강가의 소문
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [field]
     zones: [riverside, water_plant, e_market]
     indoor: false
     segments: [morning, day]
@@ -400,6 +408,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [ruin]
     zone_owner: [none]
     segments: [morning, day]
     indoor: true
@@ -466,6 +476,8 @@
   urgent: true
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     activities_none: [sleep]
     animal_companion: true
     own_territory: false

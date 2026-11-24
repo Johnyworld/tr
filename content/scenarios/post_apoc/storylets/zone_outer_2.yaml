@@ -19,7 +19,7 @@
     zones: [cathedral]
     segments: [morning, day, evening]
     indoor: false
-    places: [front_steps]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [front_steps]
     flags_none: [zo2_ca_met]
   cast:
     father: { comes: true, ids: [zo2_father] }
@@ -68,7 +68,7 @@
     zones: [cathedral]
     segments: [dawn, morning]
     indoor: false
-    places: [churchyard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [churchyard]
     flags_all: [zo2_ca_met]
   cast:
     father: { ids: [zo2_father] }
@@ -113,7 +113,7 @@
     zones: [cathedral]
     segments: [evening, night]
     indoor: true
-    places: [nave]
+    place_kinds: [hall]  # 장소 종류 (12-300), 전에는 places: [nave]
     occupations: [preacher]
     day_gte: 3
     flags_all: [zo2_ca_met]
@@ -168,6 +168,8 @@
   title: 뒷담의 속삭임
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     indoor: false
     zones: [cathedral]
     segments: [evening, night]
@@ -219,7 +221,7 @@
     zones: [cathedral]
     segments: [morning, day]
     indoor: false
-    places: [front_steps]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [front_steps]
     factions: [none, faction_a, faction_b, faction_d, faction_e, faction_y]
     flags_all: [zo2_ca_informer_known]
     flags_none: [zo2_ca_recruit_done]
@@ -342,7 +344,7 @@
     zones: [cathedral]
     segments: [evening, night]
     indoor: true
-    places: [nave]
+    place_kinds: [hall]  # 장소 종류 (12-300), 전에는 places: [nave]
     day_gte: 9
     flags_any: [zo2_ca_crypt_store, zo2_ca_crypt_refused]
     flags_none: [zo2_ca_crypt_after_done]
@@ -732,7 +734,7 @@
     zones: [rest_stop]
     segments: [morning, day, evening]
     indoor: false
-    places: [canopy]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [canopy]
     flags_none: [zo2_rs_met]
   cast:
     board: { ids: [zo2_gyudeok] }
@@ -769,7 +771,7 @@
     zones: [rest_stop]
     segments: [evening, night, dawn]
     indoor: false
-    places: [parking_lot]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [parking_lot]
     day_gte: 2
     flags_none: [zo2_rs_stranger_met]
   cast:
@@ -871,7 +873,7 @@
     zones: [rest_stop]
     segments: [morning, day]
     indoor: false
-    places: [canopy]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [canopy]
   cast:
     porter: { extra: e_porter, label: 땀에 젖은 나루상단 짐꾼 }
   setup: 주유소 지붕 밑에 손수레 셋과 짐 묶음이 부려져 있다. 짐꾼 하나가 발목을 삐었는지 주저앉아 있고, {porter:이/가} 혼자 상자를 옮기다 숨을 몰아쉰다. "거기, 손 비었으면 좀 거들어. 해 지기 전에 장터까지 넣어야 돼. 품삯은 줄게."

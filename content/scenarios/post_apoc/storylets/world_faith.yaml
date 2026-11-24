@@ -10,7 +10,7 @@
     zones: [cathedral]
     segments: [evening, night]
     indoor: true
-    places: [bell_tower]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [bell_tower]
     occupations_not: [preacher]
   cast:
     keeper: { extra: cathedral_refugee, label: 종지기 노인 }

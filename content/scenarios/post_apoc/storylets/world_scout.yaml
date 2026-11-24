@@ -7,6 +7,8 @@
   title: 마경수의 담배
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road, street]
     indoor: false
     factions: [faction_a, faction_b, faction_e]
     merit_gte: 9

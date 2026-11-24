@@ -3,7 +3,7 @@ import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { infestationOf } from "../game/infestation.ts";
 import { isCreature } from "../game/kinds.ts";
-import { infectedFoes } from "./opposition.ts";
+import { infectedFoes, putDownInfected } from "./opposition.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
@@ -101,7 +101,12 @@ export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDis
 
   if (hostiles.length > 0 && hostiles.length >= allies.length) return byEnemies(ctx, hostiles, hostiles.find((c) => c.factionId)?.factionId ?? null);
   if (biters.length > 0 && biters.length >= allies.length) return bitten(ctx, biters[0]!);
-  if (allies.length > 0) return byAllies(ctx, allies);
+  if (allies.length > 0) {
+    // 곁의 우리 편이 감염체보다 많으면 먼저 그것을 처리하고 돌본다 (PT28 분대장: 감염체 하나가 의무실에 9시간 남았다)
+    const downed = biters.length ? putDownInfected(ctx, [], "쓰러진 사람 곁의 우리 편이 처리했다", biters) : [];
+    const tended = byAllies(ctx, allies);
+    return downed.length ? [remember(ctx, `정신을 잃은 사이 곁의 사람들이 ${josa(downed.join(", "), "을/를")} 처리했다`), ...tended] : tended;
+  }
 
   // 장면에 아무도 없다: 구역 주인 무리의 사람이 찾아낼 수 있다
   // 지금 주인만: 주인 없는 땅이면 아무도 찾지 않는다 (공통 규칙 11, 12-269)

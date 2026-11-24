@@ -306,6 +306,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     factions: [none]
     owners: [faction_a]
     indoor: true
@@ -333,6 +335,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     factions: [none]
     owners: [faction_a]
     indoor: false
@@ -364,6 +368,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     factions: [none]
     owners: [faction_b]
     indoor: false
@@ -423,6 +429,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     factions: [none]
     owners: [faction_c]
     indoor: "any"
@@ -534,6 +542,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     factions: [none]
     owners: [faction_e]
     indoor: "any"
@@ -574,6 +584,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     factions: [none]
     owners: [faction_e]
     indoor: false

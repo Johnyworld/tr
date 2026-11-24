@@ -91,6 +91,8 @@
   title: 등 뒤를 맡긴 사람
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     activities_none: [sleep]
     day_gte: 3
     zone_owner: [none, other]
@@ -592,6 +594,8 @@
   title: 같은 막사의 그 사람
   tags: [world, mature]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     day_gte: 3
     own_territory: true
     segments: [day, evening]
@@ -1001,6 +1005,8 @@
   title: 풀어 주겠다는 말
   tags: [captivity, mature]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail]
     captive_days_gte: 2
     segments: [evening, night]
     indoor: true

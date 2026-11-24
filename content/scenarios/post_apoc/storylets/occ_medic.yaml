@@ -38,6 +38,8 @@
         partial:
           - standing: 1
           - relation: { who: young, axis: trust, delta: 1 }
+          # 글대로 허벅지는 막았다 (PT28: 믿음과 달리 밤새 피를 흘렸다)
+          - npc_body: { who: young, track: bleeding, delta: -3 }
           - npc_hurt: { who: chief, steps: 1 }
           - belief: { fact: "허벅지는 막았지만 그사이 어깨를 다친 쪽의 상처가 벌어졌다", source: seen }
         miss:
@@ -60,6 +62,9 @@
           - standing: 1
           - relation: { who: young, axis: trust, delta: 1 }
           - relation: { who: chief, axis: trust, delta: 1 }
+          # 둘 다 붙들었다: 피가 멎는다 (PT28)
+          - npc_body: { who: young, track: bleeding, delta: -3 }
+          - npc_body: { who: chief, track: bleeding, delta: -3 }
           - belief: { fact: "들것을 든 사람들 손을 빌려 둘을 한꺼번에 붙들었다. 둘 다 밤을 넘겼다", source: seen }
         partial:
           - npc_hurt: { who: young, steps: 1 }
@@ -134,6 +139,8 @@
   tags: [occ_medic]
   urgent: true
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     own_territory: true
     segments: [night, dawn]
     indoor: true
@@ -188,6 +195,8 @@
   title: 묶인 손목의 환자
   tags: [occ_medic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail, store]
     factions: [faction_a, faction_b, faction_d, faction_e]
     own_territory: true
     segments: [morning, day, evening]
@@ -254,6 +263,8 @@
   title: 규율반의 환자
   tags: [occ_medic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [jail, store]
     factions: [faction_c]
     own_territory: true
     segments: [morning, day, evening]
@@ -357,6 +368,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [care]
     occupation_step_gte: 1
     own_territory: true
     segments: [evening]
@@ -403,6 +416,8 @@
   title: 약 나누는 법
   tags: [occ_medic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     occupation_step_gte: 2
     own_territory: true
     segments: [morning, day]

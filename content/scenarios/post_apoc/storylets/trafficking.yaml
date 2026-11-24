@@ -21,7 +21,7 @@
   when:
     zones: [c_warehouse]
     indoor: false
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     segments: [night]
     flags_none: [tr_crew_seen]
   cast:
@@ -74,7 +74,7 @@
   when:
     zones: [rest_stop]
     indoor: true
-    places: [diner]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [diner]
     segments: [evening, night]
     flags_none: [tr_inn_heard]
   cast:
@@ -124,7 +124,7 @@
   when:
     zones: [rest_stop]
     indoor: false
-    places: [parking_lot]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [parking_lot]
     segments: [night]
     flags_any: [tr_rumor, tr_slaver_lead]
     flags_none: [tr_deal_seen]
@@ -193,7 +193,7 @@
     factions: [faction_c]
     zones: [c_base]
     indoor: true
-    places: [office_block]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office_block]
     segments: [evening, night]
     flags_any: [tr_rumor, tr_slaver_lead]
     flags_none: [tr_ledger_done]
@@ -269,7 +269,7 @@
     factions: [faction_c]
     zones: [c_warehouse]
     indoor: true
-    places: [stockade]
+    place_kinds: [jail]  # 장소 종류 (12-300), 전에는 places: [stockade]
     segments: [evening, night]
     flags_any: [tr_rumor, tr_ledger_seen]
     flags_none: [tr_silence_done]
@@ -352,7 +352,7 @@
   when:
     zones: [c_warehouse]
     indoor: true
-    places: [stockade]
+    place_kinds: [jail]  # 장소 종류 (12-300), 전에는 places: [stockade]
     segments: [night, dawn]
     flags_any: [tr_rumor, tr_ledger_seen, tr_convoy_known]
     flags_none: [tr_rescue_done]
@@ -423,7 +423,7 @@
   when:
     zones: [rest_stop]
     indoor: false
-    places: [parking_lot]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [parking_lot]
     segments: [night]
     flags_all: [tr_convoy_known]
     flags_none: [tr_convoy_done]
@@ -497,7 +497,7 @@
   when:
     zones: [e_market]
     indoor: true
-    places: [pawnshop]
+    place_kinds: [store]  # 장소 종류 (12-300), 전에는 places: [pawnshop]
     segments: [morning, day, evening]
     flags_all: [tr_proof]
     flags_none: [tr_proof_given]

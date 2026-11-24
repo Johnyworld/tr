@@ -11,6 +11,8 @@
   cooldown_days: 8
   weight: 0.8
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     indoor: false
     companions_lte: 2
     road_danger_gte: 2

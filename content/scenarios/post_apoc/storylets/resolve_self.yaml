@@ -197,6 +197,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street]
     indoor: false
     resolve: { kinds: [homecoming], stage: 0 }
   setup: "어느 골목 어귀의 간판 하나가 눈에 들어온다. 무너지기 전 매일 지나던 길과 닮았다. 아니, 그 길이다."

@@ -15,7 +15,7 @@
   when:
     zones: [a_base]
     indoor: true
-    places: [staff_room]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [staff_room]
     segments: [morning, day]
     flags_none: [a_of_council_done]
   cast:
@@ -66,7 +66,7 @@
   when:
     zones: [a_base]
     indoor: true
-    places: [staff_room]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [staff_room]
     own_territory: true
     segments: [day, evening]
     day_gte: 2
@@ -108,6 +108,8 @@
   title: 밤의 손수레
   tags: [a_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [a_base]
@@ -152,7 +154,7 @@
   when:
     zones: [a_base]
     indoor: true
-    places: [staff_room]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [staff_room]
     own_territory: true
     segments: [morning, day, evening]
     flags_all: [a_of_saw_sacks]
@@ -210,7 +212,7 @@
   when:
     zones: [a_base]
     indoor: true
-    places: [staff_room]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [staff_room]
     segments: [morning, day]
     day_gte: 2
     flags_none: [a_of_b_asked]
@@ -270,7 +272,7 @@
   when:
     zones: [a_base]
     indoor: true
-    places: [staff_room]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [staff_room]
     own_territory: true
     segments: [evening, night]
     day_gte: 3
@@ -320,6 +322,8 @@
   title: 초록 띠를 뗀 사람들
   tags: [a_officer, council]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [a_base]
@@ -367,6 +371,8 @@
   title: 목도리 속의 말
   tags: [a_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [a_base]
@@ -416,6 +422,8 @@
   urgent: true
   tags: [a_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [a_base]
@@ -520,6 +528,8 @@
   title: 지도 위의 핀
   tags: [a_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store, command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [a_base]
@@ -572,6 +582,8 @@
   title: 막사 구석의 기침
   tags: [a_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [sleep]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [a_base]
@@ -582,7 +594,7 @@
   cast:
     runner: { ids: [a_hangyeol] }
   setup: '막사 구석에서 마른기침 소리가 그치지 않는다. {runner:이/가} 담요 두 장을 겹쳐 덮은 여자아이를 끌어안고 있다가 당신을 보고 벌떡 일어선다. "참모님. 하얀매 진료소에 가면 기침약이 있대요. 저 거기 일 다니면 안 돼요? 심부름이든 뭐든 할게요."'
-  ai_direction: 여동생의 기침은 오래갈 병일지도 모른다. 의무실 약은 다친 대원 몫이다. 하얀매는 사람을 일꾼으로 받고 약을 내주기도 한다. 한결을 보내면 지도부의 가장 빠른 전령을 잃지만 하얀매와 끈이 생긴다. 한결은 무엇이든 한다고 하지만 떠나기 싫어한다.
+  ai_direction: 여동생의 기침은 오래갈 병일지도 모른다. 의무실 약은 다친 대원 몫이다. 하얀매는 사람을 일꾼으로 받고 약을 내주기도 한다. {runner:을/를} 보내면 지도부의 가장 빠른 전령을 잃지만 하얀매와 끈이 생긴다. {runner:은/는} 무엇이든 한다고 하지만 떠나기 싫어한다.
   choices:
     - id: send_to_clinic
       label: 둘을 하얀매로 보내고 약값 대신 일하게 하자고 약조한다
@@ -592,7 +604,7 @@
         - faction_relation: { from: faction_d, to: faction_a, delta: 1 }
         - faction_resource: { faction: own, resource: medicine, delta: 3 }
         - deed: { summary: 아픈 동생을 둔 전령을 하얀매에 일꾼으로 보내고 약을 받았다, tags: [mercy], severity: 1, privacy: semi_private }
-        - belief: { fact: "한결은 동생을 업고 하얀매로 떠났다. 내일부터 전령이 없다", source: seen }
+        - belief: { fact: "{runner:은/는} 동생을 업고 하얀매로 떠났다. 내일부터 전령이 없다", source: seen }
     - id: share_medicine
       label: 의무실 약을 조금 덜어 주라고 윤채원에게 말한다
       effects:
@@ -622,6 +634,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [a_base]
@@ -667,6 +681,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     factions: [faction_a]

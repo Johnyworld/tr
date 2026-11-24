@@ -193,7 +193,7 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
   }
   // 이야기는 주인공을 옮기지 않는다. 부르는 이야기(12-260)만 그 장소로 불려 간다 (공통 규칙 15 movePlayer, 이동 기획)
   // 그때 장면의 사람은 그 자리에 남는다 (동행은 함께). 함께 불려 오는 배역은 남은 사람이 아니다 (12-265)
-  const spot = storySummonsTo(store.getState(), content, storylet.when.places, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when));
+  const spot = storySummonsTo(store.getState(), content, storylet.when, storyText(storylet), !!storylet.when.summons, storyIndoor(storylet.when));
   if (spot) {
     const coming = new Set(Object.entries(cast).filter(([key]) => storylet.cast[key]?.enter).map(([, id]) => id));
     const left = store.getState().scene.present.filter((id) => !store.getState().companions.includes(id) && !coming.has(id));
@@ -499,37 +499,9 @@ export function maskUnknownNames(state: GameState, content: Content, text: strin
     }
     out = next + out.slice(last);
   }
-  return maskUnknownGivenNames(state, content, out, options);
-}
-
-/**
- * 성을 뺀 이름만 쓴 꼴도 가린다 (PT27 하얀매·약탈자 [정보 누설]: 예시 대사 "그 애 이름? 연옥이.", 연출 "미란은 더 조심하지만").
- * 낱말 경계에서만(앞뒤가 한글이 아닐 때), 아는 사람과 이름이 겹치면 건너뛴다. 부르는 꼴(연옥아·연옥이)은 호칭만 남긴다
- */
-function maskUnknownGivenNames(state: GameState, content: Content, text: string, options: { story?: boolean }): string {
-  let out = text;
-  const knownGiven = new Set(
-    (state.known[state.playerId] ?? []).map((id) => state.characters[id]?.name ?? "").filter((n) => n.length >= 3).map((n) => n.slice(1)),
-  );
-  const me = state.characters[state.playerId]?.name ?? "";
-  for (const npc of Object.values(content.npcs)) {
-    if (!npc.name || npc.name.length < 3 || knowsName(state, state.playerId, npc.id)) continue;
-    const given = npc.name.slice(1);
-    if (given.length < 2 || knownGiven.has(given) || me.endsWith(given) || !out.includes(given)) continue;
-    const stranger = !!options.story && !hasMet(state, state.playerId, npc.id) && !state.scene.present.includes(npc.id);
-    const alias = stranger ? "누군가" : playerCalls(state, content, npc.id);
-    const escaped = given.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(`(?<![가-힣])${escaped}(이었다|였다|이라는|라는|으로|로|이|가|은|는|을|를|과|와|아|야|도|만|의|에게|한테)?(?![가-힣])`, "g");
-    out = out.replace(re, (m: string, particle: string | undefined, at: number, whole: string) => {
-      // "연옥이." 같은 부르는 꼴은 호칭만. "미란이 왔다"처럼 뒤에 말이 이어지면 주격 조사
-      const vocative = particle === "아" || particle === "야" || (particle === "이" && whole[at + m.length] !== " ");
-      if (!particle || vocative) return alias;
-      if (PARTICLE_PAIRS[particle]) return josa(alias, PARTICLE_PAIRS[particle]!);
-      return `${alias}${particle}`;
-    });
-  }
   return out;
 }
+
 
 const PARTICLE_PAIRS: Record<string, JosaPair> = {
   이: "이/가", 가: "이/가", 은: "은/는", 는: "은/는", 을: "을/를", 를: "을/를", 과: "과/와", 와: "과/와",

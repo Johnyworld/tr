@@ -13,6 +13,8 @@
   title: 초소의 교대표
   tags: [d_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     indoor: "any"
     zones: [d_clinic]
     segments: [dawn, morning]
@@ -57,6 +59,8 @@
   title: 총을 내려놓지 않는 손님
   tags: [d_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]
@@ -231,6 +235,8 @@
   title: 손녀의 통조림
   tags: [d_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     indoor: false
     zones: [d_clinic]
     segments: [evening, night]
@@ -386,6 +392,8 @@
   title: 담 너머의 담배
   tags: [d_squad_leader]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [d_clinic]
@@ -438,6 +446,8 @@
   title: 여섯 명의 담
   tags: [d_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [d_clinic]

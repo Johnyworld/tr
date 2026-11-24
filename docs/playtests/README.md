@@ -26,7 +26,7 @@ npx tsx scripts/playtest/setup.ts <판 폴더>/saves role_a_grunt '{"past":"sold
 npx tsx scripts/playtest/play.ts <판 폴더>/saves <세계 id> <판 폴더>/c0.json > <판 폴더>/o0.txt
 ```
 
-- `cN.json`: `[{"tool":"take_action","args":{...}}, ...]`. 한 번에 1~4개. `start_session`은 하네스가 부른다 (`SHOW_START=1`이면 그 결과도 출력)
+- `cN.json`: `[{"tool":"take_action","args":{...}}, ...]`. 한 번에 1~4개. `start_session`은 하네스가 부른다 (`SHOW_START=1`이면 그 결과도 출력). 세션을 열 때 처리한 일("지난번 뒤에 일어난 일": 쓰러진 동안의 돌봄 등)은 실제 플레이에서 GM이 먼저 받는 글이라 늘 출력한다
 - 실행마다 MCP 서버를 새로 띄운다. 상태 화면·RAG는 끄고 치트는 켜 두지만 쓰지 않는다
 - 특정 커밋으로 돌리려면 그 커밋을 `git worktree`로 꺼내고 `PLAYTEST_ROOT=<그 폴더>`를 붙인다 (다른 세션의 작업이 섞이지 않게)
 - 캐릭터 JSON에 성격·설정·출신을 넣는다 (PT13은 성격을 비워 성격 축을 못 봤다)

@@ -22,7 +22,7 @@
   tags: [c_officer, council]
   when:
     indoor: true
-    places: [office_block]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -81,6 +81,8 @@
   title: 안쪽 문의 명단
   tags: [c_officer, council]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     factions: [faction_c]
@@ -149,6 +151,8 @@
   title: 서명 칸 셋
   tags: [c_officer]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command]
     indoor: "any"
     factions: [faction_c]
     zones: [c_base]
@@ -204,6 +208,8 @@
   title: 지워진 이름
   tags: [c_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     indoor: false
     factions: [faction_c]
     zones: [c_base, c_warehouse]
@@ -256,7 +262,7 @@
   tags: [c_officer]
   when:
     indoor: true
-    places: [office_block]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [evening, night]
@@ -307,6 +313,8 @@
   title: 공세 다음 날의 탁자
   tags: [c_officer]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     factions: [faction_c]
@@ -422,7 +430,7 @@
   tags: [c_officer]
   when:
     indoor: true
-    places: [office_block]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -512,6 +520,8 @@
   title: 쪽문에 들고 갈 것
   tags: [c_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     indoor: true
     factions: [faction_c]
     zones: [c_base]
@@ -579,7 +589,7 @@
   tags: [c_officer, council]
   when:
     indoor: true
-    places: [office_block]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]
@@ -647,7 +657,7 @@
   tags: [c_officer, council]
   when:
     indoor: true
-    places: [office_block]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office_block]
     factions: [faction_c]
     zones: [c_base]
     segments: [morning, day]

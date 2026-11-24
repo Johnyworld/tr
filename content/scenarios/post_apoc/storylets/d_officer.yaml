@@ -72,6 +72,8 @@
   title: 장터와 맺는 줄
   tags: [d_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     factions: [faction_d]
@@ -129,7 +131,7 @@
   when:
     factions: [faction_d]
     zones: [d_clinic]
-    places: [gate]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [gate]
     indoor: false
     segments: [morning, day, evening]
     day_gte: 1
@@ -186,6 +188,8 @@
   title: 선반과 장부 사이
   tags: [d_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     factions: [faction_d]
@@ -292,6 +296,8 @@
   title: 열쇠를 거두는 날
   tags: [d_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store, command]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     factions: [faction_d]
@@ -481,6 +487,8 @@
   title: 기울어 가는 저울
   tags: [d_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store]
     factions: [faction_d]
     zones: [d_clinic]
     indoor: true
@@ -535,6 +543,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command]
     own_territory: true
     segments: [morning, day]
     indoor: true

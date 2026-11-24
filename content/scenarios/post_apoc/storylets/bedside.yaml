@@ -276,6 +276,8 @@
   repeatable: true
   cooldown_days: 8
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     indoor: "any"
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical

@@ -18,6 +18,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     indoor: false
     own_territory: true
     segments: [morning, day]
@@ -169,6 +171,8 @@
   tags: [occ_preacher]
   urgent: true
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [store, care]
     indoor: "any"
     zone_owner: [own]
     segments: [evening, night, dawn]
@@ -436,6 +440,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     indoor: true
     own_territory: true
     segments: [evening]
@@ -495,6 +501,8 @@
   repeatable: true
   cooldown_days: 12
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [yard]
     indoor: false
     own_territory: true
     segments: [dawn, morning]

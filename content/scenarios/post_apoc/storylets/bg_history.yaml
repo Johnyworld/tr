@@ -110,6 +110,8 @@
   tags: [world]
   urgent: true
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [street, road]
     indoor: false
     zone_owner: [none, other]
     flags_all: [bg_enemy_close]

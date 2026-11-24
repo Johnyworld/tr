@@ -71,6 +71,7 @@ import {ownedBy, baseOfNow } from "../rules/home.ts";
 import { storyTitle } from "./storyletTools.ts";
 import { learned } from "../rules/skill.ts";
 import { REGARD_KINDS } from "../rules/regard.ts";
+import { putDownInfected } from "./opposition.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -358,6 +359,8 @@ const reportMission = defineTool({
       ctx.store.append({ type: "infestation_changed", zone: worst.zone, level: Math.max(0, now - clearSteps), cause: "소탕" });
       cleared = ctx.content.locations[worst.zone]?.name ?? worst.zone;
     }
+    // 쓸어 냈으면 그 구역과 우리 거점에 남은 감염체도 처리한 것이다 (PT28 분대장: "쓸어 냈다" 뒤에도 의무실에 감염체가 남았다)
+    const putDown = clearSteps > 0 ? putDownInfected(ctx, [worst?.zone, base].filter((z): z is string => !!z), `소탕: ${mission.title}`) : [];
     // 수색·채집 일감은 구해 온 몫이 그 무리 창고로 들어간다. 일부 완수는 절반
     const supplied: string[] = [];
     const supplies = ctx.content.missions[mission.templateId]?.supplies;
@@ -408,6 +411,7 @@ const reportMission = defineTool({
           ]
         : []),
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
+      ...(putDown.length ? [`남아 있던 ${putDown.join(", ")}도 처리했다.`] : []),
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id, { excused: capturedDuringMission(ctx.store.getState(), mission) })].filter((l): l is string => !!l),
       ...(occNote ? [occNote] : []),

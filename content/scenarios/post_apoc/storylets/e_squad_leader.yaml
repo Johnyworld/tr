@@ -13,7 +13,7 @@
   tags: [e_squad_leader]
   when:
     zones: [e_market]
-    places: [wagon_yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [wagon_yard]
     indoor: false
     segments: [dawn]
     flags_none: [es_mustered]
@@ -52,6 +52,8 @@
   title: 계약서의 마지막 줄
   tags: [e_squad_leader]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [store]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: true
     zones: [e_market]
@@ -106,6 +108,8 @@
   title: 톨게이트 기둥의 물통
   tags: [e_squad_leader]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [rest_stop, power_plant]
@@ -199,6 +203,8 @@
   urgent: true
   tags: [e_squad_leader]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [road]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [rest_stop, power_plant]
@@ -309,7 +315,7 @@
   tags: [e_squad_leader]
   when:
     zones: [c_warehouse]
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     indoor: false
     segments: [morning, day, evening]
     flags_none: [es_dongju_done]

@@ -9,6 +9,8 @@
   title: 겨울 장부
   tags: [council]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     own_territory: true
     segments: [morning, day]
     indoor: true
@@ -178,6 +180,8 @@
   title: 반 국자
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, yard]
     own_territory: true
     segments: [day, evening]
     indoor: "any"
@@ -215,6 +219,8 @@
   title: 김이 오르는 솥
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess]
     own_territory: true
     segments: [evening]
     indoor: true
@@ -242,6 +248,8 @@
   title: 출정 배웅
   tags: [world]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate, road]
     own_territory: true
     segments: [dawn, morning]
     indoor: false

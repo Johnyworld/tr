@@ -10,6 +10,8 @@
   title: 물류창고의 불빛
   tags: [grunt]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [watch]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [a_east_post]
@@ -158,7 +160,7 @@
     zones: [a_base]
     segments: [morning, day, evening]
     indoor: true
-    places: [mess]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [mess]
     own_food_days_lte: 14
   cast:
     grunt: { faction: own, ranks: [grunt], known: true }
@@ -193,6 +195,8 @@
   repeatable: true
   cooldown_days: 2
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [care]
     zones: [a_base]
     indoor: "any"
     war_news_within_hours: 24

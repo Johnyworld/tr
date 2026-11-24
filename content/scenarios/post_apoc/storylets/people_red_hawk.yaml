@@ -12,7 +12,7 @@
     zones: [c_base]
     segments: [morning]
     indoor: false
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     day_gte: 3
     flags_none: [pr_square_done]
   cast:
@@ -61,6 +61,8 @@
   title: 행주에 싼 것
   tags: [red_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard, mess]
     factions: [faction_c]
     zones: [c_base]
     segments: [evening]
@@ -145,7 +147,7 @@
     zones: [d_clinic]
     segments: [morning, day]
     indoor: false
-    places: [gate]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [gate]
     day_gte: 3
     flags_none: [pr_queue_done]
   cast:

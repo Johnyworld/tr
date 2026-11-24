@@ -1,5 +1,5 @@
 import { josa } from "../text.ts";
-import { placeSaid } from "../rules/place.ts";
+import { kindsOf, placeSaid, wordSaid } from "../rules/place.ts";
 import { DEED_TAGS } from "../game/reputation.ts";
 import { RESOLVE_TARGET } from "../scenario/schema.ts";
 import { checkHistory } from "../game/background.ts";
@@ -60,6 +60,72 @@ export function checkZonePlaces(content: Content, zoneId: string): string[] {
     const q2 = [...outside];
     while (q2.length) for (const n of byId.get(q2.shift()!)?.near ?? []) if (!outside.has(n) && !byId.get(n)?.gate) { outside.add(n); q2.push(n); }
     for (const p of l.places) if (p.indoor && !p.road && outside.has(p.id)) problems.push(`${where}.${p.id}: 담(gate)을 거치지 않고 닿는 실내 장소다 (담 구멍)`);
+  }
+  return problems;
+}
+
+/**
+ * 장소 종류 (12-300, 공통 규칙 15): 시나리오에 종류 목록이 있으면 장소마다 종류가 1~2개(길·가두는 곳은 표시로 저절로),
+ * 이야기의 when.place_kinds는 아는 종류이고, 구역을 정한 이야기면 그 구역마다 그 종류의 장소가 있어야 한다
+ */
+export function checkPlaceKinds(content: Content): string[] {
+  const problems: string[] = [];
+  const known = new Set(content.scenario.place_kinds.map((k) => k.id));
+  if (!known.size) return problems;
+  for (const k of ["road", "jail"]) if (!known.has(k)) problems.push(`scenario.place_kinds: ${k}가 없다 (길·가두는 곳 표시로 저절로 붙는 종류)`);
+  for (const l of Object.values(content.locations)) {
+    for (const p of l.places) {
+      const at = `locations.${l.id}.places.${p.id}.kinds`;
+      for (const k of p.kinds) if (!known.has(k)) problems.push(`${at}: 알 수 없는 종류 ${k}`);
+      if (!kindsOf(p).length) problems.push(`${at}: 종류가 없다 (1~2개, scenario.place_kinds에서)`);
+    }
+  }
+  for (const s of Object.values(content.storylets)) {
+    const kinds = s.when.place_kinds;
+    if (!kinds) continue;
+    const at = `storylets.${s.id}.when.place_kinds`;
+    for (const k of kinds) if (!known.has(k)) problems.push(`${at}: 알 수 없는 종류 ${k}`);
+    if (s.when.places) problems.push(`${at}: places와 함께 적지 않는다 (places가 먼저라 종류는 쓰이지 않는다)`);
+    for (const z of s.when.zones ?? []) {
+      const l = content.locations[z];
+      if (l?.places.length && !l.places.some((p) => kindsOf(p).some((k) => kinds.includes(k)))) problems.push(`${at}: ${z}에 그 종류(${kinds.join("·")})의 장소가 없다`);
+    }
+    // 실내외를 정했으면 그 종류에 실내외가 맞는 장소가 있어야 열린다
+    const indoor = s.when.indoor;
+    if (typeof indoor === "boolean") {
+      const pool = (s.when.zones ?? Object.keys(content.locations)).flatMap((z) => content.locations[z]?.places ?? []);
+      if (!pool.some((p) => p.indoor === indoor && kindsOf(p).some((k) => kinds.includes(k)))) problems.push(`${at}: 그 종류에 ${indoor ? "실내" : "바깥"} 장소가 없다 (when.indoor와 맞지 않는다)`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * 성을 뺀 이름만 날것으로 쓴 글 (12-300, PT27 [정보 누설] "미란은 더 조심하지만"·"그 애 이름? 연옥이.").
+ * 실행 중에 가리면 "하나"·"소리"·"하늘" 같은 보통 낱말까지 가려져(PT28) 콘텐츠에서 잡는다: 이야기 글(setup·ai_direction·변형·선택지)에
+ * 그 이야기 배역으로 정해 둔 사람(cast ids)의, 인물 예시 대사에 그 인물과 이어진 사람(ties)의 성 뺀 이름이 온이름 없이 나오면 배역 자리표시({배역})나 호칭으로 쓴다
+ */
+export function checkBareGivenNames(content: Content): string[] {
+  const problems: string[] = [];
+  const bare = (text: string, id: string): string | null => {
+    const name = content.npcs[id]?.name ?? "";
+    if (name.length < 3) return null;
+    const given = name.slice(1);
+    return wordSaid(text.split(name).join(""), given) ? given : null;
+  };
+  for (const s of Object.values(content.storylets)) {
+    const text = [s.setup, s.ai_direction ?? "", ...(s.variants ?? []), ...s.choices.map((c) => c.label)].join("\n");
+    for (const role of Object.values(s.cast)) for (const id of (role as { ids?: string[] }).ids ?? []) {
+      const g = bare(text, id);
+      if (g) problems.push(`storylets.${s.id}: 배역 ${id}의 이름을 성 없이 "${g}"로 쓴다 (모르는 사람이면 GM에게 이름이 샌다. {배역} 자리표시로)`);
+    }
+  }
+  for (const npc of Object.values(content.npcs)) {
+    const samples = npc.voice.samples.join("\n");
+    for (const t of npc.ties ?? []) {
+      const g = bare(samples, t.to);
+      if (g) problems.push(`npcs.${npc.id}.voice.samples: 이어진 사람 ${t.to}의 이름을 성 없이 "${g}"로 쓴다 (모르는 사람이면 GM에게 이름이 샌다)`);
+    }
   }
   return problems;
 }
@@ -173,6 +239,8 @@ function checkReferences(content: Content): string[] {
     for (const m of o.missions) if (!content.missions[m]) problems.push(`${at}: 알 수 없는 임무 ${m}`);
   }
   problems.push(...checkMatureLines(content));
+  problems.push(...checkPlaceKinds(content));
+  problems.push(...checkBareGivenNames(content));
   problems.push(...checkSettingsContent(content));
   // 계급이 요구하는 전문 기술 (4.2.1)과 최소 나이 (12-87)
   for (const [rank, skills] of Object.entries(content.scenario.creation?.rank_experts ?? {})) {
@@ -808,7 +876,7 @@ export function checkStoryWhereWhen(content: Content): string[] {
   const words = content.scenario.story_lint?.segments ?? {};
   for (const s of Object.values(content.storylets)) {
     const where = `storylets.${s.id}`;
-    if (s.when.indoor === undefined && !s.when.places) problems.push(`${where}: when.indoor(true·false·"any")나 when.places를 적는다`);
+    if (s.when.indoor === undefined && !s.when.places && !s.when.place_kinds) problems.push(`${where}: when.indoor(true·false·"any")나 when.places·when.place_kinds를 적는다`);
     // 따옴표 안의 말은 다른 때를 가리킬 수 있어 보지 않는다 ("물때가 내일 새벽이야")
     const text = [s.title, s.setup, ...(s.variants ?? [])].join("\n").replace(/"[^"]*"|“[^”]*”|'[^']*'/g, "");
     const said = (Object.entries(words) as [string, string[]][]).filter(([, ws]) => ws.some((w) => text.includes(w)));
@@ -840,16 +908,17 @@ export function checkStorylets(content: Content): string[] {
       const lint = content.scenario.story_lint;
       const text = [s.title, s.setup, ...(s.variants ?? [])].join("\n");
       const out = (lint?.outdoor ?? []).find((w) => text.includes(w));
-      if (out && s.when.indoor !== false && !s.when.places) problems.push(`${where}: 글이 바깥("${out}")을 말하는데 실내에서도 열린다. when.indoor: false 또는 when.places`);
+      if (out && s.when.indoor !== false && !s.when.places && !s.when.place_kinds) problems.push(`${where}: 글이 바깥("${out}")을 말하는데 실내에서도 열린다. when.indoor: false 또는 when.places`);
       const wake = (lint?.waking ?? []).find((w) => text.includes(w));
       if (wake && !(s.when.activities?.length && s.when.activities.every((a) => a === "sleep" || a === "rest"))) problems.push(`${where}: 글이 잠에서 깨는 장면("${wake}")인데 깨어 있을 때도 열린다. when.activities: [sleep]`);
     }
     // 갇힌 사람이 배역인 이야기의 글이 가두는 곳이 아닌 장소를 말하면, 그 장소에서만 열린다 (12-259, PT15 튜토리얼: 포로 탈출 "창고 쪽"이 보급 창고)
-    if (Object.values(s.cast).some((role) => role.captive && role.enter !== false) && !s.when.places) {
+    // 장소·종류를 적었으면 글자 맞추기를 쓰지 않는다 (12-300)
+    if (Object.values(s.cast).some((role) => role.captive && role.enter !== false) && !s.when.places && !s.when.place_kinds) {
       const text = [s.title, s.setup, ...(s.variants ?? [])].join("\n");
       const zones = s.when.zones ?? Object.keys(content.locations);
       for (const z of zones) {
-        const bad = (content.locations[z]?.places ?? []).filter((p) => !p.jail && [p.name, ...p.aliases].some((a) => text.includes(a)));
+        const bad = (content.locations[z]?.places ?? []).filter((p) => !p.jail && [p.name, ...p.aliases].some((a) => wordSaid(text, a)));
         for (const p of bad) problems.push(`${where}: 갇힌 사람이 배역인데 글이 ${z}의 가두는 곳이 아닌 장소 "${p.name}"를 말한다 (그 장소에서만 열린다)`);
       }
     }

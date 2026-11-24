@@ -11,7 +11,7 @@
   tags: [c_squad_leader]
   when:
     zones: [c_warehouse]
-    places: [yard]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [yard]
     indoor: false
     segments: [dawn, morning]
     flags_none: [c_sl_rolled]
@@ -166,6 +166,8 @@
   title: 빠져나갈 길
   tags: [c_squad_leader]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [watch, gate]
     own_territory: true
     segments: [evening, night]
     indoor: false

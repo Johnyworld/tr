@@ -9,6 +9,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [field]
     resolve: { kinds: [journey], stage_gte: 1 }
     zones: [riverside, water_plant]
     indoor: false
@@ -443,6 +445,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [sleep]
     resolve: { kinds: [homecoming], stage: 0 }
     segments: [dawn]
     indoor: true

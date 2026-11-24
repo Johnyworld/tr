@@ -11,6 +11,8 @@
   repeatable: true
   cooldown_days: 3
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     # 글에 맞춘 자리·때 (12-261, content:check story_lint)
     indoor: false
     zones: [yeoul_isle]
@@ -62,7 +64,7 @@
   cooldown_days: 3
   when:
     zones: [yeoul_isle]
-    places: [council_hall]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [council_hall]
     indoor: true
     factions: [faction_y]
     segments: [evening]
@@ -96,6 +98,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     zones: [yeoul_isle]
     indoor: false
     factions: [faction_y]
@@ -139,7 +143,7 @@
   cooldown_days: 4
   when:
     zones: [yeoul_isle]
-    places: [farm_shore]
+    place_kinds: [field]  # 장소 종류 (12-300), 전에는 places: [farm_shore]
     indoor: false
     factions: [faction_y]
     segments: [morning, day]
@@ -180,7 +184,7 @@
   cooldown_days: 5
   when:
     zones: [yeoul_isle]
-    places: [council_hall]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [council_hall]
     indoor: true
     factions: [faction_y]
     segments: [morning, day]
@@ -314,6 +318,8 @@
   repeatable: true
   cooldown_days: 5
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     zones: [yeoul_isle]
     indoor: false
     factions: [faction_y]
@@ -382,7 +388,7 @@
   cooldown_days: 7
   when:
     zones: [yeoul_isle]
-    places: [dock]
+    place_kinds: [road]  # 장소 종류 (12-300), 전에는 places: [dock]
     indoor: false
     factions: [faction_y]
     segments: [morning, day]
@@ -421,6 +427,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     # 글에 맞춘 자리·때 (12-261, content:check story_lint)
     indoor: false
     zones: [yeoul_isle]
@@ -467,7 +475,7 @@
   cooldown_days: 7
   when:
     zones: [yeoul_isle]
-    places: [council_hall]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [council_hall]
     indoor: true
     factions: [faction_y]
     segments: [evening, night]
@@ -497,7 +505,7 @@
   cooldown_days: 6
   when:
     zones: [yeoul_isle]
-    places: [farm_shore]
+    place_kinds: [field]  # 장소 종류 (12-300), 전에는 places: [farm_shore]
     indoor: false
     factions: [faction_y]
     segments: [day]
@@ -538,7 +546,7 @@
   cast:
     climber: { ids: [y_dabin] }
   setup: "{climber:이/가} 섬 서쪽 절벽 아래서 밧줄을 어깨에 감는다. \"바닷새가 알을 깠어. 올라갈 사람? 아래서 줄만 잡아 줘도 돼.\" 절벽 중턱에 하얀 새똥 자국과 둥지가 줄지어 있다."
-  ai_direction: 설다빈은 겁이 없고 손이 빠르다. 절벽 알 따기는 젊은 경비조의 놀이 반 일 반이다. 떨어지면 크게 다친다. 다빈은 위에서 섬을 내려다보는 걸 좋아한다 (저장고 뒤쪽이 보인다고 지나가듯 말할 수도 있다).
+  ai_direction: 설다빈은 겁이 없고 손이 빠르다. 절벽 알 따기는 젊은 경비조의 놀이 반 일 반이다. 떨어지면 크게 다친다. {climber:은/는} 위에서 섬을 내려다보는 걸 좋아한다 (저장고 뒤쪽이 보인다고 지나가듯 말할 수도 있다).
   choices:
     - id: climb
       label: 줄을 매고 직접 오른다
@@ -568,6 +576,8 @@
   title: 의회의 공고
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     zones: [yeoul_isle]
     indoor: "any"
     factions: [faction_y]
@@ -603,7 +613,7 @@
   tags: [world]
   when:
     zones: [yeoul_isle]
-    places: [dock]
+    place_kinds: [road]  # 장소 종류 (12-300), 전에는 places: [dock]
     indoor: false
     factions: [faction_y]
     segments: [day, evening]
@@ -636,7 +646,7 @@
         - merit: 1
 
 - id: yl_haesol_questions
-  title: 해솔의 질문
+  title: 섬 아이의 질문
   tags: [world]
   when:
     zones: [yeoul_isle]
@@ -648,7 +658,7 @@
   cast:
     girl: { ids: [y_haesol] }
   setup: "그물 바늘을 손가락에 끼운 {girl:이/가} 당신 옆에 털썩 앉는다. \"뭍은 어때요? 진짜 감염체가 골목마다 있어요? 학교 같은 건 아직 있어요? 버스는요?\" 질문이 끝이 없다. \"난 섬에서 태어나서 한 번도 못 나가 봤어요.\""
-  ai_direction: 윤해솔은 호기심이 많고 말이 많다. 뭍을 무서워하면서도 동경한다. 어른들은 해솔에게 뭍 이야기를 하지 말라고 한다. 해솔의 어머니 윤미옥은 의회에서 창고를 맡는다. 해솔은 섬의 진실을 전혀 모른다.
+  ai_direction: 윤해솔은 호기심이 많고 말이 많다. 뭍을 무서워하면서도 동경한다. 어른들은 {girl}에게 뭍 이야기를 하지 말라고 한다. {girl}의 어머니 윤미옥은 의회에서 창고를 맡는다. {girl:은/는} 섬의 진실을 전혀 모른다.
   choices:
     - id: tell
       label: 뭍의 이야기를 있는 그대로 들려준다
@@ -680,6 +690,8 @@
   title: 진료소의 검진
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     zones: [yeoul_isle]
     indoor: true
     factions: [faction_y]
@@ -732,7 +744,7 @@
   tags: [world]
   when:
     zones: [yeoul_isle]
-    places: [dock]
+    place_kinds: [road]  # 장소 종류 (12-300), 전에는 places: [dock]
     indoor: false
     factions: [faction_y]
     segments: [dawn, evening]
@@ -833,7 +845,7 @@
   tags: [world]
   when:
     zones: [yeoul_isle]
-    places: [quarters]
+    place_kinds: [sleep]  # 장소 종류 (12-300), 전에는 places: [quarters]
     indoor: true
     factions: [faction_y]
     segments: [morning]
@@ -874,6 +886,8 @@
   title: 섬의 첫서리
   tags: [world]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [road]
     zones: [yeoul_isle]
     indoor: false
     factions: [faction_y]
@@ -909,7 +923,7 @@
   tags: [world]
   when:
     zones: [yeoul_isle]
-    places: [dock]
+    place_kinds: [road]  # 장소 종류 (12-300), 전에는 places: [dock]
     indoor: false
     factions: [faction_y]
     segments: [night]
@@ -957,6 +971,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [sleep]
     # 플레이 테스트 12: 정문 보초를 서는 중에 "상관의 문병". 누워 있는 동안의 이야기는 서서 하는 일 중에는 열지 않는다
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
@@ -992,6 +1008,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess, sleep]
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]
@@ -1028,7 +1046,7 @@
   cast:
     girl: { ids: [y_haesol] }
   setup: "창틀 너머로 {girl:이/가} 얼굴을 내민다. 들어오지 말라는 말을 들은 모양이다. 창틀에 조개껍데기를 꿴 목걸이를 올려놓는다. \"빨리 나으라고 만들었어요. 엄마한테는 비밀이에요.\""
-  ai_direction: 윤해솔은 순수하게 걱정한다. 어른들은 아픈 사람 근처에 가지 말라고 했다 (병이 옮을까 봐라고 했다). 해솔은 섬 소식을 조잘조잘 전한다 (오늘 그물, 식당 메뉴, 잔치 준비).
+  ai_direction: 윤해솔은 순수하게 걱정한다. 어른들은 아픈 사람 근처에 가지 말라고 했다 (병이 옮을까 봐라고 했다). {girl:은/는} 섬 소식을 조잘조잘 전한다 (오늘 그물, 식당 메뉴, 잔치 준비).
   choices:
     - id: thank
       label: 고맙다고 웃어 주고 섬 소식을 듣는다
@@ -1047,6 +1065,8 @@
   repeatable: true
   cooldown_days: 7
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [mess]
     activities_none: [guard_duty, work, search, travel, combat]
     harm_at_least: critical
     zones: [yeoul_isle]

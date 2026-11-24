@@ -15,7 +15,7 @@
   tags: [b_officer]
   when:
     indoor: true
-    places: [office]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office]
     zones: [b_base]
     segments: [morning, day]
     flags_none: [bo_council_done]
@@ -127,6 +127,8 @@
   title: 한 뼘의 셈
   tags: [b_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [b_base]
@@ -176,7 +178,7 @@
   tags: [b_officer]
   when:
     indoor: true
-    places: [office]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office]
     zones: [b_base]
     segments: [evening, night]
     day_gte: 2
@@ -237,7 +239,7 @@
   tags: [b_officer]
   when:
     indoor: true
-    places: [office]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office]
     zones: [b_base]
     segments: [evening, night]
     day_gte: 3
@@ -292,6 +294,8 @@
   urgent: true
   tags: [b_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [sleep]
     indoor: true
     zones: [b_base]
     segments: [night]
@@ -403,6 +407,8 @@
   title: 쪽문을 닫을까
   tags: [b_officer]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     indoor: true
     zones: [b_base]
     segments: [evening, night]
@@ -455,6 +461,8 @@
   title: 돌려 달라는 탄
   tags: [b_officer]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [gate]
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     zones: [b_base]
@@ -514,6 +522,8 @@
   repeatable: true
   cooldown_days: 4
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [command, hall]
     indoor: true
     own_territory: true
     segments: [morning, day, evening]

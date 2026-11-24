@@ -12,7 +12,7 @@
   tags: [world]
   when:
     indoor: false
-    places: [gate]
+    place_kinds: [yard]  # 장소 종류 (12-300), 전에는 places: [gate]
     zones: [d_clinic]
     segments: [evening]
     day_gte: 3
@@ -69,6 +69,8 @@
   title: 셋 셀 동안
   tags: [red_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [command]
     indoor: true
     factions: [faction_c]
     zones: [c_base]
@@ -142,7 +144,7 @@
   tags: [red_life]
   when:
     indoor: false
-    places: [wall]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [wall]
     factions: [faction_c]
     zones: [c_base]
     segments: [evening]
@@ -211,7 +213,7 @@
   urgent: true
   when:
     indoor: false
-    places: [wall]
+    place_kinds: [watch]  # 장소 종류 (12-300), 전에는 places: [wall]
     factions: [faction_c]
     zones: [c_base]
     segments: [night]
@@ -330,6 +332,8 @@
   title: 페인트 묻은 약통
   tags: [red_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [yard]
     indoor: false
     factions: [faction_c]
     zones: [c_base]
@@ -393,7 +397,7 @@
   tags: [world]
   when:
     indoor: true
-    places: [office]
+    place_kinds: [command]  # 장소 종류 (12-300), 전에는 places: [office]
     zones: [b_base]
     segments: [morning, day, evening]
     flags_all: [pr2_fever_given]
@@ -439,6 +443,8 @@
   title: 엎드릴 자리
   tags: [red_life]
   when:
+    # 장소 종류 (12-300): 글이 말하던 자리를 종류로
+    place_kinds: [watch]
     indoor: false
     factions: [faction_c]
     zones: [c_base]
@@ -504,7 +510,7 @@
   tags: [clinic_life]
   when:
     indoor: true
-    places: [pharmacy]
+    place_kinds: [store]  # 장소 종류 (12-300), 전에는 places: [pharmacy]
     factions: [faction_d]
     zones: [d_clinic]
     segments: [evening]

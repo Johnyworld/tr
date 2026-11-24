@@ -8,7 +8,7 @@
   tags: [world]
   when:
     zones: [e_market]
-    places: [stalls]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [stalls]
     indoor: false
     segments: [morning, day]
     debt_lte: { faction_e: 20 }

@@ -73,7 +73,7 @@
   tags: [occ_mechanic]
   when:
     zones: [water_plant]
-    places: [pump_room]
+    place_kinds: [work]  # 장소 종류 (12-300), 전에는 places: [pump_room]
     indoor: true
     segments: [dawn, evening]
     flags_none: [e_bearing_found, occ_mech_pump_done]
@@ -216,6 +216,8 @@
   title: 발전기냐 난로냐
   tags: [occ_mechanic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [work]
     own_territory: true
     segments: [evening]
     indoor: true
@@ -356,6 +358,8 @@
   title: 오늘의 총 열 자루
   tags: [occ_mechanic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [work]
     factions: [faction_c]
     own_territory: true
     segments: [morning, day]
@@ -418,6 +422,8 @@
   title: 견습생의 손
   tags: [occ_mechanic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [work]
     occupation_step_gte: 1
     own_territory: true
     segments: [morning, day]
@@ -471,6 +477,8 @@
   title: 무기고 장부의 빈칸
   tags: [occ_mechanic]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [store]
     occupation_step_gte: 2
     own_territory: true
     segments: [morning, evening]

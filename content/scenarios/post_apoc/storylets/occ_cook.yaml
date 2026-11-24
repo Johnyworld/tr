@@ -16,6 +16,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [dawn, morning]
@@ -113,6 +115,8 @@
   title: 한 국자만 더
   tags: [occ_cook]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, yard]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [morning, evening]
@@ -154,6 +158,8 @@
   title: 누가 봤다
   tags: [occ_cook]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
@@ -209,6 +215,8 @@
   repeatable: true
   cooldown_days: 8
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [evening, night]
@@ -263,6 +271,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [day, evening]
@@ -358,6 +368,8 @@
   title: 줄어드는 자루
   tags: [occ_cook]
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [mess, sleep]
     zones: [a_base, b_base, c_base, d_clinic, e_market, yeoul_isle]
     own_territory: true
     segments: [dawn, morning]
@@ -541,7 +553,7 @@
     own_territory: true
     segments: [morning, evening]
     indoor: true
-    places: [kitchen]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [kitchen]
     day_gte: 2
   cast:
     officer: { faction: own, ranks: [squad_leader, officer] }
@@ -646,7 +658,7 @@
     own_territory: true
     segments: [evening]
     indoor: true
-    places: [mess]
+    place_kinds: [mess]  # 장소 종류 (12-300), 전에는 places: [mess]
     day_gte: 3
     flags_none: [occ_cook_pine_line_done]
   cast:

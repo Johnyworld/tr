@@ -85,7 +85,7 @@
   when:
     bounty: true
     zones: [e_market]
-    places: [stalls]
+    place_kinds: [street]  # 장소 종류 (12-300), 전에는 places: [stalls]
     indoor: false
     segments: [day, evening]
   setup: 장터 천막 뒤, 주판을 튕기던 상단 중개인이 눈짓을 한다. "{bounty_by} 장부에서 네 이름 지워 줄 수 있어. 공짜는 아니고. 그쪽도 값을 받으면 조용해지거든."

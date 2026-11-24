@@ -64,6 +64,8 @@
   cooldown_days: 3
   weight: 1
   when:
+    # 장소 종류 (12-300)
+    place_kinds: [watch, gate]
     zone_infested_gte: 2
     zone_owner: [own]
     segments: [evening]

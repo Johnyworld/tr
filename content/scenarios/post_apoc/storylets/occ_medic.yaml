@@ -546,7 +546,7 @@
         - standing: 1
         - faction_morale: { faction: faction_b, delta: 1 }
         - relation: { who: runner, axis: trust, delta: 2 }
-        - belief: { fact: "버들마을 열병을 보러 갔다가 눌러앉았다. 이제 마을 의사다", source: seen }
+        - belief: { fact: "버들마을 열병을 보러 갔다가 눌러앉기로 했다. 마을 대표가 만나 보고 받아 주면 마을 의사가 된다", source: seen }
     - id: house_call
       label: 한 번만 가서 보고 온다
       check: first_aid

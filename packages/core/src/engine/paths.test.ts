@@ -43,13 +43,18 @@ describe("무소속이 무리에 들어간다", () => {
     cheat(w, "~storylet wl_red_toll");
     const r = w.executeTool("resolve_storylet", { choice_id: "join_red" });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    // 먼저 손님이다 (공통 규칙 22 받아들임, 12-308): 거점에서 우두머리가 권하면 그때 든다
+    expect(w.state().characters.player!.factionId).toBe("");
+    cheat(w, "~goto c_base");
+    cheat(w, "~storylet adm_offer");
+    expect(w.executeTool("resolve_storylet", { choice_id: "accept" }).ok).toBe(true);
     const player = w.state().characters.player!;
     expect(player.factionId).toBe("faction_c");
     const role = w.content.roles[w.state().roleId]!;
     expect(role.commander).toBeTruthy();
     expect(w.sceneForGm()).toContain("붉은연합의 문화 (규율: 군율)");
-    // 상관(이야기에 나온 약탈조장)이 장면에 있다. 다음 행동부터 그날의 임무를 받을 수 있다
-    expect(w.state().scene.present).toContain(role.commander);
+    // 상관을 불러 세우면 다음 행동부터 그날의 임무를 받을 수 있다
+    expect(w.executeTool("npc_presence", { npc_id: role.commander!, action: "enter" }).ok).toBe(true);
     expect(w.executeTool("take_action", act("조장 옆에 선다")).ok).toBe(true);
     const offer = w.state().offers?.templateIds[0];
     expect(offer).toBeTruthy();
@@ -61,6 +66,9 @@ describe("무소속이 무리에 들어간다", () => {
     const w = loner();
     cheat(w, "~storylet wl_red_toll");
     w.executeTool("resolve_storylet", { choice_id: "join_red" });
+    cheat(w, "~goto c_base");
+    cheat(w, "~storylet adm_offer");
+    w.executeTool("resolve_storylet", { choice_id: "accept" });
     cheat(w, "~kill me");
     const r = w.chooseNextCharacter("new:faction_c:grunt", "후임");
     expect(r.ok, r.ok ? "" : r.error).toBe(true);

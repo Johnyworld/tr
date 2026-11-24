@@ -1,3 +1,4 @@
+import { admissionLine } from "../rules/admission.ts";
 import { staunchHelper } from "../rules/company.ts";
 import { heldOf, heldSeenZone, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
@@ -205,7 +206,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["resolve", describeResolve(state, content).join("\n")],
     ["disaster", describeDisaster(content, state).join("\n")],
     ["storylet", [describeStoryletForGm(state, content), describeImprovSlotForGm(state, content)].filter(Boolean).join("\n")],
-    ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content), describeRequestForGm(state, content)].filter(Boolean).join("\n")],
+    ["missions", [admissionLine(state, content), describeMissionsForGm(state, { content }), describePolicyForGm(state, content), describeRequestForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],
     ["diplomacy", describeDiplomacyForGm(state, content)],
     ["culture", player.factionId ? [describeAccess(content, state.roleId), describeCultureForGm(content, player.factionId)].filter(Boolean).join("\n") : ""],

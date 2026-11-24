@@ -1409,6 +1409,10 @@ relation_gain: { window_days: 3, daily_cap: 1, heavy: [rescue, saved_life, squad
 # 전쟁 아님 + 신뢰 grudge_trust 이하: 이야기 배역·임무 짝·분대로 뽑지 않고, 마주쳐도 피한다
 crossed: { fond_affection: 4, grudge_trust: -4, harm_stops_before: critical }
 
+# 공통 규칙 22 받아들임 (12-308, 사용자 결정): 무소속이 무리에 들 때는 손님으로 먼저 들이고, 2~5시간 뒤 7~20시 사이에 그 거점에서 대표가 면담해 권한다.
+# 사양하면 손님으로 남고 3일 뒤에 다시 권한다 (청솔 정문에서 판정 하나로 곧장 분대원이 됐다)
+admission: { offer_after_hours: [2, 5], offer_hours: [7, 20], reoffer_days: 3 }
+
 storylet_pacing:
   # 이야기 사이 간격: 앞 이야기마다 4~8시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격. 12-306: 6~12시간이 거점 이야기 밀도의 천장이라 줄임, PT26~29)
   min_gap_hours: 4

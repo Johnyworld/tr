@@ -1,0 +1,66 @@
+# 받아들임 (공통 규칙 22, 12-308, 사용자 결정): 무소속은 무리에 들 때 먼저 손님으로 지내고, 그 거점에서 우두머리가 면담해 식구가 되겠느냐고 권한다.
+# 들일 때(join_faction) 2~5시간 뒤, 7~20시 사이에 그 거점에 있으면 열린다 (when.admission, 시나리오 admission). 사양하면 손님으로 남고 3일 뒤에 다시.
+# 우두머리가 없으면(죽었거나 붙잡혔거나 멀리 있어 오지 못하면) 하루 뒤부터 간부가 대신 묻는다.
+# 들어가는 자리(계급·직함·적응 기간)는 손님으로 들인 이야기가 정해 둔 것이고, 분대·상관은 받아들일 때 엔진이 정해 결과에 알린다.
+# 글에 장소 이름을 쓰지 않는다: 어느 무리의 거점에서나 열리는 이야기다 (공통 규칙 15 글자로 맞춘 장소)
+
+- id: adm_offer
+  title: 우두머리의 면담
+  wakes: false
+  essential: true
+  repeatable: true
+  tags: [world]
+  when:
+    factions: [none]
+    admission: due
+    indoor: "any"
+  cast:
+    head: { faction: zone_owner, ranks: [leader], afar: true }
+  setup: "{head:이/가} 직접 당신을 찾아왔다. 당신을 들인 사람들에게서 이야기를 들었는지, 당신의 얼굴과 짐을 한 번 훑어보고는 마주 앉자고 한다."
+  ai_direction: >-
+    이 무리의 우두머리가 손님을 직접 만나 본다. {head}의 성격과 말씨대로 쓴다. 어디서 왔는지, 무엇을 할 줄 아는지, 여기 머무는 동안 무엇을 보았는지 묻고,
+    이 무리가 지키는 것 한두 가지를 말한 뒤 식구가 되겠느냐고 권한다. 판정은 없다: 문을 연 것은 손님으로 들일 때 이미 정해졌다.
+    받아들이면 어느 자리(분대·일터)와 누구 밑으로 가는지는 엔진이 정해 결과에 알린다. 그 자리와 상관을 {head:이/가} 짧게 일러 준다 (결과에 적응 기간이 있으면 그것도).
+    사양해도 손님으로 묵게 두고, 며칠 뒤에 다시 묻겠다고 한다. 주인공이 가족이나 할 일을 먼저 찾겠다고 하면 그 뜻을 존중한다.
+  choices:
+    - id: accept
+      label: 식구가 되겠다고 한다
+      effects:
+        - admission: accept
+        - relation: { who: head, axis: trust, delta: 1, kind: admission_accepted }
+        - belief: { fact: "{head}의 권유를 받아들여 무리의 식구가 되었다", source: seen }
+    - id: decline
+      label: 아직은 손님으로 지내겠다고 한다
+      effects:
+        - admission: decline
+        - belief: { fact: "{head}의 권유를 사양했다. 손님으로는 그대로 묵어도 되고, 며칠 뒤에 다시 묻겠다고 했다", source: seen }
+
+# 우두머리가 오지 못하면 (죽었거나 붙잡혔거나 멀리 있다): 하루 뒤부터 간부가 대신 묻는다
+- id: adm_offer_deputy
+  title: 간부의 면담
+  wakes: false
+  essential: true
+  repeatable: true
+  tags: [world]
+  when:
+    factions: [none]
+    admission: overdue
+    indoor: "any"
+  cast:
+    head: { faction: zone_owner, ranks: [officer], comes: true }
+  setup: "{head:이/가} 당신을 찾아왔다. 우두머리 대신 왔다는 듯 짧게 인사하고, 당신의 얼굴과 짐을 한 번 훑어본 뒤 마주 앉자고 한다."
+  ai_direction: >-
+    우두머리가 손님을 만나지 못해 간부가 대신 만나 본다. {head}의 성격과 말씨대로 쓴다. 어디서 왔는지, 무엇을 할 줄 아는지 묻고 식구가 되겠느냐고 권한다.
+    판정은 없다. 받아들이면 어느 자리와 누구 밑으로 가는지는 엔진이 정해 결과에 알린다. 사양해도 손님으로 묵게 두고 며칠 뒤에 다시 묻겠다고 한다.
+  choices:
+    - id: accept
+      label: 식구가 되겠다고 한다
+      effects:
+        - admission: accept
+        - relation: { who: head, axis: trust, delta: 1, kind: admission_accepted }
+        - belief: { fact: "{head}의 권유를 받아들여 무리의 식구가 되었다", source: seen }
+    - id: decline
+      label: 아직은 손님으로 지내겠다고 한다
+      effects:
+        - admission: decline
+        - belief: { fact: "{head}의 권유를 사양했다. 손님으로는 그대로 묵어도 되고, 며칠 뒤에 다시 묻겠다고 했다", source: seen }

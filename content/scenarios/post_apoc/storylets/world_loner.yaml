@@ -16,7 +16,7 @@
   cast:
     leader: { ids: [a_taeho] }
   setup: 무너진 상가 골목을 돌자 총구 세 개가 동시에 이쪽을 향한다. 초록 완장. 맨 앞의 {leader:이/가} 손을 들어 총구를 내리게 하고 당신을 위아래로 훑는다. "혼자 다니나. 어디서 왔어."
-  ai_direction: 강태호의 순찰조는 구시가를 훑는 중이다. 떠돌이를 함부로 쏘지 않는 것이 청솔형제단의 원칙이다. 쓸 만해 보이면 거점에 데려가 보겠다고 한다. 받아들이면 분대원으로 받아 준다. 거짓말을 하면 눈치챈다.
+  ai_direction: 강태호의 순찰조는 구시가를 훑는 중이다. 떠돌이를 함부로 쏘지 않는 것이 청솔형제단의 원칙이다. 쓸 만해 보이면 거점에 데려가 보겠다고 한다. 받아들이면 거점에 손님으로 데려간다 (식구가 되는 것은 거점에서 대표를 만난 뒤다, 공통 규칙 22). 거짓말을 하면 눈치챈다.
   choices:
     - id: join
       label: 거점에 들어가겠다고 한다
@@ -25,10 +25,10 @@
         success:
           - join_faction: { faction: faction_a }
           - relation: { who: leader, axis: trust, delta: 1 }
-          - belief: { fact: 청솔형제단 순찰조를 따라 거점에 들어갔다. 강태호 분대에 배치됐다, source: seen }
+          - belief: { fact: "청솔형제단 순찰조가 거점에 손님으로 들여 주겠다고 했다. 식구로 받을지는 거점에서 대표가 만나 보고 정한다", source: seen }
         partial:
           - join_faction: { faction: faction_a }
-          - belief: { fact: "청솔형제단 거점에 들어갔지만, 무리 사람들은 아직 떠돌이를 믿지 않는 눈치다", source: seen }
+          - belief: { fact: "청솔형제단 거점에 손님으로 가게 됐지만, 무리 사람들은 아직 떠돌이를 믿지 않는 눈치다", source: seen }
         miss:
           - relation: { who: leader, axis: trust, delta: -1 }
           - belief: { fact: "강태호는 아직은 안 된다고 했다. 다음에 구시가에서 또 보면 그때 보자고", source: report }
@@ -74,8 +74,8 @@
       effects:
         - join_faction: { faction: faction_c }
         - relation: { who: boss, axis: respect, delta: 1 }
-        - deed: { summary: 떠돌이 신세를 버리고 붉은연합 약탈조에 들어갔다, tags: [enemy_sympathy], severity: 1, privacy: public }
-        - belief: { fact: 붉은연합 약탈 삼조에 들어갔다. 오늘부터 할당량에 묶인다, source: seen }
+        - deed: { summary: 떠돌이 신세를 버리고 붉은연합 약탈조를 따라갔다, tags: [enemy_sympathy], severity: 1, privacy: public }
+        - belief: { fact: "붉은연합 약탈 삼조를 따라가기로 했다. 거점에서 우두머리가 받아 주면 그날부터 할당량에 묶인다", source: seen }
     - id: run
       label: 무너진 건물 사이로 내달린다
       check: stealth
@@ -157,7 +157,7 @@
       effects:
         - join_faction: { faction: faction_d, rank: staff }
         - relation: { who: scav, axis: affection, delta: 1 }
-        - belief: { fact: 남민호를 따라 하얀매 진료소에 들어갔다. 수간호사 권정숙 밑에서 일을 배운다, source: seen }
+        - belief: { fact: "남민호를 따라 하얀매 진료소에 가기로 했다. 원장이 만나 보고 받아 주면 수간호사 권정숙 밑에서 일을 배운다", source: seen }
     - id: decline
       label: 아직은 혼자가 낫다고 한다
       effects:
@@ -227,7 +227,7 @@
       label: 상단에 들어간다
       effects:
         - join_faction: { faction: faction_e, title: 나루상단 짐꾼 }
-        - belief: { fact: 나루상단에 짐꾼으로 들어갔다. 일은 행상대장 주옥희를 통해 내려온다, source: seen }
+        - belief: { fact: "나루상단 짐꾼 자리를 받기로 했다. 상단 우두머리가 만나 보고 정식으로 받는다. 일은 행상대장 주옥희를 통해 내려온다", source: seen }
     - id: decline
       label: 매이는 건 싫다고 한다
       effects:
@@ -287,7 +287,7 @@
       effects:
         - join_faction: { faction: faction_b, title: 버들마을 경비병 }
         - relation: { who: guard, axis: trust, delta: 1 }
-        - belief: { fact: 버들마을 경비병이 됐다. 경비조장 배동철 밑에서 정문과 쪽문을 지킨다, source: seen }
+        - belief: { fact: "버들마을 경비를 맡겠다고 했다. 대표가 만나 보고 받아 주면 경비조장 배동철 밑에서 정문과 쪽문을 지킨다", source: seen }
     - id: decline
       label: 고맙지만 떠나겠다고 한다
       effects: []

@@ -1,3 +1,4 @@
+import { guestOf } from "../rules/admission.ts";
 import { sleptSince } from "../game/state.ts";
 import { atStake, NO_STAKES } from "../rules/stakes.ts";
 import { companyHere } from "../rules/company.ts";
@@ -327,7 +328,9 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     // 배급은 우리 땅에서 받는다: 자정에 우리 땅 밖이면 미루고, 그날 거점에 닿으면 받는다 (공통 규칙 11, 12-238: 성당 지하에서 밤을 보내도 배급을 먹은 셈이었다)
     // 격리는 남의 땅이어도 미루지 않는다
     const away = !captive && kind !== "quarantine" && hasAccess(content, state, "ration") && !!player()!.factionId && !onOwnLand(state);
-    const own = !captive && !away && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : undefined;
+    // 손님은 묵는 거점에서 밤을 넘기면 그 무리의 끼니를 나눠 받는다 (공통 규칙 22 받아들임, 12-308)
+    const host = !captive && !player()!.factionId && content.locations[state.playerZone ?? ""]?.kind === "base" ? guestOf(state) : null;
+    const own = !captive && !away && hasAccess(content, state, "ration") ? state.factions[player()!.factionId] : host ? state.factions[host] : undefined;
     // 쓸모 (G1): 무리의 문화가 일하지 않는 입을 줄이면, 임무를 끝내지 않은 날이 쌓인 사람의 배급이 한 단계 내려간다
     const idleRule = own ? content.factions[player()!.factionId!]?.culture?.idle_ration_days : undefined;
     const idle = !!idleRule && idleDays(state, state.playerId) >= idleRule;
@@ -349,7 +352,7 @@ export function runDailyBody(ctx: ToolContext, day: number = dayOf(ctx.store.get
     // 바닥보다 더 굶었으면(이야기 효과 등) 붙잡은 쪽이 바닥까지는 먹인다 (12-262, PT17 졸병: 기아에서 엿새 동안 내려오지 않았다)
     if (floor >= 0 && levelIndex(ctx, state, state.playerId, track.id) > floor) delta = floor - levelIndex(ctx, state, state.playerId, track.id);
     if ((captive || away) && hasAccess(content, state, "ration")) ctx.store.append({ type: "ration_missed", day });
-    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : away ? "우리 땅 밖에서 밤을 보내 배급을 못 받았다 (오늘 거점에 닿으면 받는다)" : !own ? "하루가 지나 배가 고프다" : lower ? `일하지 않아 배급이 줄었다 (${lower.label})` : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
+    if (push(changeCondition(ctx, state.playerId, body.hunger.track, delta, "daily", captive ? "갇힌 곳의 끼니" : away ? "우리 땅 밖에서 밤을 보내 배급을 못 받았다 (오늘 거점에 닿으면 받는다)" : !own ? "하루가 지나 배가 고프다" : host ? `손님 끼니 (${level?.label ?? ""})` : lower ? `일하지 않아 배급이 줄었다 (${lower.label})` : delta < 0 ? `배급 (${level?.label ?? ""})` : `배급 부족 (${level?.label ?? "없음"})`))) return displays;
     // 배가 고프면 지닌 먹을 것을 하나 먹는다 (플레이 테스트 11: 날생선을 지니고 자도 아침에 굶었다). 갇혀 있으면 빼앗긴 셈이다
     if (!captive && levelIndex(ctx, ctx.store.getState(), state.playerId, track.id) > 0) {
       const inv = player()!.inventory;

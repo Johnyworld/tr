@@ -1806,6 +1806,17 @@ export const scenarioFileSchema = z
      * 그 사람이 낸 상처는 harm_track의 harm_stops_before 단계 바로 앞에서 멈춘다. 전쟁이 아닌데 신뢰가 grudge_trust 이하면 곁에 두지 않는다
      */
     crossed: z.strictObject({ fond_affection: z.number().int(), grudge_trust: z.number().int(), harm_stops_before: id }).optional(),
+    /**
+     * 공통 규칙 22 받아들임 (rules/admission.ts, 12-308): 무소속이 무리에 들 때는 먼저 손님으로 들이고, offer_after_hours [하한, 상한] 시간 뒤
+     * offer_hours [시작, 끝) 시 사이에 그 거점에 있으면 대표가 면담해 권한다. 사양하면 reoffer_days 뒤에 다시. 없으면 바로 든다
+     */
+    admission: z
+      .strictObject({
+        offer_after_hours: z.tuple([z.number().min(0), z.number().min(0)]),
+        offer_hours: z.tuple([z.number().int().min(0).max(23), z.number().int().min(1).max(24)]),
+        reoffer_days: z.number().int().min(1),
+      })
+      .optional(),
     storylet_pacing: z
       .strictObject({
         min_gap_hours: z.number().min(0),

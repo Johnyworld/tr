@@ -263,10 +263,10 @@
         success:
           - join_faction: { faction: faction_b, title: 버들마을 경비병 }
           - deed: { summary: 떠돌이 무리를 버들마을로 데려가 함께 받아들여지게 했다, tags: [loyalty, mercy], severity: 2, privacy: public }
-          - belief: { fact: "버들마을이 떠돌이 무리를 받아 주었다. 대신 나는 경비병이 되어 정문과 쪽문을 지킨다", source: seen }
+          - belief: { fact: "버들마을이 떠돌이 무리를 받아 주었다. 나도 손님으로 들었고, 대표가 받아 주면 경비병이 되어 정문과 쪽문을 지킨다", source: seen }
         partial:
           - join_faction: { faction: faction_b, title: 버들마을 경비병 }
-          - belief: { fact: "버들마을은 아이들과 노인, 그리고 경비를 맡은 나만 받았다. 우두머리와 어른들은 담 밖 강변으로 돌아갔다", source: seen }
+          - belief: { fact: "버들마을은 아이들과 노인, 그리고 경비를 맡겠다는 나만 손님으로 받았다. 우두머리와 어른들은 담 밖 강변으로 돌아갔다", source: seen }
         miss:
           - set_flag: wa_band_settled
           - belief: { fact: 버들마을 정문은 열리지 않았다. 무리는 강변 배수로로 돌아가 물탱크 옆에 자리를 잡았다, source: seen }
@@ -522,7 +522,7 @@
       effects:
         - join_faction: { faction: faction_e, rank: staff, title: 장부 심부름꾼 }
         - relation: { who: clerk, axis: trust, delta: 1 }
-        - belief: { fact: 나루상단 장부 심부름꾼이 됐다. 일은 장부꾼 문소라를 통해 내려온다, source: seen }
+        - belief: { fact: "나루상단 장부 심부름꾼 자리를 받기로 했다. 상단 우두머리가 만나 보고 정식으로 받는다. 일은 장부꾼 문소라를 통해 내려온다", source: seen }
     - id: stay_free
       label: 공책 한 권으로 충분했다고, 계속 떠돌겠다고 한다
       effects:

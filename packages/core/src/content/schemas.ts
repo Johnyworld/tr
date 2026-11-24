@@ -779,6 +779,8 @@ export function createContentSchemas(s: Scenario) {
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
     /** grace_days: 들어온 뒤 이 날수 동안은 위험 임무(작전·적 땅)를 오늘의 일감에 내지 않는다 (12-239, 튜토리얼 "일주일은 적응 삼아") */
     z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional(), grace_days: z.number().int().min(1).max(30).optional() }) }),
+    /** 대표의 면담에서 (공통 규칙 22 받아들임, when.admission 이야기): accept 손님으로 든 무리에 들어간다 (들일 때 정한 자리로), decline 손님으로 남고 나중에 다시 권한다 */
+    z.strictObject({ admission: z.enum(["accept", "decline"]) }),
     /**
      * 배역 NPC의 몸 상태 ± (기획서 7.7). chance면 그 확률로만 (긁혔는데 정말 감염됐나는 코드가 굴린다). 부상 트랙은 안 된다.
      * 양수 = 나빠짐, 음수 = 나아짐
@@ -1039,6 +1041,11 @@ export function createContentSchemas(s: Scenario) {
          * (PT15 파트 7: 규율 회의가 "광장"·"교무실"에서만 열려 사흘 안에 열리지 못할 수 있었다)
          */
         summons: z.boolean().optional(),
+        /**
+         * 손님으로 든 무리의 대표가 면담할 때 (공통 규칙 22 받아들임, rules/admission.ts offerDue). 외딴곳에서도 열린다.
+         * due 면담 시각이 지났다, overdue 그 뒤로 하루가 지나도 면담이 없었다 (대표가 죽었거나 붙잡혔으면 간부가 대신)
+         */
+        admission: z.enum(["due", "overdue"]).optional(),
         /** 곁의 동행 수 (플레이 테스트 11: 동행이 있는데 "혼자 걷기엔 험해") */
         companions_lte: z.number().int().min(0).optional(),
         companions_gte: z.number().int().min(1).optional(),

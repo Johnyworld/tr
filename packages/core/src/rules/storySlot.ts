@@ -18,6 +18,7 @@
  */
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
+import { offerOpensAt } from "./admission.ts";
 import { heldOf, playerHeld } from "./held.ts";
 import { storyIndoor, storyPlaces } from "./place.ts";
 import { dayOf, MINUTES_PER_DAY, SEGMENT_START_HOUR, TIME_SEGMENTS, type GameTime } from "./time.ts";
@@ -176,6 +177,9 @@ export function slotOpensBetween(state: GameState, content: Content, from: GameT
     const since = playerHeld(state)?.since;
     if (since !== undefined) times.push(since + HELD_FIRST_STORY_MINUTES);
   }
+  // 대표의 면담 시각 (공통 규칙 22): 손님으로 지내며 쉬거나 기다리는 사이에 지나치지 않게
+  const offer = offerOpensAt(state, content, from);
+  if (offer !== null) times.push(offer);
   for (let day = dayOf(from) - 1; day <= dayOf(to); day++) for (const seg of TIME_SEGMENTS) times.push((day - 1) * MINUTES_PER_DAY + SEGMENT_START_HOUR[seg] * 60);
   return [...new Set(times.map((t) => Math.ceil(t)))].filter((t) => t > from && t < to).sort((a, b) => a - b);
 }

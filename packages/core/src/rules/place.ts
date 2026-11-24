@@ -10,6 +10,7 @@
  * - 처음엔 수색표·땅 주인·전투·잠입은 구역 단위 그대로
  * 지금 장소와 즉흥 장소는 이 모듈로만 읽는다 (rules/guards.test.ts).
  */
+import { guestOf } from "./admission.ts";
 import type { Content } from "../content/schemas.ts";
 import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
@@ -806,6 +807,8 @@ export function welcomedAsGuest(content: Content, state: GameState): boolean {
   if (content.locations[zone]?.kind !== "base") return false;
   // 몰래 숨어든 사람은 손님이 아니다 (플레이 테스트 13)
   if (state.infiltration) return false;
+  // 손님으로 들인 무리는 태도와 상관없이 재워 준다 (공통 규칙 22 받아들임)
+  if (guestOf(state) === owner) return true;
   const regard = me.factionId ? disposition(content, owner, me.factionId, state) : content.scenario.helpless?.prey_on_strangers.includes(owner) ? -3 : 0;
   return regard >= shelter.guests;
 }

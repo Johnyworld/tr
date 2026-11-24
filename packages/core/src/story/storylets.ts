@@ -26,6 +26,7 @@ import { activeMissionOf, atMissionPlace, commanderOf, idleDays } from "../game/
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
+import { offerDue } from "../rules/admission.ts";
 import { harmTrack } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
 import { fill, josa, type JosaPair } from "../text.ts";
@@ -307,7 +308,7 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   // (PT21 섬: 여울섬 규율 회의 disc_y_council이 factions: [faction_y]인데 zones가 없어 섬에서 열리지 않았다)
   const here = state.playerZone ? content.locations[state.playerZone] : undefined;
   const islanders = !!here?.owner && !!w.factions?.length && w.factions.every((f) => f === here.owner);
-  if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id) && !islanders) return false;
+  if (here?.isolated && storylet.tags.includes(WORLD_TAG) && !w.zones?.includes(here.id) && !islanders && !w.admission) return false;
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
   // 다짐을 건네는 이야기는 다짐이 없을 때만 (12-199: 품은 다짐은 덮어쓰지 않는다)
@@ -384,6 +385,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   if (indoor !== undefined && !storyPlaceFits(state, content, indoor, { ...w, indoor }, storyText(storylet))) return false;
   // 규율 회의 (12-257, 공통 규칙 3)
   if (w.own_offense && !ownOffense(state, content, at)) return false;
+  // 받아들임 (12-308, 공통 규칙 22): 손님으로 든 무리의 거점에서, 면담 시각이 지나 시간대 안일 때만
+  if (w.admission && !offerDue(state, content, at, w.admission === "overdue" ? MINUTES_PER_DAY : 0)) return false;
   if (w.after_storylet) {
     const last = state.storyletLog[w.after_storylet.id]?.lastFiredAt;
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;

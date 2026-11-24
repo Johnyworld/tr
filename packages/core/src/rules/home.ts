@@ -9,6 +9,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { tiesOf } from "../game/ties.ts";
+import { guestOf } from "./admission.ts";
 
 type Zones = { zones: Record<string, { owner: string | null } | undefined> };
 
@@ -67,5 +68,7 @@ export function hostileLand(state: GameState, content: Content, zone: string | n
   const mine = state.characters[state.playerId]?.factionId ?? null;
   if (!owner || owner === mine) return false;
   if (mine) return (state.factions[owner]?.disposition?.[mine] ?? 0) < 0;
+  // 손님으로 들인 무리의 땅은 적 땅이 아니다 (공통 규칙 22 받아들임: 약탈조를 따라간 떠돌이가 거점에서 경보를 울렸다)
+  if (guestOf(state) === owner) return false;
   return !!content.scenario.helpless?.prey_on_strangers.includes(owner) || (state.bounties ?? []).includes(owner);
 }

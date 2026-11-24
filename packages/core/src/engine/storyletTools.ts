@@ -5,6 +5,7 @@ import { settingBrokeThisTurn } from "../rules/self.ts";
 import { blameSuspended } from "../rules/blame.ts";
 import { leaveMissionsBehind } from "./missionTools.ts";
 import { heldOf, pausedWhileHeld, heldSeenTopic } from "../rules/held.ts";
+import { admissionOf, admitsAsGuest, firstOfferAt, reofferAt } from "../rules/admission.ts";
 import { bleedFromHarm } from "./bleeding.ts";
 import { equippedItem, wearItem } from "./gear.ts";
 import { carriedCount, itemCarriers } from "../game/companions.ts";
@@ -1059,34 +1060,30 @@ export function applyEffect(
   }
   if ("join_faction" in effect) {
     const player = state.characters[playerId]!;
-    const { faction, rank, title } = effect.join_faction;
+    const { faction, rank, title, grace_days } = effect.join_faction;
     if (!content.factions[faction] || player.factionId === faction) return {};
-    const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
-    // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
-    if (heldOf(player)) releasePlayer(ctx, heldOf(player)!.by === faction);
-    const made = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
-    // 새로 든 사람은 무리 사람들 이름을 아직 모른다: 들어가며 이름을 듣는 상관만 서로 안다. 나머지는 만나서 이름을 듣는다 (learn_name).
-    // 처음부터 그 무리에 있던 시나리오·계승과 다르다 (방문자가 무리에 든 뒤 처음 본 의무실 보조가 이름으로 나왔다)
-    const role = { ...made, known_npcs: made.commander ? [made.commander] : [] };
-    // 예전 무리의 임무는 거기서 끝난다: 새 무리 임무를 막거나 새 무리 규율로 벌하지 않게 (플레이 테스트 14, 방문자 T51~T63)
-    const left = leaveMissionsBehind(ctx);
-    // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
-    const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
-    let no = store.getState().nextBeliefNo;
-    const beliefs = (preset?.beliefs ?? []).map((b) => ({ id: `b_${no++}`, fact: b.fact, source: b.source === "seen" ? ("report" as const) : b.source, accuracy: b.accuracy, learnedAt: state.time }));
-    const grace = effect.join_faction.grace_days;
-    store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs, ...(grace ? { graceUntil: state.time + grace * MINUTES_PER_DAY } : {}) });
-    const commander = role.commander ? state.characters[role.commander]?.name : undefined;
-    // 들어가며 처음 알게 된 이름이면 그렇다고 (플레이 테스트 12: 이름 모르던 분대장이 바로 "상관은 강태호"로 나왔다)
-    const newName = !!role.commander && !knowsName(state, state.playerId, role.commander);
-    return {
-      line:
-        `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}${newName ? " (이제 이름을 안다)" : ""}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
-        (player.factionId ? ` 전에 있던 무리(${content.factions[player.factionId]?.name ?? player.factionId})의 사람들은 이제 남이다.` : "") +
-        (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : "") +
-        left.lines.map((l) => ` ${l}`).join(""),
-      display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
-    };
+    // 무소속은 먼저 손님으로 들인다 (공통 규칙 22 받아들임, 12-308): 대표의 면담에서 권하면 그때 든다
+    if (admitsAsGuest(state, content)) {
+      const offerAt = firstOfferAt(content, state.time, ctx.rng);
+      store.append({ type: "player_admitted", factionId: faction, ...(rank ? { rank } : {}), ...(title ? { title } : {}), ...(grace_days ? { graceDays: grace_days } : {}), offerAt });
+      const base = baseOfNow(store.getState(), content, faction);
+      const there = !!base && base === store.getState().playerZone;
+      return {
+        line:
+          `${content.factions[faction]!.name}에 손님으로 들었다. 아직 식구는 아니다 (분대·임무가 없다): 이 무리 땅에서는 재워 주고, 거점에서 밤을 넘기면 끼니를 나눠 준다. ` +
+          (there || !base ? "몇 시간 안에 우두머리가 직접 만나 보고 식구가 되겠느냐고 물을 것이다 (이야기가 연다)." : `거점(${content.locations[base]?.name ?? base})에 가 있으면 우두머리가 직접 만나 보고 식구가 되겠느냐고 물을 것이다 (이야기가 연다).`),
+      };
+    }
+    return joinFactionNow(ctx, faction, rank, title, grace_days);
+  }
+  if ("admission" in effect) {
+    const a = admissionOf(state);
+    if (!a) return {};
+    if (effect.admission === "decline") {
+      store.append({ type: "admission_deferred", offerAt: reofferAt(content, state.time) });
+      return { line: `${content.factions[a.factionId]?.name ?? a.factionId}에 들어오라는 권유를 사양했다. 손님으로는 그대로 묵을 수 있고, 며칠 뒤에 대표가 다시 물을 것이다.` };
+    }
+    return joinFactionNow(ctx, a.factionId, a.rank, a.title, a.graceDays);
   }
   if ("companion_join" in effect) {
     const id = whoOf(ctx, effect.companion_join.who, cast);
@@ -1399,4 +1396,40 @@ function factionRef(state: GameState, x: string): string {
   if (x === "captor") return heldOf(state.characters[state.playerId])?.by ?? "";
   if (x === "bounty") return state.bounties[0] ?? "";
   return x;
+}
+
+/** 주인공이 무리에 들어간다 (무소속이면 가입, 무리에 있으면 옮김, 12-21). 손님의 받아들임(공통 규칙 22)도 여기로 */
+function joinFactionNow(ctx: ToolContext, faction: string, rank: string | undefined, title: string | undefined, graceDays: number | undefined): { line?: string; display?: ToolDisplayEvent } {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const playerId = state.playerId;
+  const player = state.characters[playerId]!;
+  if (!content.factions[faction] || player.factionId === faction) return {};
+  const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
+  // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
+  if (heldOf(player)) releasePlayer(ctx, heldOf(player)!.by === faction);
+  const made = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
+  // 새로 든 사람은 무리 사람들 이름을 아직 모른다: 들어가며 이름을 듣는 상관만 서로 안다. 나머지는 만나서 이름을 듣는다 (learn_name).
+  // 처음부터 그 무리에 있던 시나리오·계승과 다르다 (방문자가 무리에 든 뒤 처음 본 의무실 보조가 이름으로 나왔다)
+  const role = { ...made, known_npcs: made.commander ? [made.commander] : [] };
+  // 예전 무리의 임무는 거기서 끝난다: 새 무리 임무를 막거나 새 무리 규율로 벌하지 않게 (플레이 테스트 14, 방문자 T51~T63)
+  const left = leaveMissionsBehind(ctx);
+  // 그 무리에서 처음 듣는 사정: 같은 계급 시나리오의 시작 지식 (다른 계급의 지식은 주지 않는다)
+  const preset = role.beliefs_preset ? content.beliefs[role.beliefs_preset] : undefined;
+  let no = store.getState().nextBeliefNo;
+  const beliefs = (preset?.beliefs ?? []).map((b) => ({ id: `b_${no++}`, fact: b.fact, source: b.source === "seen" ? ("report" as const) : b.source, accuracy: b.accuracy, learnedAt: state.time }));
+  const grace = graceDays;
+  store.append({ type: "player_joined_faction", factionId: faction, rank: role.rank, role, beliefs, ...(grace ? { graceUntil: state.time + grace * MINUTES_PER_DAY } : {}) });
+  const commander = role.commander ? state.characters[role.commander]?.name : undefined;
+  // 들어가며 처음 알게 된 이름이면 그렇다고 (플레이 테스트 12: 이름 모르던 분대장이 바로 "상관은 강태호"로 나왔다)
+  const newName = !!role.commander && !knowsName(state, state.playerId, role.commander);
+  return {
+    line:
+      `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}${newName ? " (이제 이름을 안다)" : ""}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
+      (grace ? ` 처음 ${grace}일은 적응 기간이라 위험한 임무를 맡기지 않는다.` : "") +
+      (player.factionId ? ` 전에 있던 무리(${content.factions[player.factionId]?.name ?? player.factionId})의 사람들은 이제 남이다.` : "") +
+      (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : "") +
+      left.lines.map((l) => ` ${l}`).join(""),
+    display: { type: "promotion", name: player.name, fromLabel: from, toLabel: role.label },
+  };
 }

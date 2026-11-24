@@ -1,3 +1,5 @@
+import { admissionOf } from "../rules/admission.ts";
+import { baseOfNow } from "../rules/home.ts";
 import { isIncapacitated } from "../engine/body.ts";
 import { heldOf } from "../rules/held.ts";
 import { remainsHere } from "../engine/remains.ts";
@@ -323,7 +325,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       continue;
     }
     const cold = content.scenario.body?.cold?.track;
-    const home = Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id;
+    // 손님으로 든 무리가 있으면 그 거점이 집이다: GM처럼 그리로 가서 우두머리의 면담을 기다린다 (공통 규칙 22)
+    const guestOfFaction = admissionOf(s)?.factionId;
+    const home = Object.values(content.locations).find((l) => l.owner === me.factionId && l.kind === "base")?.id ?? (guestOfFaction ? (baseOfNow(s, content, guestOfFaction) ?? undefined) : undefined);
     // 목이 마르고 물이 넉넉한 곳이면 마신다 (12-97)
     const thirst = content.scenario.body?.thirst?.track;
     const water = waterHere(content, s);
@@ -505,6 +509,12 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       continue;
     }
 
+    // 손님이면 GM처럼 그 거점으로 가서 기다린다: 우두머리의 면담이 열리게 (공통 규칙 22)
+    if (guestOfFaction && home && s.playerZone && !s.battle) {
+      const step = s.playerZone !== home ? nextStep(content, s.playerZone, home) : null;
+      tool("take_action", step ? { ...base, intent: "손님으로 든 거점으로 간다", move_to: step } : { ...base, intent: "거점에서 기다린다", activity: { kind: "wait", until: null, hours: 2 } });
+      continue;
+    }
     const roll = rng();
     let out;
     if (roll < 0.2 && s.playerZone) {

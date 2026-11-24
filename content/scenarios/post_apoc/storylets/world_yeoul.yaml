@@ -158,7 +158,7 @@
           - set_flag: y_member
           - deed: { summary: 무리를 떠나 여울섬에 받아들여졌다, tags: [betrayal], severity: 1, privacy: semi_private }
           - join_faction: { faction: faction_y, rank: grunt, title: 여울섬 새 식구 }
-          - belief: { fact: "여울섬 입도 심사를 통과했다. 해안 경비조에서 일한다. 식당에 날마다 국이 나온다", source: seen }
+          - belief: { fact: "여울섬 입도 심사를 통과했다. 해안 경비조에서 일하게 된다. 식당에 날마다 국이 나온다", source: seen }
         partial:
           - set_flag: y_landed
           - set_flag: y_member

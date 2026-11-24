@@ -42,7 +42,8 @@ import { startingSkills } from "./creation.ts";
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
 // 109: 길목 다섯 (12-302). 구역과 맞닿음이 바뀌어 이전 세이브는 보관함으로
-export const SAVE_SCHEMA_VERSION = 109;
+// 110: 받아들임·들어갈 자리 (12-308~311). 손님·자리·복무 시작 상태와 주민 계급 id(resident)가 바뀌어 이전 세이브는 보관함으로
+export const SAVE_SCHEMA_VERSION = 110;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -333,6 +334,14 @@ export function createGameSchemas(s: Scenario) {
     exposedAt: z.record(z.string(), z.number().int()).default({}),
     /** 이 시각까지는 위험 임무를 내지 않는다 (무리에 막 들어온 유예, 12-239) */
     missionGraceUntil: z.number().int().nullable().default(null),
+    /**
+     * 손님으로 들인 무리 (공통 규칙 22 받아들임, rules/admission.ts): 무소속이 무리에 들 때는 먼저 손님으로 지내고,
+     * offerAt 뒤 그 거점에서 대표가 면담해 권하면 그때 들어간다. rank·title·graceDays는 들일 때 이야기가 정한 자리
+     */
+    admission: z
+      .strictObject({ factionId: z.string(), rank: z.string().optional(), title: z.string().optional(), graceDays: z.number().int().optional(), since: z.number().int(), offerAt: z.number().int(), offers: z.number().int().min(0) })
+      .nullable()
+      .default(null),
     /** 세계의 일이 죽게 할 뻔했으나 한 번 봐준 공들인 관계 (12-242). 두 번째는 죽을 수 있다 */
     sparedOnce: z.array(z.string()).default([]),
     /** 설정을 거스른 굴림 (설정 id → 자리·시각·이겨 냈나, 공통 규칙 16). 같은 장면에서 같은 설정은 한 번 */
@@ -953,6 +962,10 @@ export function createGameSchemas(s: Scenario) {
      * beliefs: 그 무리에서 처음 듣는 사정 (같은 계급 시나리오의 시작 지식)
      */
     z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema, beliefs: z.array(beliefSchema).default([]), graceUntil: z.number().int().optional() }),
+    /** 무소속 주인공을 손님으로 들였다 (공통 규칙 22): 대표의 면담은 offerAt 뒤. rank·title·graceDays는 받아들일 때 쓴다 */
+    z.strictObject({ type: z.literal("player_admitted"), factionId: z.string(), rank: z.string().optional(), title: z.string().optional(), graceDays: z.number().int().optional(), offerAt: z.number().int() }),
+    /** 대표의 권유를 사양했다: 손님으로 남고 offerAt에 다시 권한다 (공통 규칙 22) */
+    z.strictObject({ type: z.literal("admission_deferred"), offerAt: z.number().int() }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     /** 낡은 믿음을 지운다 (PT15 튜토리얼: 가족을 다시 만났는데 "어디 있는지 모른다"가 남았다) */
@@ -1339,6 +1352,7 @@ export const EMPTY_STATE: GameState = {
   cargo: {},
   exposedAt: {},
   missionGraceUntil: null,
+  admission: null,
   sparedOnce: [],
   settingRolls: {},
   secretKnownBy: {},
@@ -1518,12 +1532,19 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
       return next;
     }
+    case "player_admitted":
+      next.admission = { factionId: event.factionId, ...(event.rank ? { rank: event.rank } : {}), ...(event.title ? { title: event.title } : {}), ...(event.graceDays ? { graceDays: event.graceDays } : {}), since: state.time, offerAt: event.offerAt, offers: 0 };
+      return next;
+    case "admission_deferred":
+      if (next.admission) next.admission = { ...next.admission, offerAt: event.offerAt, offers: next.admission.offers + 1 };
+      return next;
     case "player_joined_faction": {
       const player = mustGet(next.characters, next.playerId, "캐릭터");
       if (player.factionId === event.factionId) throw new Error("이미 그 무리에 속해 있습니다.");
       player.factionId = event.factionId;
       player.rank = event.rank;
       next.missionGraceUntil = event.graceUntil ?? null;
+      next.admission = null;
       next.roleId = event.role.id;
       next.customRole = structuredClone(event.role);
       // 옛 분대·회의는 옛 무리의 것이다
@@ -2586,6 +2607,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.playerId = successor.id;
       next.runStartedAt = state.time;
       next.runStartZone = next.playerZone;
+      next.admission = null;
       // 앞 주인공이 잃은 상관의 믿음은 물려받지 않는다 (플레이 테스트 12: 계승한 주인공의 진급이 막혔다)
       next.trustDroppedAt = {};
       next.trustDroppedWhy = {};

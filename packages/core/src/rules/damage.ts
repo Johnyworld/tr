@@ -14,6 +14,7 @@ import { armorAbsorb } from "../engine/gear.ts";
 import { resistSteps } from "../engine/growth.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { shareHarmWith } from "./company.ts";
+import { changeRelation } from "./regard.ts";
 
 /** 버팀 (12-109): 레벨만큼 단계를 피한다. 피했으면 까닭 줄 */
 export function resist(ctx: ToolContext, who: string, steps: number): { steps: number; line: string | null } {
@@ -81,7 +82,7 @@ export function wrongedResentment(ctx: ToolContext, targetId: string | null, tag
   const target = targetId ? state.characters[targetId] : undefined;
   const offense = ctx.content.scenario.offense?.tags ?? [];
   if (!target || !targetId || !seen || target.dead || targetId === state.playerId || isCreature(ctx.content, target) || !tags.some((t) => offense.includes(t as never))) return null;
-  ctx.store.append({ type: "relation_changed", from: targetId, to: state.playerId, delta: { ...WRONGED_RESENTMENT, respect: 0 }, reason: "당했다" });
+  changeRelation(ctx, { from: targetId, to: state.playerId, delta: { ...WRONGED_RESENTMENT, respect: 0 }, reason: "당했다", kind: "harm" });
   return `${josa(playerCalls(state, ctx.content, targetId), "은/는")} 당한 일로 주인공을 원망한다 (호감 ${WRONGED_RESENTMENT.affection}, 신뢰 ${WRONGED_RESENTMENT.trust}).`;
 }
 
@@ -94,6 +95,6 @@ export function hurtResentment(ctx: ToolContext, targetId: string, steps: number
   const target = state.characters[targetId];
   if (!target || target.dead || steps <= 0 || targetId === state.playerId || isCreature(ctx.content, target)) return null;
   const delta = { trust: HURT_RESENTMENT.trust * steps, affection: HURT_RESENTMENT.affection * steps, respect: 0 };
-  ctx.store.append({ type: "relation_changed", from: targetId, to: state.playerId, delta, reason: "다치게 했다" });
+  changeRelation(ctx, { from: targetId, to: state.playerId, delta, reason: "다치게 했다", kind: "harm" });
   return `${josa(playerCalls(state, ctx.content, targetId), "은/는")} 다친 만큼 주인공을 원망한다 (호감 ${delta.affection}, 신뢰 ${delta.trust}).`;
 }

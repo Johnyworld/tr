@@ -12,6 +12,7 @@ import { zoneOf } from "../rules/place.ts";
 import { settingOf } from "../game/settings.ts";
 import { ownedBy } from "../rules/home.ts";
 import { templateKind } from "../game/kinds.ts";
+import { startRelation } from "../rules/regard.ts";
 
 /**
  * 배경 부품을 세이브의 역사로 남긴다 (기획서 12.6). 새 세계를 만들 때 한 번.
@@ -63,7 +64,7 @@ function applyHistoryParts(ctx: ToolContext, parts: readonly HistoryPart[]): { p
       } else if (!knows(me, person)) store.append({ type: "name_learned", characterId: me, targetId: person });
       if (part.kind === "enemy" && part.knows_you) {
         if (!knows(person, me)) store.append({ type: "name_learned", characterId: person, targetId: me });
-        store.append({ type: "relation_changed", from: person, to: me, delta: { trust: -4, affection: -2, respect: 0 }, reason: "지난 일 (배경)" });
+        startRelation(ctx, { from: person, to: me, delta: { trust: -4, affection: -2, respect: 0 }, reason: "지난 일 (배경)" });
       }
     }
     if (part.kind === "kin_alive") {
@@ -205,8 +206,8 @@ export function addStartFamily(ctx: ToolContext, role: RoleContent | undefined):
     // 가족은 서로 이름을 알고, 서로 아낀다 (거의 가장 깊은 사이)
     store.append({ type: "name_learned", characterId: s.playerId, targetId: id });
     store.append({ type: "name_learned", characterId: id, targetId: s.playerId });
-    store.append({ type: "relation_changed", from: id, to: s.playerId, delta: family.bond, reason: "가족", known: true });
-    store.append({ type: "relation_changed", from: s.playerId, to: id, delta: family.bond, reason: "가족" });
+    startRelation(ctx, { from: id, to: s.playerId, delta: family.bond, reason: "가족", known: true });
+    startRelation(ctx, { from: s.playerId, to: id, delta: family.bond, reason: "가족" });
     for (const other of ids) {
       store.append({ type: "name_learned", characterId: id, targetId: other });
       store.append({ type: "name_learned", characterId: other, targetId: id });
@@ -245,8 +246,7 @@ export function applyStartBonds(ctx: ToolContext, role: RoleContent | undefined)
   for (const id of b.ids) {
     if (!store.getState().characters[id]) continue;
     const extra = id === b.best ? 2 : 0;
-    store.append({
-      type: "relation_changed",
+    startRelation(ctx, {
       from: id,
       to: me,
       delta: { trust: roll(b.trust) + extra, affection: roll(b.affection) + extra, respect: roll(b.respect) + extra },

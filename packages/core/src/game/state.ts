@@ -13,6 +13,7 @@ import { josa } from "../text.ts";
 import type { Rng } from "../rng.ts";
 import { CHECK_OUTCOMES, difficultySchema } from "../rules/check.ts";
 import { harmSeveritySchema } from "../rules/harm.ts";
+import { deedKind } from "../rules/regard.ts";
 import { activitySchema, dayOf, MINUTES_PER_DAY, segmentEnd, START_TIME } from "../rules/time.ts";
 import { interruptSchema } from "../sim/fastForward.ts";
 import type { Content, NpcContent, RoleContent } from "../content/schemas.ts";
@@ -26,6 +27,7 @@ import {
   NEUTRAL_RELATION,
   relationDeltaSchema,
   relationSchema,
+  type RelationDelta,
 } from "./reputation.ts";
 import { createCharacterSchema, inventorySchema, type Character, type Inventory } from "./character.ts";
 import { startingSkills } from "./creation.ts";
@@ -39,7 +41,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 106;
+export const SAVE_SCHEMA_VERSION = 107;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -639,10 +641,12 @@ export function createGameSchemas(s: Scenario) {
     trustDroppedAt: z.record(z.string(), z.number().int()).default({}),
     /** 그 까닭 (공통 규칙 9, 플레이 테스트 13: 무엇 때문에 진급이 막혔는지 몰랐다) */
     trustDroppedWhy: z.record(z.string(), z.string()).default({}),
-    /** 오늘 행적으로 오른 관계 (플레이 테스트 11, C6): 한 사람이 한 사람을 보는 축마다 하루 +1까지. day가 바뀌면 다시 센다 */
+    /** 오늘 오른 관계 (공통 규칙 19, rules/regard.ts): 한 사람이 한 사람을 보는 축마다. day가 바뀌면 다시 센다 */
     regardGained: z
       .strictObject({ day: z.number().int(), by: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number()))) })
       .default({ day: -1, by: {} }),
+    /** 까닭별 마지막 오름 시각 (공통 규칙 19): from → to → "까닭|축" → 시각 */
+    regardLast: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.number().int()))).default({}),
     /** 의식불명 중 곁의 사람이 할 일을 정한 때 (12-90). 정신이 들면 비운다. 한 번 쓰러질 때 한 번만 정한다 */
     helplessAt: z.number().int().nullable().default(null),
     /** 회복 기준 시각: 마지막으로 다치거나 나은 때, 마지막으로 치료사에게 치료받은 날 */
@@ -1102,7 +1106,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("flag_cleared"), characterId: z.string(), flag: z.string() }),
     /** 스토리렛 효과 등으로 관계가 바뀌었다 (from이 to를 보는 관계) */
     /** known: 주인공이 장면 밖에서도 그 태도를 안다 (가족·오랜 동료처럼 원래 알던 사이) */
-    z.strictObject({ type: z.literal("relation_changed"), from: z.string(), to: z.string(), delta: relationDeltaSchema, reason: z.string(), known: z.boolean().optional() }),
+    /** kind: 까닭 열쇠 (공통 규칙 19, rules/regard.ts). 예전 세이브에는 없다 */
+    z.strictObject({ type: z.literal("relation_changed"), from: z.string(), to: z.string(), delta: relationDeltaSchema, reason: z.string(), kind: z.string().optional(), known: z.boolean().optional() }),
     z.strictObject({ type: z.literal("merit_awarded"), characterId: z.string(), delta: z.number().int(), reason: z.string() }),
     /** 경험치를 얻었다. level은 얻은 뒤의 레벨 (코드가 계산), source가 check면 하루 상한에 센다 */
     z.strictObject({
@@ -1396,6 +1401,7 @@ export const EMPTY_STATE: GameState = {
   missedRationDay: null,
   lastFreedAt: null,
   regardGained: { day: -1, by: {} },
+  regardLast: {},
   trustDroppedAt: {},
   trustDroppedWhy: {},
   disobedienceAt: {},
@@ -2356,12 +2362,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         const why = dayOf(deed.at) === dayOf(state.time) ? deed.summary : `${dayOf(deed.at)}일차의 일 — ${deed.summary}`;
         next.trustDroppedWhy = { ...next.trustDroppedWhy, [event.npcId]: why };
       }
-      {
-        const day = dayOf(state.time);
-        if (next.regardGained.day !== day) next.regardGained = { day, by: {} };
-        const g = ((next.regardGained.by[event.npcId] ??= {})[deed.actorId] ??= {});
-        for (const [axis, v] of Object.entries(event.delta)) if (v > 0) g[axis] = (g[axis] ?? 0) + v;
-      }
+      recordRegard(next, state.time, event.npcId, deed.actorId, deedKind(deed), event.delta);
       if (next.scene.present.includes(event.npcId)) perceive(next, event.npcId);
       break;
     }
@@ -2680,6 +2681,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       }
       const toward = (next.relations[event.from] ??= {});
       toward[event.to] = applyRelationDelta(toward[event.to] ?? NEUTRAL_RELATION, event.delta);
+      if (event.kind && event.kind !== "start") recordRegard(next, state.time, event.from, event.to, event.kind, event.delta);
       if (event.to === state.playerId && (event.known || next.scene.present.includes(event.from))) perceive(next, event.from);
       break;
     }
@@ -2874,6 +2876,20 @@ function acquaint(state: GameState, a: string, b: string, withName: boolean) {
   if (!withName) return;
   const known = (state.known[a] ??= []);
   if (!known.includes(b)) known.push(b);
+}
+
+/** 오른 관계를 센다 (공통 규칙 19, rules/regard.ts): 오늘 오른 양과 까닭별 마지막 시각 */
+function recordRegard(next: GameState, time: number, from: string, to: string, kind: string, delta: RelationDelta) {
+  const up = (["trust", "affection", "respect"] as const).filter((a) => delta[a] > 0);
+  if (!up.length) return;
+  const day = dayOf(time);
+  if (next.regardGained.day !== day) next.regardGained = { day, by: {} };
+  const g = ((next.regardGained.by[from] ??= {})[to] ??= {});
+  const last = ((next.regardLast[from] ??= {})[to] ??= {});
+  for (const a of up) {
+    g[a] = (g[a] ?? 0) + delta[a];
+    last[`${kind}|${a}`] = time;
+  }
 }
 
 function perceive(state: GameState, npcId: string) {

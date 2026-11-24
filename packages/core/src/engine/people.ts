@@ -19,6 +19,7 @@ import type { Rng } from "../rng.ts";
 import { josa } from "../text.ts";
 import { personaOf } from "./persona.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 인물 사이의 관계와 자라는 인물 (기획서 7.10).
@@ -189,7 +190,7 @@ export function onPersonDeath(ctx: ToolContext, id: string, by: string): void {
     const present = state.scene.present.includes(t.other);
     const learned = present || witnesses.length > 0 || ctx.rng() < VENDETTA_TRACE_CHANCE;
     if (!learned) continue;
-    store.append({ type: "relation_changed", from: t.other, to: state.playerId, delta: { trust: -3, affection: family ? -3 : -2, respect: 0 }, reason: present ? `${josa(dead, "을/를")} 눈앞에서 죽였다` : `${josa(dead, "을/를")} 죽였다고 들었다` });
+    changeRelation(ctx, { from: t.other, to: state.playerId, delta: { trust: -3, affection: family ? -3 : -2, respect: 0 }, reason: present ? `${josa(dead, "을/를")} 눈앞에서 죽였다` : `${josa(dead, "을/를")} 죽였다고 들었다`, kind: "death" });
     // 가족·연인·친구는 복수를 다짐한다
     if (family || t.kind === "lover" || t.kind === "friend") store.append({ type: "vendetta_sworn", avenger: t.other, victim: id });
   }
@@ -274,7 +275,7 @@ function spawnAvenger(ctx: ToolContext, deadId: string, witnessed: boolean): voi
   store.append({ type: "extra_spawned", character: avenger, unseen: true });
   promoteExtra(ctx, id);
   store.append({ type: "ties_generated", ties: [{ a: id, b: deadId, kind: pick.kind, secret: null }] });
-  store.append({ type: "relation_changed", from: id, to: state.playerId, delta: { trust: -3, affection: -3, respect: 0 }, reason: `${josa(TIE_LABELS[TIE_INVERSE[pick.kind]], "을/를")} 죽였다` });
+  changeRelation(ctx, { from: id, to: state.playerId, delta: { trust: -3, affection: -3, respect: 0 }, reason: `${josa(TIE_LABELS[TIE_INVERSE[pick.kind]], "을/를")} 죽였다`, kind: "death" });
   store.append({ type: "vendetta_sworn", avenger: id, victim: deadId });
 }
 

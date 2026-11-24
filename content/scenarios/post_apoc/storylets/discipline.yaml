@@ -30,7 +30,7 @@
         - return_stolen: true
         - body: { track: hunger, delta: 1 }
         - merit: -1
-        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다
       check: persuade
@@ -83,7 +83,7 @@
       effects:
         - return_stolen: true
         - body: { track: hunger, delta: 1 }
-        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다
       check: persuade
@@ -137,7 +137,7 @@
         - return_stolen: true
         - capture_player: { by: own, days: 1 }
         - merit: -1
-        - relation: { who: boss, axis: respect, delta: 1 }
+        - relation: { who: boss, axis: respect, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다
       check: persuade
@@ -192,7 +192,7 @@
       effects:
         - return_stolen: true
         - capture_player: { by: own, days: 1 }
-        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다
       check: persuade
@@ -245,7 +245,7 @@
       effects:
         - return_stolen: true
         - debt: { faction: faction_e, delta: 5 }
-        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다
       check: persuade
@@ -298,7 +298,7 @@
       effects:
         - return_stolen: true
         - body: { track: hunger, delta: 2 }
-        - relation: { who: boss, axis: trust, delta: 1 }
+        - relation: { who: boss, axis: trust, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다
       check: persuade

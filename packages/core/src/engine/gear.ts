@@ -16,6 +16,7 @@ import { dayOf } from "../rules/time.ts";
 import { josa } from "../text.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 물건 (기획서 4.8): 무기·탄약·방어구·도구·내구도·무게·수리·제작·흥정. 수치는 아이템·시나리오 데이터, 규칙은 여기.
@@ -350,10 +351,10 @@ const barterTool = defineTool({
       if (check.outcome === "success") accepted = true;
       else if (check.outcome === "partial") {
         accepted = true;
-        store.append({ type: "relation_changed", from: input.npc_id, to: me.id, delta: { trust: 0, affection: -1, respect: 0 }, reason: "값을 후려쳤다" });
+        changeRelation(ctx, { from: input.npc_id, to: me.id, delta: { trust: 0, affection: -1, respect: 0 }, reason: "값을 후려쳤다", kind: "barter" });
         lines.push(`${josa(name, "은/는")} 마지못해 받아들였지만 기분이 상했다.`);
       } else {
-        store.append({ type: "relation_changed", from: input.npc_id, to: me.id, delta: { trust: -1, affection: 0, respect: 0 }, reason: "흥정이 틀어졌다" });
+        changeRelation(ctx, { from: input.npc_id, to: me.id, delta: { trust: -1, affection: 0, respect: 0 }, reason: "흥정이 틀어졌다", kind: "barter" });
         return { ok: true, resultText: `${lines.join("\n")}\n${josa(name, "은/는")} 흥정을 거절했다.`, display };
       }
     }

@@ -17,6 +17,7 @@ import { changeCondition } from "./body.ts";
 import { withCharm } from "./charm.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { changeRelation, startRelation } from "../rules/regard.ts";
 
 /**
  * 연애 (12-58). 둘 다 성인일 때만. 연애는 성인 콘텐츠가 아니라 수위(12-57)와 상관없다 (수위는 잠자리·성적 위협만 가린다).
@@ -153,7 +154,7 @@ export function bindOwnLovers(ctx: ToolContext): void {
     for (const [from, to] of [[t.other, me], [me, t.other]] as const) {
       const rel = store.getState().relations[from]?.[to] ?? NEUTRAL_RELATION;
       const delta = { trust: Math.max(0, BOUND_LOVER.trust - rel.trust), affection: Math.max(0, BOUND_LOVER.affection - rel.affection), respect: 0 };
-      if (delta.trust || delta.affection) store.append({ type: "relation_changed", from, to, delta, reason: t.kind === "spouse" ? "배우자" : "연인" });
+      if (delta.trust || delta.affection) startRelation(ctx, { from, to, delta, reason: t.kind === "spouse" ? "배우자" : "연인" });
     }
     const name = playerCalls(store.getState(), content, t.other);
     const fact = sentence(t.kind === "spouse" ? `${josa(name, "은/는")} 내 배우자다` : `${josa(name, "과/와")} 나는 연인이다${t.secret ? ". 남들에게는 숨기는 사이다" : ""}`);
@@ -217,7 +218,7 @@ const romanceTool = defineTool({
       const drawn = attracted(state, content, t, me);
       const gain = roll.outcome === "success" ? 2 : roll.outcome === "partial" ? 1 : -1;
       const delta = drawn ? gain : Math.min(0, gain);
-      if (delta !== 0) store.append({ type: "relation_changed", from: t, to: me, delta: withCharm(ctx, t, me, { trust: 0, affection: delta, respect: 0 }), reason: "다가감" });
+      if (delta !== 0) changeRelation(ctx, { from: t, to: me, delta: withCharm(ctx, t, me, { trust: 0, affection: delta, respect: 0 }), reason: "다가감", kind: "romance" });
       lines.push(`다가가기: ${CHECK_OUTCOME_LABELS[roll.outcome]}. ${delta > 0 ? `${josa(name, "이/가")} 싫지 않은 기색이다.` : delta < 0 ? "어색해졌다." : `${josa(name, "은/는")} 친절하지만 그 이상은 아닌 듯하다.`}`);
     } else if (input.action === "confess") {
       if (romance?.stage === "lovers") return { ok: false, error: "이미 연인이다." };
@@ -232,18 +233,18 @@ const romanceTool = defineTool({
         // 그 사람의 다른 연인은 버림받는다 (삼각관계)
         for (const o of others) {
           if (state.romances[key(t, o)]?.stage !== "ended") store.append({ type: "romance_changed", a: t, b: o, stage: "ended" });
-          store.append({ type: "relation_changed", from: o, to: me, delta: { trust: -3, affection: -3, respect: -1 }, reason: "연인을 빼앗김" });
-          store.append({ type: "relation_changed", from: o, to: t, delta: { trust: -2, affection: -2, respect: 0 }, reason: "떠남" });
+          changeRelation(ctx, { from: o, to: me, delta: { trust: -3, affection: -3, respect: -1 }, reason: "연인을 빼앗김", kind: "romance" });
+          changeRelation(ctx, { from: o, to: t, delta: { trust: -2, affection: -2, respect: 0 }, reason: "떠남", kind: "romance" });
           lines.push(`${josa(playerCalls(state, content, o), "은/는")} ${name}의 연인이었다. 이제 당신을 원망한다.`);
         }
       } else {
-        store.append({ type: "relation_changed", from: t, to: me, delta: { trust: 0, affection: others.length ? 0 : -1, respect: 0 }, reason: "고백을 거절함" });
+        changeRelation(ctx, { from: t, to: me, delta: { trust: 0, affection: others.length ? 0 : -1, respect: 0 }, reason: "고백을 거절함", kind: "romance" });
         lines.push(`${josa(name, "은/는")} 받아들이지 않았다.${others.length ? " 마음을 둔 사람이 따로 있는 듯하다." : ""}`);
       }
     } else {
       if (romance?.stage !== "lovers") return { ok: false, error: "연인이 아니다." };
       store.append({ type: "romance_changed", a: me, b: t, stage: "ended" });
-      store.append({ type: "relation_changed", from: t, to: me, delta: { trust: -1, affection: -2, respect: 0 }, reason: "이별" });
+      changeRelation(ctx, { from: t, to: me, delta: { trust: -1, affection: -2, respect: 0 }, reason: "이별", kind: "romance" });
       lines.push(`${josa(name, "과/와")} 헤어졌다.`);
     }
     lines.push("이 결과에 맞게 장면을 서술한다. 잠자리는 암전으로 넘긴다. 상대의 속마음을 단정해 말하지 않는다.");

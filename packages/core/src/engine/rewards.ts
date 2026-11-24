@@ -1,6 +1,7 @@
 import { daysOfStock } from "../sim/war.ts";
 import { josa } from "../text.ts";
 import type { ToolContext } from "./toolkit.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 포상 (기획서 8.6.1, 12-171). 임무 보고로 공적이 무리의 rewards.every 배수를 새로 넘을 때마다 포상 하나.
@@ -24,7 +25,7 @@ export function grantRewards(ctx: ToolContext, characterId: string, giverId: str
   for (let i = 0; i < due; i++) {
     if (hungry) {
       store.append({ type: "reward_given", characterId, itemId: null });
-      store.append({ type: "relation_changed", from: giverId, to: characterId, delta: { trust: 0, affection: 0, respect: 1 }, reason: "포상 (말뿐)" });
+      changeRelation(ctx, { from: giverId, to: characterId, delta: { trust: 0, affection: 0, respect: 1 }, reason: "포상 (말뿐)", kind: "reward" });
       lines.push(`포상: 무리 형편이 어려워 줄 것이 없다. ${josa(giver, "이/가")} 말로 공을 치하한다 (존중이 올랐다). 이 장면을 서술하라.`);
       continue;
     }

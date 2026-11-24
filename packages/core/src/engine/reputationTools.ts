@@ -13,6 +13,7 @@ import { withCharm } from "./charm.ts";
 import { josa, sentence } from "../text.ts";
 import { z } from "zod";
 import { dayOf } from "../rules/time.ts";
+import { deedKind, gateRegard } from "../rules/regard.ts";
 import type { BeliefSource } from "../game/belief.ts";
 import type { GameState } from "../game/state.ts";
 import type { Character } from "../game/character.ts";
@@ -114,9 +115,6 @@ function noticeMove(ctx: ToolContext) {
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
-/** 행적으로 오르는 관계는 축마다 하루 +1까지 (플레이 테스트 11, C6). 떨어지는 쪽은 자르지 않는다 */
-export const DAILY_REGARD_GAIN = 1;
-
 export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, only?: readonly ("trust" | "affection" | "respect")[] | "none") {
   const state = ctx.store.getState();
   const values = valuesOf(ctx.content, state, npcId);
@@ -125,15 +123,14 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
   const witness = state.characters[npcId];
   const ownSide = !!actorFaction && witness?.factionId === actorFaction && !heldOf(witness);
   const tags = ownSide ? deed.tags : deed.tags.filter((t) => t !== "enemy_sympathy");
-  const raw = withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, tags, deed.severity, source));
-  const today = state.regardGained.day === dayOf(state.time) ? (state.regardGained.by[npcId]?.[deed.actorId] ?? {}) : {};
-  const delta = { ...raw };
+  const raw = { ...withCharm(ctx, npcId, deed.actorId, computeRelationDelta(values, tags, deed.severity, source)) };
   for (const axis of ["trust", "affection", "respect"] as const) {
     // none: 그 일로 이미 관계가 정해진 당사자 (의뢰인·약속 받은 사람, 12-292 PT24 하얀매: 정직을 싫어하는 의뢰인이 해낸 의뢰를 보고 신뢰를 깎았다)
-    if (only === "none") delta[axis] = 0;
-    else if (only && !only.includes(axis)) delta[axis] = Math.min(0, delta[axis]);
-    if (delta[axis] > 0) delta[axis] = Math.min(delta[axis], Math.max(0, DAILY_REGARD_GAIN - (today[axis] ?? 0)));
+    if (only === "none") raw[axis] = 0;
+    else if (only && !only.includes(axis)) raw[axis] = Math.min(0, raw[axis]);
   }
+  // 오르는 몫은 공통 규칙 19: 하루 상한, 주인공의 행적이면 같은 꼬리표 간격도 (NPC끼리는 하루 상한만, 예전 그대로)
+  const { delta } = gateRegard(state, ctx.content, npcId, deed.actorId, deedKind(deed), raw, { sameWindow: deed.actorId === state.playerId, reason: deed.summary });
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
 }
 

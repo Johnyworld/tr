@@ -6,6 +6,7 @@ import type { GameState, Remains } from "../game/state.ts";
 import { josa } from "../text.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { zoneOf } from "../rules/place.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 유해와 무덤 (기획서 3.4, 12-130).
@@ -124,7 +125,7 @@ export function buryRemains(ctx: ToolContext, who: string, words: string | null)
     for (const id of store.getState().scene.present) {
       const c = store.getState().characters[id];
       if (!c || c.dead || id === me.id || c.factionId !== dead.factionId) continue;
-      store.append({ type: "relation_changed", from: id, to: me.id, delta: { trust: 0, affection: BURIAL_AFFECTION, respect: 0 }, reason: `${josa(dead.name, "을/를")} 묻어 주었다` });
+      changeRelation(ctx, { from: id, to: me.id, delta: { trust: 0, affection: BURIAL_AFFECTION, respect: 0 }, reason: `${josa(dead.name, "을/를")} 묻어 주었다`, kind: "burial" });
     }
   }
   return { ok: true, lines, displays: [] };

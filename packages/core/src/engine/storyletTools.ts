@@ -38,6 +38,7 @@ import { joinRole } from "../game/customStart.ts";
 import { z } from "zod";
 import { knowsName, playerCalls, hasMet } from "../game/acquaintance.ts";
 import { withCharm } from "./charm.ts";
+import { changeRelation, storyRegard } from "../rules/regard.ts";
 import { enterScene } from "./extras.ts";
 import { changeStanding, gainMeritXp } from "./growth.ts";
 import type { Content, StoryletContent, StoryletEffect } from "../content/schemas.ts";
@@ -398,7 +399,7 @@ export const resolveStorylet = defineTool({
     }
     const extra: ToolDisplayEvent[] = [];
     for (const effect of effects) {
-      const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title, { judged: outcome !== null });
+      const r = applyEffect(ctx, effect, a.cast, vars, a.storylet.title, { judged: outcome !== null, source: a.storylet.id });
       if (r.line) lines.push(r.line);
       if (r.display) extra.push(r.display);
       if (r.displays) extra.push(...r.displays);
@@ -517,7 +518,8 @@ export function applyEffect(
   vars: Record<string, string>,
   reason: string,
   /** judged: 판정 결과(성공·대가 있는 성공·실패)가 고른 효과다. 그 대가를 다른 판정으로 다시 굴리지 않는다 (플레이 테스트 14) */
-  options: { judged?: boolean } = {},
+  /** source: 이야기 id (관계 오름의 까닭 열쇠, 공통 규칙 19). 없으면 reason */
+  options: { judged?: boolean; source?: string } = {},
 ): { line?: string; display?: ToolDisplayEvent; displays?: ToolDisplayEvent[] } {
   const { store, content } = ctx;
   const state = store.getState();
@@ -560,7 +562,10 @@ export function applyEffect(
     const delta = withCharm(ctx, from, playerId, { trust: 0, affection: 0, respect: 0, [effect.relation.axis]: effect.relation.delta });
     const axis = effect.relation.axis;
     const before = state.relations[from]?.[playerId]?.[axis] ?? 0;
-    store.append({ type: "relation_changed", from, to: playerId, delta, reason });
+    const { kind, heavy } = storyRegard(options.source ?? reason, effect.relation);
+    const { note } = changeRelation(ctx, { from, to: playerId, delta, reason, kind, heavy });
+    // 같은 까닭이거나 오늘 더 오를 데가 없으면 GM에게만 한 줄 (공통 규칙 19)
+    if (note && delta[axis] > 0) return { line: note };
     const after = store.getState().relations[from]?.[playerId]?.[axis] ?? 0;
     const name = playerCalls(state, content, from);
     // 끝에 닿아 바뀌지 않았으면 그렇다고 (PT15 튜토리얼: 이미 각별 +10인데 "호감이 올랐다")
@@ -573,8 +578,9 @@ export function applyEffect(
     const b = whoOf(ctx, effect.npc_relation.to, cast);
     if (!a || !b || a === b || a === playerId || b === playerId || !state.characters[a] || !state.characters[b]) return {};
     const d = { trust: 0, affection: 0, respect: 0, [axis]: delta };
-    store.append({ type: "relation_changed", from: a, to: b, delta: d, reason });
-    if (mutual) store.append({ type: "relation_changed", from: b, to: a, delta: d, reason });
+    const kind = `story:${options.source ?? reason}`;
+    changeRelation(ctx, { from: a, to: b, delta: d, reason, kind });
+    if (mutual) changeRelation(ctx, { from: b, to: a, delta: d, reason, kind });
     return {}; // 둘 사이의 마음은 그들의 말과 태도로만 드러난다
   }
   if ("overhear" in effect) {

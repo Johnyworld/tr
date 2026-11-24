@@ -18,6 +18,7 @@ import { marketValue } from "./market.ts";
 import { profileOf } from "./people.ts";
 import { learn, recordDeed } from "./reputationTools.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 뇌물·협박·폭로 (기획서 8.10, 12-153). 수치와 행동은 월드의 leverage.
@@ -66,7 +67,7 @@ export function leverageLines(state: GameState, content: Content, npcId: string)
 const present = (state: GameState, content: Content, id: string): string | null => talkProblem(state, content, id, "쓴다");
 
 const relate = (ctx: ToolContext, from: string, d: Partial<Record<"trust" | "affection" | "respect", number>>, reason: string) =>
-  ctx.store.append({ type: "relation_changed", from, to: ctx.store.getState().playerId, delta: { trust: d.trust ?? 0, affection: d.affection ?? 0, respect: d.respect ?? 0 }, reason });
+  changeRelation(ctx, { from, to: ctx.store.getState().playerId, delta: d, reason, kind: "leverage" });
 
 /** 뇌물의 값: 계급별 값 × 욕심 × 믿음 (가치관이 없으면 0으로 본다) */
 export function bribePrice(content: Content, state: GameState, npcId: string): number | null {

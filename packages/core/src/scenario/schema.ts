@@ -1776,6 +1776,17 @@ export const scenarioFileSchema = z
     mission_hints: z.strictObject({ buddy: z.array(z.string()).default([]), learns: z.array(z.string()).default([]) }).default({ buddy: [], learns: [] }),
     /** 공통 규칙 5 (rules/rest.ts): 최근에 나온 것이 쉬는 날수. cast 이야기 배역, mission 받은 일감, alarm 무리마다의 경보 이야기 */
     rest: z.strictObject({ cast: z.number().min(0).optional(), mission: z.number().min(0).optional(), alarm: z.number().min(0).optional() }).default({}),
+    /**
+     * 공통 규칙 19 관계 오름 (rules/regard.ts, 12-295): 같은 사람·축·까닭으로 window_days 안에 다시 오르면 0,
+     * 한 사람·한 축은 하루 daily_cap까지. heavy의 까닭과 이야기 효과는 상한을 넘는다
+     */
+    relation_gain: z
+      .strictObject({
+        window_days: z.number().min(0).default(3),
+        daily_cap: z.number().int().min(0).default(1),
+        heavy: z.array(z.string()).default([]),
+      })
+      .default({ window_days: 3, daily_cap: 1, heavy: [] }),
     storylet_pacing: z
       .strictObject({
         min_gap_hours: z.number().min(0),

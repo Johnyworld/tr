@@ -13,6 +13,7 @@ import { ownedBy } from "../rules/home.ts";
 import { itemSources } from "../content/sources.ts";
 import { inZone, whereIs } from "../rules/place.ts";
 import { activeRequest, isFavorAsk, questDelivered, questOf, questTopic } from "../rules/request.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 약속 (기획서 8.11, 12-160·12-181). 주인공이 장면의 인물과 맺은 약속을 코드가 기억한다. 수치는 월드의 promises.
@@ -80,8 +81,9 @@ export function promiseLines(state: GameState, content: Content, to?: string): s
 /** 말을 주고받을 수 있는가 (공통 규칙 8) */
 const present = (state: GameState, content: Content, id: string): string | null => talkProblem(state, content, id, "한다");
 
-const relate = (ctx: ToolContext, from: string, d: Partial<Record<"trust" | "affection" | "respect", number>>, reason: string) =>
-  ctx.store.append({ type: "relation_changed", from, to: ctx.store.getState().playerId, delta: { trust: d.trust ?? 0, affection: d.affection ?? 0, respect: d.respect ?? 0 }, reason });
+/** 관계 오름은 공통 규칙 19를 거친다. 막혔으면 GM 한 줄 */
+const relate = (ctx: ToolContext, from: string, d: Partial<Record<"trust" | "affection" | "respect", number>>, reason: string, kind: string) =>
+  changeRelation(ctx, { from, to: ctx.store.getState().playerId, delta: d, reason, kind }).note;
 
 const QUIET: ToolDisplayEvent = { type: "time", activityLabel: "약속", durationLabel: "", fromLabel: "", toLabel: "" };
 const nextId = (state: GameState) => `p_${(state.promises ?? []).length + 1}`;
@@ -152,7 +154,7 @@ const promiseTool = defineTool({
     if (input.action === "fold") {
       if (questOf(p) || p.favor) return { ok: true, resultText: abandonRequest(ctx, p).join("\n"), display: QUIET };
       store.append({ type: "promise_settled", id: p.id, status: "folded" });
-      relate(ctx, p.to, r.folded, "못 지키겠다고 털어놓은 약속");
+      relate(ctx, p.to, r.folded, "못 지키겠다고 털어놓은 약속", "promise");
       return { ok: true, resultText: `${who}에게 약속을 못 지키겠다고 털어놓았다. 실망했지만 숨기지 않은 것은 안다. 이 결과대로 서술하라.`, display: QUIET };
     }
     const bad = present(state, content, p.to);
@@ -189,10 +191,11 @@ export function settleKept(ctx: ToolContext, p: PromiseRecord, extra = 0): strin
   store.append({ type: "promise_settled", id: p.id, status: "kept" });
   const quest = questOf(p);
   const req = content.scenario.requests;
-  relate(ctx, p.to, quest && req ? req.reward.relation : r.kept, quest ? "해낸 의뢰" : "지킨 약속");
+  const keptNote = relate(ctx, p.to, quest && req ? req.reward.relation : r.kept, quest ? "해낸 의뢰" : "지킨 약속", quest ? "request_done" : "promise_kept");
   recordDeed(ctx, { summary: quest ? `${who}의 의뢰를 해냈다: ${promiseGist(ctx.content, p)}` : `${who}에게 한 약속을 지켰다: ${promiseGist(ctx.content, p)}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen", only: "none" });
   dropRequestBelief(ctx, p.id);
   const lines = [quest ? `${who}의 의뢰를 해냈다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.` : `${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`];
+  if (keptNote) lines.push(keptNote);
   if (quest?.pay) {
     const qty = quest.pay.quantity + extra;
     store.append({ type: "item_granted", to: state.playerId, itemId: quest.pay.id, quantity: qty });
@@ -201,7 +204,10 @@ export function settleKept(ctx: ToolContext, p: PromiseRecord, extra = 0): strin
   }
   const c = askContent(content, p);
   if (!c) return lines;
-  if (c.reward.affection) store.append({ type: "relation_changed", from: p.to, to: state.playerId, delta: { trust: 0, affection: c.reward.affection, respect: 0 }, reason: "들어준 부탁" });
+  if (c.reward.affection) {
+    const note = relate(ctx, p.to, { affection: c.reward.affection }, "들어준 부탁", "favor");
+    if (note) lines.push(note);
+  }
   if (c.reward.item) {
     store.append({ type: "item_granted", to: state.playerId, itemId: c.reward.item.id, quantity: c.reward.item.quantity });
     lines.push(`${josa(who, "이/가")} 고맙다며 ${content.items[c.reward.item.id]?.name ?? c.reward.item.id} ×${josa(String(c.reward.item.quantity), "을/를")} 건넨다.`);
@@ -259,7 +265,7 @@ export function runBrokenPromises(ctx: ToolContext): string[] {
     const target = state.characters[p.to];
     if (!target || target.dead) continue;
     const req = questOf(p) ? ctx.content.scenario.requests : undefined;
-    relate(ctx, p.to, req ? req.failed : r.broken, req ? "기한을 넘긴 의뢰" : "어긴 약속");
+    relate(ctx, p.to, req ? req.failed : r.broken, req ? "기한을 넘긴 의뢰" : "어긴 약속", "promise");
     const who = playerCalls(state, ctx.content, p.to);
     recordDeed(ctx, { summary: `${who}에게 한 약속을 어겼다: ${promiseGist(ctx.content, p)}`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
     dropRequestBelief(ctx, p.id);
@@ -320,7 +326,7 @@ export function abandonRequest(ctx: ToolContext, p: PromiseRecord): string[] {
   ctx.store.append({ type: "promise_settled", id: p.id, status: "folded" });
   dropRequestBelief(ctx, p.id);
   const failed = ctx.content.scenario.requests?.failed ?? rules(ctx.content)?.folded;
-  if (failed && state.characters[p.to] && !state.characters[p.to]!.dead) relate(ctx, p.to, failed, "그만둔 의뢰");
+  if (failed && state.characters[p.to] && !state.characters[p.to]!.dead) relate(ctx, p.to, failed, "그만둔 의뢰", "promise");
   return [`${who}의 의뢰(${p.id})를 그만두었다. ${josa(who, "은/는")} 실망한다 (신뢰가 깎였다). 이제 다른 의뢰를 받을 수 있다. 이 결과대로 서술하라.`];
 }
 

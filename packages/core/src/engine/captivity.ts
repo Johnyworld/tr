@@ -29,6 +29,7 @@ import { currentPlace, jailFor, jailIn, knowsPlace, placeById, unknownDoors, whe
 import { againstSetting } from "../rules/self.ts";
 import { changeCondition, isIncapacitated } from "./body.ts";
 import { alarmIfInfiltrating } from "./infiltration.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 포로 (기획서 7.6, 12-55).
@@ -421,7 +422,7 @@ const handlePrisoner = defineTool({
       const threat = input.approach === "intimidate";
       if (threat) {
         recordDeed(ctx, { summary: `포로 ${josa(name, "을/를")} 윽박질러 심문했다`, tags: ["cruelty"], severity: 1, privacy: "semi_private", noisy: false });
-        store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "심문" });
+        changeRelation(ctx, { from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "심문", kind: "captivity" });
       }
       if (r.outcome !== "miss") {
         const take = confessions(store.getState(), content, me.id, t, r.outcome === "success" ? 2 : 1, r.outcome === "success");
@@ -448,13 +449,13 @@ const handlePrisoner = defineTool({
         lines.push(`회유: 성공. ${josa(name, "이/가")} 우리 무리에 들기로 했다.`);
         if (theirs && theirs !== me.factionId) lines.push(`${content.factions[theirs]?.name ?? theirs}에게는 배신자다.`);
       } else {
-        store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: r.outcome === "partial" ? 1 : -1, affection: 0, respect: 0 }, reason: "회유" });
+        changeRelation(ctx, { from: t.id, to: me.id, delta: { trust: r.outcome === "partial" ? 1 : -1, affection: 0, respect: 0 }, reason: "회유", kind: "coax" });
         lines.push(`회유: ${CHECK_OUTCOME_LABELS[r.outcome]}. ${r.outcome === "partial" ? "마음이 흔들리지만 아직은 아니다." : "고개를 돌렸다."}`);
       }
     } else if (input.action === "release") {
       if (towed) store.append({ type: "companion_left", characterId: t.id, reason: "풀어 줌" });
       else store.append({ type: "npc_released", npcId: t.id });
-      store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: 2, affection: 1, respect: 0 }, reason: "풀어 줌" });
+      changeRelation(ctx, { from: t.id, to: me.id, delta: { trust: 2, affection: 1, respect: 0 }, reason: "풀어 줌", kind: "release" });
       if (theirs && me.factionId && theirs !== me.factionId && state.factions[theirs]) {
         const now = disposition(content, theirs, me.factionId, state);
         if (now < 3) store.append({ type: "faction_disposition_changed", from: theirs, to: me.factionId, value: now + 1 });
@@ -469,7 +470,7 @@ const handlePrisoner = defineTool({
       store.append({ type: "npc_left", npcId: t.id });
       // 네 시간쯤 깨어나지 못한다: 그동안 보지도 움직이지도 못한다 (공통 규칙 8 ableNow)
       store.append({ type: "npc_knocked_out", npcId: t.id, until: store.getState().time + 240 });
-      store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "붙잡혀 기절했다" });
+      changeRelation(ctx, { from: t.id, to: me.id, delta: { trust: -2, affection: -1, respect: 0 }, reason: "붙잡혀 기절했다", kind: "captivity" });
       recordDeed(ctx, { summary: `${josa(name, "을/를")} 붙잡아 기절시키고 두고 갔다`, tags: ["trespass"], severity: 1, privacy: "private", noisy: false }, { npcId: t.id, source: "seen" });
       lines.push(`${josa(name, "을/를")} 기절시켜 두고 왔다. 몇 시간은 깨어나지 못하고, 깨어나면 주인공의 얼굴을 기억한다.`);
     } else if (input.action === "kill") {
@@ -508,7 +509,7 @@ const handlePrisoner = defineTool({
     } else {
       const labor = !heldOf(t)?.labor;
       store.append({ type: "prisoner_labor", npcId: t.id, labor });
-      if (labor) store.append({ type: "relation_changed", from: t.id, to: me.id, delta: { trust: -1, affection: -1, respect: 0 }, reason: "노역" });
+      if (labor) changeRelation(ctx, { from: t.id, to: me.id, delta: { trust: -1, affection: -1, respect: 0 }, reason: "노역", kind: "captivity" });
       lines.push(labor ? `${josa(name, "을/를")} 노역에 부린다. 무리가 날마다 조금 얻는다.` : `${name}의 노역을 멈췄다.`);
     }
     lines.push("이 결과에 맞게 장면을 서술한다. 숫자와 털어놓은 내용을 바꾸지 않는다.");

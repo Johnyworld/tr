@@ -111,4 +111,8 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
   it("규칙 15 (장소): 주인공 이동은 rules/place.ts의 movePlayer로만 (이동 기획, PT20~22 순간이동). 붙잡힘·격리(player_captured)는 공통 규칙 1이 맡는다", () => {
     expect(offenders(/type: "(place_moved|zone_moved)"/, ["rules/place.ts"])).toEqual([]);
   });
+  it("규칙 19 (관계 오름): 관계 변화는 rules/regard.ts로만 남기고, 오른 양·까닭 시각은 그 모듈로만 읽는다", () => {
+    expect(offenders(/type: "relation_changed"/, ["game/state.ts", "rules/regard.ts", "debug/cheats.ts"])).toEqual([]);
+    expect(offenders(/\.(regardGained|regardLast)\b/, ["game/state.ts", "rules/regard.ts"])).toEqual([]);
+  });
 });

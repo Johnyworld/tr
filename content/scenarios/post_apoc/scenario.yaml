@@ -1368,6 +1368,10 @@ mission_hints:
   buddy: ["혼자 (깊이 )?(들어가지|다니지|나가지) 마", "혼자 두지", "둘이서", "2인 1조"]
   learns: ["어디서 왔는지", "어디로 가는지", "알아 온다", "알아 와", "알아내(?![^.]*아닙)"]
 
+# 공통 규칙 19 관계 오름 (12-295, rules/regard.ts): 같은 사람·축·까닭으로 window_days 안에 다시 오르면 0, 한 사람·한 축 하루 daily_cap까지.
+# heavy: 상한을 넘는 무거운 까닭 (구출·목숨을 구함·위험한 분대 일·비밀을 털어놓음·해낸 의뢰·풀어 줌). 이야기 효과는 상한 없이 같은 까닭 간격만 (까닭은 kind, 없으면 이야기 id)
+relation_gain: { window_days: 3, daily_cap: 1, heavy: [rescue, saved_life, squad_risky, secret_shared, request_done, release] }
+
 storylet_pacing:
   # 이야기 사이 간격: 앞 이야기마다 6~12시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격)
   min_gap_hours: 6

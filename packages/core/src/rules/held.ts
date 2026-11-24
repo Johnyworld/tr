@@ -9,6 +9,7 @@
 import type { ToolContext } from "../engine/toolkit.ts";
 import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import { josa } from "../text.ts";
+import { changeRelation } from "./regard.ts";
 
 /** 갇힌 사람의 기록 (붙잡은 무리, 갇힌 구역, 노역, 갇힌 시각, 탈출 실패로 쌓인 감시, 우리 무리의 격리, 저절로 풀리는 시각(우리 무리의 벌, 12-257)) */
 export type Held = { by: string; zone: string; labor?: boolean | undefined; since?: number | undefined; watch?: number | undefined; quarantine?: boolean | undefined; releaseAt?: number | undefined };
@@ -102,7 +103,7 @@ export function welcomeRescued(ctx: ToolContext, ids: readonly string[]): string
       ctx.store.append({ type: "npc_entered", npcId: id });
       ctx.store.append({ type: "npc_left", npcId: id });
     }
-    ctx.store.append({ type: "relation_changed", from: id, to: s.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다", known: true });
+    changeRelation(ctx, { from: id, to: s.playerId, delta: { trust: 2, affection: 2, respect: 0 }, reason: "갇힌 곳에서 꺼내 줬다", known: true, kind: "rescue" });
     // 꺼내 왔으니 "붙잡혀 있다"는 기억을 지운다 (PT21·PT23 졸병: 구해 낸 사람을 계속 붙잡혀 있다고 믿었다)
     for (const b of ctx.store.getState().beliefs[s.playerId] ?? []) if (b.topic?.startsWith(`held_seen:${id}@`)) ctx.store.append({ type: "belief_dropped", characterId: s.playerId, beliefId: b.id });
     const mine = s.characters[s.playerId]?.factionId;

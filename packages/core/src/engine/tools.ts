@@ -74,6 +74,7 @@ import { personFactLines, personFacts } from "./personFacts.ts";
 import { PLACE_TOOLS } from "./placeTools.ts";
 import { fixedPlaceAway, hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt, knowsPlace } from "../rules/place.ts";
 import { zoneOf } from "../rules/place.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
 
@@ -581,7 +582,7 @@ function welcomeGift(ctx: ToolContext, to: string, itemId: string): string | nul
   const harmLevels = s.condition_tracks.find((t) => t.id === s.harm_track)?.levels ?? [];
   const hurt = isFirstAidItem(ctx.content, itemId) && harmLevels.findIndex((l) => l.id === c.conditions[s.harm_track]) > 0;
   if (!habit && !needs && !hurt) return null;
-  ctx.store.append({ type: "relation_changed", from: to, to: state.playerId, delta: { trust: 0, affection: 1, respect: 0 }, reason: "원하던 것을 받았다" });
+  changeRelation(ctx, { from: to, to: state.playerId, delta: { trust: 0, affection: 1, respect: 0 }, reason: "원하던 것을 받았다", kind: "gift" });
   ctx.store.append({ type: "gift_welcomed", npcId: to, day: today });
   return `${josa(playerCalls(state, ctx.content, to), "은/는")} 마침 원하던 것이라 반긴다 (호감 +1).`;
 }

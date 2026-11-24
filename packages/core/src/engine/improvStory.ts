@@ -150,7 +150,7 @@ function rewardEffects(rule: Improv, c: ChoiceInput, tier: Tier, rng: Rng): Stor
     const pick = list[Math.floor(rng() * list.length)]!;
     return [{ give_item: { item: pick.item, quantity: pick.quantity } }];
   }
-  if (c.reward_kind === "relation") return [{ relation: { who: c.reward_who!, axis: c.reward_axis ?? "trust", delta: r.relation } }];
+  if (c.reward_kind === "relation") return [{ relation: { who: c.reward_who!, axis: c.reward_axis ?? "trust", delta: r.relation, kind: "improv" } }];
   return r.merit > 0 ? [{ merit: r.merit }] : [];
 }
 

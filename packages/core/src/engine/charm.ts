@@ -3,6 +3,7 @@ import { isInfected } from "../game/kinds.ts";
 import { rapportImpression } from "./persona.ts";
 import { affectionTraitBonus, looksImpression } from "./traits.ts";
 import type { ToolContext } from "./toolkit.ts";
+import { startRelation } from "../rules/regard.ts";
 
 /** 매력의 수동 효과 (기획서 4.2). 판정 밖에서 관계에 작용한다. 시나리오 `charm`이 없으면 아무 일도 없다 */
 
@@ -48,5 +49,5 @@ export function firstImpression(ctx: ToolContext, npcId: string): void {
   // 성격 궁합 (12-99): 같은 쪽이면 조금 더, 반대쪽이면 조금 덜
   const total = charmBonus + looksImpression(ctx.content, viewer, player) + rapportImpression(ctx.content, viewer, player);
   if (total === 0) return;
-  ctx.store.append({ type: "relation_changed", from: npcId, to: state.playerId, delta: { trust: 0, affection: total, respect: 0 }, reason: "첫인상" });
+  startRelation(ctx, { from: npcId, to: state.playerId, delta: { trust: 0, affection: total, respect: 0 }, reason: "첫인상" });
 }

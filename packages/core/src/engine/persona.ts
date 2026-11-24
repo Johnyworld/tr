@@ -8,6 +8,7 @@ import { playerCalls } from "../game/acquaintance.ts";
 import { traitsOf } from "./traits.ts";
 import { hearsay, worthPassing } from "../rules/news.ts";
 import type { ToolContext } from "./toolkit.ts";
+import { changeRelation } from "../rules/regard.ts";
 
 /**
  * 성격 축 (기획서 4.6.1, 12-99). 축마다 -2(low 쪽) ~ +2(high 쪽).
@@ -190,7 +191,7 @@ export function rollBlowup(ctx: ToolContext, targetId: string | null): string | 
   if (v <= 0 || ctx.rng() >= rule.chance[v - 1]!) return null;
   const target = targetId ? state.characters[targetId] : undefined;
   if (target && !target.dead && !isCreature(ctx.content, target) && state.scene.present.includes(target.id)) {
-    ctx.store.append({ type: "relation_changed", from: target.id, to: me.id, delta: rule.delta, reason: `${josa(me.name, "이/가")} 발끈했다` });
+    changeRelation(ctx, { from: target.id, to: me.id, delta: rule.delta, reason: `${josa(me.name, "이/가")} 발끈했다`, kind: "persona" });
     const parts = [rule.delta.trust && `신뢰 ${rule.delta.trust > 0 ? "+" : ""}${rule.delta.trust}`, rule.delta.affection && `호감 ${rule.delta.affection > 0 ? "+" : ""}${rule.delta.affection}`, rule.delta.respect && `존중 ${rule.delta.respect > 0 ? "+" : ""}${rule.delta.respect}`].filter(Boolean);
     return persona(axis, v, `발끈했다 · ${playerCalls(state, ctx.content, target.id)}의 ${parts.join(", ")}`);
   }

@@ -58,6 +58,9 @@ describe("PT26 뒤 고친 것 (12-294)", () => {
     if (w.state().playerZone !== wild) return;
     enterScene(w.ctx(), target);
     const food = w.state().characters[w.state().playerId]!.inventory.canned_food ?? 0;
+    // 길에서 연 이야기는 먼저 닫는다 (12-299: 이야기가 열려 있으면 의뢰 보고는 이야기부터)
+    const open = w.state().activeStorylet;
+    if (open) w.ctx().store.append({ type: "storylet_expired", storyletId: open.id });
     ok(w.executeTool("request", { action: "report" }));
     expect(w.state().characters[target]!.extra!.zone).toBe(wild);
     expect(w.state().characters[w.state().playerId]!.inventory.canned_food).toBe(food + 2);

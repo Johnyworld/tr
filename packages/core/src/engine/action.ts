@@ -457,6 +457,24 @@ function settleDeeds(ctx: ToolContext, before: GameState): void {
   }
 }
 
+/**
+ * 숨은 목격자 안내: 이 장소에 있을 사람(장면에 들이지 않은)이 있으면 그 사람들이 봤을 수 있다고 알린다
+ * (PT27 졸병·섬: "장면에 아무도 없었다"인데 같은 장소의 사람이 보고 규율 회의가 열렸다)
+ */
+function hiddenWitnessHint(state: GameState, content: ToolContext["content"]): string {
+  const here = currentPlace(state, content);
+  const around = here ? peopleAt(state, content, state.playerZone, here.id).length : 0;
+  return around > 0 ? " 이곳에 있을 사람(장면에 들이지 않은)이 눈치챘을 수 있다. 누가 봤는지는 아무도 모른다." : " 숨은 목격자가 있었는지는 아무도 모른다.";
+}
+
+/** 이번 행동이 남긴 주인공의 짓 가운데 끝난 때가 없는 것에 지금을 적는다 (가져온 물건은 settleDeeds가 행동 끝에) */
+function markDeedsEnded(ctx: ToolContext, before: GameState): void {
+  const now = ctx.store.getState();
+  for (const d of Object.values(now.deeds)) {
+    if (d.actorId === now.playerId && !before.deeds[d.id] && !d.fabricatedBy && d.endedAt === undefined) ctx.store.append({ type: "deed_settled", deedId: d.id, endedAt: now.time });
+  }
+}
+
 function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionResult {
   let ignoredLine: string | null = null;
   const { store, content } = ctx;
@@ -1185,7 +1203,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         `행적 ${deed.id} 기록: ${sentence(deed.summary)} ` +
           (fooledNames.length > 0 ? `${josa(fooledNames.join(", "), "은/는")} 속아 넘어가 거짓인 줄 모른다 (이 행적을 알지 못한다). ` : "") +
           (visible.length > 0 ? `장면에 있던 ${josa(visible.join(", "), "이/가")} 보았다. 그들의 반응을 서술에 반영하라.` : fooledNames.length > 0 ? "" : "장면에 아무도 없었다.") +
-          (deceived ? "" : " 숨은 목격자가 있었는지는 아무도 모른다.") +
+          (deceived ? "" : hiddenWitnessHint(store.getState(), content)) +
           (wronged ? ` ${wronged}` : ""),
       );
       displays.push({
@@ -1432,6 +1450,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 4. 시간이 흐른 뒤 세계 처리 (임무 기한, 오늘의 임무, 소문, 전쟁, 예정된 교전)
+  // 이번 행동의 짓은 이야기를 고르기 전에 끝난 때를 적는다: 규율 회의는 끝난 때부터 한 시간 (PT27 졸병: 한 시간 넘는 수색 끝에 회의가 바로 열렸다)
+  markDeedsEnded(ctx, start);
   // 이야기 선택지를 판정하는 행동이면 기한을 넘겨 끝나도 이야기를 붙잡아 둔다 (B6)
   const after = runAfterTimeAdvance(ctx, { urgentOnly: time.wokenByStory, actionStartedAt: input.check ? start.time : undefined });
   lines.push(...bodyLines(after));

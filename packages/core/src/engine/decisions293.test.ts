@@ -58,6 +58,9 @@ describe("PT25 뒤 고친 것 (12-293)", () => {
     if (w.state().playerZone !== wild) return; // 길이 닿지 않으면 볼 것이 없다
     enterScene(w.ctx(), outlaw);
     w.ctx().store.append({ type: "companion_joined", characterId: outlaw, kind: "prisoner" });
+    // 길에서 연 이야기는 먼저 닫는다 (12-299: 이야기가 열려 있으면 의뢰 보고는 이야기부터)
+    const open = w.state().activeStorylet;
+    if (open) w.ctx().store.append({ type: "storylet_expired", storyletId: open.id });
     ok(w.executeTool("request", { action: "report" }));
     expect(w.state().characters[outlaw]!.captive).toBeNull();
     expect(w.state().companions).toContain(outlaw);

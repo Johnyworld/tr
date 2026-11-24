@@ -9,6 +9,7 @@ import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { changeCondition } from "./body.ts";
 import { applyEffect } from "./storyletTools.ts";
+import { createTakeActionSchema, takeAction } from "./action.ts";
 
 /** 설계 목록 C-2 규율·회의 (12-280). 실제 콘텐츠로 본다 */
 const content = loadRealContent();
@@ -45,5 +46,27 @@ describe("규율·회의 (12-280)", () => {
     expect(w.state().deeds[id]!.returned).toBe(true);
     const accept = content.storylets.disc_c_council!.choices.find((c) => c.id === "accept")!;
     expect(accept.effects.some((e) => "return_stolen" in e)).toBe(true);
+  });
+});
+
+describe("규율 회의는 긴 행동이 끝난 때부터 (12-299, PT27 졸병)", () => {
+  it("두 시간 걸린 도둑질이면 그 행동 끝에 회의가 열리지 않고, 짓에는 끝난 때가 적힌다", () => {
+    const w = make();
+    const mate = Object.values(content.npcs).find((n) => n.faction === "faction_c" && whereIs(w.state(), content, n.id)?.zone === w.state().playerZone && n.id !== content.roles.role_c_raider!.commander)!.id;
+    w.ctx().store.append({ type: "npc_entered", npcId: mate });
+    const start = w.state().time;
+    const input = createTakeActionSchema(content.scenario).parse({
+      intent: "창고에서 통조림을 몰래 챙긴다",
+      activity: { kind: "work", hours: 2 },
+      deed: { summary: "창고에서 통조림을 훔쳤다", tags: ["theft"], severity: 2, privacy: "public", noisy: false, condition: "always" },
+    });
+    const r = takeAction(input, w.ctx());
+    expect(r.ok).toBe(true);
+    const s = w.state();
+    const deed = Object.values(s.deeds).find((d) => d.summary === "창고에서 통조림을 훔쳤다")!;
+    expect(deed.endedAt).toBeGreaterThanOrEqual(start + 120);
+    const active = s.activeStorylet ? content.storylets[s.activeStorylet.id] : undefined;
+    expect(active?.when.own_offense ?? false).toBe(false);
+    if (deed.witnesses.length) expect(ownOffense(s, content, deed.endedAt! + 60)).not.toBeNull();
   });
 });

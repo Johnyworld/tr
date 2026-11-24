@@ -1,3 +1,4 @@
+import { storyOpenError } from "./missionTools.ts";
 import { z } from "zod";
 import type { Content } from "../content/schemas.ts";
 import { itemSources } from "../content/sources.ts";
@@ -85,7 +86,7 @@ function targetPlace(state: GameState, content: Content, zone: string, rng: Rng)
 }
 
 /** 의뢰 하나를 만든다 (아직 받지 않음: 목표 엑스트라는 받을 때 둔다) */
-function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng): { what: string; item: { id: string; quantity: number } | null; goal: Quest } | null {
+export function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng): { what: string; item: { id: string; quantity: number } | null; goal: Quest } | null {
   const r = content.scenario.requests!;
   const rule = giverRule(state, content, giverId);
   const from = whereIs(state, content, giverId)?.zone ?? state.playerZone;
@@ -108,7 +109,9 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
       // 남의 땅을 뒤지는 일(도둑질)이 되지 않게 주인 없는 구역·의뢰인 무리 땅부터 (없으면 근처 어디든)
       const giverFaction = state.characters[giverId]?.factionId;
       // 수색표에서 몫이 min_share 이상인 것만, 흔할수록 자주 (12-294, PT24 모르핀·PT26 섬 사과·토마토: 드문 것은 찾다 막힌다).
-      // 지금 지닌 것, 의뢰인이 지닌 것, 사물함만으로 다 채울 수 있는 것은 뺀다 (받자마자 끝난다)
+      // 의뢰인이 지닌 것, 지닌 것과 사물함만으로 다 채울 수 있는 것은 뺀다 (받자마자 끝난다).
+      // 조금 지닌 흔한 물건은 남기고 수량을 그보다 많이 (PT27 섬 막힘: 통조림·말린 생선·물병을 지녀 의뢰 후보가 0)
+      const held = (item: string) => (me?.inventory[item] ?? 0) + stashed(state, item);
       const [qLo, qHi] = r.kinds.fetch.quantity;
       const lootIn = (zs: typeof near) =>
         zs.flatMap((z) => {
@@ -116,7 +119,7 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
           const total = table.reduce((n, i) => n + i.weight, 0) || 1;
           return table
             .map((i) => ({ ...z, item: i.item, share: i.weight / total }))
-            .filter((i) => i.share >= r.kinds.fetch.min_share && (!rule.items || rule.items.includes(i.item)) && !(me?.inventory[i.item] ?? 0) && stashed(state, i.item) < qHi && !(state.characters[giverId]?.inventory[i.item] ?? 0));
+            .filter((i) => i.share >= r.kinds.fetch.min_share && (!rule.items || rule.items.includes(i.item)) && held(i.item) < qHi && !(state.characters[giverId]?.inventory[i.item] ?? 0));
         });
       // 주인 없는 땅 먼저, 없으면 의뢰인 무리 땅(섬), 그래도 없으면 근처 어디든 (PT25 졸병: 우리 초소를 뒤지라는 찾아오기)
       const wildLoot = lootIn(near.filter((z) => !state.zones[z.zone]?.owner));
@@ -126,7 +129,7 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
       let roll = rng() * found.reduce((n, x) => n + x.share, 0);
       const f = found.find((x) => (roll -= x.share) < 0) ?? found[found.length - 1]!;
       // 덜 흔한 것은 하나만
-      const qty = Math.max(qLo, Math.min(f.share < r.kinds.fetch.min_share * 2 ? 1 : qHi, between(rng, [qLo, qHi])), stashed(state, f.item) + 1);
+      const qty = Math.max(qLo, Math.min(f.share < r.kinds.fetch.min_share * 2 ? 1 : qHi, between(rng, [qLo, qHi])), held(f.item) + 1);
       return { what: `${content.items[f.item]?.name ?? f.item} ${qty}개를 구해 온다`, item: { id: f.item, quantity: qty }, goal: { kind, template: null, target: null, zone: f.zone, place: null, hops: f.hops, pay: payFor(content, kind, f.zone, f.hops, rng), delivered: 0, days: between(rng, r.days) + f.hops * r.per_hop_days } };
     }
     if (!wild.length || (kind !== "find" && !canFight)) continue;
@@ -199,6 +202,11 @@ const requestTool = defineTool({
     const me = state.characters[state.playerId];
     if (!me || me.dead) return { ok: false, error: "사망한 캐릭터는 의뢰를 받을 수 없다." };
     const today = dayOf(state.time);
+    // 이야기가 열려 있으면 의뢰를 받거나 해낸 것을 알리는 일도 이야기부터 (임무와 같은 규칙, PT27 약탈자: 이야기 중에 의뢰 보고가 됐다)
+    if (input.action === "accept" || input.action === "report") {
+      const open = storyOpenError(ctx);
+      if (open) return { ok: false, error: open };
+    }
 
     if (input.action === "ask") {
       if (!input.npc_id) return { ok: false, error: "ask에는 npc_id가 필요하다." };

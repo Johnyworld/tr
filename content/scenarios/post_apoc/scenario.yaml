@@ -1382,7 +1382,8 @@ mission_hints:
 
 # 공통 규칙 19 관계 오름 (12-295, rules/regard.ts): 같은 사람·축·까닭으로 window_days 안에 다시 오르면 0, 한 사람·한 축 하루 daily_cap까지.
 # heavy: 상한을 넘는 무거운 까닭 (구출·목숨을 구함·위험한 분대 일·비밀을 털어놓음·해낸 의뢰·풀어 줌). 이야기 효과는 상한 없이 같은 까닭 간격만 (까닭은 kind, 없으면 이야기 id)
-relation_gain: { window_days: 3, daily_cap: 1, heavy: [rescue, saved_life, squad_risky, secret_shared, request_done, release] }
+# daily_only: 같은 까닭 간격 없이 하루 상한만 받는 까닭. 판정이 걸린 임무를 해냄(mission_done)은 다른 날이면 되풀이가 아니라 복무다 (12-298, PT27: 임무로는 상관 신뢰가 3일에 +1이라 진급 신뢰까지 18일)
+relation_gain: { window_days: 3, daily_cap: 1, heavy: [rescue, saved_life, squad_risky, secret_shared, request_done, release], daily_only: [mission_done] }
 
 # 공통 규칙 20 무리 사이와 사람 사이 (12-296, rules/crossed.ts): 무리 사이는 지금 태도로 읽고, 개인 관계와 엇갈릴 때만 NPC 쪽에 건다.
 # 전쟁 중 + 호감 fond_affection 이상: 먼저 치지 않고, 그 사람이 낸 상처는 harm_stops_before(치명상) 바로 앞에서 멈춘다. 쓰러지면 죽이지 않고 붙잡아 간다

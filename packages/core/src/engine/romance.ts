@@ -55,6 +55,15 @@ export function attractionOf(state: GameState, content: Content, c: Character): 
 }
 
 /** 연애가 가능한가: 둘 다 성인이고 살아 있다 */
+/** 연애를 다루지 않는 까닭 (PT27 하얀매: 같은 성별인데 "둘 다 성인이고 살아 있을 때만"이라 했다) */
+function romanceRefusal(state: GameState, a: string, b: string): string {
+  const ca = state.characters[a];
+  const cb = state.characters[b];
+  if (ca?.gender && cb?.gender && ca.gender === cb.gender) return "연애는 다른 성별끼리만 다룬다.";
+  if ((a === state.playerId && state.family.includes(b)) || (b === state.playerId && state.family.includes(a))) return "가족과는 연애를 다루지 않는다.";
+  return "연애는 둘 다 성인이고 살아 있을 때만 다룬다 (가족·사람이 아닌 것과는 다루지 않는다).";
+}
+
 export function romanceAllowed(state: GameState, content: Content, a: string, b: string): boolean {
   const ca = state.characters[a];
   const cb = state.characters[b];
@@ -202,7 +211,7 @@ const romanceTool = defineTool({
     const me = state.playerId;
     const t = input.target;
     if (!r) return { ok: false, error: "이 월드에는 연애 규칙이 없다." };
-    if (!romanceAllowed(state, content, me, t)) return { ok: false, error: "연애는 둘 다 성인이고 살아 있을 때만 다룬다." };
+    if (!romanceAllowed(state, content, me, t)) return { ok: false, error: romanceRefusal(state, me, t) };
     if (!state.scene.present.includes(t)) return { ok: false, error: "그 사람이 장면에 없다." };
     const name = playerCalls(state, content, t);
     const romance = state.romances[key(me, t)];
@@ -220,8 +229,11 @@ const romanceTool = defineTool({
       const drawn = attracted(state, content, t, me);
       const gain = roll.outcome === "success" ? 2 : roll.outcome === "partial" ? 1 : -1;
       const delta = drawn ? gain : Math.min(0, gain);
-      if (delta !== 0) changeRelation(ctx, { from: t, to: me, delta: withCharm(ctx, t, me, { trust: 0, affection: delta, respect: 0 }), reason: "다가감", kind: "romance" });
-      lines.push(`다가가기: ${CHECK_OUTCOME_LABELS[roll.outcome]}. ${delta > 0 ? `${josa(name, "이/가")} 싫지 않은 기색이다.` : delta < 0 ? "어색해졌다." : `${josa(name, "은/는")} 친절하지만 그 이상은 아닌 듯하다.`}`);
+      // 문구는 실제로 바뀐 몫으로 고른다: 막힌 오름을 오른 것처럼 말하지 않는다 (PT27 하얀매, 공통 규칙 19)
+      const changed = delta !== 0 ? changeRelation(ctx, { from: t, to: me, delta: withCharm(ctx, t, me, { trust: 0, affection: delta, respect: 0 }), reason: "다가감", kind: "romance" }) : null;
+      const moved = changed?.delta.affection ?? 0;
+      lines.push(`다가가기: ${CHECK_OUTCOME_LABELS[roll.outcome]}. ${moved > 0 ? `${josa(name, "이/가")} 싫지 않은 기색이다.` : moved < 0 ? "어색해졌다." : `${josa(name, "은/는")} 친절하지만 그 이상은 아닌 듯하다.`}`);
+      if (changed?.note) lines.push(changed.note);
     } else if (input.action === "confess") {
       if (romance?.stage === "lovers") return { ok: false, error: "이미 연인이다." };
       const rel = state.relations[t]?.[me] ?? NEUTRAL_RELATION;

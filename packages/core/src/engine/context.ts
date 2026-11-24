@@ -688,7 +688,7 @@ function describeWater(state: GameState, content: Content): string {
   const thirsty = (track?.levels.findIndex((l) => l.id === me.conditions[rules.track]) ?? 0) > 0;
   if (!empties.length && !thirsty) return "";
   if (source.kind === "supply") {
-    return `물: 우리 거점이다. 서술에서 "물 보급을 받아야 할 것 같다"고 한 번 언급한다${empties.length ? ` (${empties.join("·")}이 비어 있다)` : ""}. 플레이어가 보급을 받겠다고 하면 take_action.refill (마시기까지 한다. 마시기만 하면 drink). 창고 사정에 따라 보급 담당이 조금만 주거나 거절할 수 있다 (시스템이 정한다)`;
+    return `물: 우리 거점이다. 서술에서 "물 보급을 받아야 할 것 같다"고 한 번 언급한다${empties.length ? ` (채울 수 있는 것: ${empties.join("·")})` : ""}. 플레이어가 보급을 받겠다고 하면 take_action.refill (마시기까지 한다. 마시기만 하면 drink). 창고 사정에 따라 보급 담당이 조금만 주거나 거절할 수 있다 (시스템이 정한다)`;
   }
   const dirty = rules.dirty ? (fireHere(state) ? " 불이 피어 있어 끓여 마실 수 있다." : " 끓이지 않은 물이다 (불을 피우면 끓여 마신다. 그냥 마시면 탈이 날 수 있다는 것을 서술에 비춘다)") : "";
   return `물: ${source.where ? `${source.where}에서 물을 뜰 수 있다.` : "이곳에는 물이 충분하다."}${dirty}${empties.length ? ` 서술에서 "빈 물병을 가지고 있으니 물을 채우면 될 것 같다"고 한 번 언급한다.` : " 물이 흐르는 모습을 장면에 묘사한다."} 플레이어가 마시겠다고 하면 take_action.drink, 채우겠다고 하면 refill. 저절로 마시거나 채우지 않는다`;

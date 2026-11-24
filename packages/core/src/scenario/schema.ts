@@ -1784,15 +1784,17 @@ export const scenarioFileSchema = z
     rest: z.strictObject({ cast: z.number().min(0).optional(), mission: z.number().min(0).optional(), alarm: z.number().min(0).optional() }).default({}),
     /**
      * 공통 규칙 19 관계 오름 (rules/regard.ts, 12-295): 같은 사람·축·까닭으로 window_days 안에 다시 오르면 0,
-     * 한 사람·한 축은 하루 daily_cap까지. heavy의 까닭과 이야기 효과는 상한을 넘는다
+     * 한 사람·한 축은 하루 daily_cap까지. heavy의 까닭과 이야기 효과는 상한을 넘는다.
+     * daily_only의 까닭은 같은 까닭 간격을 받지 않고 하루 상한만 받는다 (PT27: 임무 완수가 3일에 한 번만 올라 진급이 막혔다)
      */
     relation_gain: z
       .strictObject({
         window_days: z.number().min(0).default(3),
         daily_cap: z.number().int().min(0).default(1),
         heavy: z.array(z.string()).default([]),
+        daily_only: z.array(z.string()).default([]),
       })
-      .default({ window_days: 3, daily_cap: 1, heavy: [] }),
+      .default({ window_days: 3, daily_cap: 1, heavy: [], daily_only: [] }),
     /**
      * 공통 규칙 20 무리 사이와 사람 사이 (rules/crossed.ts, 12-296): 전쟁 중 무리 사람의 호감이 fond_affection 이상이면 먼저 치지 않고
      * 그 사람이 낸 상처는 harm_track의 harm_stops_before 단계 바로 앞에서 멈춘다. 전쟁이 아닌데 신뢰가 grudge_trust 이하면 곁에 두지 않는다

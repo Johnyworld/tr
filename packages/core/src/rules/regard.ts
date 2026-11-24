@@ -6,6 +6,7 @@
  * - 한 사람·한 축은 하루 daily_cap까지. 무거운 까닭(시나리오 relation_gain.heavy)과 이야기 효과는 상한을 넘는다 (같은 까닭 간격은 그대로)
  * - 내리막(-)은 줄이지 않는다. 세계를 만들 때의 시작 관계(startRelation)와 NPC끼리의 관계는 거르지 않는다
  * - 막히면 GM 결과 글에만 한 줄(regardNote). 플레이어 화면에는 보이지 않는다
+ * - 하루 상한만 받는 까닭(시나리오 relation_gain.daily_only, 임무 완수): 같은 까닭 간격을 보지 않는다 (PT27, 사용자 결정)
  * 행적으로 오르는 관계(reputationTools.learn)도 같은 셈을 쓴다: 까닭 열쇠는 행적 꼬리표(deedKind), 같은 까닭 간격은 주인공의 행적만.
  * 셈하는 상태(regardGained·regardLast)는 이 모듈과 리듀서만 읽는다 (rules/guards.test.ts).
  * relation_changed는 이 모듈과 리듀서, 치트만 남긴다.
@@ -44,6 +45,8 @@ export const REGARD_KINDS = {
   council: "council",
   death: "death",
   start: "start",
+  /** 판정이 걸린 임무를 완전히 해냄 (행적 꼬리표는 성실). 기본은 하루 상한만 (12-298) */
+  missionDone: "mission_done",
 } as const;
 
 type Ctx = { store: GameStore; content: Content };
@@ -61,6 +64,11 @@ export function deedKind(deed: Pick<Deed, "tags">): string {
 
 function heavyKind(content: Content, kind: string): boolean {
   return rules(content).heavy.includes(kind);
+}
+
+/** 같은 까닭 간격을 받는 까닭인가 (daily_only면 하루 상한만) */
+export function windowedKind(content: Content, kind: string): boolean {
+  return !rules(content).daily_only.includes(kind);
 }
 
 /**

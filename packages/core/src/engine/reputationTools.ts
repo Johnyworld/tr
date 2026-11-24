@@ -13,7 +13,7 @@ import { withCharm } from "./charm.ts";
 import { josa, sentence } from "../text.ts";
 import { z } from "zod";
 import { dayOf } from "../rules/time.ts";
-import { deedKind, gateRegard } from "../rules/regard.ts";
+import { deedKind, gateRegard, regardNote, windowedKind } from "../rules/regard.ts";
 import type { BeliefSource } from "../game/belief.ts";
 import type { GameState } from "../game/state.ts";
 import type { Character } from "../game/character.ts";
@@ -117,7 +117,11 @@ function noticeMove(ctx: ToolContext) {
 }
 
 /** NPC가 행적을 알게 한다 (관계 변화는 그 NPC의 가치관으로 코드가 계산) */
-export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, only?: readonly ("trust" | "affection" | "respect")[] | "none") {
+/**
+ * regardKind: 관계 오름 규칙이 보는 까닭 (임무 완수처럼 하루 상한만 받는 일, 공통 규칙 19). 없으면 행적 꼬리표.
+ * 주인공의 행적으로 오를 몫이 막혔으면 GM 한 줄을 돌려준다 (PT27: 임무 보고에서 막혀도 줄이 없었다). 쓸지는 부르는 쪽이 정한다
+ */
+export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, only?: readonly ("trust" | "affection" | "respect")[] | "none", regardKind?: string): string | null {
   const state = ctx.store.getState();
   const values = valuesOf(ctx.content, state, npcId);
   // "적에게 호의"는 우리 편이 보기에만 흠이다. 호의를 받은 쪽(적·포로)에게까지 신뢰를 깎았다 (플레이 테스트 11)
@@ -131,9 +135,12 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
     if (only === "none") raw[axis] = 0;
     else if (only && !only.includes(axis)) raw[axis] = Math.min(0, raw[axis]);
   }
-  // 오르는 몫은 공통 규칙 19: 하루 상한, 주인공의 행적이면 같은 꼬리표 간격도 (NPC끼리는 하루 상한만, 예전 그대로)
-  const { delta } = gateRegard(state, ctx.content, npcId, deed.actorId, deedKind(deed), raw, { sameWindow: deed.actorId === state.playerId, reason: deed.summary });
+  // 오르는 몫은 공통 규칙 19: 하루 상한, 주인공의 행적이면 같은 꼬리표 간격도 (NPC끼리는 하루 상한만, 예전 그대로).
+  // 하루 상한만 받는 까닭(임무 완수)은 간격을 보지 않는다 (PT27: 임무를 날마다 해내도 상관 신뢰가 3일에 +1이었다)
+  const sameWindow = deed.actorId === state.playerId && !(regardKind && !windowedKind(ctx.content, regardKind));
+  const { delta, blocked } = gateRegard(state, ctx.content, npcId, deed.actorId, deedKind(deed), raw, { sameWindow, reason: deed.summary });
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
+  return blocked && deed.actorId === state.playerId ? regardNote(state, ctx.content, npcId, blocked) : null;
 }
 
 /**
@@ -147,27 +154,27 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
 export function recordDeed(
   ctx: ToolContext,
   input: DeedInput,
-  official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] | "none" },
+  official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] | "none"; regardKind?: string },
   fooled?: readonly string[],
-): { deed: Deed; visible: string[] } {
-  return recordDeedIf(ctx, input, official, fooled, false) as { deed: Deed; visible: string[] };
+): { deed: Deed; visible: string[]; notes: string[] } {
+  return recordDeedIf(ctx, input, official, fooled, false) as { deed: Deed; visible: string[]; notes: string[] };
 }
 
 /**
  * 본 사람이 있을 때만 행적을 남긴다 (PT15 졸병: 장면에 아무도 없고 숨은 목격자도 없는데 "들켰다" 불복종이 남았다).
  * 아무도 못 봤으면 deed는 null
  */
-export function recordDeedIfSeen(ctx: ToolContext, input: DeedInput): { deed: Deed | null; visible: string[] } {
+export function recordDeedIfSeen(ctx: ToolContext, input: DeedInput): { deed: Deed | null; visible: string[]; notes: string[] } {
   return recordDeedIf(ctx, input, undefined, undefined, true);
 }
 
 function recordDeedIf(
   ctx: ToolContext,
   input: DeedInput,
-  official: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] | "none" } | undefined,
+  official: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] | "none"; regardKind?: string } | undefined,
   fooled: readonly string[] | undefined,
   onlyIfSeen: boolean,
-): { deed: Deed | null; visible: string[] } {
+): { deed: Deed | null; visible: string[]; notes: string[] } {
   const state = ctx.store.getState();
   const id = `d_${state.nextDeedNo}`;
   const witnesses: Deed["witnesses"] = [];
@@ -195,7 +202,7 @@ function recordDeedIf(
     }
   }
 
-  if (onlyIfSeen && witnesses.length === 0) return { deed: null, visible: [] };
+  if (onlyIfSeen && witnesses.length === 0) return { deed: null, visible: [], notes: [] };
   const deed: Deed = {
     id,
     actorId: state.playerId,
@@ -209,10 +216,15 @@ function recordDeedIf(
     ...(input.mature ? { mature: input.mature } : {}),
   };
   ctx.store.append({ type: "deed_recorded", deed });
-  for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen", w.npcId === input.victim ? [] : official?.only);
+  // 막힌 오름의 GM 줄은 공식으로 알린 사람(보고 받은 상관)만: 목격자 여럿이면 줄이 쌓인다
+  const notes: string[] = [];
+  for (const w of witnesses) {
+    const note = learn(ctx, deed, w.npcId, official?.source ?? "seen", w.npcId === input.victim ? [] : official?.only, official?.regardKind);
+    if (note && official) notes.push(note);
+  }
 
   const visible = witnesses.filter((w) => !w.hidden).map((w) => playerCalls(state, ctx.content, w.npcId));
-  return { deed, visible };
+  return { deed, visible, notes };
 }
 
 const lookForWitnesses = defineTool({

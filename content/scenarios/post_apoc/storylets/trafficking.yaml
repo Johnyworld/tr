@@ -80,8 +80,8 @@
   cast:
     miran: { ids: [rs_miran] }
     victim: { ids: [tv_yeonok], captive_anywhere: true, enter: false, optional: true }
-  setup: 휴게소 식당 안, 계단 위 여관에서 웃음소리가 내려온다. 술상을 치우던 {miran:이/가} 빈 잔을 내려놓으며 옆자리에 앉는다. 위층 발소리가 멎은 틈에 낮게 묻는다. "붉은연합 쪽에서 오는 길이에요? 물류창고 수용소, 거기서 밤에 실려 오는 트럭… 본 적 있어요?"
-  ai_direction: 홍미란은 오래 망설이다 말을 건다. 반태수가 계단을 내려오면 말을 멈추고 술잔을 채운다. 아는 것은 카드대로만 말한다. 자기가 그 트럭에서 내렸다는 것은 먼저 말하지 않는다. 붉은연합 사람이라면 미란은 더 조심하지만, 완장을 찬 사람이 물어 준 것이 처음이라 말을 끊지 않는다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 여관의 일은 성인 옵션의 글(카드의 성인 줄)이 보여 주는 만큼만 말한다.
+  setup: 휴게소 식당 안, 계단 위 여관에서 웃음소리가 내려온다. 술상을 치우던 {miran:이/가} 빈 잔을 내려놓으며 옆자리에 앉는다. 위층 발소리가 멎은 틈에 낮게 묻는다. "고가도로 쪽에서 오셨어요? 붉은연합 물류창고에서 밤에 실려 오는 트럭… 본 적 있어요?"
+  ai_direction: 홍미란은 오래 망설이다 말을 건다. 반태수가 계단을 내려오면 말을 멈추고 술잔을 채운다. 아는 것은 카드대로만 말한다. 자기가 그 트럭에서 내렸다는 것은 먼저 말하지 않는다. 주인공의 무리에 따라 다르게 군다. 주인공이 붉은연합 사람이면 {miran:은/는} 더 조심하지만, 완장을 찬 사람이 귀를 기울여 준 것이 처음이라 말을 끊지 않는다. 다른 무리 사람이나 떠돌이면 붉은연합 밖 사람이라 조금 덜 무서워하며, 그쪽 길로 다니는지 떠보는 정도로 묻는다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 여관의 일은 성인 옵션의 글(카드의 성인 줄)이 보여 주는 만큼만 말한다.
   choices:
     - id: listen
       label: 술잔을 내려놓고 끝까지 듣는다
@@ -103,6 +103,8 @@
         - set_flag: tr_slaver_lead
         - relation: { who: miran, axis: trust, delta: 2 }
         - locate: { who: victim, source: report }
+        # 이름을 묻는 선택지라 이름을 알게 된다 (PT27 하얀매·약탈자: 믿음은 "이름 하나를 일러 주었다"인데 계속 "이름 모름")
+        - reveal_name: { who: victim }
         - belief:
             fact: "홍미란이 이름 하나를 일러 주었다. 버들마을 사람 곽연옥이 아직 붉은연합 물류창고 수용소에 있고, 다음 밤 노역조 차례라고 한다. 거간꾼 길판수의 트럭은 그 사람들을 휴게소 주차장에서 받는다"
             mature: "홍미란이 이름 하나를 일러 주었다. 버들마을 사람 곽연옥이 아직 물류창고 수용소에 있고, 거간꾼 길판수가 '여관 몫'으로 점찍어 두었다. 다음 밤 노역조 차례라고 한다"
@@ -285,7 +287,8 @@
         - deed: { summary: 밤 노역에 불려 갈 사람의 물음에 대답하지 않고 지나갔다, tags: [cowardice], severity: 1, privacy: semi_private }
         - belief: { fact: "수용소 철망 앞에서 {victim}의 물음에 대답하지 않았다. 등 뒤에서 철망 흔들리는 소리가 오래 났다", source: seen }
     - id: warn
-      label: 몰래 귀띔하고, 품에 있던 빵을 철망 틈으로 밀어 넣는다
+      # 지닌 물건과 상관없는 글 (PT27 약탈자: 빵이 없어도 "품에 있던 빵을" 밀어 넣었다)
+      label: 철망에 몸을 붙이고 오늘 밤 명단을 몰래 귀띔한다
       check: stealth
       outcomes:
         success:
@@ -300,15 +303,15 @@
           - set_flag: tr_inside_help
           - set_flag: c_marked
           - relation: { who: victim, axis: trust, delta: 2 }
-          - deed: { summary: 수용소 사람에게 무언가를 몰래 건넸다, tags: [mercy, enemy_sympathy], severity: 2, privacy: semi_private }
+          - deed: { summary: 수용소 사람에게 밤 노역 명단을 몰래 귀띔했다, tags: [mercy, enemy_sympathy], severity: 2, privacy: semi_private }
           - belief: { fact: "{victim}에게 귀띔은 했지만, 돌아서는데 망루의 탐조등이 한 박자 늦게 나를 따라왔다", source: seen }
         miss:
           - set_flag: tr_silence_done
           - set_flag: c_marked
           - merit: -1
           - relation: { who: commander, axis: trust, delta: -1 }
-          - deed: { summary: 수용소 철망 틈으로 포로에게 몰래 무언가를 넘기다 들켰다, tags: [enemy_sympathy, disobedience], severity: 2, privacy: semi_private }
-          - belief: { fact: "빵을 밀어 넣다 경비에게 들켰다. 경비는 빵을 짓밟고 내 조 번호를 물었다", source: seen }
+          - deed: { summary: 수용소 철망 앞에서 포로에게 몰래 귓속말하다 들켰다, tags: [enemy_sympathy, disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "철망에 붙어 귓속말을 하다 경비에게 들켰다. 경비는 철망을 걷어차고 내 조 번호를 물었다", source: seen }
     - id: protest
       label: 위원회 앞에서 '야간 전출'이 무엇이냐고 따지겠다고 마음먹는다
       when: { flags_all: [tr_ledger_seen] }
@@ -407,7 +410,7 @@
         miss:
           - zone_noise: 1
           - set_flag: c_marked
-          - belief: { fact: "간수의 손전등이 먼저 왔다. 도기남이 쇠지렛대를 철망 밑으로 감췄다. 오늘 밤은 아니다", source: seen }
+          - belief: { fact: "간수의 손전등이 먼저 왔다. 도기남이 쇠지렛대를 철망 틈으로 얼른 되밀어 주었다. 오늘 밤은 아니다", source: seen }
     - id: mark
       label: 빗장의 녹과 간수 교대만 눈에 담고 물러난다
       effects:

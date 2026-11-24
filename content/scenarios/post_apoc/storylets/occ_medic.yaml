@@ -21,7 +21,8 @@
   cast:
     # 실려 오는 사람은 글대로 다쳐 있다 (PT21 하얀매: 다치지 않은 배역이라 응급처치가 거절됐다), 젊은 쪽은 나이로
     young: { comes: true, faction: own, ranks: [grunt], age_lte: 30, starts: { harm: serious, bleeding: bleeding } }
-    chief: { comes: true, faction: own, ranks: [squad_leader, staff], starts: { harm: light, bleeding: bleeding } }
+    # 계급 높은 쪽은 분대장 위로, 어른만 (PT27 하얀매: 주민(staff) 19세 수습이 chief, 23세 대원이 young으로 거꾸로 뽑혔다)
+    chief: { comes: true, faction: own, ranks: [squad_leader, officer], adult: true, starts: { harm: light, bleeding: bleeding } }
   setup: 들것 둘이 한꺼번에 실려 온다. 하나에는 {young:이/가}, 허벅지를 끈으로 묶은 채 숨을 짧게 쉰다. 다른 하나에는 {chief:이/가}, 어깨에서 피가 배어 나오는데도 일어나 앉으려 한다. 손은 둘, 등잔 하나. 들것을 든 사람들이 당신 얼굴을 본다.
   ai_direction: 진짜 급한 쪽은 허벅지를 묶은 젊은 쪽이다. 끈이 느슨해지면 오래 못 간다. 어깨를 다친 쪽은 아프기만 하지 당장 죽지는 않는다. 들것을 든 사람들은 계급 높은 쪽을 먼저 볼 거라고 여긴다. 어깨를 다친 쪽은 먼저 봐 달라고 말하지 않지만, 순서를 기억한다.
   choices:

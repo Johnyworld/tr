@@ -291,13 +291,14 @@
   cast:
     boss: { commander: true }
   setup: "회관 문 앞에서 {boss:이/가} 기다리고 있다. \"의회가 들었어. 섬은 입 하나도 아깝게 여기는 곳이야.\" 안에서 숟가락 소리가 멎는다."
-  ai_direction: 여울섬은 배급을 끊는다. 무거우면 뭍으로 내보낸다고 하는데, 돌아온 사람은 없다. 섬의 진실은 이 자리에서 드러나지 않는다. 무엇을 했는지는 상태의 행적대로만 말한다.
+  ai_direction: 여울섬은 그날 몫을 덜어 낸다 (다음 배급은 그대로 나온다). 무거우면 뭍으로 내보낸다고 하는데, 돌아온 사람은 없다. 섬의 진실은 이 자리에서 드러나지 않는다. 무엇을 했는지는 상태의 행적대로만 말한다.
   choices:
     - id: accept
-      label: 하루 굶는 것을 받아들인다
+      label: 오늘 몫을 덜어 내는 것을 받아들인다
       effects:
         - return_stolen: true
-        - body: { track: hunger, delta: 2 }
+        # 다른 무리의 받아들이기와 같은 크기 (PT27 섬: 하루 두 번이면 기아·의식장애까지 갔다)
+        - body: { track: hunger, delta: 1 }
         - relation: { who: boss, axis: trust, delta: 1, kind: verdict_accepted }
     - id: excuse
       label: 사정을 설명한다

@@ -586,7 +586,9 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   // 아침에 깬 것은 하루의 시작이라 막지 않는다 (새벽 솥 같은 아침 일). 야영·길 위의 일은 태그로 따로 열려 여기를 거치지 않는다
   // 깬 뒤 다른 일을 했어도 그 밤이 끝날 때까지 (플레이 테스트 13: 깬 뒤 물 한 모금에 풀렸다)
   const wokeThisNight = state.lastWokeAt !== null && segmentOf(at) === "night" && segmentOf(state.lastWokeAt) === "night" && at - state.lastWokeAt < 8 * 60;
-  if (wokeThisNight && !s.urgent && !s.bedside && !s.when.activities?.includes("sleep")) return false;
+  // 밤에만 열리는 이야기(segments가 night뿐)는 밤에 깨어 있어야 볼 수 있으니 막지 않는다 (PT27 약탈자·하얀매: 주차장 거래를 기다리려 깨어 있었는데 열리지 않았다)
+  const nightOnly = !!s.when.segments?.length && s.when.segments.every((g) => g === "night");
+  if (wokeThisNight && !nightOnly && !s.urgent && !s.bedside && !s.when.activities?.includes("sleep")) return false;
   // 누워 있는 동안의 이야기는 위급할 때도 연다 (D4). 다만 이야기 사이 간격은 지킨다
   if (s.bedside && !options.urgentOnly && inCrisis(state, content)) return bedsideGapPassed(state, content, at);
   // 깨우지 않는 이야기는 자는 동안 열지 않는다 (12-251)

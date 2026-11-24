@@ -174,8 +174,10 @@ export function handOver(ctx: ToolContext, p: PromiseRecord): string[] | string 
     const worn = (["weapon", "body", "head", "arms", "outer"] as const).filter((s) => equippedItem(me, s) === p.item!.id).length;
     // 이미 나눠 건넨 만큼은 빼고 (12-292, PT24 튜토리얼: 하나씩 건넨 통조림을 세지 않았다)
     const need = p.item.quantity - questDelivered(p);
-    if ((me.inventory[p.item.id] ?? 0) - worn < need) {
-      return `${josa(content.items[p.item.id]?.name ?? p.item.id, "이/가")} ${need}개 더 있어야 한다 (지금 ${Math.max(0, (me.inventory[p.item.id] ?? 0) - worn)}개${questDelivered(p) ? `, 이미 ${questDelivered(p)}개 건넸다` : ""}, 걸친 것은 먼저 벗는다).${sourcesNote(content, p.item)}`;
+    const have = Math.max(0, (me.inventory[p.item.id] ?? 0) - worn);
+    if (have < need) {
+      // 모자란 수만큼 "더" (PT27 섬: 하나 모자란데 "2개 더 (지금 1개)")
+      return `${josa(content.items[p.item.id]?.name ?? p.item.id, "이/가")} ${need - have}개 더 있어야 한다 (지금 ${have}개${questDelivered(p) ? `, 이미 ${questDelivered(p)}개 건넸다` : ""}, 걸친 것은 먼저 벗는다).${sourcesNote(content, p.item)}`;
     }
     if (need > 0) store.append({ type: "item_transferred", from: me.id, to: p.to, itemId: p.item.id, quantity: need });
   }
@@ -198,8 +200,11 @@ export function settleKept(ctx: ToolContext, p: PromiseRecord, extra = 0): strin
   if (keptNote) lines.push(keptNote);
   if (quest?.pay) {
     const qty = quest.pay.quantity + extra;
-    store.append({ type: "item_granted", to: state.playerId, itemId: quest.pay.id, quantity: qty });
-    lines.push(`${josa(who, "이/가")} 약속한 보수로 ${content.items[quest.pay.id]?.name ?? quest.pay.id} ×${josa(String(qty), "을/를")} 건넨다.`);
+    // 의뢰인이 지닌 것이면 그 손에서 건넨다. 없으면 따로 마련해 둔 몫이라고 알린다 (PT25~27: 지니지 않은 보수를 건넸다)
+    const own = Math.min(qty, store.getState().characters[p.to]?.inventory[quest.pay.id] ?? 0);
+    if (own > 0) store.append({ type: "item_transferred", from: p.to, to: state.playerId, itemId: quest.pay.id, quantity: own });
+    if (qty - own > 0) store.append({ type: "item_granted", to: state.playerId, itemId: quest.pay.id, quantity: qty - own });
+    lines.push(`${josa(who, "이/가")} 약속한 보수로 ${content.items[quest.pay.id]?.name ?? quest.pay.id} ×${josa(String(qty), "을/를")} 건넨다${own < qty ? " (지니고 다니던 것이 아니라 따로 마련해 둔 몫이다: 꺼내 오는 장면으로)" : ""}.`);
     return lines;
   }
   const c = askContent(content, p);

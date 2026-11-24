@@ -207,8 +207,11 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
 
     if (task.kind === "rest") {
       changeCondition(ctx, id, content.scenario.harm_track, -1, "쉼", "분대장이 쉬게 했다");
-      changeRelation(ctx, { from: id, to: state.playerId, delta: { trust: 0, affection: 1, respect: 0 }, reason: "분대장이 쉬게 해 주었다", kind: "squad_rest" });
+      const rested = changeRelation(ctx, { from: id, to: state.playerId, delta: { trust: 0, affection: 1, respect: 0 }, reason: "분대장이 쉬게 해 주었다", kind: "squad_rest" });
       store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome: null, report: fill(task.report.success) });
+      // 쉬게 한 일도 보고로 알린다 (PT27 분대장: 상태의 분대 섹션에만 남았다)
+      displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: "쉬고 돌아옴" });
+      if (rested.note) displays.push({ type: "belief", fact: "", sourceLabel: "", note: rested.note });
       continue;
     }
 
@@ -224,6 +227,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
     const outcome: CheckOutcome = roll.outcome;
 
     const lines: string[] = [];
+    const gmNotes: string[] = [];
     if (outcome !== "miss") {
       const half = outcome === "partial";
       for (const [r, amount] of Object.entries(task.rewards.resources)) {
@@ -261,7 +265,9 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       }
       // 위험한 일을 맡기고 해내면 믿음도 쌓인다 (설계 목록 7-4, PT16~20: 신뢰가 내려가기만 했다)
       if (task.dangerous && !half) {
-        changeRelation(ctx, { from: id, to: state.playerId, delta: { trust: 1, affection: 0, respect: 1 }, reason: "위험한 일을 맡기고 해냈다", kind: "squad_risky" });
+        const gained = changeRelation(ctx, { from: id, to: state.playerId, delta: { trust: 1, affection: 0, respect: 1 }, reason: "위험한 일을 맡기고 해냈다", kind: "squad_risky" });
+        if (gained.note) gmNotes.push(gained.note);
+        else if (gained.delta.trust > 0) lines.push("위험한 일을 맡겨 준 분대장을 믿는 마음이 조금 쌓였다");
       }
     } else {
       // 운으로 빗나간 것은 탓하지 않는다: 위험한 데 보내 다쳤을 때만 믿음이 준다 (설계 목록 7-4, PT20 긴 판: 운으로 -1씩 쌓여 7일 동안 따라나서기를 거부)
@@ -278,6 +284,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       : [fill(task.report[outcome]), ...lines].join(" · ");
     store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome: after.dead ? null : outcome, report });
     displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: after.dead ? "돌아오지 않음" : CHECK_OUTCOME_LABELS[outcome] });
+    for (const note of gmNotes) displays.push({ type: "belief", fact: "", sourceLabel: "", note });
   }
   return displays;
 }

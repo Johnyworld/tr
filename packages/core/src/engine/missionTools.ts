@@ -70,6 +70,7 @@ import { cargoOf, entrustedHeld } from "../rules/entrusted.ts";
 import {ownedBy, baseOfNow } from "../rules/home.ts";
 import { storyTitle } from "./storyletTools.ts";
 import { learned } from "../rules/skill.ts";
+import { REGARD_KINDS } from "../rules/regard.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -133,7 +134,7 @@ function weakAt(content: Content, me: Character, move: string): boolean {
 }
 
 /** 이야기가 열려 있으면 임무를 받거나 보고하기 전에 먼저 받는다 (12-240, A1: 같은 묶음의 보고가 이야기보다 먼저 끝났다) */
-function storyOpenError(ctx: ToolContext): string | null {
+export function storyOpenError(ctx: ToolContext): string | null {
   const active = ctx.store.getState().activeStorylet;
   if (!active) return null;
   const s = storyletOf(ctx.store.getState(), ctx.content, active.id);
@@ -275,7 +276,8 @@ const reportMission = defineTool({
       const inv = ctx.store.getState().characters[state.playerId]!.inventory;
       const matching = Object.entries(inv)
         .filter(([id, q]) => q > 0 && itemResource(ctx.content, id) === r.bring)
-        .sort(([a], [b]) => Number(input.items.includes(b)) - Number(input.items.includes(a)));
+        // 고른 것이 먼저, 그다음 값나가는 것 (찾아온 약이 시작 짐의 붕대보다 먼저. PT27 졸병, backlog 분대장 "포상 붕대를 건넴")
+        .sort(([a], [b]) => Number(input.items.includes(b)) - Number(input.items.includes(a)) || (ctx.content.items[b]?.value ?? 0) - (ctx.content.items[a]?.value ?? 0));
       if (matching.reduce((n, [, q]) => n + q, 0) < r.quantity) return;
       let left = r.quantity;
       for (const [id, q] of matching) {
@@ -307,16 +309,24 @@ const reportMission = defineTool({
     // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산).
     // 판정이 걸린 임무(위험한 일)를 다 해냈을 때만 상관의 믿음과 존중이 오른다. 시간만 채우는 보초·일부 완수는 오르지 않는다 (플레이 테스트 13: 신뢰가 13일 내내 0이라 진급이 막혔다)
     const risky = reported.requirements.some((r) => "check" in r);
+    // 막힌 관계 오름의 GM 줄 (공통 규칙 19, PT27)
+    const regardNotes: string[] = [];
     if (result.outcome === "success" && risky) {
       // 상관은 그 자리에 없었다. 보고로 듣는다 (플레이 테스트 11: 다른 구역에서 한 일이 "직접 봄"으로 남았다)
-      const { deed } = recordDeed(
+      const { deed, notes } = recordDeed(
         ctx,
         { summary: `임무 완수: ${mission.title}`, tags: ["diligence"], severity: 1, privacy: "public", noisy: false },
-        // 하루 한 사람 축마다 +1까지라 빠르게 쌓이지는 않는다 (플레이 테스트 11, C6에서 존중만으로 줄였던 것을 13에서 되돌림)
-        { npcId: giver.id, source: "report", only: ["trust", "respect"] },
+        // 하루 한 사람 축마다 +1까지라 빠르게 쌓이지는 않는다 (플레이 테스트 11, C6에서 존중만으로 줄였던 것을 13에서 되돌림).
+        // 같은 까닭 3일 간격은 받지 않는다: 다른 날 해낸 임무는 되풀이가 아니라 복무다 (12-298, PT27)
+        { npcId: giver.id, source: "report", only: ["trust", "respect"], regardKind: REGARD_KINDS.missionDone },
       );
       // 함께 다닌 동행(짝·분대원)은 그 일을 직접 봤다 (PT20 분대장: 함께 일하고 보고 자리에도 있던 분대원이 "(소문)"으로 알았다)
-      for (const id of activeCompanions(ctx.store.getState())) if (id !== giver.id) learn(ctx, deed, id, "seen", ["trust", "respect"]);
+      regardNotes.push(...notes);
+      for (const id of activeCompanions(ctx.store.getState())) {
+        if (id === giver.id) continue;
+        const note = learn(ctx, deed, id, "seen", ["trust", "respect"], REGARD_KINDS.missionDone);
+        if (note) regardNotes.push(note);
+      }
     }
     // 빚 갚는 일감: 임무를 준 무리에 진 빚이 준다 (기획서 9.10)
     const repay = ctx.content.missions[mission.templateId]?.repays_debt;
@@ -401,6 +411,7 @@ const reportMission = defineTool({
       ...releaseBuddies(ctx, mission.id),
       ...[returnArmory(ctx, mission.id, { excused: capturedDuringMission(ctx.store.getState(), mission) })].filter((l): l is string => !!l),
       ...(occNote ? [occNote] : []),
+      ...regardNotes,
     ];
     const growthNote = gainMeritXp(ctx, mission.assigneeId, result.merit);
     if (growthNote) lines.push(growthNote);

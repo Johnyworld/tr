@@ -6,7 +6,8 @@ import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import { applyEffect } from "../engine/storyletTools.ts";
 import type { StoryletEffect } from "../content/schemas.ts";
 import { loadRealContent } from "../testing.ts";
-import { changeRelation, gateRegard } from "./regard.ts";
+import { changeRelation, gateRegard, REGARD_KINDS } from "./regard.ts";
+import { learn } from "../engine/reputationTools.ts";
 import { MINUTES_PER_DAY } from "./time.ts";
 
 /** 공통 규칙 19: 관계 오름 (같은 까닭 3일, 하루 상한, 무거운 까닭, 내리막) */
@@ -117,5 +118,29 @@ describe("관계 오름", () => {
     expect(g.delta.respect).toBe(1);
     expect(gateRegard(store.getState(), c, npc, me, kind, { trust: 1 }, { sameWindow: false, reason: "성실" }).delta.trust).toBe(0); // 하루 상한
     expect(s.time).toBeGreaterThanOrEqual(0);
+  });
+
+  it("임무 완수(하루 상한만 받는 까닭)는 다음 날 다시 오르고, 같은 날 두 번째는 하루 상한에 막힌다 (12-298)", () => {
+    const { store, ctx, me, wait } = setup();
+    const npc = "a_taeho"; // 졸병의 상관 (성실을 좋게 본다)
+    expect(store.getState().characters[npc]).toBeDefined();
+    const rel = () => store.getState().relations[npc]?.[me] ?? NEUTRAL_RELATION;
+    const deed = (n: number) => {
+      const d = { id: `d_t${n}`, actorId: me, summary: "임무 완수: 시험", tags: ["diligence" as const], severity: 1, at: store.getState().time, witnesses: [], searched: false };
+      store.append({ type: "deed_recorded", deed: d });
+      return d;
+    };
+    const before = rel().trust;
+    learn(ctx, deed(1), npc, "report", ["trust", "respect"], REGARD_KINDS.missionDone);
+    const first = rel().trust - before;
+    expect(first).toBe(1);
+    learn(ctx, deed(2), npc, "report", ["trust", "respect"], REGARD_KINDS.missionDone);
+    expect(rel().trust - before).toBe(first); // 같은 날: 하루 상한
+    wait(1);
+    learn(ctx, deed(3), npc, "report", ["trust", "respect"], REGARD_KINDS.missionDone);
+    expect(rel().trust - before).toBe(first * 2); // 다음 날: 같은 까닭 간격을 받지 않는다
+    wait(1);
+    learn(ctx, deed(4), npc, "seen", ["trust", "respect"]); // 까닭을 주지 않은 같은 꼬리표 행적은 그대로 3일 간격
+    expect(rel().trust - before).toBe(first * 2);
   });
 });

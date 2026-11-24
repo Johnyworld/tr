@@ -4,8 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorldManager } from "../world/manager.ts";
+import { capturePlayer } from "./captivity.ts";
 import { describePlayerState } from "./context.ts";
-import { drinkWater, refillWater, runDailyBody, useItem } from "./body.ts";
+import { changeCondition, drinkWater, refillWater, runDailyBody, useItem } from "./body.ts";
 import { loadRealContent } from "../testing.ts";
 
 /** 갈증 (12-97) */
@@ -18,12 +19,50 @@ function open() {
 }
 
 describe("갈증", () => {
-  it("하루마다 한 단계 마르고, 마시지 않으면 닷새째 죽는다 (거점에 있어도 저절로 마시지 않는다)", () => {
+  it("하루마다 한 단계 마르고, 우리 땅 밖에서 마시지 않으면 닷새째 죽는다", () => {
     const { w, me, thirst } = open();
+    w.state().playerZone = "overpass";
     runDailyBody(w.ctx());
     expect(thirst()).toBe("thirsty");
     for (let i = 0; i < 4 && !me().dead; i++) runDailyBody(w.ctx());
     expect(me().dead).toBe(true);
+  });
+
+  it("거점에 있어도 깨어 있으면 저절로 마시지 않는다. 목말라 쓰러지면 무리 사람이 먹인다 (12-303)", () => {
+    const { w, me, thirst } = open();
+    runDailyBody(w.ctx());
+    expect(thirst()).toBe("thirsty");
+    for (let i = 0; i < 6 && !me().dead; i++) runDailyBody(w.ctx());
+    expect(me().dead).toBeFalsy();
+    expect(thirst()).not.toBe("dead");
+  });
+
+  it("우리 땅에서 스스로 못 움직이게 쓰러져 있으면 무리 치료사가 하루 한 번 돌본다, 깨어 있으면 돌보지 않는다 (12-303)", () => {
+    const down = open();
+    changeCondition(down.w.ctx(), down.me().id, "harm", 5, "test", "테스트");
+    const before = down.me().conditions.harm;
+    runDailyBody(down.w.ctx());
+    expect(down.me().conditions.harm).not.toBe(before);
+    const awake = open();
+    changeCondition(awake.w.ctx(), awake.me().id, "harm", 1, "test", "테스트");
+    const light = awake.me().conditions.harm;
+    runDailyBody(awake.w.ctx());
+    expect(awake.me().conditions.harm).toBe(light);
+  });
+
+  it("우리 무리의 벌로 갇히면 가둔 쪽이 물을 준다, 적에게 붙잡히면 그대로 (12-303)", () => {
+    const own = open();
+    // 규율 회의의 벌과 같이 (disc_*_council의 가두기)
+    own.w.ctx().store.append({ type: "player_captured", by: "faction_a", zone: "a_base", held: {}, place: "stockade", releaseAt: own.w.state().time + 2880 });
+    expect(own.me().captive?.by).toBe("faction_a");
+    own.me().conditions.thirst = "parched";
+    runDailyBody(own.w.ctx());
+    expect(own.thirst()).toBe("quenched");
+    const enemy = open();
+    capturePlayer(enemy.w.ctx(), "faction_c", "c_warehouse", "테스트");
+    enemy.me().conditions.thirst = "thirsty";
+    runDailyBody(enemy.w.ctx());
+    expect(enemy.thirst()).not.toBe("quenched");
   });
 
   it("바깥의 물이 나는 곳: 마시면 3단계, 채우기는 따로. 빈 물병이 있으면 GM이 언급한다", () => {

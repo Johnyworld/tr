@@ -594,6 +594,14 @@ function dailyThirst(ctx: ToolContext, rules: ThirstRules): Change | null {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId]!;
   const track = trackOf(ctx.content.scenario, rules.track);
+  // 물을 주는 사람이 있다 (12-303, 2단계 뒤 자동 플레이: 우리 거점에서 의식을 잃은 채 닷새를 누워 목말라 죽었다. PT28 하얀매: 격리 중 목이 말랐다):
+  // 우리 무리의 벌·격리는 가둔 쪽이 물을 주고, 갇히지 않았는데 스스로 못 움직이면 우리 땅의 무리 사람이 먹인다. 적에게 붙잡힌 것은 그대로(captive_max)
+  const kind = heldKind(state);
+  const tendedHere = kind === "own" || kind === "quarantine" || (!kind && !!incapacitatingSymptom(ctx.content.scenario, me) && onOwnLand(state));
+  if (tendedHere) {
+    const now = levelIndex(ctx, state, me.id, track.id);
+    return now > 0 ? changeCondition(ctx, me.id, track.id, -now, "daily", kind ? "가둔 쪽이 물을 줬다" : "쓰러져 있는 사이 무리 사람이 물을 먹였다") : null;
+  }
   let delta = rules.daily;
   if (heldOf(me) && rules.captive_max) delta = Math.max(0, Math.min(delta, track.levels.findIndex((l) => l.id === rules.captive_max) - levelIndex(ctx, state, me.id, track.id)));
   return changeCondition(ctx, me.id, track.id, delta, "daily", heldOf(me) ? "갇힌 곳의 물" : "하루가 지나 목이 마르다");

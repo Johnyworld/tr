@@ -1,4 +1,4 @@
-import { baseOfNow } from "../../rules/home.ts";
+import { baseOfNow, onOwnLand } from "../../rules/home.ts";
 import { sleptSince } from "../../game/state.ts";
 /** 치료 (recovery): engine/body.ts에서 떼어 냈다 (docs/design.md 12-236) */
 import { heldOf, inQuarantine } from "../../rules/held.ts";
@@ -9,7 +9,7 @@ import type { Content } from "../../content/schemas.ts";
 import type { Character } from "../../game/character.ts";
 import { bodyTraits } from "../traits.ts";
 import { dayOf, MINUTES_PER_DAY } from "../../rules/time.ts";
-import { harmTrack } from "../../scenario/scenario.ts";
+import { harmTrack, incapacitatingSymptom } from "../../scenario/scenario.ts";
 import { bleedingBlocksRecovery } from "../bleeding.ts";
 import { type ToolContext, type ToolDisplayEvent } from "../toolkit.ts";
 import { changeCondition, isIncapacitated, type Change, levelIndex } from "../body.ts";
@@ -168,21 +168,26 @@ export function runCaptorCare(ctx: ToolContext): ToolDisplayEvent[] {
   const state = store.getState();
   const me = state.characters[state.playerId];
   const held = heldOf(me);
-  if (!recovery || !me || me.dead || !held || inQuarantine(me)) return [];
+  if (!recovery || !me || me.dead || inQuarantine(me)) return [];
+  // 우리 땅에서 스스로 못 움직이게 쓰러져 있으면 우리 무리 치료사가 같은 규칙으로 돌본다 (12-303, 2단계 뒤 자동 플레이: 치명상으로 거점 감방에 보름 넘게 누워 있었다)
+  const by = held?.by ?? (me.factionId && incapacitatingSymptom(content.scenario, me) && onOwnLand(state) ? me.factionId : null);
+  if (!by) return [];
   const harm = harmTrack(content.scenario);
   if (levelIndex(ctx, state, me.id, harm.id) <= 0 || careUsedToday(state, content, me.id, "healer")) return [];
   // 갇힌 구역의 치료사 먼저, 없으면 그 무리의 다른 치료사를 불러온다 (붉은연합의 치료사는 물류창고에 있다)
   const near = (id: string) => (whereIs(state, content, id)?.zone === state.playerZone ? 0 : 1);
   const healers = Object.values(content.npcs)
-    .filter((n) => n.healer && state.characters[n.id]?.factionId === held.by && !state.characters[n.id]?.dead && !heldOf(state.characters[n.id]))
+    .filter((n) => n.healer && state.characters[n.id]?.factionId === by && !state.characters[n.id]?.dead && !heldOf(state.characters[n.id]))
     .map((n) => n.id)
     .sort((a, b) => near(a) - near(b));
   const cutting = needsSurgery(ctx, me.id);
   const healer = cutting ? (healers.find((id) => canOperate(ctx, id)) ?? null) : (healers[0] ?? null);
   const resource = recovery.healer_cost?.resource ?? recovery.faction_care?.resource;
-  if (!healer || (resource && (state.factions[held.by]?.resources[resource] ?? 0) < 1)) return [];
-  if (resource) store.append({ type: "faction_resource_changed", factionId: held.by, resource, delta: -1 });
-  if (cutting) return operate(ctx, me.id, surgeonRoll(ctx, healer).outcome, `붙잡은 쪽 치료사 ${playerCalls(state, content, healer)}`, true).displays;
-  const c = changeCondition(ctx, me.id, harm.id, -1, "healer", `붙잡은 쪽 치료사 ${playerCalls(state, content, healer)}의 치료 (쓸 데 있는 포로는 살려 둔다)`);
+  if (!healer || (resource && (state.factions[by]?.resources[resource] ?? 0) < 1)) return [];
+  if (resource) store.append({ type: "faction_resource_changed", factionId: by, resource, delta: -1 });
+  const enemy = !!held && held.by !== me.factionId;
+  const who = enemy ? `붙잡은 쪽 치료사 ${playerCalls(state, content, healer)}` : `무리 치료사 ${playerCalls(state, content, healer)}`;
+  if (cutting) return operate(ctx, me.id, surgeonRoll(ctx, healer).outcome, who, true).displays;
+  const c = changeCondition(ctx, me.id, harm.id, -1, "healer", enemy ? `${who}의 치료 (쓸 데 있는 포로는 살려 둔다)` : `${who}의 치료 (쓰러진 사람을 무리가 돌봤다)`);
   return c?.display ? [c.display] : [];
 }

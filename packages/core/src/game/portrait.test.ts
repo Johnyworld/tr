@@ -86,3 +86,31 @@ describe("화면에서 스킬 올리기", () => {
     w.close();
   });
 });
+
+/** 화면에서 한 일은 GM이 못 본다: 다음 tool 결과·장면 정보 앞에 한 번 알린다 (화면에서 사물함에 넣은 뒤 GM이 빈 사물함을 서술했다) */
+describe("화면에서 한 일 알리기", () => {
+  it("창고 넣기·장비는 다음 장면 정보 앞에 한 번 실리고, 화면 조작 결과에는 실리지 않는다", () => {
+    const w = open(null);
+    w.sceneForGm();
+    w.runCheat("~give leather_jacket");
+    w.runCheat("~give blanket");
+    const put = w.moveStash({ direction: "put", itemId: "blanket", quantity: 1 });
+    expect(put.ok).toBe(true);
+    const worn = w.equip({ itemId: "leather_jacket" });
+    expect(worn.ok && worn.text).not.toContain("상태 화면에서 한 일");
+    const scene = w.sceneForGm();
+    expect(scene).toContain("상태 화면에서 한 일");
+    expect(scene).toMatch(/사물함에 넣었다: 담요/);
+    expect(w.sceneForGm()).not.toContain("상태 화면에서 한 일");
+    w.close();
+  });
+
+  it("다음 tool 결과 앞에도 실린다", () => {
+    const w = open(null);
+    w.runCheat("~give leather_jacket");
+    expect(w.equip({ itemId: "leather_jacket" }).ok).toBe(true);
+    const out = w.executeTool("equip", { item_id: null, slot: w.playerView().gear!.armor.find((g) => g.id === "leather_jacket")!.slot });
+    expect(out.ok && out.resultText).toContain("상태 화면에서 한 일");
+    w.close();
+  });
+});

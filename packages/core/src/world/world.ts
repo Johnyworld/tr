@@ -220,6 +220,7 @@ export class GameWorld {
    * MCP 모드에서는 플레이어 의도도 기록에 남긴다 (웹 앱 모드는 GM 루프가 원래 입력을 남긴다).
    */
   executeTool(name: string, input: unknown): ToolOutcome {
+    const screen = this.#fromScreen;
     const before = { turn: this.state().turn, time: this.state().time };
     const seenBefore = visibleOf(this.state(), this.content);
     const tracked = this.#tracked(() => executeTool(name, input, this.ctx()));
@@ -243,6 +244,8 @@ export class GameWorld {
     const progress = [...describeProgressNotices(tracked.notices), ...resolved.lines, ...changed];
     if (outcome.ok && resolved.displays.length) outcome = { ...outcome, extra: [...(outcome.extra ?? []), ...resolved.displays] };
     if (outcome.ok && progress.length) outcome = { ...outcome, resultText: [outcome.resultText, ...progress].filter(Boolean).join("\n") };
+    // 상태 화면에서 플레이어가 한 일은 GM의 다음 tool 결과 앞에 (화면 조작 자체의 결과에는 싣지 않는다)
+    if (outcome.ok && !screen) outcome = { ...outcome, resultText: [this.#takeScreenNote(), outcome.resultText].filter(Boolean).join("\n") };
     if (outcome.ok && !outcome.silent) {
       this.appendTranscript([outcome.display, ...(outcome.extra ?? [])].map((display) => ({ kind: "tool", display })));
     } else if (outcome.ok && outcome.extra?.length) {
@@ -375,7 +378,31 @@ ${this.sceneForGm()}` };
   sceneForGm(): string {
     const sections = describePlayerSections(this.state(), this.content);
     this.#rememberScene(sections);
-    return sections.map((s) => s.text).join("\n\n");
+    return [this.#takeScreenNote(), ...sections.map((s) => s.text)].filter(Boolean).join("\n\n");
+  }
+
+  /**
+   * 상태 화면에서 플레이어가 한 일 (창고·장비·스킬). GM은 화면을 보지 못하니 다음 tool 결과·장면 정보 앞에 한 번 알린다
+   * (PT: 화면에서 담요를 사물함에 넣은 뒤 "사물함을 본다"에 GM이 빈 사물함을 서술했다)
+   */
+  #screenNotes: string[] = [];
+  #fromScreen = false;
+  #onScreen<T extends { ok: boolean }>(run: () => T, text: (r: T) => string): T {
+    this.#fromScreen = true;
+    let r: T;
+    try {
+      r = run();
+    } finally {
+      this.#fromScreen = false;
+    }
+    if (r.ok) this.#screenNotes.push(text(r));
+    return r;
+  }
+  #takeScreenNote(): string {
+    if (!this.#screenNotes.length) return "";
+    const note = `(플레이어가 상태 화면에서 한 일: ${this.#screenNotes.join(" / ")}. 지금 상태는 이것을 따른다)`;
+    this.#screenNotes = [];
+    return note;
   }
 
   /**
@@ -505,7 +532,7 @@ ${this.sceneForGm()}` };
 
   /**
    * 창고 (12-149): 상태 화면에서 물건 하나를 넣거나 꺼낸다. 게임 시간을 쓰지 않는다. 규칙은 core engine/stash.ts (GM의 stash tool과 같다).
-   * 바뀐 것은 이벤트로 남아 GM은 다음 장면 정보에서 본다
+   * 한 일은 GM의 다음 tool 결과 앞에 한 줄로 알린다 (#screenNotes)
    */
   moveStash(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
     const o = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
@@ -513,7 +540,7 @@ ${this.sceneForGm()}` };
     if ((direction !== "put" && direction !== "take") || typeof itemId !== "string" || !Number.isInteger(quantity) || (quantity as number) < 1) {
       return { ok: false, error: "direction(put·take), itemId, quantity(1 이상)로 보낸다." };
     }
-    const tracked = this.#tracked(() => moveStash(this.ctx(), direction, [{ item_id: itemId, quantity: quantity as number }]));
+    const tracked = this.#tracked(() => this.#onScreen(() => moveStash(this.ctx(), direction, [{ item_id: itemId, quantity: quantity as number }]), (r) => (r.ok ? r.lines.join(" ") : "")));
     const r = tracked.value;
     if (!r.ok) return r;
     // 꺼낸 뒤 짐이 한도를 넘었으면 다음 tool 결과에서 GM이 알린다 (stashHint). 여기서는 화면만 바뀐다
@@ -530,7 +557,7 @@ ${this.sceneForGm()}` };
     const itemId = typeof o.itemId === "string" ? o.itemId : null;
     const slot = typeof o.slot === "string" ? o.slot : null;
     if (!itemId && !slot) return { ok: false, error: "itemId(입기·들기) 또는 slot(벗기)으로 보낸다." };
-    const out = this.executeTool("equip", { item_id: itemId, slot: itemId ? null : slot });
+    const out = this.#onScreen(() => this.executeTool("equip", { item_id: itemId, slot: itemId ? null : slot }), (o) => (o.ok ? o.resultText : ""));
     if (!out.ok) return { ok: false, error: out.error };
     this.#repo.saveSnapshot();
     return { ok: true, text: out.resultText };
@@ -543,7 +570,7 @@ ${this.sceneForGm()}` };
   learnSkill(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
     const skill = input && typeof input === "object" ? (input as { skill?: unknown }).skill : undefined;
     if (typeof skill !== "string") return { ok: false, error: "올릴 스킬(skill)을 보낸다." };
-    const out = this.executeTool("learn_skill", { skill });
+    const out = this.#onScreen(() => this.executeTool("learn_skill", { skill }), (o) => (o.ok ? o.resultText : ""));
     if (!out.ok) return { ok: false, error: out.error };
     this.#repo.saveSnapshot();
     return { ok: true, text: out.resultText };

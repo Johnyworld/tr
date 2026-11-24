@@ -81,6 +81,13 @@ describe("주인공의 비밀", () => {
     expect(asNpc).not.toContain(fact);
   });
 
+  it("GM 카드: 소중한 물건은 설명(물건의 사실)도 함께 싣는다 (멈춘 시계로 시간을 읽지 않게)", () => {
+    const { ctx } = setup(["keep_watch"]);
+    const st = ctx.store.getState();
+    const mine = settingLines(content, st, st.characters[st.playerId]!, { player: true }).join("\n");
+    expect(mine).toContain("아버지의 손목시계 (멈췄지만 차고 다닌다)");
+  });
+
   it("털어놓으면 그 자리에 있던 사람이 알고, 그 사람의 카드에만 실린다", () => {
     const { ctx } = setup(["secret_killed_friend"]);
     const st = ctx.store.getState();

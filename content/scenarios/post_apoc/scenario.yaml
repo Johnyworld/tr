@@ -2175,7 +2175,7 @@ settings:
     - { id: "secret_mercy_kill", slot: "secret", name: "부탁받고 숨을 끊어 줬다", description: "안락사 이야기에 말을 아낀다", acting: "안락사 이야기에 말을 아낀다", fact: "다친 사람의 부탁으로" }
     - { id: "keep_photo", slot: "keepsake", name: "가족사진", description: "비닐에 싼 사진 한 장", acting: "쉴 때 꺼내 보고 다시 넣는다", backing: { keepsake: "ks_photo" } }
     - { id: "keep_ring", slot: "keepsake", name: "결혼반지", description: "줄에 꿰어 목에 건", acting: "긴장하면 손이 목으로 간다", backing: { keepsake: "ks_ring" } }
-    - { id: "keep_watch", slot: "keepsake", name: "아버지의 손목시계", description: "멈췄지만 차고 다닌다", acting: "시간을 볼 때 습관처럼 들여다본다", backing: { keepsake: "ks_watch" } }
+    - { id: "keep_watch", slot: "keepsake", name: "아버지의 손목시계", description: "멈췄지만 차고 다닌다", acting: "시간이 궁금하면 습관처럼 들여다보고, 멈춘 바늘을 보고서야 해를 올려다본다", backing: { keepsake: "ks_watch" } }
     - { id: "keep_letter", slot: "keepsake", name: "부치지 못한 편지", description: "접은 자국이 닳았다", acting: "받을 사람 이야기에 표정이 흔들린다", backing: { keepsake: "ks_letter" } }
     - { id: "keep_toy", slot: "keepsake", name: "아이의 장난감", description: "작은 인형", acting: "아이를 보면 만지작거린다", backing: { keepsake: "ks_toy" } }
     - { id: "keep_dogtag", slot: "keepsake", name: "전우의 인식표", description: "죽은 사람의 것", acting: "그 이름을 입속으로 부른다", backing: { keepsake: "ks_dogtag" } }

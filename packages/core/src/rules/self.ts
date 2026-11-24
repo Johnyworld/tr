@@ -63,6 +63,14 @@ function settingObject(name: string): string {
   return /다$/.test(name) ? `${name}는 마음을` : josa(name, "을/를");
 }
 
+/**
+ * 소중한 물건의 설명은 그 물건의 사실이다 ("멈췄지만 차고 다닌다", "그 집은 이제 없다").
+ * 연기 문구만 실으면 GM이 멈춘 시계로 시간을 읽게 했다: 물건 설정은 설명을 함께 싣는다
+ */
+function keepsakeNote(x: { description: string; acting: string; backing?: { keepsake?: string } }): string {
+  return x.backing?.keepsake && x.description !== x.acting ? ` (${x.description})` : "";
+}
+
 /** 설정의 주인 쪽 카드 줄 (연기 카드, 주인공·NPC 공통). 주인공이면 비밀의 사실과 아는 사람, 거스를 때의 안내까지 */
 export function settingLines(content: { scenario: ToolContext["content"]["scenario"] }, state: ReturnType<ToolContext["store"]["getState"]>, c: { id: string; settings: readonly string[] }, options: { player?: boolean; name?: (id: string) => string } = {}): string[] {
   const s = content.scenario;
@@ -74,7 +82,7 @@ export function settingLines(content: { scenario: ToolContext["content"]["scenar
   if (shown.length) {
     lines.push(
       `설정 (대사·몸짓에 조금씩 녹인다. 알리지 않는다): ${shown
-        .map((x) => `${slotOf(x.slot)?.label ?? x.slot} — ${x.name}: ${x.fact && options.player ? "" : x.acting}${slotOf(x.slot)?.rolls && options.player ? ` [${x.id}]` : ""}`.replace(/: $/, ""))
+        .map((x) => `${slotOf(x.slot)?.label ?? x.slot} — ${x.name}${keepsakeNote(x)}: ${x.fact && options.player ? "" : x.acting}${slotOf(x.slot)?.rolls && options.player ? ` [${x.id}]` : ""}`.replace(/: $/, ""))
         .join(" / ")}`,
     );
   }

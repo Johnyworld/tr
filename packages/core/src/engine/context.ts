@@ -77,6 +77,7 @@ import { tracesHere } from "./felt.ts";
 import { maskUnknownIds } from "../rules/knowledge.ts";
 import { currentPlace, depthAt, doorLabel, homeHidden, knowsPlace, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
+import { beliefText, deedText, matureCard, MENACE_COVER, shownOccupationTitle, toneDownLine } from "../rules/lens.ts";
 
 /**
  * 정보 필터 (기획서 6.2).
@@ -241,11 +242,14 @@ function describePresentNpcs(state: GameState, content: Content, player: Charact
     return `- ${id}`;
   });
   // 성적 위협 (12-59): 수위가 켜져 있고, 둘 다 성인이고, 그 인물이 주인공에게 끌릴 때만 GM에게 알린다
-  const menace = state.options?.mature
-    ? state.scene.present
-        .filter((id) => state.characters[id]?.menace && romanceAllowed(state, content, id, player.id) && attracted(state, content, id, player.id))
-        .map((id) => `[GM 전용, 성인 주제] ${playerCalls(state, content, id)}: ${MENACE_LABELS[state.characters[id]!.menace!]}. 판정과 이야기로만 다룬다 (위협·시도까지, 행위는 그리지 않는다)`)
-    : [];
+  // 위협은 늘 굴린 세계 상태다. 꺼져 있으면 일반 위협(괴롭힘·강탈)으로 보인다 (공통 규칙 21)
+  const menace = state.scene.present
+    .filter((id) => state.characters[id]?.menace && romanceAllowed(state, content, id, player.id) && attracted(state, content, id, player.id))
+    .map((id) =>
+      state.options?.mature
+        ? `[GM 전용, 성인 주제] ${playerCalls(state, content, id)}: ${MENACE_LABELS[state.characters[id]!.menace!]}. 판정과 이야기로만 다룬다 (위협·시도까지, 행위는 그리지 않는다)`
+        : `[GM 전용] ${playerCalls(state, content, id)}: ${MENACE_COVER}. 판정과 이야기로만 다룬다`,
+    );
   return [`함께 있는 인물:\n${cards.join("\n\n")}`, ...menace].join("\n");
 }
 
@@ -268,7 +272,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
   return [
     animal
       ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
-      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${kinTitle(state, content, c.id)}${occupationTitle(content, c) ? ` · ${occupationTitle(content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
+      : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${kinTitle(state, content, c.id)}${shownOccupationTitle(state, content, c) ? ` · ${shownOccupationTitle(state, content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
     `상태: ${describeConditions(content.scenario, c)} / ${carriedLabel(state, player, c.id)}: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
     template?.kind === "infected"
@@ -342,8 +346,8 @@ function describeNpcCard(
   const m = (text: string) => maskUnknownNames(state, content, text);
   // 지키는 것(keeps)은 따로: 물어도 쉽게 말하지 않는다 (플레이 테스트 12)
   const kept = new Set(npc.keeps);
-  const knows = (state.beliefs[npc.id] ?? []).filter((b) => !kept.has(b.fact)).map((b) => `  - ${m(b.fact)}`);
-  const keeps = (state.beliefs[npc.id] ?? []).filter((b) => kept.has(b.fact)).map((b) => `  - ${m(b.fact)}`);
+  const knows = (state.beliefs[npc.id] ?? []).filter((b) => !kept.has(b.fact)).map((b) => `  - ${m(beliefText(state, b))}`);
+  const keeps = (state.beliefs[npc.id] ?? []).filter((b) => kept.has(b.fact)).map((b) => `  - ${m(beliefText(state, b))}`);
   const relation = state.relations[npc.id]?.[player.id] ?? NEUTRAL_RELATION;
   const attitude = RELATION_AXES.map(
     (axis) => `${RELATION_AXIS_LABELS[axis]} ${signed(relation[axis])}(${relationLabel(relation[axis])})`,
@@ -351,7 +355,7 @@ function describeNpcCard(
   const knownDeeds = Object.entries(state.deedKnowledge[npc.id] ?? {})
     .map(([deedId, source]) => {
       const deed = state.deeds[deedId];
-      return deed?.actorId === player.id ? `  - ${deed.summary} (${SOURCE_LABELS[source]})` : null;
+      return deed?.actorId === player.id ? `  - ${deedText(state, deed)} (${SOURCE_LABELS[source]})` : null;
     })
     .filter((line) => line !== null)
     .slice(-5);
@@ -361,7 +365,7 @@ function describeNpcCard(
     .map(([deedId, source]) => {
       const deed = state.deeds[deedId];
       if (!deed || deed.actorId === player.id || deed.actorId === npc.id || !near.has(deed.actorId)) return null;
-      return `  - ${headingAs(state, content, player.id, deed.actorId)}: ${deed.summary} (${SOURCE_LABELS[source]})`;
+      return `  - ${headingAs(state, content, player.id, deed.actorId)}: ${deedText(state, deed)} (${SOURCE_LABELS[source]})`;
     })
     .filter((line) => line !== null)
     .slice(-3);
@@ -375,8 +379,8 @@ function describeNpcCard(
   })();
 
   return [
-    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank)}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
-    `외모: ${npc.look}`,
+    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank)}${shownOccupationTitle(state, content, character) ? ` · ${shownOccupationTitle(state, content, character)}` : ""}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
+    `외모: ${npc.look}${matureCard(state, content, npc.id)?.look ? ` ${matureCard(state, content, npc.id)!.look}` : ""}`,
     `상태: ${describeConditions(content.scenario, character)} / ${carriedLabel(state, player, character.id)}: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
     // 예시 대사도 모르는 이름은 호칭으로 (12-294, PT26 하얀매 [정보 누설]: 이름 모르는 경비의 예시 대사 "석유나요")
@@ -385,6 +389,7 @@ function describeNpcCard(
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다]`,
     `당신에 대한 태도: ${attitude}`,
     `원하는 것: ${m(npc.want)} / 두려워하는 것: ${m(npc.fear)}`,
+    ...(matureCard(state, content, npc.id)?.note ? [`[성인 주제] ${m(matureCard(state, content, npc.id)!.note!)}`] : []),
     `트레잇: ${traitLabels(content, character, { acting: true }).join(", ") || "-"} / 가치관: ${values || "-"}`,
     ...(describePersona(content, character) ? [`성격: ${describePersona(content, character)} (말투·태도에 반영한다. 1은 가끔, 2는 자주)`] : []),
     ...settingLines(content, state, character),
@@ -423,7 +428,7 @@ function describeOwnDeeds(state: GameState): string {
     .slice(-3)
     .map((d) => `- ${state.characters[d.actorId]?.name ?? d.actorId}에 대해: ${d.summary}`);
   const parts = [
-    ...(deeds.length ? [`이미 기록된 당신의 행적 (take_action의 deed로 다시 넣지 않는다):\n${deeds.map((d) => `- ${d.id}: ${d.summary}`).join("\n")}`] : []),
+    ...(deeds.length ? [`이미 기록된 당신의 행적 (take_action의 deed로 다시 넣지 않는다):\n${deeds.map((d) => `- ${d.id}: ${deedText(state, d)}`).join("\n")}`] : []),
     ...(made.length ? [`당신이 퍼뜨린 거짓 소문 (듣는 사람은 사실로 믿고 퍼뜨린다):\n${made.join("\n")}`] : []),
   ];
   return parts.join("\n");
@@ -652,7 +657,7 @@ function describeBeliefs(state: GameState, content: Content): string {
   const about = all.filter((b) => !recent.has(b.id) && names.some((n) => b.fact.includes(n))).slice(-MAX_BELIEFS_IN_PROMPT + RECENT_BELIEFS_IN_PROMPT);
   const shown = all.filter((b) => recent.has(b.id) || about.includes(b));
   // 알게 된 때를 붙인다 (12-178): 사흘 전에 본 병력은 지금과 다를 수 있다
-  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}] ${withKnownNames(state, content, b.fact)}`);
+  const lines = shown.map((b) => `- [${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}] ${withKnownNames(state, content, beliefText(state, b))}`);
   const rest = all.length - shown.length;
   // 실을 것이 없으면 머리줄 없이 한 줄로 (플레이 테스트 12: 항목 없는 머리줄이 남았다)
   if (lines.length === 0) return `(당신이 알고 있다고 믿는 것 ${rest}개는 지금 장면과 멀다. 필요하면 recall로 찾는다)`;

@@ -21,6 +21,8 @@ export const beliefAccuracySchema = z.enum(BELIEF_ACCURACIES);
 export const beliefSchema = z.strictObject({
   id: z.string(),
   fact: z.string().min(1).max(300),
+  /** 성인 옵션이 켜져 있을 때 보이는 글 (fact는 순화한 겉 글, 공통 규칙 21 rules/lens.ts) */
+  mature: z.string().min(1).max(300).optional(),
   source: beliefSourceSchema,
   accuracy: beliefAccuracySchema,
   /** 알게 된 게임 시각. 세계가 시작되기 전부터 알던 것은 시작 시각 */

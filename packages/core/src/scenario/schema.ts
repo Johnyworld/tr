@@ -401,6 +401,12 @@ export const scenarioFileSchema = z
           missions: z.array(id).default([]),
           /** 직분 이야기의 태그 (없으면 occ_<id>) */
           storylet_tag: id.optional(),
+          /**
+           * 성인 직업 (공통 규칙 21 보여 주기, 12-297): 성인 옵션이 꺼져 있으면 cover(겉 직업)로 보인다. 사람만 맡고(성인),
+           * 주인공이 고를 수 없다. 사람은 숨기지도 직업을 바꾸지도 않는다
+           */
+          mature: z.boolean().optional(),
+          cover: z.strictObject({ label: z.string().min(1), summary: z.string().min(1) }).optional(),
         }),
       )
       .default([]),

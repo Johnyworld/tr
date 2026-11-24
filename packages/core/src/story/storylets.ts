@@ -38,6 +38,7 @@ import { castHere, inZone, nearby, routineAway, storyIndoor, whereIs } from "../
 import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 import { keepsAway, sparesPlayer } from "../rules/crossed.ts";
+import { choiceShown } from "../rules/lens.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 
 /**
@@ -492,6 +493,8 @@ export function itemFlagsMet(state: GameState, w: ItemFlagConditions): boolean {
  * 판정이 붙은 선택지는 성공의 take_item만 값으로 본다. 대가 있는 성공·실패의 take_item은 빼앗기는 것이라 선택지를 숨기지 않는다: 없으면 있는 만큼만 (B7, 플레이 테스트 9)
  */
 export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: Record<string, string> = {}): boolean {
+  // 성인 선택지는 성인 옵션이 켜져 있을 때만 (공통 규칙 21)
+  if (!choiceShown(state, choice)) return false;
   if (choice.when && !itemFlagsMet(state, choice.when)) return false;
   // 있으면 쓰는 배역이 비었으면 그 배역을 쓰는 선택지는 빠진다
   if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;

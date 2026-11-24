@@ -165,6 +165,8 @@ export const deedSchema = z.strictObject({
   id: z.string(),
   actorId: z.string(),
   summary: z.string(),
+  /** 성인 옵션이 켜져 있을 때 보이는 글 (summary는 순화한 겉 글, 공통 규칙 21 rules/lens.ts) */
+  mature: z.string().optional(),
   tags: z.array(deedTagSchema).min(1),
   severity: z.number().int().min(1).max(3),
   at: z.number().int(),

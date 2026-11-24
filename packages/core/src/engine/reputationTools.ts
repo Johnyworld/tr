@@ -45,6 +45,8 @@ export type DeedInput = {
   privacy: Privacy;
   noisy: boolean;
   byGm?: boolean;
+  /** 성인 옵션이 켜져 있을 때 보이는 글 (공통 규칙 21) */
+  mature?: string;
   /** 당한 사람 (12-262): 가치관으로 마음이 오르지 않는다 (원망은 공통 규칙 13 wrongedResentment) */
   victim?: string | null;
 };
@@ -204,6 +206,7 @@ function recordDeedIf(
     witnesses,
     searched: false,
     ...(input.byGm ? { byGm: true } : {}),
+    ...(input.mature ? { mature: input.mature } : {}),
   };
   ctx.store.append({ type: "deed_recorded", deed });
   for (const w of witnesses) learn(ctx, deed, w.npcId, official?.source ?? "seen", w.npcId === input.victim ? [] : official?.only);

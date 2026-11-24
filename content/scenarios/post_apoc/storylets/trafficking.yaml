@@ -1,0 +1,581 @@
+# 붉은연합 인신매매 줄기 (docs/mature-plan.md 5·6). 사람은 npcs/trafficking.yaml
+# 붉은연합 간부 마경수가 수용소 사람을 "야간 전출"로 빼 노역조장 용두만을 거쳐 거간꾼 길판수에게 넘기고 탄약을 받는다.
+# 피해자는 끌려간 사람 전반이다. 성적 착취는 그 안의 한 갈래라 믿음·행적의 mature 글(성인 옵션이 켜져 있을 때만 보인다)로만 드러난다.
+# 이 줄기의 이야기는 성인 태그(mature)를 달지 않는다: 옵션과 상관없이 열리고, 글은 늘 순화한 겉 글이다 (렌즈, 공통 규칙 21)
+#
+# 이어지는 이야기 (플래그):
+#   소문: tr_night_crew (물류창고 마당, 밤 노역조) · tr_inn_whisper (휴게소 여관, 홍미란) → tr_rumor
+#   뒷거래와 장부: (tr_rumor) tr_parking_deal (휴게소 화물차 주차장, 길판수 → tr_convoy_known, 캐물으면 tr_proof)
+#                 (tr_rumor, 붉은연합) tr_ledger_page (규율반 명부 → tr_ledger_seen, 찢어 오면 tr_proof)
+#   붉은연합 사람의 갈등: (tr_rumor) tr_red_silence (수용소 철망 앞, 모른 척할 것인가)
+#   끝: (tr_rumor) tr_stockade_rescue (수용소에서 곽연옥·도기남 구하기, npc_release)
+#       (tr_convoy_known) tr_convoy_raid (주차장의 덮개 트럭 멈추기)
+#       (tr_proof) tr_proof_traders (나루상단 탁봉수에게) · tr_proof_hawk (하얀매 서은영에게): 붉은연합과의 사이·편들기 클락
+# 지킬 선: 행위를 그리지 않는다. 주인공은 사람을 사고팔거나 쓰지 못한다 (외면·침묵·몰래 돕기·고발·구출만). 모두 성인
+
+# ── 소문 ───────────────────────────────
+
+- id: tr_night_crew
+  title: 밤 노역조
+  tags: [world, trafficking]
+  when:
+    zones: [c_warehouse]
+    indoor: false
+    places: [yard]
+    segments: [night]
+    flags_none: [tr_crew_seen]
+  cast:
+    boss: { ids: [pc_dooman] }
+  setup: 탐조등이 한 바퀴 돌고 지나간 마당. {boss:이/가} 종이쪽을 보며 수용소 쪽에서 이름 넷을 부른다. 불려 나온 사람들은 맨발이다. 3번 초소 앞에 덮개를 씌운 트럭이 시동을 건 채 서 있다. 짐칸 덮개가 내려지고, 트럭은 고가도로 밑으로 사라진다.
+  ai_direction: 붉은연합에서 "밤 노역조"라고 부르는 일이다. 노역이라면 연장을 들려 보내야 하는데 아무도 연장을 들지 않았다. 아침 점호에 그 이름들은 다시 불리지 않는다. 용두만은 마경수의 일이라 입을 무겁게 하고, 물으면 "휴게소 쪽 일손 거간꾼" 정도까지만 흘린다. 붉은연합 사람이라면 이것을 본 것 자체가 짐이 된다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: count
+      label: 끌려 나가는 얼굴을 하나씩 눈에 담아 둔다
+      effects:
+        - set_flag: tr_crew_seen
+        - set_flag: tr_rumor
+        - belief:
+            fact: "물류창고 수용소에서 밤 노역조로 불려 나간 넷이 연장도 없이 덮개 트럭에 실려 고가도로 밑으로 나갔다. 노역조장 용두만이 이름을 불렀다"
+            mature: "물류창고 수용소에서 밤 노역조로 불려 나간 넷이 덮개 트럭에 실려 나갔다. 젊은 여자 둘은 따로 앞칸에 태워졌다. 노역이 아니라 팔려 가는 길이다"
+            source: seen
+    - id: ask_boss
+      label: 용두만에게 어디로 가는 노역이냐고 슬쩍 묻는다
+      check: insight
+      outcomes:
+        success:
+          - set_flag: tr_crew_seen
+          - set_flag: tr_rumor
+          - set_flag: tr_slaver_lead
+          - belief:
+              fact: "용두만이 얼버무렸다. 밤 노역조는 고속도로 휴게소의 일손 거간꾼에게 넘어가고, 규율반 명부에는 '야간 전출'로 적힌다. 값은 탄약 상자로 받는다"
+              mature: "용두만이 얼버무렸다. 밤 노역조는 고속도로 휴게소의 거간꾼에게 팔려 가고, 젊은 여자는 값이 따로 매겨진다. 규율반 명부에는 '야간 전출'로 적힌다"
+              source: report
+        partial:
+          - set_flag: tr_crew_seen
+          - set_flag: tr_rumor
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - belief: { fact: "용두만은 웃기만 했다. '휴게소 쪽 일이죠, 뭐.' 그 뒤로 내 얼굴을 오래 보았다", source: seen }
+        miss:
+          - set_flag: tr_crew_seen
+          - set_flag: tr_rumor
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - belief: { fact: "용두만이 내 이름을 되물었다. 저녁마다 마경수 천막 앞에 서 있는 사람이다. 물은 것이 그쪽 귀에 들어갈 것이다", source: seen }
+    - id: look_away
+      label: 고개를 돌려 막사 쪽으로 걸어간다
+      effects:
+        - set_flag: tr_crew_seen
+        - set_flag: tr_rumor
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "밤에 수용소 사람 넷이 덮개 트럭에 실려 나가는 것을 보고도 고개를 돌렸다. 트럭 소리가 오래 귀에 남았다", source: seen }
+
+- id: tr_inn_whisper
+  title: 계단 밑의 귓속말
+  tags: [world, trafficking]
+  when:
+    zones: [rest_stop]
+    indoor: true
+    places: [diner]
+    segments: [evening, night]
+    flags_none: [tr_inn_heard]
+  cast:
+    miran: { ids: [rs_miran] }
+    victim: { ids: [tv_yeonok], captive_anywhere: true, enter: false, optional: true }
+  setup: 휴게소 식당 안, 계단 위 여관에서 웃음소리가 내려온다. 술상을 치우던 {miran:이/가} 빈 잔을 내려놓으며 옆자리에 앉는다. 위층 발소리가 멎은 틈에 낮게 묻는다. "붉은연합 쪽에서 오는 길이에요? 물류창고 수용소, 거기서 밤에 실려 오는 트럭… 본 적 있어요?"
+  ai_direction: 홍미란은 오래 망설이다 말을 건다. 반태수가 계단을 내려오면 말을 멈추고 술잔을 채운다. 아는 것은 카드대로만 말한다. 자기가 그 트럭에서 내렸다는 것은 먼저 말하지 않는다. 붉은연합 사람이라면 미란은 더 조심하지만, 완장을 찬 사람이 물어 준 것이 처음이라 말을 끊지 않는다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 여관의 일은 성인 옵션의 글(카드의 성인 줄)이 보여 주는 만큼만 말한다.
+  choices:
+    - id: listen
+      label: 술잔을 내려놓고 끝까지 듣는다
+      effects:
+        - set_flag: tr_inn_heard
+        - set_flag: tr_rumor
+        - set_flag: tr_slaver_lead
+        - relation: { who: miran, axis: trust, delta: 1 }
+        - belief:
+            fact: "휴게소 여관 일꾼 홍미란이 말했다: 붉은연합 수용소에서 '밤 노역'으로 불려 나간 사람들이 휴게소 화물차 주차장에서 거간꾼 길판수의 트럭으로 옮겨 탄다. 고속도로로 나간 그 트럭에 탄 사람은 돌아오지 않는다"
+            mature: "휴게소 여관 일꾼 홍미란이 말했다: 붉은연합 수용소 사람들이 휴게소 주차장에서 거간꾼 길판수에게 팔린다. 젊은 여자는 여관과 바깥 술집에 넘겨져 몸을 팔게 된다. 고속도로로 나간 사람은 돌아오지 않는다"
+            source: report
+    - id: ask_name
+      label: 트럭에서 내린 사람 가운데 이름을 아는 이가 있느냐고 묻는다
+      when: { cast: [victim] }
+      effects:
+        - set_flag: tr_inn_heard
+        - set_flag: tr_rumor
+        - set_flag: tr_slaver_lead
+        - relation: { who: miran, axis: trust, delta: 2 }
+        - locate: { who: victim, source: report }
+        - belief:
+            fact: "홍미란이 이름 하나를 일러 주었다. 버들마을 사람 곽연옥이 아직 붉은연합 물류창고 수용소에 있고, 다음 밤 노역조 차례라고 한다. 거간꾼 길판수의 트럭은 그 사람들을 휴게소 주차장에서 받는다"
+            mature: "홍미란이 이름 하나를 일러 주었다. 버들마을 사람 곽연옥이 아직 물류창고 수용소에 있고, 거간꾼 길판수가 '여관 몫'으로 점찍어 두었다. 다음 밤 노역조 차례라고 한다"
+            source: report
+    - id: hush
+      label: "\"여기서 할 얘기가 아니다\"며 술값만 놓고 일어선다"
+      effects:
+        - set_flag: tr_inn_heard
+        - relation: { who: miran, axis: trust, delta: -1 }
+        - belief: { fact: "휴게소 여관 일꾼이 붉은연합 수용소에서 밤에 오는 트럭 이야기를 꺼내려 했다. 듣지 않고 일어섰다", source: seen }
+
+# ── 뒷거래와 장부 ───────────────────────────────
+
+- id: tr_parking_deal
+  title: 덮개 트럭의 머릿수
+  tags: [world, trafficking]
+  when:
+    zones: [rest_stop]
+    indoor: false
+    places: [parking_lot]
+    segments: [night]
+    flags_any: [tr_rumor, tr_slaver_lead]
+    flags_none: [tr_deal_seen]
+  cast:
+    broker: { ids: [rs_pansu] }
+    driver: { extra: c_raider, label: 붉은 완장의 운전수 }
+  setup: 녹슨 화물차들 사이로 덮개 트럭 한 대가 불을 끄고 들어선다. {broker:이/가} 손전등으로 짐칸을 비추며 머릿수를 센다. {driver:이/가} 탄약 상자를 받아 들고 한 번 더 센다. 짐칸 안에서 누가 기침을 하다가 삼킨다.
+  ai_direction: 붉은연합 물류창고에서 온 트럭이 휴게소 주차장에서 길판수의 트럭으로 사람을 옮겨 싣는 밤이다. 값은 탄약 상자로 치른다. 길판수는 운전석 밑에 마경수 몫을 적은 거래 쪽지를 둔다. 나루상단 사람은 이 시각 주차장에 오지 않는다. 주인공이 값을 치르거나 사람을 넘겨받는 길은 없다 (그런 말을 꺼내면 길판수는 웃으며 "완장 없는 손님은 안 받아"라고 자른다). 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: watch
+      label: 화물차 그늘에 엎드려 거래가 끝날 때까지 지켜본다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: tr_deal_seen
+          - set_flag: tr_convoy_known
+          - belief:
+              fact: "휴게소 화물차 주차장에서 붉은연합 트럭이 거간꾼 길판수에게 사람 여섯을 넘기고 탄약 상자 둘을 받았다. 길판수는 사흘 뒤 같은 시각에 다음 트럭이 온다고 했다"
+              mature: "휴게소 주차장에서 붉은연합 트럭이 거간꾼 길판수에게 사람 여섯을 팔았다. 길판수는 젊은 여자 둘을 따로 세워 '여관 몫'이라고 했다. 사흘 뒤 같은 시각에 다음 트럭이 온다"
+              source: seen
+        partial:
+          - set_flag: tr_deal_seen
+          - set_flag: tr_convoy_known
+          - belief: { fact: "거래는 끝까지 보았지만 돌아서다 깡통을 찼다. 길판수의 손전등이 내가 있던 쪽을 한참 훑었다. 다음 트럭은 사흘 뒤라고 했다", source: seen }
+        miss:
+          - set_flag: tr_deal_seen
+          - relation: { who: broker, axis: trust, delta: -2 }
+          - belief: { fact: "주차장에서 길판수의 손전등에 얼굴이 잡혔다. 거래는 서둘러 끝났고 트럭은 불을 끈 채 떠났다", source: seen }
+    - id: press
+      label: 트럭이 떠난 뒤 길판수를 화물차 사이로 몰아 쪽지를 내놓으라고 한다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: tr_deal_seen
+          - set_flag: tr_convoy_known
+          - set_flag: tr_proof
+          - relation: { who: broker, axis: trust, delta: -3 }
+          - grudge: { who: broker, why: 운전석 밑의 거래 쪽지를 빼앗았다 }
+          - deed: { summary: 휴게소 주차장에서 거간꾼을 몰아세워 붉은연합과의 거래 쪽지를 빼앗았다, tags: [bravery], severity: 2, privacy: private }
+          - belief:
+              fact: "길판수의 거래 쪽지를 손에 넣었다. 붉은연합 간부 마경수의 몫, 탄약 상자 수, 사흘마다 넘어온 머릿수가 적혀 있다. 규율반 명부의 '야간 전출'과 맞춘 숫자다"
+              mature: "길판수의 거래 쪽지를 손에 넣었다. 마경수의 몫, 탄약 상자 수, 사흘마다 팔려 온 머릿수가 적혀 있다. 여자 이름 옆에는 '여관 몫'이 따로 적혔다"
+              source: seen
+        partial:
+          - set_flag: tr_deal_seen
+          - set_flag: tr_convoy_known
+          - relation: { who: broker, axis: trust, delta: -3 }
+          - grudge: { who: broker, why: 주차장에서 나를 몰아세웠다 }
+          - belief: { fact: "길판수는 쪽지를 내놓지 않았다. 대신 사흘 뒤 밤 다음 트럭이 온다는 말을 흘리고, 다시 보면 쏘겠다고 했다", source: seen }
+        miss:
+          - set_flag: tr_deal_seen
+          - relation: { who: broker, axis: trust, delta: -3 }
+          - wound: { steps: 1, cause: 길판수가 휘두른 트럭 크랭크에 맞았다, kind: blunt }
+          - belief: { fact: "길판수가 트럭 크랭크를 휘둘렀다. 쪽지는 운전석 밑에 그대로 있다", source: seen }
+    - id: leave
+      label: 보지 않은 것으로 하고 주차장을 빠져나간다
+      effects:
+        - set_flag: tr_deal_seen
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "휴게소 주차장에서 붉은연합 트럭이 거간꾼에게 사람을 넘기는 것을 보고 그냥 빠져나왔다", source: seen }
+
+- id: tr_ledger_page
+  title: 야간 전출
+  tags: [world, trafficking]
+  when:
+    factions: [faction_c]
+    zones: [c_base]
+    indoor: true
+    places: [office_block]
+    segments: [evening, night]
+    flags_any: [tr_rumor, tr_slaver_lead]
+    flags_none: [tr_ledger_done]
+  cast:
+    clerk: { ids: [c_sangok], enter: false }
+  setup: 사무동 이층 규율반 방. 서기 {clerk:이/가} 자리를 비웠다. 책상에 명부가 펼쳐져 있고, 잉크가 덜 마른 칸 하나가 등잔 빛에 번들거린다. 칸 머리에 "야간 전출"이라고 적혀 있다. 이름 옆 칸에는 사람 대신 상자 수가 적혀 있다.
+  ai_direction: 우상옥은 명부를 이렇게 펼쳐 두는 사람이 아니다. 실수인지, 누가 보기를 바란 것인지는 GM만 짐작한다 (우상옥은 마경수의 따로 거래를 캐는 중이다. 카드의 비밀). 결재 칸에는 마경수의 서명이 있다. 들키면 규율반이 이름을 적는다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: read
+      label: 문 쪽에 귀를 두고 그 칸을 끝까지 읽는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: tr_ledger_done
+          - set_flag: tr_ledger_seen
+          - set_flag: co_gyeongsu_suspect
+          - belief:
+              fact: "규율반 명부의 '야간 전출' 칸: 지난 두 달 서른하나. 이름 옆에는 탄약 상자 수. 결재는 마경수. 곽연옥이라는 이름이 다음 줄에 미리 적혀 있다"
+              mature: "규율반 명부의 '야간 전출' 칸: 지난 두 달 서른하나가 팔려 나갔다. 여자 이름 옆에는 '여관'이라는 표시가 따로 있다. 결재는 마경수. 곽연옥의 이름이 다음 줄에 미리 적혀 있다"
+              source: seen
+        partial:
+          - set_flag: tr_ledger_done
+          - set_flag: tr_ledger_seen
+          - set_flag: c_marked
+          - belief: { fact: "'야간 전출' 칸을 다 읽기 전에 계단에서 발소리가 났다. 서른 줄이 넘고, 결재는 마경수였다. 나오다 서기와 눈이 마주쳤다", source: seen }
+        miss:
+          - set_flag: tr_ledger_done
+          - set_flag: c_marked
+          - merit: -1
+          - deed: { summary: 규율반 명부를 몰래 들여다보다 들켰다, tags: [disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "명부를 들여다보다 서기 우상옥에게 들켰다. 그는 아무것도 묻지 않고 내 이름을 따로 적었다", source: seen }
+    - id: tear
+      label: 그 장을 조용히 뜯어 품에 넣는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: tr_ledger_done
+          - set_flag: tr_ledger_seen
+          - set_flag: tr_proof
+          - set_flag: co_gyeongsu_suspect
+          - deed: { summary: 규율반 명부의 한 장을 몰래 뜯어 왔다, tags: [theft, betrayal], severity: 3, privacy: private }
+          - belief:
+              fact: "규율반 명부의 '야간 전출' 장을 뜯어 왔다. 두 달 서른하나, 탄약 상자 수, 마경수의 결재가 남은 종이다"
+              mature: "규율반 명부의 '야간 전출' 장을 뜯어 왔다. 팔려 나간 서른하나와 '여관' 표시, 마경수의 결재가 남은 종이다"
+              source: seen
+        partial:
+          - set_flag: tr_ledger_done
+          - set_flag: tr_ledger_seen
+          - set_flag: tr_proof
+          - set_flag: c_marked
+          - deed: { summary: 규율반 명부의 한 장을 뜯어 왔다, tags: [theft, betrayal], severity: 3, privacy: semi_private }
+          - belief: { fact: "'야간 전출' 장을 뜯어 왔다. 계단을 내려오다 우상옥과 스쳤다. 그는 빈 책상 쪽을 돌아보지 않았다", source: seen }
+        miss:
+          - set_flag: tr_ledger_done
+          - set_flag: c_marked
+          - merit: -2
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 규율반 명부를 뜯다 들켰다, tags: [theft, disobedience], severity: 3, privacy: semi_private }
+          - belief: { fact: "명부를 뜯다 종이 찢는 소리에 사람이 올라왔다. 손에 든 것은 빼앗겼고, 이름은 규율반에 남았다", source: seen }
+    - id: close
+      label: 명부를 덮고 아무것도 보지 않은 얼굴로 나온다
+      effects:
+        - set_flag: tr_ledger_done
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "규율반 명부에 '야간 전출'이라는 칸이 있었다. 읽지 않고 덮었다", source: seen }
+
+# ── 붉은연합 사람의 갈등: 모른 척할 것인가 ───────────────────────────────
+
+- id: tr_red_silence
+  title: 오늘 밤 불리는 이름
+  tags: [world, trafficking]
+  when:
+    factions: [faction_c]
+    zones: [c_warehouse]
+    indoor: true
+    places: [stockade]
+    segments: [evening, night]
+    flags_any: [tr_rumor, tr_ledger_seen]
+    flags_none: [tr_silence_done]
+  cast:
+    victim: { ids: [tv_yeonok, tv_giman], captive: true }
+  setup: 수용소 철망 앞을 지나는데 {victim:이/가} 철망에 손가락을 건다. 붉은 완장을 한 번 보고, 얼굴을 한 번 본다. "오늘 밤 이름 불리는 거, 누구예요. 알잖아요. 완장 찬 사람들은 다 알잖아요."
+  ai_direction: 붉은연합 사람에게 이것은 무리의 일이다. 규칙은 "위원회의 결정에 토를 달지 않는다"와 "수상한 동료는 규율반에 알린다"이고, 밤 노역조는 마경수의 결재로 굴러간다. 침묵하면 무리 안에서는 아무 일도 없지만 마음에 남고, 철망 안 사람들은 그 얼굴을 기억한다. 몰래 돕거나 위원회 앞에서 따지면 규율반이 이름을 적을 수 있다. 수용소 문을 여는 일은 다른 이야기(수용소의 빗장)가 맡는다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다 (완장을 찼어도). 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: silent
+      label: 대답하지 않고 철망 앞을 지나간다
+      effects:
+        - set_flag: tr_silence_done
+        - relation: { who: victim, axis: trust, delta: -2 }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: 밤 노역에 불려 갈 사람의 물음에 대답하지 않고 지나갔다, tags: [cowardice], severity: 1, privacy: semi_private }
+        - belief: { fact: "수용소 철망 앞에서 {victim}의 물음에 대답하지 않았다. 등 뒤에서 철망 흔들리는 소리가 오래 났다", source: seen }
+    - id: warn
+      label: 몰래 귀띔하고, 품에 있던 빵을 철망 틈으로 밀어 넣는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: tr_silence_done
+          - set_flag: tr_inside_help
+          - relation: { who: victim, axis: trust, delta: 2 }
+          - relation: { who: victim, axis: affection, delta: 1 }
+          - deed: { summary: 수용소 사람에게 밤 노역 명단을 몰래 귀띔해 주었다, tags: [mercy, enemy_sympathy], severity: 2, privacy: private }
+          - belief: { fact: "{victim}에게 오늘 밤 명단을 귀띔했다. 그 사람은 손등에 무언가를 적고 고개를 끄덕였다", source: seen }
+        partial:
+          - set_flag: tr_silence_done
+          - set_flag: tr_inside_help
+          - set_flag: c_marked
+          - relation: { who: victim, axis: trust, delta: 2 }
+          - deed: { summary: 수용소 사람에게 무언가를 몰래 건넸다, tags: [mercy, enemy_sympathy], severity: 2, privacy: semi_private }
+          - belief: { fact: "{victim}에게 귀띔은 했지만, 돌아서는데 망루의 탐조등이 한 박자 늦게 나를 따라왔다", source: seen }
+        miss:
+          - set_flag: tr_silence_done
+          - set_flag: c_marked
+          - merit: -1
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - deed: { summary: 수용소 철망 틈으로 포로에게 몰래 무언가를 넘기다 들켰다, tags: [enemy_sympathy, disobedience], severity: 2, privacy: semi_private }
+          - belief: { fact: "빵을 밀어 넣다 경비에게 들켰다. 경비는 빵을 짓밟고 내 조 번호를 물었다", source: seen }
+    - id: protest
+      label: 위원회 앞에서 '야간 전출'이 무엇이냐고 따지겠다고 마음먹는다
+      when: { flags_all: [tr_ledger_seen] }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: tr_silence_done
+          - set_flag: tr_halted
+          - set_flag: co_gyeongsu_suspect
+          - faction_morale: { faction: faction_c, delta: -1 }
+          - relation: { who: victim, axis: trust, delta: 3 }
+          - deed: { summary: 위원회 앞에서 수용소 사람을 내다 파는 '야간 전출'을 따졌다, tags: [honesty, bravery], severity: 3, privacy: public }
+          - belief:
+              fact: "위원회 앞에서 '야간 전출'을 따졌다. 위원장은 마경수의 몫을 따로 셈하겠다며 밤 노역조를 멈추라고 했다. 막사가 술렁였다. 마경수는 웃지 않았다"
+              mature: "위원회 앞에서 수용소 사람을 노예로 팔아 온 '야간 전출'을 따졌다. 위원장은 밤 노역조를 멈추라고 했다. 막사가 술렁였다. 마경수는 웃지 않았다"
+              source: seen
+        partial:
+          - set_flag: tr_silence_done
+          - set_flag: c_marked
+          - merit: -1
+          - relation: { who: victim, axis: trust, delta: 2 }
+          - deed: { summary: 위원회 앞에서 '야간 전출'을 따졌다, tags: [honesty, disobedience], severity: 2, privacy: public }
+          - belief: { fact: "위원장은 끝까지 들었지만 대답하지 않았다. 다음 날 아침 마경수가 나를 천막으로 불렀다", source: seen }
+        miss:
+          - set_flag: tr_silence_done
+          - set_flag: c_marked
+          - merit: -3
+          - relation: { who: commander, axis: trust, delta: -2 }
+          - deed: { summary: 위원회의 결정에 토를 달았다, tags: [disobedience], severity: 3, privacy: public }
+          - capture_player: { by: own, days: 2 }
+          - belief: { fact: "위원회의 결정에 토를 단 죄로 이틀 동안 철망 감방에 들어갔다. 위원장은 '야간 전출'이라는 말을 한 번도 입에 올리지 않았다", source: seen }
+
+# ── 끝: 구출 ───────────────────────────────
+
+- id: tr_stockade_rescue
+  title: 수용소의 빗장
+  tags: [world, trafficking]
+  when:
+    zones: [c_warehouse]
+    indoor: true
+    places: [stockade]
+    segments: [night, dawn]
+    flags_any: [tr_rumor, tr_ledger_seen, tr_convoy_known]
+    flags_none: [tr_rescue_done]
+  cast:
+    victim: { ids: [tv_yeonok], captive: true }
+    smith: { ids: [tv_giman], captive: true, optional: true }
+  setup: 수용소 철망 칸 앞. 간수는 바깥문 쪽에서 졸고 있다. 빗장은 녹슨 쇠다. 칸 안에서 {victim:이/가} 손등에 쓴 숫자를 엄지로 문질러 지우다 당신을 본다. 바깥 3번 초소 쪽에서 트럭 시동 소리가 한 번 났다가 꺼진다.
+  ai_direction: 오늘 밤 노역조가 불려 나가기 전이다. 빗장은 쇠지렛대나 망치로 두 번이면 부러지지만 소리가 난다. 같은 칸의 도기남이 있으면 빗장을 어떻게 치는지 안다. 둘 다 데려가면 나가는 길이 느려진다. 붉은연합 사람이 문을 열면 그것은 규율반이 가장 무겁게 다루는 일이다. 꺼내 온 사람은 제 무리·제 길로 돌아간다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: free_one
+      label: 빗장을 부러뜨리고 곽연옥을 데리고 컨테이너 담 틈으로 나간다
+      check: stealth
+      outcomes:
+        success:
+          - npc_release: { who: victim }
+          - set_flag: tr_rescue_done
+          - set_flag: tr_rescued
+          - relation: { who: victim, axis: trust, delta: 3 }
+          - deed: { summary: 붉은연합 수용소에서 밤 노역에 불려 갈 사람을 빼냈다, tags: [mercy, bravery], severity: 3, privacy: private }
+          - belief: { fact: "곽연옥을 컨테이너 담 틈으로 빼냈다. 그는 버들마을 쪽으로 가며 끌려 나간 사람들 이름을 한 번 더 외웠다", source: seen }
+        partial:
+          - npc_release: { who: victim }
+          - set_flag: tr_rescue_done
+          - set_flag: tr_rescued
+          - set_flag: c_marked
+          - zone_noise: 1
+          - deed: { summary: 붉은연합 수용소에서 사람을 빼내다 소란을 냈다, tags: [mercy, bravery], severity: 3, privacy: semi_private }
+          - belief: { fact: "빗장 부러지는 소리에 간수가 깼다. 곽연옥은 빠져나갔지만 탐조등이 담 틈을 오래 비췄다", source: seen }
+        miss:
+          - zone_noise: 1
+          - set_flag: c_marked
+          - belief: { fact: "빗장이 한 번에 부러지지 않았다. 간수가 깨는 소리에 철망 앞에서 물러났다. 곽연옥은 철망 안에서 고개를 저었다", source: seen }
+    - id: free_both
+      label: 도기남에게 쇠지렛대를 넘겨 빗장을 맡기고 둘 다 데리고 나간다
+      when: { cast: [smith] }
+      check: sense_danger
+      outcomes:
+        success:
+          - npc_release: { who: victim }
+          - npc_release: { who: smith }
+          - set_flag: tr_rescue_done
+          - set_flag: tr_rescued
+          - relation: { who: victim, axis: trust, delta: 3 }
+          - relation: { who: smith, axis: trust, delta: 3 }
+          - deed: { summary: 붉은연합 수용소에서 밤 노역에 불려 갈 사람 둘을 빼냈다, tags: [mercy, bravery], severity: 3, privacy: private }
+          - belief: { fact: "도기남이 빗장을 두 번에 끊었다. 곽연옥과 도기남을 데리고 나왔다. 도기남은 철망에 그은 금이 서른하나라고 했다", source: seen }
+        partial:
+          - npc_release: { who: victim }
+          - set_flag: tr_rescue_done
+          - set_flag: tr_rescued
+          - set_flag: c_marked
+          - zone_noise: 1
+          - deed: { summary: 붉은연합 수용소에서 사람을 빼내다 소란을 냈다, tags: [mercy, bravery], severity: 3, privacy: semi_private }
+          - belief: { fact: "빗장은 끊었지만 간수가 깼다. 도기남은 먼저 가라며 문을 막아섰다. 곽연옥만 데리고 나왔다", source: seen }
+        miss:
+          - zone_noise: 1
+          - set_flag: c_marked
+          - belief: { fact: "간수의 손전등이 먼저 왔다. 도기남이 쇠지렛대를 철망 밑으로 감췄다. 오늘 밤은 아니다", source: seen }
+    - id: mark
+      label: 빗장의 녹과 간수 교대만 눈에 담고 물러난다
+      effects:
+        - locate: { who: victim, source: seen }
+        - belief: { fact: "물류창고 수용소 빗장은 녹슨 쇠라 쇠지렛대로 두 번이면 부러진다. 간수는 바깥문 쪽에서 존다. 곽연옥이 아직 그 칸에 있다", source: seen }
+
+- id: tr_convoy_raid
+  title: 사흘째 밤의 트럭
+  tags: [world, trafficking]
+  when:
+    zones: [rest_stop]
+    indoor: false
+    places: [parking_lot]
+    segments: [night]
+    flags_all: [tr_convoy_known]
+    flags_none: [tr_convoy_done]
+  cast:
+    broker: { ids: [rs_pansu] }
+    driver: { extra: c_raider, label: 붉은 완장의 운전수, crowd: 2 }
+  setup: 사흘째 밤, 같은 시각. 덮개 트럭이 불을 끄고 주차장에 들어선다. {driver:이/가} 짐칸 자물쇠를 풀고, {broker:이/가} 손전등을 든다. 녹슨 화물차 그늘에서 당신까지는 스무 걸음이다.
+  ai_direction: 짐칸에는 붉은연합 수용소에서 실려 온 사람들이 손이 묶인 채 앉아 있다. 운전수 둘과 길판수가 있고, 길판수는 권총을 지녔다. 트럭을 멈추면 짐칸 사람들은 제각기 흩어져 제 길로 간다(이름 없는 사람들). 붉은연합은 누가 트럭을 멈췄는지 찾으려 든다. 죽이고 살리는 일은 이야기가 아니라 판정이 정한다. 주인공이 값을 치르고 사람을 데려가는 길은 없다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다. 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: tires
+      label: 길판수의 트럭 바퀴에 칼을 꽂고 짐칸 자물쇠가 풀린 틈에 사람들을 흩어 보낸다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: tr_convoy_done
+          - set_flag: tr_convoy_stopped
+          - relation: { who: broker, axis: trust, delta: -3 }
+          - deed: { summary: 휴게소 주차장에서 거간꾼의 트럭을 멈추고 실려 가던 사람들을 풀어 보냈다, tags: [mercy, bravery], severity: 3, privacy: private }
+          - belief:
+              fact: "길판수의 트럭 바퀴를 찢고 짐칸 사람들을 풀어 보냈다. 여섯이 고가도로 쪽과 강변 쪽으로 흩어졌다. 길판수는 다음 트럭을 받을 수 없다"
+              mature: "길판수의 트럭 바퀴를 찢고 팔려 가던 여섯을 풀어 보냈다. 그중 둘은 '여관 몫'으로 따로 묶여 있던 여자들이었다. 길판수는 다음 트럭을 받을 수 없다"
+              source: seen
+        partial:
+          - set_flag: tr_convoy_done
+          - set_flag: tr_convoy_stopped
+          - zone_noise: 1
+          - grudge: { who: broker, why: 내 트럭을 멈추고 머릿수를 날렸다 }
+          - deed: { summary: 휴게소 주차장에서 거간꾼의 트럭을 멈췄다, tags: [mercy, bravery], severity: 3, privacy: semi_private }
+          - belief: { fact: "바퀴를 찢었지만 길판수가 나를 보았다. 짐칸 사람 몇은 흩어졌고 몇은 붉은연합 트럭에 도로 실렸다", source: seen }
+        miss:
+          - set_flag: tr_convoy_done
+          - wound: { steps: 1, cause: 길판수의 권총 개머리에 맞았다, kind: blunt }
+          - belief: { fact: "바퀴에 칼을 꽂기 전에 길판수의 손전등이 먼저 왔다. 트럭은 짐칸을 그대로 싣고 고속도로로 나갔다", source: seen }
+    - id: charge
+      label: 화물차 그늘에서 뛰쳐나가 운전수들을 몰아내고 짐칸을 연다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: tr_convoy_done
+          - set_flag: tr_convoy_stopped
+          - zone_noise: 2
+          - faction_relation: { from: faction_c, to: faction_e, delta: -1, mutual: false }
+          - deed: { summary: 휴게소 주차장에서 붉은연합 트럭을 덮쳐 실려 가던 사람들을 풀어 주었다, tags: [mercy, bravery], severity: 3, privacy: semi_private }
+          - belief:
+              fact: "운전수들이 트럭을 버리고 달아났다. 짐칸 여섯을 풀어 주었다. 붉은연합은 나루상단 땅에서 트럭을 잃었다고 상단을 의심할 것이다"
+              mature: "운전수들이 트럭을 버리고 달아났다. 팔려 가던 여섯을 풀어 주었다. 붉은연합은 나루상단 땅에서 트럭을 잃었다고 상단을 의심할 것이다"
+              source: seen
+        partial:
+          - set_flag: tr_convoy_done
+          - set_flag: tr_convoy_stopped
+          - zone_noise: 2
+          - wound: { steps: 1, cause: 운전수와 뒤엉켜 쇠지렛대에 맞았다, kind: blunt }
+          - belief: { fact: "운전수와 뒤엉키다 다쳤다. 짐칸 문은 열었고, 사람들은 어둠 속으로 흩어졌다", source: seen }
+        miss:
+          - set_flag: tr_convoy_done
+          - zone_noise: 2
+          - wound: { steps: 2, cause: 길판수의 총구 앞에서 쇠지렛대에 맞았다, kind: blunt }
+          - belief: { fact: "운전수 둘이 먼저 덤볐다. 쓰러진 사이 트럭은 짐칸을 실은 채 고속도로로 나갔다", source: seen }
+    - id: let_go
+      label: 숨을 죽이고 트럭이 떠나기를 기다린다
+      effects:
+        - set_flag: tr_convoy_done
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "사흘째 밤, 덮개 트럭이 사람들을 싣고 고속도로로 나가는 것을 화물차 그늘에서 보고만 있었다", source: seen }
+
+# ── 끝: 증거를 다른 무리에 ───────────────────────────────
+
+- id: tr_proof_traders
+  title: 자릿세 장부 옆의 쪽지
+  tags: [world, trafficking]
+  when:
+    zones: [e_market]
+    indoor: true
+    places: [pawnshop]
+    segments: [morning, day, evening]
+    flags_all: [tr_proof]
+    flags_none: [tr_proof_given]
+  cast:
+    boss: { ids: [e_bongsu], enter: false }
+  setup: 장터 장부석. 상단 표찰과 빚 장부가 쌓인 탁자 위로 등잔이 흔들린다. 품 안의 종이가 바스락거린다. 휴게소 주차장의 거래가 적힌 종이다. 장터 안 어딘가에 상단 우두머리가 있다.
+  ai_direction: 탁봉수는 누구에게나 판다. 다만 상단 땅 휴게소 주차장에서 붉은연합이 사람을 팔고 탄약을 받아 왔다는 것은 다르다. 상단의 장사가 거기 묶여 있다는 말이 다른 무리에 돌면 장터에 아무도 오지 않는다. 쪽지를 보면 그는 붉은연합 쪽으로 기울던 셈을 다시 한다. 붉은연합 사람이 넘기면 그것은 무리를 판 일이 된다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다 (증거를 팔지도 않는다). 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: hand
+      label: 탁봉수를 찾아가 쪽지를 탁자에 펼친다
+      meets: boss
+      when: { factions: [faction_a, faction_b, faction_d, faction_e, faction_y, none] }
+      effects:
+        - set_flag: tr_proof_given
+        - faction_relation: { from: faction_e, to: faction_c, delta: -2, mutual: false }
+        - clock: { id: e_side, delta: -3 }
+        - relation: { who: boss, axis: trust, delta: 1 }
+        - deed: { summary: 붉은연합이 휴게소에서 사람을 팔아 온 증거를 나루상단에 넘겼다, tags: [honesty, bravery], severity: 2, privacy: semi_private }
+        - belief:
+            fact: "탁봉수가 쪽지를 오래 보았다. '우리 땅에서 사람 장사를 했다고.' 그는 휴게소 주차장을 닫고 붉은연합 짐에 값을 다시 매기라고 했다"
+            mature: "탁봉수가 쪽지를 오래 보았다. '우리 땅에서 사람을, 여자를 팔았다고.' 그는 휴게소 주차장을 닫고 붉은연합 짐에 값을 다시 매기라고 했다"
+            source: seen
+    - id: hand_red
+      label: 완장을 풀어 주머니에 넣고 탁봉수에게 쪽지를 넘긴다
+      meets: boss
+      when: { factions: [faction_c] }
+      effects:
+        - set_flag: tr_proof_given
+        - set_flag: c_marked
+        - faction_relation: { from: faction_e, to: faction_c, delta: -2, mutual: false }
+        - clock: { id: e_side, delta: -3 }
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - deed: { summary: 무리의 '야간 전출' 증거를 나루상단에 넘겼다, tags: [honesty, betrayal], severity: 3, privacy: private }
+        - belief: { fact: "탁봉수는 붉은 완장 자국을 보고 웃지 않았다. '자기 무리를 판 사람은 장부에 안 적어. 오늘 일도 안 적고.' 주차장은 닫힌다", source: seen }
+    - id: keep
+      label: 아직은 넘기지 않고 품에 둔다
+      effects:
+        - belief: { fact: "장부석까지 와서 쪽지를 꺼내지 않았다. 나루상단이 이것으로 무엇을 셈할지 모른다", source: seen }
+
+- id: tr_proof_hawk
+  title: 약값보다 무거운 종이
+  tags: [world, trafficking]
+  when:
+    zones: [d_clinic]
+    indoor: true
+    places: [director_room, pharmacy, ward]
+    segments: [morning, day]
+    flags_all: [tr_proof]
+    flags_none: [tr_proof_given]
+  cast:
+    doctor: { ids: [d_eunyoung], enter: false }
+  setup: 하얀매 진료소. 약제실 문 앞에 붉은연합으로 갈 약 상자가 끈에 묶여 있다. 상자에 붙은 꼬리표에 "물류창고"라고 적혀 있다. 품 안의 종이에는 그 물류창고에서 밤마다 실려 나간 머릿수가 적혀 있다.
+  ai_direction: 서은영은 누구 편에도 서지 않으려 한다. 약을 거래 조건으로 쓰는 것도 그래서다. 사람을 팔아 받은 탄약으로 굴러가는 무리에 약을 먼저 대는 것은 그 중립을 스스로 깨는 일이다. 종이를 보면 그녀는 붉은연합에 약을 먼저 대려던 셈을 거둔다. 의사의 얼굴로 숫자를 읽고, 숫자 뒤의 사람을 묻는다. 붉은연합 사람이 넘기면 그것은 무리를 판 일이 된다. 지킬 선 — 성폭력 행위는 그리지 않는다. 사실(장부의 칸)·정황·결과로만 다룬다. 몸을 묘사하지 않는다. 피해자를 탓하지 않는다. 주인공이 사람을 사고팔거나 쓰는 길은 내밀지 않는다 (증거를 팔지도 않는다). 착취의 성격은 믿음·행적의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: hand
+      label: 서은영을 찾아가 종이를 건넨다
+      meets: doctor
+      when: { factions: [faction_a, faction_b, faction_d, faction_e, faction_y, none] }
+      effects:
+        - set_flag: tr_proof_given
+        - faction_relation: { from: faction_d, to: faction_c, delta: -2, mutual: false }
+        - clock: { id: d_lean, delta: -3 }
+        - relation: { who: doctor, axis: trust, delta: 1 }
+        - deed: { summary: 붉은연합이 수용소 사람을 팔아 온 증거를 하얀매에 넘겼다, tags: [honesty, bravery], severity: 2, privacy: semi_private }
+        - belief:
+            fact: "서은영은 종이를 두 번 읽고 약 상자의 꼬리표를 떼었다. '물류창고 몫은 이번 달 없습니다.' 하얀매는 붉은연합에 약을 먼저 대지 않는다"
+            mature: "서은영은 종이를 두 번 읽었다. '여관 몫'이라는 칸에서 손가락이 멈췄다. 그녀는 약 상자의 꼬리표를 떼었다. 하얀매는 붉은연합에 약을 먼저 대지 않는다"
+            source: seen
+    - id: hand_red
+      label: 완장을 풀어 주머니에 넣고 서은영에게 종이를 건넨다
+      meets: doctor
+      when: { factions: [faction_c] }
+      effects:
+        - set_flag: tr_proof_given
+        - set_flag: c_marked
+        - faction_relation: { from: faction_d, to: faction_c, delta: -2, mutual: false }
+        - clock: { id: d_lean, delta: -3 }
+        - relation: { who: doctor, axis: trust, delta: 2 }
+        - deed: { summary: 무리의 '야간 전출' 증거를 하얀매에 넘겼다, tags: [honesty, betrayal], severity: 3, privacy: private }
+        - belief: { fact: "서은영은 내 소매의 완장 자국을 보고 아무것도 묻지 않았다. '다친 데 있으면 줄 서지 말고 뒷문으로 와요.' 약 상자의 꼬리표가 떨어졌다", source: seen }
+    - id: keep
+      label: 아직은 넘기지 않고 품에 둔다
+      effects:
+        - belief: { fact: "진료소까지 와서 종이를 꺼내지 않았다. 하얀매가 이것으로 무엇을 셈할지 모른다", source: seen }

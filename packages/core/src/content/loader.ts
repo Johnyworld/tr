@@ -17,6 +17,11 @@ import { itemSources } from "./sources.ts";
 import { settingOf, unmetRequires } from "../game/settings.ts";
 import { personaOf } from "../engine/persona.ts";
 
+/** 성인·인신매매 이야기의 ai_direction에 꼭 있어야 하는 선 표시 (docs/mature-plan.md 6) */
+export const LINE_MARK = "지킬 선";
+/** 인신매매 줄기의 이야기 태그 */
+export const TRAFFICKING_TAG = "trafficking";
+
 export class ContentError extends Error {
   override name = "ContentError";
   constructor(readonly problems: string[]) {
@@ -167,6 +172,7 @@ function checkReferences(content: Content): string[] {
     for (const i of o.kit) if (!content.items[i]) problems.push(`${at}: 알 수 없는 아이템 ${i}`);
     for (const m of o.missions) if (!content.missions[m]) problems.push(`${at}: 알 수 없는 임무 ${m}`);
   }
+  problems.push(...checkMatureLines(content));
   problems.push(...checkSettingsContent(content));
   // 계급이 요구하는 전문 기술 (4.2.1)과 최소 나이 (12-87)
   for (const [rank, skills] of Object.entries(content.scenario.creation?.rank_experts ?? {})) {
@@ -1068,6 +1074,33 @@ function checkSettingsContent(content: Content): string[] {
       if (!x) problems.push(`${at}: 알 수 없는 설정 ${id}`);
       else for (const q of unmetRequires(s, persona, x.requires)) problems.push(`${at}.${id}: 성격 조건을 채우지 못한다 (${q})`);
     }
+  }
+  return problems;
+}
+
+/**
+ * 성인 콘텐츠의 선 (공통 규칙 21, docs/mature-plan.md 6): 성인 직업은 겉 직업이 있고 주인공이 맡지 않으며 사람은 성인만,
+ * 성인 카드 줄도 성인만, 성인·인신매매 이야기의 ai_direction에는 행위를 그리지 않는다는 선(LINE_MARK)을 적는다
+ */
+export function checkMatureLines(content: Content): string[] {
+  const problems: string[] = [];
+  const adultAge = content.scenario.content_rating?.adult_age ?? 18;
+  for (const o of content.scenario.occupations) {
+    const at = `scenario.occupations.${o.id}`;
+    if (o.mature && !o.cover) problems.push(`${at}: 성인 직업에 겉 직업(cover)이 없다`);
+    if (!o.mature && o.cover) problems.push(`${at}: 성인 직업이 아닌데 cover가 있다`);
+  }
+  const matureOcc = new Set(content.scenario.occupations.filter((o) => o.mature).map((o) => o.id));
+  for (const r of Object.values(content.roles)) if (r.occupation && matureOcc.has(r.occupation)) problems.push(`roles.${r.id}.occupation: 성인 직업은 주인공이 맡지 않는다 (${r.occupation})`);
+  for (const n of Object.values(content.npcs)) {
+    if (n.occupation && matureOcc.has(n.occupation) && !(n.age >= adultAge)) problems.push(`npcs.${n.id}: 성인 직업은 ${adultAge}세 이상만 (지금 ${n.age})`);
+    if (n.occupation_cover && !(n.occupation && matureOcc.has(n.occupation))) problems.push(`npcs.${n.id}.occupation_cover: 성인 직업이 아닌데 겉 직업이 있다`);
+    if (n.mature && !(n.age >= adultAge)) problems.push(`npcs.${n.id}.mature: 성인 카드 줄은 ${adultAge}세 이상만`);
+  }
+  const tag = content.scenario.content_rating?.tag;
+  for (const s of Object.values(content.storylets)) {
+    const lined = (!!tag && s.tags.includes(tag)) || s.tags.includes(TRAFFICKING_TAG);
+    if (lined && !(s.ai_direction ?? "").includes(LINE_MARK)) problems.push(`storylets.${s.id}.ai_direction: 성인·인신매매 이야기는 "${LINE_MARK} — 행위는 그리지 않는다…"를 적는다`);
   }
   return problems;
 }

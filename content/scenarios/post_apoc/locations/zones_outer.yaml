@@ -207,7 +207,7 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: canopy, name: "주유소 지붕 밑", indoor: false, description: "주유소 지붕 밑. 비는 피하지만 바람은 들이친다", aliases: ["주유소", "휴게소 지붕", "칠판"], near: [diner] }
-    - { id: diner, name: "휴게소 식당 안", indoor: true, description: "의자가 뒤집힌 휴게소 식당 안", aliases: ["식당"] }
+    - { id: diner, name: "휴게소 식당 안", indoor: true, description: "의자가 뒤집힌 휴게소 식당 안. 안쪽 계단 위 옛 직원 숙소를 여관으로 꾸려 짐꾼과 호위대에게 방과 술을 판다", aliases: ["식당", "여관", "이층 방"] }
     - { id: tollgate, name: "톨게이트", indoor: false, description: "톨게이트. 차단기와 부스가 줄지어 섰다", aliases: ["톨게이트"], near: [canopy, parking_lot], road: true, to: [power_plant] }
     - { id: to_market, name: "장터 가는 뒷길", indoor: false, description: "휴게소 뒤로 장터에 이어지는 길", near: [canopy], road: true, to: [e_market] }
     - { id: parking_lot, name: "화물차 주차장", indoor: false, description: "화물차가 녹슨 넓은 주차장. 숨을 데가 많다" }

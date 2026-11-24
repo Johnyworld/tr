@@ -73,7 +73,8 @@ export function checkCustomStart(content: Content, input: CustomStartInput): str
   }
   if (input.occupation) {
     if (input.faction === null) problems.push("떠돌이는 직분이 없다 (무리 안의 일이다).");
-    else if (!occupationById(content, input.occupation)) problems.push(`직분은 ${content.scenario.occupations.map((o) => `${o.label}(${o.id})`).join(", ")} 중 하나다.`);
+    else if (occupationById(content, input.occupation)?.mature) problems.push("그 직분은 주인공이 맡을 수 없다.");
+    else if (!occupationById(content, input.occupation)) problems.push(`직분은 ${content.scenario.occupations.filter((o) => !o.mature).map((o) => `${o.label}(${o.id})`).join(", ")} 중 하나다.`);
   }
   problems.push(...checkHistory(content, input.history ?? [], input.faction));
   if (!c.kits.some((k) => k.id === input.kit)) problems.push(`소지품 꾸러미는 ${c.kits.map((k) => `${k.label}(${k.id})`).join(", ")} 중 하나다.`);

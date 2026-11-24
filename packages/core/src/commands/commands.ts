@@ -30,6 +30,7 @@ import { weatherNow } from "../sim/weather.ts";
 import { buildPlayerView, type PlayerView } from "../views/player.ts";
 import { personProfile } from "../views/person.ts";
 import { DIALOGUE_STYLE_LABELS } from "../engine/storyletTools.ts";
+import { beliefText } from "../rules/lens.ts";
 
 /**
  * MUD식 정보 명령어 (기획서 11.7).
@@ -326,7 +327,7 @@ const factions: CommandDef = {
     for (const f of o.others) lines.push(`${f.name}  [${f.stance}] ${f.size}`, `  ${f.public}`);
     const news = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.topic === WAR_TOPIC || b.topic === WAR_INTEL_TOPIC).slice(-5).reverse();
     lines.push("", "최근 전황 (들은 것)");
-    lines.push(...(news.length ? news.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)} · ${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${withKnownNames(ctx.state, ctx.content, b.fact)}`) : ["  들은 소식이 없습니다."]));
+    lines.push(...(news.length ? news.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)} · ${formatTime(b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${withKnownNames(ctx.state, ctx.content, beliefText(ctx.state, b))}`) : ["  들은 소식이 없습니다."]));
     return lines.join("\n");
   },
 };
@@ -398,7 +399,7 @@ const rumors: CommandDef = {
   run(ctx) {
     // 소식(무리 안에서 전해 들은 것)과 소문을 함께 (12-238, 플레이 테스트 13: 우리 공세 결과가 소식이라 ?소문에 없었다)
     const heard = (ctx.state.beliefs[ctx.state.playerId] ?? []).filter((b) => b.source === "rumor" || b.source === "report").slice(-12).reverse();
-    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] (${BELIEF_SOURCE_LABELS[b.source]}) ${withKnownNames(ctx.state, ctx.content, b.fact)}`) : ["  들은 소식·소문이 없습니다."])].join("\n");
+    return [header("소문"), ...(heard.length ? heard.map((b) => `  [${formatAgo(ctx.state.time, b.learnedAt)}] (${BELIEF_SOURCE_LABELS[b.source]}) ${withKnownNames(ctx.state, ctx.content, beliefText(ctx.state, b))}`) : ["  들은 소식·소문이 없습니다."])].join("\n");
   },
 };
 

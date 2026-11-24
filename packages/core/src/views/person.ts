@@ -8,6 +8,7 @@ import { rankName } from "../game/ranks.ts";
 import { formatAgo } from "../rules/time.ts";
 import { playerSecretName, secretKnownBy } from "../rules/self.ts";
 import { personFactLines, personFacts } from "../engine/personFacts.ts";
+import { beliefText } from "../rules/lens.ts";
 
 /**
  * 한 인물에 대해 플레이어가 아는 것 (?인물 이름, 시트의 이름 툴팁이 같이 쓴다).
@@ -52,7 +53,7 @@ export function personProfile(state: GameState, content: Content, id: string): P
       // 만남·이름 기억은 머리(이름·호칭)와 겉모습이 이미 보여 준다: "이름은 모른다"가 이름을 안 뒤에도 남았다 (PT14)
       .filter((b) => !isAcquaintanceMemory(b.fact) && ((named && b.fact.includes(c.name)) || b.fact.includes(alias)))
       .slice(-5)
-      .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: withKnownNames(state, content, b.fact) })),
+      .map((b) => ({ source: `${BELIEF_SOURCE_LABELS[b.source]} · ${formatAgo(state.time, b.learnedAt)}`, fact: withKnownNames(state, content, beliefText(state, b)) })),
     knowsMySecret: secretKnownBy(state, state.playerId).includes(id) ? (playerSecretName(content, state) ?? null) : null,
     offers: met ? personFactLines(personFacts(state, content, id, false)).map((l) => l.replace(" (take_action.lesson)", "")) : [],
   };

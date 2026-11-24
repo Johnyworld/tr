@@ -30,7 +30,7 @@ import { harmTrack} from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
-import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, storyletOf } from "../story/storylets.ts";
+import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, isMature, storyletOf } from "../story/storylets.ts";
 import { justHadStory, storyText } from "../rules/storySlot.ts";
 import {hereWithMe, placeById, storyIndoor, storySummonsTo, movePlayer, STEP_MINUTES, stepsBetween, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad, knowsPlace, placeHint, PLACE_HINT_RUMOR_CHANCE } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
@@ -72,6 +72,7 @@ import { reduceHarm } from "../rules/damage.ts";
 import { learned } from "../rules/skill.ts";
 import { routeCause } from "./felt.ts";
 import { hearNews } from "../rules/news.ts";
+import { toneDownLine } from "../rules/lens.ts";
 
 /**
  * 스토리렛 연결 (기획서 10.3).
@@ -257,6 +258,8 @@ export function describeStoryletForGm(state: GameState, content: Content): strin
     // 배역이 아닌 인물의 이름도 주인공이 모르면 호칭으로 (12-192)
     `  상황: ${maskUnknownNames(state, content, fillStorylet(storySetup(state, a.storylet), vars), { story: true })}`,
     ...(a.storylet.ai_direction ? [`  [GM 전용] 연출: ${maskUnknownNames(state, content, fillStorylet(a.storylet.ai_direction, vars), { story: true })}`] : []),
+    // 진행 중에 성인 옵션을 껐으면 수위를 낮춘다 (공통 규칙 21)
+    ...[toneDownLine(state, isMature(content, a.storylet))].filter((x): x is string => !!x).map((x) => `  [GM 전용] ${x}`),
     // 등장 인물은 이미 장면에 있다 (12-253, PT15 튜토리얼: 다시 npc_presence enter를 불러 오류). 이야기가 끝나도 남는다
     // 장면에 들어오지 않는 배역(글에만 나오는 사람)은 따로 (12-261, PT16 섬: 뭍에 있는 오빠가 "이미 장면에 있다")
     `  등장 (이미 장면에 있다. 이야기가 끝나도 남는다): ${Object.entries(a.cast).filter(([k, id]) => a.storylet.cast[k]?.enter !== false || state.scene.present.includes(id)).map(([k, id]) => `${k}=${vars[k]}(${id})`).join(", ") || "없음"}`,
@@ -678,7 +681,7 @@ export function applyEffect(
     if (!(state.beliefs[playerId] ?? []).some((b) => b.fact === fact)) store.append({
       type: "belief_added",
       characterId: playerId,
-      belief: { id: `b_${state.nextBeliefNo}`, fact, source: effect.belief.source, accuracy: "approximate", learnedAt: state.time },
+      belief: { id: `b_${state.nextBeliefNo}`, fact, ...(effect.belief.mature ? { mature: maskUnknownNames(state, content, sentence(fillStorylet(effect.belief.mature, vars))) } : {}), source: effect.belief.source, accuracy: "approximate", learnedAt: state.time },
     });
     return { line: `알게 된 것: ${fact}`, display: { type: "belief", fact, sourceLabel: BELIEF_SOURCE_LABELS[effect.belief.source] } };
   }
@@ -1183,7 +1186,7 @@ export function applyEffect(
       .filter((d) => d.actorId === playerId && !d.fabricatedBy && !!d.byGm && state.time - d.at <= 60 && (d.tags.some((t) => effect.deed.tags.includes(t)) || d.at >= openedAt))
       .at(-1);
     if (recent) return { line: `행적은 이미 기록됐다: ${sentence(recent.summary)}` };
-    const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), noisy: false });
+    const { deed, visible } = recordDeed(ctx, { ...effect.deed, summary: fillStorylet(effect.deed.summary, vars), ...(effect.deed.mature ? { mature: fillStorylet(effect.deed.mature, vars) } : {}), noisy: false });
     return {
       line: `행적 기록: ${sentence(deed.summary)}${visible.length ? ` 본 사람: ${visible.join(", ")}.` : ""}`,
       display: { type: "deed", summary: deed.summary, tagLabels: deed.tags.map((t) => DEED_TAG_LABELS[t]), visibleWitnesses: visible },

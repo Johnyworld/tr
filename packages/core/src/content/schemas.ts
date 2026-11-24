@@ -264,6 +264,10 @@ export function createContentSchemas(s: Scenario) {
     menace: z.enum(["harass", "coerce", "assault"]).optional(),
     age: z.number().int().positive(),
     look: z.string().min(1),
+    /** 성인 직업의 겉 직업 이름을 이 사람만 따로 (공통 규칙 21). 없으면 직업의 cover */
+    occupation_cover: z.string().min(1).optional(),
+    /** 성인 옵션이 켜져 있을 때만 카드에 더하는 줄 (공통 규칙 21). look·voice·knows는 늘 보이는 겉 글이다 */
+    mature: z.strictObject({ look: z.string().min(1).optional(), note: z.string().min(1).optional() }).optional(),
     /** 거점 사람들이 아는 모습. 이 인물을 아는 캐릭터에게 보인다 */
     reputation: z.string().min(1),
     want: z.string().min(1),
@@ -673,7 +677,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ threat_passes: z.literal(true) }),
     /** 배역 NPC의 계급을 바꾼다 (지도부 교체·강등) */
     z.strictObject({ npc_rank: z.strictObject({ who: z.string().min(1), rank: idEnum(rankIds(s)) }) }),
-    z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), source: beliefSourceSchema.default("seen") }) }),
+    /** mature: 성인 옵션이 켜져 있을 때 보이는 글 (fact는 늘 있는 순화한 겉 글, 공통 규칙 21) */
+    z.strictObject({ belief: z.strictObject({ fact: z.string().min(1).max(300), mature: z.string().min(1).max(300).optional(), source: beliefSourceSchema.default("seen") }) }),
     z.strictObject({ merit: z.number().int().min(-3).max(3) }),
     /** 주인공의 계급을 바꾼다 (12-152: 강등·추대). 같은 무리 안에서. 무소속이면 아무 일도 없다 */
     z.strictObject({ player_rank: z.strictObject({ rank: idEnum(rankIds(s)) }) }),
@@ -800,6 +805,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({
       deed: z.strictObject({
         summary: z.string().min(1).max(120),
+        /** 성인 옵션이 켜져 있을 때 보이는 글 (summary는 순화한 겉 글, 공통 규칙 21) */
+        mature: z.string().min(1).max(120).optional(),
         tags: z.array(deedTagSchema).min(1).max(3),
         severity: z.number().int().min(1).max(3),
         privacy: privacySchema,
@@ -916,6 +923,8 @@ export function createContentSchemas(s: Scenario) {
     .strictObject({
       id: contentIdSchema,
       label: z.string().min(1),
+      /** 성인 선택지 (공통 규칙 21): 성인 옵션이 꺼져 있으면 숨긴다 */
+      mature: z.boolean().optional(),
       /**
        * 이 선택지를 고를 수 있는 조건. 맞지 않으면 GM에게 보이지 않는다 (주인공이 모르는 길을 내밀지 않는다).
        * 내놓는 물건(take_item)은 따로 적지 않아도 지녔는지 본다

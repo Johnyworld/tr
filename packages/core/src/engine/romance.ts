@@ -62,6 +62,8 @@ export function romanceAllowed(state: GameState, content: Content, a: string, b:
   if (!rules(content) || !ca || !cb || ca.dead || cb.dead || a === b || isCreature(content, ca) || isCreature(content, cb) || !isAdult(content, ca) || !isAdult(content, cb)) return false;
   // 가족끼리는 아니다 (플레이 테스트 12: 찾던 언니에게 눈길이 붙었다)
   if ((a === state.playerId && state.family.includes(b)) || (b === state.playerId && state.family.includes(a))) return false;
+  // 동성 사이는 다루지 않는다 (docs/mature-plan.md 6): 성별을 알면 다른 성별끼리만
+  if (ca.gender && cb.gender && ca.gender === cb.gender) return false;
   return !tiesOf(state, content, a).some((t) => t.other === b && KIN_TIES.has(t.kind));
 }
 

@@ -47,6 +47,7 @@ import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts
 import { entrustedHeld, loanOf } from "../rules/entrusted.ts";
 import { learned } from "../rules/skill.ts";
 import { currentPlace } from "../rules/place.ts";
+import { beliefText, deedText } from "../rules/lens.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -622,7 +623,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       .filter((d) => d.actorId === player.id)
       .map((d) => ({
         id: d.id,
-        summary: d.summary,
+        summary: deedText(state, d),
         tagLabels: d.tags.map((t) => DEED_TAG_LABELS[t]),
         visibleWitnesses: d.witnesses.filter((w) => !w.hidden).map((w) => playerCalls(state, content, w.npcId)),
       }))
@@ -631,7 +632,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     beliefs: (state.beliefs[state.playerId] ?? [])
       .map((b) => ({
         id: b.id,
-        fact: withKnownNames(state, content, b.fact),
+        fact: withKnownNames(state, content, beliefText(state, b)),
         sourceLabel: BELIEF_SOURCE_LABELS[b.source],
         learnedLabel: `${formatAgo(state.time, b.learnedAt)} · ${formatTime(b.learnedAt)}`,
       }))

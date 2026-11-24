@@ -1660,6 +1660,7 @@ function applyHarm(ctx: ToolContext, checkId: string, severity: HarmSeverity, ca
     shareable: !!opponentId || fightLike,
     cause,
     track: track.id,
+    opponent: opponentId,
     hurt: (who, n, why) => {
       const line = changeCondition(ctx, who, track.id, n, "enemy", why)?.line ?? null;
       // 감염체의 상처를 막아선 사람도 감염될 수 있다 (PT22 하얀매: 무는 감염체를 몸으로 받았는데 감염도 격리도 없었다). 살갗이 찢기는 상처일 때만

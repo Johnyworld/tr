@@ -12,6 +12,7 @@ import { squadMembers } from "./command.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
+import { keepsAway } from "../rules/crossed.ts";
 
 /**
  * 진급 제안과 분대 (12-190, 플레이 테스트 8).
@@ -62,7 +63,8 @@ function vacantSquad(content: Content, state: GameState, factionId: string, rank
     if (role.id === mine?.id || role.faction !== factionId || role.rank !== rank || !role.squad?.length) continue;
     const members = role.squad.filter((id) => {
       const c = state.characters[id];
-      return id !== state.playerId && !!c && !c.dead && !c.away && !heldOf(c) && c.factionId === factionId && !(mine?.squad_mates ?? []).includes(id);
+      // 원수는 분대로 넘겨받지 않는다 (공통 규칙 20)
+      return id !== state.playerId && !!c && !c.dead && !c.away && !heldOf(c) && c.factionId === factionId && !(mine?.squad_mates ?? []).includes(id) && !keepsAway(state, content, id);
     });
     if (members.length) return members;
   }

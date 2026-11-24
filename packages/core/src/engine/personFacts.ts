@@ -8,8 +8,10 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { teachable } from "../rules/skill.ts";
 import { askedPromises } from "./promises.ts";
+import { crossedLine } from "../rules/crossed.ts";
 
-export type PersonFacts = { sells: string[]; asks: string[]; teaches: string[] };
+/** crossed: 무리 사이와 사람 사이가 엇갈릴 때 GM 한 줄 (공통 규칙 20, GM에게만) */
+export type PersonFacts = { sells: string[]; asks: string[]; teaches: string[]; crossed?: string | null };
 
 export function personFacts(state: GameState, content: Content, id: string, forGm: boolean): PersonFacts {
   const c = state.characters[id];
@@ -22,12 +24,13 @@ export function personFacts(state: GameState, content: Content, id: string, forG
         return f ? [`${content.items[f.item.id]?.name ?? f.item.id} ×${f.item.quantity} (${p.id})`] : [];
       })
     : [];
-  return { sells, asks, teaches: teachable(content, c.skills) };
+  return { sells, asks, teaches: teachable(content, c.skills), crossed: forGm ? crossedLine(state, content, id) : null };
 }
 
 /** 한 줄씩 (비어 있는 것은 뺀다) */
 export function personFactLines(f: PersonFacts): string[] {
   return [
+    ...(f.crossed ? [f.crossed] : []),
     ...(f.sells.length ? [`파는 물건: ${f.sells.join(", ")}`] : []),
     ...(f.asks.length ? [`꺼낼 부탁: ${f.asks.join(", ")} (받으면 promise accept, 그 물건을 transfer_item으로 건네면 받아 주고 지킨 것)`] : []),
     ...(f.teaches.length ? [`가르칠 수 있는 것: ${f.teaches.join(", ")} (take_action.lesson)`] : []),

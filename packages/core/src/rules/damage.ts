@@ -15,6 +15,7 @@ import { resistSteps } from "../engine/growth.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { shareHarmWith } from "./company.ts";
 import { changeRelation } from "./regard.ts";
+import { spareCap } from "./crossed.ts";
 
 /** 버팀 (12-109): 레벨만큼 단계를 피한다. 피했으면 까닭 줄 */
 export function resist(ctx: ToolContext, who: string, steps: number): { steps: number; line: string | null } {
@@ -43,6 +44,8 @@ export type HarmInput = {
   track: string;
   /** 나눠 받은 사람을 다치게 하는 함수 (body.changeCondition, 순환 import를 피한다) */
   hurt?: (who: string, steps: number, cause: string) => string | null;
+  /** 상처를 낸 상대 (공통 규칙 20: 각별한 적은 목숨을 빼앗지 않는다) */
+  opponent?: string | null;
 };
 
 /** 셈한 결과: 남은 단계, 방어구가 다 받아 냈는지(몸에 닿지 않음), 까닭 줄 */
@@ -62,6 +65,17 @@ export function reduceHarm(ctx: ToolContext, input: HarmInput): { steps: number;
       const hurtLine = input.hurt(mate, 1, `${input.cause} (막아서다)`);
       // 몫을 밝힌다 (설계 목록 4-2, PT16~20 다섯 판: 대신 받았는데 주인공도 다친 것처럼 읽혔다)
       lines.push(`${josa(playerCalls(state, ctx.content, mate), "이/가")} 막아서다 한 단계를 대신 받았다: 원래 ${before}단계였는데 당신은 ${steps}단계만 다친다.${hurtLine ? ` ${hurtLine}` : ""}`);
+    }
+  }
+  // 전쟁 중이어도 주인공에게 각별한 상대는 목숨을 빼앗지 않는다: 정해 둔 단계 바로 앞에서 멈춘다 (공통 규칙 20)
+  const state = ctx.store.getState();
+  const track = ctx.content.scenario.condition_tracks.find((t) => t.id === input.track);
+  const who = state.characters[input.who];
+  if (track && who && input.who === state.playerId) {
+    const cap = spareCap(state, ctx.content, input.opponent, track, who.conditions[track.id] ?? track.levels[0]!.id);
+    if (cap !== null && steps > cap) {
+      steps = cap;
+      lines.push(`${josa(playerCalls(state, ctx.content, input.opponent!), "은/는")} 마지막 순간 손을 거둔다: 목숨을 빼앗을 생각은 없다.`);
     }
   }
   return { steps, armored: absorbed.steps <= 0, lines };

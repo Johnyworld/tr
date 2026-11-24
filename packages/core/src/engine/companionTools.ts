@@ -14,6 +14,7 @@ import { josa } from "../text.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
+import { keepsAway } from "../rules/crossed.ts";
 
 /**
  * 함께 다니는 이유와 떨어짐 (기획서 7.9). 언제 끝나는지, 갈림길의 기울기, 떠나는지는 코드가 정한다
@@ -145,6 +146,8 @@ export function assignBuddy(ctx: ToolContext, missionId: string, commander: stri
     .filter((c) => content.npcs[c.id] && c.id !== state.playerId && c.id !== commander && c.factionId === player.factionId)
     .filter((c) => !c.dead && !c.away && !heldOf(c) && !state.squadOrders?.[c.id] && !state.companions.includes(c.id) && !state.bonds?.[c.id])
     .filter((c) => known.has(c.id) && c.rank === player.rank)
+    // 원수는 짝으로 붙이지 않는다 (공통 규칙 20)
+    .filter((c) => !keepsAway(state, content, c.id))
     .map((c) => c.id)
     .sort();
   if (!pool.length) return null;

@@ -15,6 +15,7 @@ import { changeCondition, maybeInfect } from "./body.ts";
 import { baseOf, capturePlayer } from "./captivity.ts";
 import { stopBleeding } from "./bleeding.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
+import { anySparer } from "../rules/crossed.ts";
 
 /**
  * 의식불명 중 곁의 사람 (기획서 4.4, 12-90). 원칙 3: 무슨 일이 일어나는지는 GM이 아니라 코드가 정한다.
@@ -212,7 +213,9 @@ function byEnemies(ctx: ToolContext, hostiles: Character[], factionId: string | 
   const feud = hostiles.some((c) => regard(state, c.id, me.id) <= rules.hostile_regard);
   const chance = Math.max(0, Math.min(1, rules.kill.base + rules.kill.per_mercy * mercy + (feud ? rules.kill.feud : 0)));
   const by = hostiles[0]?.id ?? factionId;
-  if (ctx.rng() < chance || (!factionId && !ctx.content.scenario.captivity)) {
+  // 곁의 적 가운데 주인공에게 각별한 사람이 있으면 목숨은 빼앗지 않는다: 붙잡아 가거나 두고 간다 (공통 규칙 20)
+  const spared = anySparer(state, ctx.content, hostiles.map((c) => c.id));
+  if (!spared && (ctx.rng() < chance || (!factionId && !ctx.content.scenario.captivity))) {
     ctx.store.append({ type: "helpless_resolved", outcome: "killed", by });
     const track = harmTrack(ctx.content.scenario);
     const c = changeCondition(ctx, me.id, track.id, track.levels.length, "enemy", "정신을 잃은 채 적의 손에 죽었다");

@@ -37,6 +37,7 @@ import {storyPlaceFits, storyPlaces, storyPlacesFit, fireLitHere } from "../rule
 import { castHere, inZone, nearby, routineAway, storyIndoor, whereIs } from "../rules/place.ts";
 import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
+import { keepsAway, sparesPlayer } from "../rules/crossed.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 
 /**
@@ -126,6 +127,8 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => role.age_lte === undefined || (c.age !== null && c.age !== undefined && c.age <= role.age_lte))
     .filter((c) => !role.blackmailed || (state.blackmails ?? []).some((b) => b.npcId === c.id && b.by === state.playerId && b.grudge))
     .filter((c) => role.distrusted_gte === undefined || standingInFaction(state, content, c.id).distrust >= role.distrusted_gte)
+    // 전쟁이 아닌데 원수인 사람은 곁에 두지 않는다 (공통 규칙 20). 사람을 정해 둔 배역·갇힌 사람 배역은 그 사람의 이야기라 그대로
+    .filter((c) => !!role.ids || !!role.captive || !!role.captive_anywhere || !keepsAway(state, content, c.id))
     .map((c) => c.id)
     .sort();
 }
@@ -246,7 +249,9 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
         (!role.enter || !!role.ids || !!storylet.when.summons || state.scene.present.includes(id) || !routineAway(state, content, id)) &&
         (!placed || castHere(state, content, id, comes, ableNow(state, content, id), at)) &&
         // 찾아오는 배역은 지금 곁에 없던 사람이다 (12-293, PT25 분대장: "흙투성이 신발로 들어와"에 내내 곁에 누워 있던 동행이 뽑혔다)
-        (!role.comes || (!state.scene.present.includes(id) && !state.companions.includes(id))),
+        (!role.comes || (!state.scene.present.includes(id) && !state.companions.includes(id))) &&
+        // 전쟁 중이어도 각별한 사람은 먼저 치지 않는다: 위협 이야기의 배역으로 뽑지 않는다 (공통 규칙 20)
+        !(isThreat(content, storylet) && sparesPlayer(state, content, id)),
     );
     if (all.length === 0) {
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다

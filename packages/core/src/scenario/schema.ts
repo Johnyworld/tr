@@ -1787,6 +1787,11 @@ export const scenarioFileSchema = z
         heavy: z.array(z.string()).default([]),
       })
       .default({ window_days: 3, daily_cap: 1, heavy: [] }),
+    /**
+     * 공통 규칙 20 무리 사이와 사람 사이 (rules/crossed.ts, 12-296): 전쟁 중 무리 사람의 호감이 fond_affection 이상이면 먼저 치지 않고
+     * 그 사람이 낸 상처는 harm_track의 harm_stops_before 단계 바로 앞에서 멈춘다. 전쟁이 아닌데 신뢰가 grudge_trust 이하면 곁에 두지 않는다
+     */
+    crossed: z.strictObject({ fond_affection: z.number().int(), grudge_trust: z.number().int(), harm_stops_before: id }).optional(),
     storylet_pacing: z
       .strictObject({
         min_gap_hours: z.number().min(0),
@@ -1854,6 +1859,9 @@ export const scenarioFileSchema = z
     if (s.charm && !s.stats.some((x) => x.id === s.charm!.ability)) problem(`charm.ability: 알 수 없는 능력 ${s.charm.ability}`);
     for (const [role, move] of Object.entries(s.move_roles)) {
       if (move && !moves.has(move)) problem(`move_roles.${role}: 알 수 없는 행동 ${move}`);
+    }
+    if (s.crossed && !s.condition_tracks.find((t) => t.id === s.harm_track)?.levels.some((l) => l.id === s.crossed!.harm_stops_before)) {
+      problem(`crossed.harm_stops_before: 부상 트랙(${s.harm_track})에 없는 단계 ${s.crossed.harm_stops_before}`);
     }
     for (const [track, level] of Object.entries(s.storylet_pacing.practice_max)) {
       const t = s.condition_tracks.find((x) => x.id === track);

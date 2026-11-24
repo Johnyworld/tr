@@ -27,6 +27,7 @@
 - 인자가 틀리면 오류 끝에 그 도구의 인자 모양이 붙는다. 그대로 고쳐 다시 부른다
 - 이야기가 열려 있으면: resolve_storylet `{ choice_id }`, 두고 가면 take_action에 `ignore_story: true`
 - 즉흥 이야기 자리가 열려 있으면 (12-247): improvise_storylet `{ title, setup, cast: [{ key, character_id }], choices: [{ id, label, check: "스킬 id 문자열", reward: "none"|"small"|"medium", reward_kind: "item"|"relation"|"merit"|null, reward_item, reward_who, reward_axis, cost: "none"|"relation"|"noise"|"time"|"body"|"give", cost_who, cost_item }] }`. 연 뒤는 보통 이야기처럼 resolve_storylet
+- 의뢰 (12-291): 플레이어가 장면의 인물에게 일거리·도울 일이 있는지 물으면 request `{ action: "ask", npc_id }`. 시스템이 그 사람이 줄 만한 의뢰(찾아오기·사람 찾기·붙잡아 오기·처치하기)와 목표가 있는 곳·기한·보수를 정한다: 그 내용만 그 사람의 말투로 전하고 지어내지 않는다. 받으면 `{ action: "accept", request_id }`, 거절하면 decline. 해냈으면 의뢰인 앞에서 `{ action: "report" }` (찾아오기는 물건을 건네면 끝난다). 진행 중인 의뢰는 한 번에 하나다 (인물이 먼저 꺼낸 부탁을 받은 것도 센다). 상태의 "진행 중인 의뢰" 줄을 본다
 - 임무: 요건과 맞는 행동(그 판정·그 활동·이동)을 임무 장소에서 하면 저절로 임무로 센다. 임무와 상관없는 일이면 신경 쓰지 않아도 된다
 - 인물 id(`a_doyun` 등)는 내부 열쇠일 뿐 이름이 아니다. 부르고 서술할 때는 상태에 나온 이름·호칭을 쓴다 (주인공 이름과 id의 글자가 겹쳐도)
 - 잠입(infiltrate)·탐험(explore)은 도구가 판정을 굴린다. take_action으로 따로 판정하지 않는다. 잠입 중 숨어들 곳은 상태의 목록을 플레이어에게 보여 주고 고르게 한다 (모르는 곳은 문 번호). 어디 갇혔는지 모르면 수소문하거나, 그 자리의 사람을 grab으로 몰래 붙잡아 (곁에 사람이 적을수록 쉽다) handle_prisoner interrogate로 묻는다. 그 뒤 놓아줄지(곧 알린다), 기절시켜 둘지, 죽일지는 플레이어가 정한다

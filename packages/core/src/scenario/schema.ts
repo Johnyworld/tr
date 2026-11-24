@@ -1259,6 +1259,47 @@ export const scenarioFileSchema = z
         broken: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
       })
       .optional(),
+    /**
+     * 의뢰 (12-291): 장면의 인물에게 일거리를 물으면(request ask) 코드가 그 사람이 줄 만한 의뢰를 하나 만든다. 진행 중인 의뢰는 한 번에 하나 (인물의 부탁 포함).
+     * reach: 의뢰인 구역에서 길로 몇 구역 안에 목표를 두는가. days: 기한 [최소, 최대] + 한 구역 멀 때마다 per_hop_days.
+     * kinds: 종류마다 이름과 목표 틀 (fetch는 수량, 나머지는 엑스트라 틀). givers: 위에서부터 처음 맞는 줄이 그 사람이 줄 만한 종류
+     * (merchant·healer: 장사꾼·치료사, skills: 이 중 하나가 min_skill 이상, 조건이 없으면 누구나. items: 찾아오기 물건을 이 안에서만).
+     * reward: 보수 물건(pay 무게로)의 수 = base[종류] + 거리 × per_hop + 목표 구역 위험 × per_danger, 사람을 데려오면 brought만큼 더. relation: 해내면, failed: 기한을 넘기면
+     */
+    requests: z
+      .strictObject({
+        reach: z.number().int().min(0).max(4).default(2),
+        days: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+        per_hop_days: z.number().int().min(0).default(1),
+        kinds: z.strictObject({
+          fetch: z.strictObject({ label: z.string().min(1), quantity: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }),
+          find: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
+          capture: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
+          kill: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
+        }),
+        givers: z
+          .array(
+            z.strictObject({
+              merchant: z.boolean().optional(),
+              healer: z.boolean().optional(),
+              skills: z.array(id).optional(),
+              min_skill: z.number().int().default(2),
+              kinds: z.array(z.enum(["fetch", "find", "capture", "kill"])).min(1),
+              items: z.array(id).optional(),
+            }),
+          )
+          .min(1),
+        reward: z.strictObject({
+          pay: z.array(z.strictObject({ item: id, weight: z.number().positive() })).min(1),
+          base: z.strictObject({ fetch: z.number().int().min(0), find: z.number().int().min(0), capture: z.number().int().min(0), kill: z.number().int().min(0) }),
+          per_hop: z.number().int().min(0).default(1),
+          per_danger: z.number().int().min(0).default(1),
+          brought: z.number().int().min(0).default(1),
+          relation: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
+        }),
+        failed: z.strictObject({ trust: z.number().int().default(0), affection: z.number().int().default(0), respect: z.number().int().default(0) }),
+      })
+      .optional(),
     leverage: z
       .strictObject({
         bribe: z.strictObject({

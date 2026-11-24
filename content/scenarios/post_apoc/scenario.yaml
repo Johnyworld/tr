@@ -1421,6 +1421,40 @@ promises:
   folded: { trust: -1 }
   broken: { trust: -2, affection: -1 }
 
+# 의뢰 (12-291, *임시*, docs/requests-plan.md): 장면의 인물에게 일거리를 물으면(request ask) 코드가 그 사람이 줄 만한 의뢰를 하나 만든다.
+# 진행 중인 의뢰는 한 번에 하나 (인물이 먼저 꺼낸 부탁 promises.asks를 받은 것도 센다). 임무와는 따로
+# reach: 의뢰인 구역에서 길로 몇 구역 안에 목표를 둔다. days + 한 구역 멀 때마다 per_hop_days가 기한
+# givers: 위에서부터 처음 맞는 줄 (merchant·healer: 장사꾼·치료사, skills: 이 중 하나가 min_skill 이상, 조건 없으면 누구나)
+# reward: 보수 물건 수 = base[종류] + 거리 × per_hop + 목표 구역 위험 × per_danger (사람을 데려오면 brought만큼 더)
+requests:
+  reach: 2
+  days: [2, 3]
+  per_hop_days: 1
+  kinds:
+    fetch: { label: 찾아오기, quantity: [1, 2] }
+    find: { label: 사람 찾기, templates: [missing_person] }
+    capture: { label: 붙잡아 오기, templates: [outlaw] }
+    kill: { label: 처치하기, templates: [infected_hungry, feral_dog, outlaw] }
+  givers:
+    - { healer: true, kinds: [fetch, find], items: [bandage, painkiller, antibiotics, fever_reducer, medkit, morphine, cloth] }
+    - { merchant: true, kinds: [fetch, capture] }
+    - { skills: [fight, shoot], min_skill: 2, kinds: [capture, kill] }
+    - { skills: [scavenge], min_skill: 2, kinds: [fetch, find] }
+    - { kinds: [fetch, find, kill] }
+  reward:
+    pay:
+      - { item: canned_food, weight: 3 }
+      - { item: dry_ration, weight: 3 }
+      - { item: bandage, weight: 2 }
+      - { item: cigarettes, weight: 2 }
+      - { item: rifle_rounds, weight: 1 }
+    base: { fetch: 0, find: 1, capture: 2, kill: 1 }
+    per_hop: 1
+    per_danger: 1
+    brought: 1
+    relation: { trust: 1, affection: 1 }
+  failed: { trust: -1 }
+
 # 탐험할 곳 (12-162, *임시*): 구역의 숨은 곳. 그 구역을 뒤지다 수색이 성공하면 찾는다 (대가 있는 성공은 낌새만, 12-220). 찾은 것은 그 캐릭터만 안다.
 # 칸을 경계 판정으로 내려가고(마지막 칸은 어렵다), 칸마다 한 번 수색 판정으로 뒤진다. 소음이 3이면 깊이+1만큼 감염체가 깨어난다
 exploration:

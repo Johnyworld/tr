@@ -9,6 +9,8 @@ import { describeAmbush } from "./ambush.ts";
 import { describeResolve } from "./resolve.ts";
 import { describeExploration } from "./exploration.ts";
 import { askedPromises, promiseLines } from "./promises.ts";
+import { describeRequestForGm, requestOfferLines } from "./requests.ts";
+import { isQuestTarget } from "../rules/request.ts";
 import { originLine } from "./extras.ts";
 import { describeMarket } from "./market.ts";
 import { describeInfiltration } from "./infiltration.ts";
@@ -202,7 +204,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["resolve", describeResolve(state, content).join("\n")],
     ["disaster", describeDisaster(content, state).join("\n")],
     ["storylet", [describeStoryletForGm(state, content), describeImprovSlotForGm(state, content)].filter(Boolean).join("\n")],
-    ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content)].filter(Boolean).join("\n")],
+    ["missions", [describeMissionsForGm(state, { content }), describePolicyForGm(state, content), describeRequestForGm(state, content)].filter(Boolean).join("\n")],
     ["squad", describeSquadForGm(state, content)],
     ["diplomacy", describeDiplomacyForGm(state, content)],
     ["culture", player.factionId ? [describeAccess(content, state.roleId), describeCultureForGm(content, player.factionId)].filter(Boolean).join("\n") : ""],
@@ -283,6 +285,8 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
     ...attractionNotes(content, c, player),
     ...(animal ? [] : nameNotes(state, player.id, c.id)),
     ...(animal ? [] : rumorLines(state, content, c.id)),
+    ...(animal ? [] : [...promiseLines(state, content, c.id), ...requestOfferLines(state, content, c.id)]),
+    ...(isQuestTarget(state, c.id) ? ["[GM 전용] 주인공이 받은 의뢰의 목표다"] : []),
   ]
     .filter(Boolean)
     .join("\n");
@@ -397,6 +401,7 @@ function describeNpcCard(
     ...leverageLines(state, content, npc.id),
     ...[agendaCue(content, state, npc.id)].filter((x): x is string => !!x),
     ...promiseLines(state, content, npc.id),
+    ...requestOfferLines(state, content, npc.id),
     // 가르칠 수 있는 것 (사람 정보, 12-241). 파는 물건은 위의 지닌 것, 부탁은 바로 위 줄
     ...personFactLines({ ...personFacts(state, content, npc.id, true), sells: [], asks: [] }),
     ...(othersDeeds.length > 0 ? [`이 인물이 들은 남의 일 (이 인물은 사실로 믿는다. 그 사람을 대하는 태도에 반영):\n${othersDeeds.join("\n")}`] : []),

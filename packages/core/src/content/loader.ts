@@ -564,6 +564,7 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkRuinPlaces(content));
   problems.push(...checkEmptyNews(content));
   problems.push(...checkCastFates(content));
+  problems.push(...checkRequests(content));
   problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
@@ -649,6 +650,28 @@ export function checkRuinPlaces(content: Content): string[] {
       if (part) problems.push(`exploration.ruins.${r.id}: 숨은 곳 "${r.label}"이 장소 ${p.id}("${p.name}")와 겹친다. 장소는 입구까지만 적는다`);
     }
   }
+  return problems;
+}
+
+/**
+ * 의뢰 표 (12-291): 목표 틀·찾아오기 물건·보수 물건이 콘텐츠에 있고, 사람을 죽이는 의뢰의 사람 틀은 무법자처럼 무리 없는 틀이다.
+ * 목표 틀은 저절로 나타나지 않는다 (appears.zones: [])
+ */
+export function checkRequests(content: Content): string[] {
+  const r = content.scenario.requests;
+  if (!r) return [];
+  const problems: string[] = [];
+  for (const kind of ["find", "capture", "kill"] as const) {
+    for (const t of r.kinds[kind].templates) {
+      const x = content.extras[t];
+      if (!x) { problems.push(`scenario.requests.kinds.${kind}: 없는 엑스트라 틀 ${t}`); continue; }
+      if (kind !== "kill" && (x.kind ?? "person") !== "person") problems.push(`scenario.requests.kinds.${kind}: ${t}는 사람 틀이어야 한다`);
+      if ((x.kind ?? "person") === "person" && x.faction) problems.push(`scenario.requests.kinds.${kind}: ${t}는 무리에 속한 틀이다 (의뢰 목표 사람은 무리 없는 틀만)`);
+    }
+  }
+  for (const g of r.givers) for (const i of g.items ?? []) if (!content.items[i]) problems.push(`scenario.requests.givers.items: 없는 아이템 ${i}`);
+  for (const p of r.reward.pay) if (!content.items[p.item]) problems.push(`scenario.requests.reward.pay: 없는 아이템 ${p.item}`);
+  if (r.days[0] > r.days[1]) problems.push("scenario.requests.days: 범위가 거꾸로다");
   return problems;
 }
 

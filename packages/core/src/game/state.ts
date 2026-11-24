@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 103;
+export const SAVE_SCHEMA_VERSION = 104;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -104,6 +104,20 @@ export type FactionState = z.infer<typeof factionStateSchema>;
 export const BOND_KINDS = ["animal", "buddy", "squad", "purpose", "kin", "prisoner"] as const;
 export type BondKind = (typeof BOND_KINDS)[number];
 /** 목적 동행이 끝나는 조건 (하나라도 차면 갈림길) */
+/**
+ * 의뢰의 목표 (12-291). kind: 찾아오기(물건은 약속의 item)·사람 찾기·붙잡아 오기·처치하기.
+ * template: 목표 엑스트라 틀(찾아오기는 null), target: 받은 뒤 세계에 둔 엑스트라 id, zone·place: 목표가 있는 곳, pay: 해내면 받을 보수
+ */
+export const questSchema = z.strictObject({
+  kind: z.enum(["fetch", "find", "capture", "kill"]),
+  template: z.string().nullable(),
+  target: z.string().nullable(),
+  zone: z.string(),
+  place: z.string().nullable(),
+  hops: z.number().int().min(0),
+  pay: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+});
+
 export const bondUntilSchema = z.strictObject({
   flag: z.string().optional(),
   zone: z.string().optional(),
@@ -449,6 +463,8 @@ export function createGameSchemas(s: Scenario) {
           status: z.enum(["asked", "open", "kept", "broken", "folded", "declined", "lapsed"]),
           /** 인물의 부탁에서 온 약속이면 그 부탁의 콘텐츠 id (12-174, 12-181) */
           favor: z.string().nullable().default(null),
+          /** 의뢰 (12-291): 틀로 만든 일거리. 판정은 rules/request.ts로만 */
+          quest: questSchema.nullable().default(null),
         }),
       )
       .default([]),
@@ -754,6 +770,11 @@ export function createGameSchemas(s: Scenario) {
       item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
       favor: z.string(),
     }),
+    // 의뢰 (12-291): 물어서 받은 일거리. 받으면 request_accepted (목표 엑스트라를 세계에 둔 뒤)
+    z.strictObject({ type: z.literal("request_offered"), id: z.string(), by: z.string(), to: z.string(), what: z.string(), due: z.number().int(), item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(), quest: questSchema }),
+    z.strictObject({ type: z.literal("request_accepted"), id: z.string(), due: z.number().int(), target: z.string().nullable() }),
+    /** 엑스트라가 머무는 자리를 옮긴다 (의뢰로 데려온 사람, 12-291) */
+    z.strictObject({ type: z.literal("extra_rehomed"), characterId: z.string(), zone: z.string(), place: z.string().nullable() }),
     z.strictObject({
       type: z.literal("promise_accepted"),
       id: z.string(),
@@ -1905,17 +1926,28 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       // 예전 세이브: 받은 부탁(f_N)에서 맺은 약속이면 부탁 자리를 지우고 콘텐츠 id를 옮긴다
       const legacy = event.favor ? (next.promises ?? []).find((p) => p.id === event.favor) : undefined;
       const rest = legacy ? (next.promises ?? []).filter((p) => p !== legacy) : (next.promises ?? []);
-      next.promises = [...rest, { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open", favor: legacy ? legacy.favor : (event.favor ?? null) }];
+      next.promises = [...rest, { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "open", favor: legacy ? legacy.favor : (event.favor ?? null), quest: null }];
       return next;
     }
     case "promise_asked":
-      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "asked", favor: event.favor }];
+      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "asked", favor: event.favor, quest: null }];
       return next;
+    case "request_offered":
+      next.promises = [...(next.promises ?? []), { id: event.id, by: event.by, to: event.to, what: event.what, due: event.due, item: event.item, made: state.time, status: "asked", favor: null, quest: structuredClone(event.quest) }];
+      break;
+    case "request_accepted":
+      next.promises = (next.promises ?? []).map((p) => (p.id === event.id && p.status === "asked" && p.quest ? { ...p, status: "open", due: event.due, made: state.time, quest: { ...p.quest, target: event.target } } : p));
+      break;
+    case "extra_rehomed": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      if (c.extra) c.extra = { ...c.extra, zone: event.zone, place: event.place };
+      break;
+    }
     case "promise_accepted":
       next.promises = (next.promises ?? []).map((p) => (p.id === event.id && p.status === "asked" ? { ...p, status: "open", what: event.what, due: event.due, item: event.item, made: state.time } : p));
       return next;
     case "favor_offered":
-      next.promises = [...(next.promises ?? []), { id: event.id, by: state.playerId, to: event.npc, what: "", due: 0, item: null, made: state.time, status: "asked", favor: event.favor }];
+      next.promises = [...(next.promises ?? []), { id: event.id, by: state.playerId, to: event.npc, what: "", due: 0, item: null, made: state.time, status: "asked", favor: event.favor, quest: null }];
       return next;
     case "favor_settled":
       // 받은 것(accepted)은 뒤따르는 promise_made가 옮긴다. 지키고 어긴 것은 약속 쪽에 이미 남는다

@@ -1,0 +1,77 @@
+# 의뢰 목표 틀 (12-291, scenario.yaml requests): 의뢰를 받으면 근처 구역의 한 장소에 둔다. 저절로 나타나지는 않는다
+
+# 사람 찾기: 연락이 끊긴 사람. 다쳤거나 길을 잃었거나 숨어 있다
+- id: missing_person
+  label: 연락이 끊긴 사람
+  rank: loner
+  age: [14, 68]
+  appears: { zones: [] }
+  looks:
+    - { gender: male, text: "사흘은 못 먹은 얼굴의 남자. 한쪽 발목을 천으로 칭칭 감았다" }
+    - { gender: female, text: "머리를 질끈 묶은 여자. 손등에 누가 볼펜으로 적어 준 길 이름이 번져 있다" }
+    - 낡은 우비를 뒤집어쓴 사람. 부르는 소리에 먼저 숨었다가 얼굴을 내민다
+  stats: { vitality: [-1, 0], senses: [0, 1], nerve: [-1, 0] }
+  skills: { stealth: 1, survival: 1 }
+  traits: [timid, guarded, weary, frail, warm]
+  trait_count: 2
+  inventory:
+    - { item: water_bottle, chance: 0.5 }
+    - { item: dry_ration, chance: 0.3 }
+  values: { mercy: 1, loyalty: 1 }
+  profile:
+    wants: [돌아가는 것, 기다리는 사람에게 살아 있다고 알리는 것, 하룻밤 마음 놓고 자는 것]
+    fears: [혼자 밤을 넘기는 것, 감염체 소리, 버려지는 것]
+    voices:
+      - { style: 지치고 떨리는 존댓말. 묻기 전에 먼저 사정을 늘어놓는다, persona: { talk: 1 }, samples: ["누가… 저 찾으러 온 거예요?", "길이 무너져서, 돌아갈 수가 없었어요."] }
+      - { style: 경계하는 짧은 반말, persona: { talk: -1 }, samples: ["누가 보냈어.", "가까이 오지 마. 먼저 이름부터."] }
+    rules: [자기를 찾은 사람을 쉽게 믿지 않지만, 보낸 사람 이름을 들으면 마음을 연다]
+    reputations: [며칠 전 소식이 끊긴 사람]
+    secrets:
+      - { content: 돌아가지 않은 것은 길이 막혀서만이 아니다. 거기 빚진 사람이 있다, reveal_when: 둘만 있을 때, min_trust: 5 }
+
+# 붙잡아 오기·처치하기: 근방을 터는 무법자. 무리 없이 혼자 다닌다
+- id: outlaw
+  label: 근방을 터는 무법자
+  rank: loner
+  age: [20, 48]
+  appears: { zones: [] }
+  looks:
+    - { gender: male, text: "목에 남의 군번줄을 여러 개 건 남자. 웃을 때 송곳니 하나가 금속이다" }
+    - { gender: female, text: "얼굴 반을 붉은 천으로 가린 여자. 손목에 남의 시계를 세 개 찼다" }
+    - 바퀴 달린 장바구니를 끌고 다니는 사람. 안에는 남의 배낭이 가득하다
+  stats: { strength: [0, 1], agility: [0, 1], nerve: [0, 1] }
+  skills: { fight: 1, stealth: 1, intimidate: 1, sense_danger: 1 }
+  traits: [cold, greedy, calculating, coward]
+  trait_count: 2
+  inventory:
+    - { item: machete, chance: 0.5 }
+    - { item: kitchen_knife, chance: 0.6 }
+    - { item: cigarettes, chance: 0.5 }
+    - { item: canned_food, chance: 0.4 }
+  values: { mercy: -2, self_interest: 2 }
+  profile:
+    wants: [남의 것을 쉽게 얻는 것, 쫓기지 않는 것]
+    fears: [붙잡혀 무리 앞에 끌려가는 것, 굶는 것]
+    voices:
+      - { style: 비아냥대는 반말, persona: { talk: 1 }, samples: ["누가 보냈어? 값은 얼마래?", "내가 뭘 했다고. 다들 그렇게 살잖아."] }
+    rules: [몰리면 먼저 달아나려 하고, 막히면 흥정한다]
+    reputations: [이 근방에서 사람을 터는 자]
+    secrets:
+      - { content: 턴 물건을 숨겨 둔 곳이 있다, reveal_when: 붙잡혀 목숨을 흥정할 때, min_trust: 1 }
+
+# 처치하기: 사람을 무는 들개
+- id: feral_dog
+  label: 사람을 무는 들개
+  fright_tags: [dog]
+  kind: animal
+  wound: { light: { miss: bite }, heavy: { miss: bite, partial: bite } }
+  rank: loner
+  age: [2, 8]
+  appears: { zones: [] }
+  looks:
+    - 어깨가 넓은 검은 들개. 입가에 마른 피가 엉겨 있고, 사람 냄새를 맡으면 낮게 으르렁거린다
+    - 털이 군데군데 빠진 큰 개. 목줄 자국 대신 오래된 물린 상처가 목을 두른다
+  stats: { strength: [0, 1], senses: [2, 2], agility: [1, 2] }
+  skills: { fight: 1, sense_danger: 2, stealth: 1 }
+  traits: []
+  trait_count: 0

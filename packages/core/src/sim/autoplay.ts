@@ -148,7 +148,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     const me = s.characters[s.playerId]!;
     // 의식불명이면 시간만 흐른다 (증상이든 부상이든: 12-269에서 RNG 순서가 바뀌자 부상으로 쓰러진 경우가 드러났다)
     if (incapacitatingSymptom(content.scenario, me) || isIncapacitated(content, me)) {
-      const r = world.executeTool("take_action", { intent: "의식이 없다", check: null, activity: s.battle ? null : { kind: "wait", until: null }, deed: null, target: null, narration_summary: null, for_mission: false });
+      const r = world.executeTool("take_action", { intent: "의식이 없다", check: null, activity: s.battle ? null : { kind: "wait", until: null }, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true });
       if (!r.ok) stats.errors.push(`의식불명 중 기다리기: ${r.error}`);
       continue;
     }

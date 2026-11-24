@@ -40,6 +40,12 @@ export function isQuestTarget(state: GameState, id: string): boolean {
   return (state.promises ?? []).some((p) => p.status === "open" && p.quest?.target === id);
 }
 
+/** 찾아오기: 의뢰인에게 이미 건넨 수 */
+export const questDelivered = (p: PromiseRecord): number => p.quest?.delivered ?? 0;
+
+/** 이 의뢰를 받을 때 남긴 믿음의 열쇠 (끝나면 내려놓는다) */
+export const questTopic = (id: string) => `request:${id}`;
+
 export type QuestProgress = { done: boolean; brought: boolean; left: string };
 
 /**

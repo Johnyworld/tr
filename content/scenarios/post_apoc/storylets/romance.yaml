@@ -292,7 +292,7 @@
     flags_none: [rm_squad_choice_done]
   cast:
     lover: { romance: lover, faction: own }
-    boss: { commander: true }
+    boss: { comes: true, commander: true }
   setup: 창고에서 약 상자 하나가 비었다. {boss:이/가} 한 사람씩 불러 묻는다. 어젯밤 {lover:이/가} 창고 쪽에서 돌아오는 것을 본 사람은 당신뿐이다. 연인이 눈으로 묻는다. 말할 거냐고.
   ai_direction: 연인이 가져간 것이 맞다. 아픈 사람(가족이거나, 아직 주인공이 모르는 누군가)에게 주려고 했다. 상관은 범인을 찾을 때까지 배급을 줄이겠다고 한다. 어느 쪽을 골라도 누군가를 저버린다. 플레이어가 연인과 끝내기로 하면 GM이 romance break_up을 쓴다.
   choices:
@@ -667,7 +667,7 @@
     indoor: true
   cast:
     pest: { recall: rm_menace }
-    help: { faction: own, known: true, trust_gte: 2, optional: true }
+    help: { comes: true, faction: own, known: true, trust_gte: 2, optional: true }
   setup: 불 꺼진 통로를 지난다. 뒤에서 발소리가 따라온다. 멈추면 멈춘다. 모퉁이에서 {pest:이/가} 앞을 막고 손목을 잡는다. "그동안 못 들은 척했잖아."
   ai_direction: 말로 끝나지 않을 수 있는 자리다. 위험을 분명히 알린다. 판정은 주인공이 어떻게 빠져나가는지와 무엇을 대가로 치르는지(다친 곳, 떨어뜨린 물건, 흔들린 마음)만 정한다. 최악이어도 장면은 붙잡힌 손을 뿌리치고 빠져나온 데서 끊고, 그 뒤를 다룬다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
   choices:
@@ -750,7 +750,7 @@
     indoor: true
     flags_none: [rm_assault_met]
   cast:
-    att: { menace: [assault], keep: rm_menace }
+    att: { comes: true, menace: [assault], keep: rm_menace }
   setup: 무너진 가게 안, 입구 쪽 빛이 가려진다. {att:이/가} 문틀에 기대 서 있다. 쇠지렛대를 바닥에 끌며 들어온다. "여기 있었네."
   ai_direction: 위험한 자다. 주인공이 혼자이거나 일행과 떨어진 틈을 노리고 들어왔다. 위험을 분명히 알린다. 판정은 어떻게 벗어나는지, 무엇을 대가로 치르는지(다친 곳, 빼앗긴 물건, 마음)만 정한다. 최악이어도 장면은 주인공이 뒷문이든 창이든 빠져나온 데서 끊고, 그 뒤를 다룬다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
   choices:
@@ -884,7 +884,7 @@
     indoor: true
   cast:
     broker: { recall: rm_menace }
-    boss: { commander: true, optional: true }
+    boss: { comes: true, commander: true, optional: true }
   setup: 저녁 무렵 {broker:이/가} 찾아왔다. 문을 반쯤 막고 서서 웃는다. 웃음에 기다린 날수가 묻어 있다. "약속은 약속이지. 받을 걸 받으러 왔어."
   ai_direction: 속았든 아니든 이 자는 받을 게 있다고 믿는다. 사람 눈이 있는 곳에서는 물러서는 자다. 판정은 어떻게 벗어나는지와 그 대가만 정한다. 최악이어도 장면은 주인공이 그 자리를 벗어난 데서 끊는다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
   choices:
@@ -1006,7 +1006,7 @@
     indoor: true
     flags_none: [rm_cap_offer_done]
   cast:
-    warden: { faction: captor, menace: [coerce], keep: rm_menace }
+    warden: { comes: true, faction: captor, menace: [coerce], keep: rm_menace }
   setup: '{warden:이/가} 따로 불러냈다. 창고 구석, 탁자에 빵 반 덩이. "여기 오래 있으면 사람 망가져. 나는 문을 열 수 있는 사람이고. 무슨 말인지 알지?"'
   ai_direction: 이 자는 문을 열 수 있다는 것을 거래 조건으로 내민다. 몸을 요구한다는 것을 말로 다 하지 않는다. 거절하면 빵을 치우고 배급이 줄어든다. 다른 값(무리의 사정)을 내놓으면 받아들인다. 그것은 무리를 파는 일이다. 지킬 선 — 위협과 시도까지만 그린다. 어떤 결과에서도 성폭력은 일어나지 않는다. 몸을 묘사하지 않는다. 피해자를 탓하는 말을 서술에도 NPC 입에도 넣지 않는다.
   choices:

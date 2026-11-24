@@ -66,7 +66,7 @@
     day_gte: 3
   cast:
     boss: { commander: true }
-    porter: { faction: own, ranks: [grunt, staff], keep: occ_cook_meat_porter }
+    porter: { comes: true, faction: own, ranks: [grunt, staff], keep: occ_cook_meat_porter }
   setup: "{porter:이/가} 바깥에서 가져온 고기 자루를 도마 위에 부린다. 끈을 풀자 단내 섞인 냄새가 확 올라온다. 겉은 검붉고, 뼈 쪽은 아직 붉다. {porter:이/가} 어깨를 으쓱한다. \"사흘 걸려 가져온 거야. 버리라고는 하지 마.\" {boss:이/가} 문간에서 지켜본다."
   ai_direction: 고기는 반쯤 상했다. 겉을 도려내고 오래 끓이면 대부분은 먹을 수 있지만, 잘못하면 여럿이 배앓이를 한다. 가져온 사람은 목숨 걸고 가져온 것을 버리면 서운해한다. 상관은 창고 사정을 알고 있어 버리는 것을 아까워한다.
   choices:
@@ -161,7 +161,7 @@
     flags_all: [occ_cook_ladle_given]
     flags_none: [occ_cook_ladle_judged]
   cast:
-    boss: { commander: true }
+    boss: { comes: true, commander: true }
     kid: { recall: occ_cook_ladle_kid, enter: false }
   setup: "{boss:이/가} 부엌 뒷문을 닫고 들어온다. \"며칠 전에 줄 끝에서 한 국자 더 퍼 줬다는 말이 들어왔다. 누구한테 줬어?\" 솥 너머로 설거지하던 손들이 멈춘다."
   ai_direction: 누군가 보고 상관에게 일렀다. 상관은 누구에게 줬는지까지는 모른다. 상관이 화난 것은 국 한 국자가 아니라 부엌이 셈을 어긴 것이다. 무리의 규칙(남의 몫)을 따져 무게를 정한다. 받은 사람({kid})은 이 자리에 없다.

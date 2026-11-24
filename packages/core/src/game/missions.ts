@@ -199,8 +199,9 @@ export function activeMissionOf(missions: Record<string, MissionInstance>, chara
   return Object.values(missions).find((m) => m.assigneeId === characterId && m.status === "active");
 }
 
+/** 다 채운 복무 날 수: 날짜로 센다 (12-292, PT22~24 섬·튜토리얼: 머리 줄은 "복무 4일째", 진급 줄은 "복무 3일째") */
 export function daysServed(now: GameTime, runStartedAt: GameTime): number {
-  return Math.floor((now - runStartedAt) / MINUTES_PER_DAY);
+  return Math.max(0, Math.floor(now / MINUTES_PER_DAY) - Math.floor(runStartedAt / MINUTES_PER_DAY));
 }
 
 export type PromotionCheck = { eligible: boolean; missing: string[] };

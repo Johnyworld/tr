@@ -1466,7 +1466,7 @@ body {
   color: var(--heading);
 }
 
-.todo[data-kind="부탁"] .todo-kind {
+.todo[data-kind="의뢰"] .todo-kind {
   color: var(--success);
 }
 

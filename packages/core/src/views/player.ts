@@ -317,7 +317,7 @@ const deadLast = (a: { dead: boolean }, b: { dead: boolean }) => Number(a.dead) 
 
 export type TodoView = {
   key: string;
-  kind: "임무" | "부탁" | "약속" | "다짐";
+  kind: "임무" | "의뢰" | "약속" | "다짐";
   title: string;
   /** 맡긴 사람·약속한 사람 */
   who: string | null;
@@ -352,9 +352,9 @@ function todoViews(state: GameState, content: Content): TodoView[] {
     });
   }
   const ps = pledges(state, content);
-  for (const kind of ["부탁", "약속"] as const) {
+  for (const kind of ["의뢰", "약속"] as const) {
     for (const p of ps.filter((x) => x.kind === kind)) {
-      out.push({ key: p.id, kind, title: p.text, who: p.who, detail: kind === "부탁" ? `${p.who}의 부탁을 들어주기로 했다` : `${p.who}에게 한 약속`, dueLabel: p.leftLabel, urgent: p.urgent, steps: [], note: null });
+      out.push({ key: p.id, kind, title: p.text, who: p.who, detail: kind === "의뢰" ? `${p.who}의 의뢰를 맡았다` : `${p.who}에게 한 약속`, dueLabel: p.leftLabel, urgent: p.urgent, steps: [], note: null });
     }
   }
   const vow = resolveLine(state, content);

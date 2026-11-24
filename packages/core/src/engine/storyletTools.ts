@@ -1,3 +1,4 @@
+import { isCreature } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { confineByOwn } from "./care/quarantine.ts";
 import { settingBrokeThisTurn } from "../rules/self.ts";
@@ -165,7 +166,7 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
       const now = store.getState().characters[id];
       const want = levels.findIndex((l) => l.id === level);
       const have = Math.max(0, levels.findIndex((l) => l.id === now?.conditions[track]));
-      if (now && !now.dead && want > have) changeCondition(ctx, id, track, want - have, "cheat", storyTitle(store.getState(), content, storylet));
+      if (now && !now.dead && want > have) changeCondition(ctx, id, track, want - have, "story", storyTitle(store.getState(), content, storylet));
     }
   }
   // 이름표로 기억해 둔다 (다음 이야기에서 recall로 다시 부른다)
@@ -412,8 +413,12 @@ export const resolveStorylet = defineTool({
         else if ((d.type === "belief" || d.type === "harm") && d.note) lines.push(d.note);
       }
     }
+    // 시간을 들여 돌아간 선택지(delay, 판정 없음)면 맞서던 것(감염체·짐승)은 뒤에 남는다 (12-292, PT24 섬: 멀찍이 돌아 들어왔는데 감염체 둘이 곁에 남았다)
+    const detoured = !choice.check && effects.some((e) => "delay" in e)
+      ? Object.entries(a.cast).filter(([, id]) => { const c = ctx.store.getState().characters[id]; return !!c && !c.dead && isCreature(ctx.content, c); }).map(([k]) => k)
+      : [];
     // 선택지가 떠나보내는 배역 (12-262)
-    for (const key of choice.leaves ?? []) {
+    for (const key of [...new Set([...(choice.leaves ?? []), ...detoured])]) {
       const id = a.cast[key];
       if (id && ctx.store.getState().scene.present.includes(id)) {
         ctx.store.append({ type: "npc_left", npcId: id });

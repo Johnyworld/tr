@@ -39,7 +39,7 @@ import { startingSkills } from "./creation.ts";
  *   extra_named·extra_gone 이벤트가 없어져 이전 세이브는 읽지 않는다
  * - 80: 스킬 개편 (4.2.1). 전문 기술은 적혀 있어야 할 수 있다. 이전 세이브는 upgradeSkills로 옮긴다
  */
-export const SAVE_SCHEMA_VERSION = 104;
+export const SAVE_SCHEMA_VERSION = 105;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -116,6 +116,8 @@ export const questSchema = z.strictObject({
   place: z.string().nullable(),
   hops: z.number().int().min(0),
   pay: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(),
+  /** 찾아오기: 의뢰인에게 이미 건넨 수 (나눠 건네도 센다, 12-292) */
+  delivered: z.number().int().min(0).default(0),
 });
 
 export const bondUntilSchema = z.strictObject({
@@ -773,6 +775,7 @@ export function createGameSchemas(s: Scenario) {
     // 의뢰 (12-291): 물어서 받은 일거리. 받으면 request_accepted (목표 엑스트라를 세계에 둔 뒤)
     z.strictObject({ type: z.literal("request_offered"), id: z.string(), by: z.string(), to: z.string(), what: z.string(), due: z.number().int(), item: z.strictObject({ id: z.string(), quantity: z.number().int().positive() }).nullable(), quest: questSchema }),
     z.strictObject({ type: z.literal("request_accepted"), id: z.string(), due: z.number().int(), target: z.string().nullable() }),
+    z.strictObject({ type: z.literal("request_delivered"), id: z.string(), quantity: z.number().int().positive() }),
     /** 엑스트라가 머무는 자리를 옮긴다 (의뢰로 데려온 사람, 12-291) */
     z.strictObject({ type: z.literal("extra_rehomed"), characterId: z.string(), zone: z.string(), place: z.string().nullable() }),
     z.strictObject({
@@ -1937,6 +1940,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "request_accepted":
       next.promises = (next.promises ?? []).map((p) => (p.id === event.id && p.status === "asked" && p.quest ? { ...p, status: "open", due: event.due, made: state.time, quest: { ...p.quest, target: event.target } } : p));
+      break;
+    case "request_delivered":
+      next.promises = (next.promises ?? []).map((p) => (p.id === event.id && p.quest ? { ...p, quest: { ...p.quest, delivered: (p.quest.delivered ?? 0) + event.quantity } } : p));
       break;
     case "extra_rehomed": {
       const c = mustGet(next.characters, event.characterId, "캐릭터");

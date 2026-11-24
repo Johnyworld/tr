@@ -849,8 +849,12 @@ export function createContentSchemas(s: Scenario) {
     resolve_target: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
     stance: z.enum(["fan", "anti"]).optional(),
-    /** 발동할 때 장면에 들어온다 */
+    /** 발동할 때 장면에 들어온다. 들어오는 배역은 지금 같은 장소에 있을 사람만 (공통 규칙 15 castHere, 12-292) */
     enter: z.boolean().default(true),
+    /** 찾아오는 배역 (문병·부르러 옴·순찰): 같은 장소가 아니어도 같은 구역에서 스스로 움직일 수 있는 사람이면 찾아온다. 다른 구역에서는 오지 않는다 (12-292) */
+    comes: z.boolean().optional(),
+    /** 멀리서 오는 배역 (갇힌 주인공을 구하러 온 사람, 몸값 사절): 다른 구역에 있어도 스스로 움직일 수 있으면 온다 (12-292) */
+    afar: z.boolean().optional(),
     /** 이름 없는 배역(extra)을 주인공을 가둔 무리의 포로로 만든다: 같이 갇힌 사람 (PT19·PT20 졸병: "같은 방 사람"이 시간대가 바뀌자 철망 밖으로 "자리를 떴다") */
     fellow_captive: z.boolean().optional(),
     /** 이 배역이 무리의 대표다: 몇 명인지 (2 이상이면 이 배역과 맞서는 판정에 -1, 플레이 테스트 13) */

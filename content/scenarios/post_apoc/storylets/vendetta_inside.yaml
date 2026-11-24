@@ -112,7 +112,7 @@
     own_territory: true
     segments: [morning, day]
   cast:
-    avenger: { vendetta: true, faction: own }
+    avenger: { comes: true, vendetta: true, faction: own }
   setup: 지도부가 당신을 부른다. 방 한구석에 {avenger:이/가} 서 있다. 간부 하나가 묻는다. "{victim:이/가} 어떻게 죽었는지, 네 입으로 말해 봐."
   ai_direction: "{avenger:이/가} 지도부에 일렀다. 칼 대신 무리의 규율로 갚으려는 것이다. 지도부는 진실보다 무리의 질서를 본다: 인정하면 벌을 주고 끝내려 하고, 부인하면 증거와 목격자를 따진다. 벌의 크기는 코드가 정한다 (공적)."
   choices:

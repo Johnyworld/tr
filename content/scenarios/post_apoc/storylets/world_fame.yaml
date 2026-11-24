@@ -3,7 +3,7 @@
 - id: wf_fan_visit
   title: 소문을 듣고 온 사람
   cast:
-    fan: { stance: fan }
+    fan: { comes: true, stance: fan }
   tags: [world]
   repeatable: true
   cooldown_days: 5

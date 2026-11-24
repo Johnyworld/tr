@@ -1272,11 +1272,14 @@ export const scenarioFileSchema = z
         days: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
         per_hop_days: z.number().int().min(0).default(1),
         kinds: z.strictObject({
-          fetch: z.strictObject({ label: z.string().min(1), quantity: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }),
+          /** min_weight: 수색표에서 이 무게 이상인 물건만 (드문 물건은 찾다 막힌다, PT24 분대장 모르핀) */
+          fetch: z.strictObject({ label: z.string().min(1), quantity: z.tuple([z.number().int().min(1), z.number().int().min(1)]), min_weight: z.number().min(0).default(1) }),
           find: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
           capture: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
           kill: z.strictObject({ label: z.string().min(1), templates: z.array(id).min(1) }),
         }),
+        /** 싸움 의뢰(붙잡아 오기·처치하기)는 주인공이 이 판정들 중 하나로 min 이상(능력 + 스킬)일 때만 내놓는다 (PT24: 싸움 못 하는 졸병·농부에게 처치하기) */
+        fight: z.strictObject({ moves: z.array(id).min(1), min: z.number().int() }).optional(),
         givers: z
           .array(
             z.strictObject({

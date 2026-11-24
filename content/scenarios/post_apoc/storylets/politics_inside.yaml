@@ -19,7 +19,7 @@
     indoor: "any"
     segments: [morning, day, evening]
   cast:
-    judge: { faction: own, ranks: [leader, officer] }
+    judge: { comes: true, faction: own, ranks: [leader, officer] }
   setup: '배식이 끝나자 {judge:이/가} 당신을 부른다. 회의 자리에 사람들이 둘러앉아 있다. 몇은 당신을 보지 않는다. "요즘 너를 두고 말이 많다. 여기서 직접 듣자."'
   ai_direction: 무리 안에 주인공을 믿지 않는 사람이 여럿이다 (주인공의 행적이나 주인공에 대한 소문 때문이다. 상태의 행적·인물 카드를 보고 무엇이 문제인지 연기한다. 지어내지 않는다). {judge}의 판단은 무리의 문화(규율)를 따른다. 해명이 통하지 않으면 무리에서 내보내는 것까지 갈 수 있다. 위험은 판정 전에 선언한다.
   choices:
@@ -64,7 +64,7 @@
     indoor: "any"
     segments: [morning, day, evening]
   cast:
-    judge: { faction: own, ranks: [leader] }
+    judge: { comes: true, faction: own, ranks: [leader] }
   setup: '회의가 끝날 무렵 {judge:이/가} 서류를 덮고 당신을 본다. "다들 할 말이 있는 것 같은데. 자리에 앉은 사람이 아래의 믿음을 잃으면 그 자리를 다시 봐야 해."'
   ai_direction: 무리 안에 주인공을 믿지 않는 사람이 여럿이다. 주인공이 맡은 자리(분대장·간부)가 걸려 있다. 무엇이 문제인지는 상태의 행적·인물 카드를 보고 연기한다 (지어내지 않는다). 판정이 나쁘면 분대원으로 내려간다.
   choices:

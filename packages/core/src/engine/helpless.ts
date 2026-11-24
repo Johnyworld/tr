@@ -174,12 +174,15 @@ function byAllies(ctx: ToolContext, allies: Character[]): ToolDisplayEvent[] {
   const sound = (c: Character) => harm.levels.findIndex((l) => l.id === c.conditions[harm.id]) < 2;
   const carrier = allies.find((c) => c.factionId && !state.companions.includes(c.id) && sound(c));
   const base = carrier ? baseOf(ctx.store.getState(), ctx.content, carrier.factionId) : undefined;
-  const name = playerCalls(state, ctx.content, allies[0]!.id);
-  const known = (state.known[me.id] ?? []).includes(allies[0]!.id);
+  // 글과 기록이 같은 사람으로 (12-292, PT24 하얀매: 글은 홍덕구, 기록은 약 심부름꾼)
+  const helper = carrier && base && base !== state.playerZone ? carrier : allies[0]!;
+  const name = playerCalls(state, ctx.content, helper.id);
+  const known = (state.known[me.id] ?? []).includes(helper.id);
   const who = known ? name : "누군가";
   if (carrier && base && base !== state.playerZone) {
     ctx.store.append({ type: "helpless_resolved", outcome: "carried", by: carrier.id });
-    movePlayer(ctx, { zone: base }, "carried");
+    // 업은 사람과 곁의 우리 편은 함께 간다 (홀로 옮겨져 업은 사람·곁의 사람이 감염체 곁에 남았다)
+    movePlayer(ctx, { zone: base }, "carried", { with: allies.map((c) => c.id).filter((id) => state.scene.present.includes(id)) });
     const place = ctx.content.locations[base]?.name ?? base;
     return [...tend(ctx, `${who}의 돌봄`), remember(ctx, `정신을 잃은 사이 ${josa(who, "이/가")} ${place}까지 옮겨 돌봐 주었다`)];
   }

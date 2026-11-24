@@ -20,7 +20,7 @@
     day_gte: 2
     flags_none: [occ_carp_wave_done]
   cast:
-    boss: { commander: true }
+    boss: { comes: true, commander: true }
   setup: "저녁 배식 뒤, {boss:이/가} 담 아래로 당신을 부른다. 바깥 길에서 감염체 떼가 이쪽으로 흘러온다는 말이 돈다. 손전등이 비춘 담 아래쪽, 판자 이음매가 손가락 하나 들어갈 만큼 벌어져 있다. \"밤새 막을 수 있겠나. 망치 소리는 바깥에도 들린다.\""
   ai_direction: 물결이 정말 오는지, 언제 오는지는 아무도 모른다. 상관은 소리를 걱정하면서도 담을 더 걱정한다. 밤새 일하면 몸이 상하고, 망치 소리는 구역의 소음이 되어 무언가를 부를 수 있다. 수치를 말하지 않는다.
   choices:
@@ -77,8 +77,8 @@
     day_gte: 3
     flags_none: [occ_carp_roof_done]
   cast:
-    boss: { commander: true }
-    old: { faction: own, ranks: [grunt], known: true }
+    boss: { comes: true, commander: true }
+    old: { comes: true, faction: own, ranks: [grunt], known: true }
   setup: "밤새 비가 샜다. 아침에 두 사람이 당신을 찾아온다. {boss:은/는} 창고 지붕이 먼저라고 한다. 쌀자루가 젖으면 끝이라고. {old:은/는} 젖은 담요를 안고 서 있다. 숙소 구석 아이들 자리 위로 물이 떨어졌다고. 판자는 한 곳 몫이다."
   ai_direction: 둘 다 맞는 말이다. 상관은 무리의 창고를, 늙은 동료는 오늘 밤 아이들의 잠자리를 본다. 어느 쪽을 먼저 하든 다른 쪽은 기억한다. 둘 다 반만 막으려 들면 둘 다 샐 수 있다.
   choices:

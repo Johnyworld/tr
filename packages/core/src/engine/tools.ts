@@ -72,7 +72,7 @@ import { INFILTRATION_TOOLS } from "./infiltration.ts";
 import { leaveRemainsForNewDeaths, livingIds, remainsHere } from "./remains.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { PLACE_TOOLS } from "./placeTools.ts";
-import { hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt, knowsPlace } from "../rules/place.ts";
+import { fixedPlaceAway, hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt, knowsPlace } from "../rules/place.ts";
 import { zoneOf } from "../rules/place.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
@@ -248,6 +248,11 @@ const npcPresence = defineTool({
       }
       if (heldOf(character) && heldOf(character)!.zone !== state.playerZone) {
         return { ok: false, error: `${josa(name, "은/는")} 지금 장면에 들일 수 없다 (캐릭터는 이 사람의 행방을 모른다).` };
+      }
+      // 머무는 장소가 정해진 이름 없는 인물(가족의 집, 의뢰 목표)은 그 자리에서만 만난다 (12-292, PT24 분대장·하얀매: 숨겨 둔 의뢰 목표를 구역 어귀에서 불러 해냈다)
+      {
+        const off = fixedPlaceAway(state, content, character.id);
+        if (off) return { ok: false, error: `${josa(name, "은/는")} 여기 없다. ${off.zone !== state.playerZone ? "다른 구역에 있다." : off.known && off.place ? `${off.place.name}(${off.place.id})에 있다: place_to로 찾아간다.` : "이 구역의 다른 곳에 있다: 그 자리로 가야 만난다."}` };
       }
       enterScene(ctx, character.id);
       // 기다리던 구역에서 남겨 둔 동행을 들이면 다시 곁에 선다 (PT14 떠돌이: 들였는데도 기다림이 그대로라 구역을 옮기자 개를 잃었다)

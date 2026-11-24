@@ -129,7 +129,7 @@
     zone_owner: [other]
     segments: [evening, night, dawn]
   cast:
-    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+    patrol: { comes: true, faction: zone_owner, ranks: [grunt, squad_leader] }
   setup: '모닥불 너머에서 손전등 두 개가 켜진다. "불 꺼. 천천히." {patrol:이/가} 이끄는 이 땅의 순찰조다. 하나는 총구를 이쪽에, 하나는 불을 발로 흩어 끈다. "남의 땅에서 불을 피워? 저것들 불러 모으려고?"'
   variants:
     - '연기 냄새를 따라온 발소리가 야영지를 둘러싼다. {patrol:이/가} 불가로 성큼 들어와 쪼그려 앉아, 남은 땔감을 집어 들고 무게를 가늠한다. "이 땅에서 불은 우리 허락을 받고 피우는 거다."'

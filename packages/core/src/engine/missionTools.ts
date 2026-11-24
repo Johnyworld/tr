@@ -622,7 +622,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (boss && bossAt) lines.push(`상관 ${playerCalls(state, ctx.content, boss)}(${boss}): 지금 ${bossAt}`);
   // 적응 기간 (12-258): 임무는 원하면 받고, 받은 임무를 버리거나 놓쳐도 탓하지 않는다
   if (player.factionId && state.missionGraceUntil !== null && state.missionGraceUntil > state.time) {
-    lines.push(`적응 기간 (${Math.ceil((state.missionGraceUntil - state.time) / MINUTES_PER_DAY)}일 남음): 임무는 원하면 받는다. 이 기간에 받은 임무는 버리거나 놓쳐도 불복종이 아니다`);
+    lines.push(`적응 기간 (${Math.max(1, Math.floor(state.missionGraceUntil / MINUTES_PER_DAY) - Math.floor(state.time / MINUTES_PER_DAY))}일 남음): 임무는 원하면 받는다. 이 기간에 받은 임무는 버리거나 놓쳐도 불복종이 아니다`);
   }
   const offer = describePromotionOffer(ctx.content, state);
   if (offer) lines.push(offer);

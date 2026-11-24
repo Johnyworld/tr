@@ -117,7 +117,7 @@ function noticeMove(ctx: ToolContext) {
 /** 행적으로 오르는 관계는 축마다 하루 +1까지 (플레이 테스트 11, C6). 떨어지는 쪽은 자르지 않는다 */
 export const DAILY_REGARD_GAIN = 1;
 
-export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, only?: readonly ("trust" | "affection" | "respect")[]) {
+export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: BeliefSource, only?: readonly ("trust" | "affection" | "respect")[] | "none") {
   const state = ctx.store.getState();
   const values = valuesOf(ctx.content, state, npcId);
   // "적에게 호의"는 우리 편이 보기에만 흠이다. 호의를 받은 쪽(적·포로)에게까지 신뢰를 깎았다 (플레이 테스트 11)
@@ -129,7 +129,9 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
   const today = state.regardGained.day === dayOf(state.time) ? (state.regardGained.by[npcId]?.[deed.actorId] ?? {}) : {};
   const delta = { ...raw };
   for (const axis of ["trust", "affection", "respect"] as const) {
-    if (only && !only.includes(axis)) delta[axis] = Math.min(0, delta[axis]);
+    // none: 그 일로 이미 관계가 정해진 당사자 (의뢰인·약속 받은 사람, 12-292 PT24 하얀매: 정직을 싫어하는 의뢰인이 해낸 의뢰를 보고 신뢰를 깎았다)
+    if (only === "none") delta[axis] = 0;
+    else if (only && !only.includes(axis)) delta[axis] = Math.min(0, delta[axis]);
     if (delta[axis] > 0) delta[axis] = Math.min(delta[axis], Math.max(0, DAILY_REGARD_GAIN - (today[axis] ?? 0)));
   }
   ctx.store.append({ type: "deed_learned", deedId: deed.id, npcId, source, delta });
@@ -146,7 +148,7 @@ export function learn(ctx: ToolContext, deed: Deed, npcId: string, source: Belie
 export function recordDeed(
   ctx: ToolContext,
   input: DeedInput,
-  official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] },
+  official?: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] | "none" },
   fooled?: readonly string[],
 ): { deed: Deed; visible: string[] } {
   return recordDeedIf(ctx, input, official, fooled, false) as { deed: Deed; visible: string[] };
@@ -163,7 +165,7 @@ export function recordDeedIfSeen(ctx: ToolContext, input: DeedInput): { deed: De
 function recordDeedIf(
   ctx: ToolContext,
   input: DeedInput,
-  official: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] } | undefined,
+  official: { npcId: string; source: BeliefSource; only?: readonly ("trust" | "affection" | "respect")[] | "none" } | undefined,
   fooled: readonly string[] | undefined,
   onlyIfSeen: boolean,
 ): { deed: Deed | null; visible: string[] } {

@@ -547,6 +547,10 @@ function rotate(id: string, day: number): number {
  * 가족 관계는 이름 뒤 호칭(headingAs)에 이미 있다: 두 번 쓰지 않는다 (PT22 튜토리얼) */
 function kinTitle(state: GameState, content: Content, id: string): string {
   const c = state.characters[id]!;
+  // 찾는 가족은 다시 만나기 전에는 무리를 모른다 (12-292, PT22~24 튜토리얼: 찾기 전부터 "버들마을 주민"이 보였다)
+  // (가족은 처음부터 아는 사이라 만남 기록으로는 못 가른다: 다시 만나 장면에 들었다 나간 적이 있는지로 본다)
+  const found = state.scene.present.includes(id) || state.companions.includes(id) || (c.extra?.lastSeenAt ?? 0) > state.runStartedAt;
+  if (state.family?.includes(id) && !found) return "행방 모름";
   return `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
 }
 
@@ -624,7 +628,8 @@ function describeZoneExtras(state: GameState, content: Content): string {
   const zone = state.playerZone;
   if (!zone) return "";
   const list = Object.values(state.characters)
-    .filter((c) => c.extra && c.extra.zone === zone && !state.scene.present.includes(c.id) && !knowsName(state, state.playerId, c.id))
+    // 만난 적 있는 사람만 (12-292, PT24: 아무도 모르게 둔 의뢰 목표가 받자마자 "전에 엮인 인물"에 떴다). 갇힌 사람은 갇힌 곳에서 따로 보인다
+    .filter((c) => c.extra && c.extra.zone === zone && !state.scene.present.includes(c.id) && !knowsName(state, state.playerId, c.id) && hasMet(state, state.playerId, c.id) && !heldOf(c))
     .sort((a, b) => b.extra!.lastSeenAt - a.extra!.lastSeenAt)
     .slice(0, RECENT_EXTRAS_IN_PROMPT);
   if (list.length === 0) return "";

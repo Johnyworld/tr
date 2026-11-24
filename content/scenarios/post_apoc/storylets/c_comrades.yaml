@@ -45,7 +45,7 @@
     zones: [c_warehouse, c_base]
     segments: [dawn, morning, evening]
   cast:
-    boss: { commander: true }
+    boss: { comes: true, commander: true }
   setup: "{boss:이/가} 당신을 마당 한쪽 공터로 부른다. 겉옷을 벗어 던지고 쇠파이프 두 자루를 바닥에 내려놓는다. \"하나 집어. 공세 전에 네가 얼마나 버티는지 봐야겠어. 봐주는 거 없다. 강한 놈만 살아남아.\""
   ai_direction: "{boss:은/는} 화가 난 게 아니다. 동쪽 공세에서 친구가 죽지 않기를 바라서 하는 일이다. 다른 조원들이 둘러서서 구경한다. 판정 결과에 따라 피가 조금 날 수는 있어도 크게 다치게 하지는 않는다."
   choices:

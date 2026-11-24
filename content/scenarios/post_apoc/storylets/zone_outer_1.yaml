@@ -916,7 +916,7 @@
     flags_any: [zo1_pr_armory_seen, zo1_pr_armory_opened]
     flags_none: [zo1_pr_reported]
   cast:
-    boss: { faction: own, ranks: [squad_leader, officer] }
+    boss: { comes: true, faction: own, ranks: [squad_leader, officer] }
   setup: "{boss:이/가} 당신을 따로 부른다. \"교도소 담을 넘었다며. 누가 봤어. 위원회는 저 무기고를 몇 달째 노리고 있다. 안에서 뭘 봤는지 말해.\""
   ai_direction: 붉은연합에서 숨기는 것은 규율반의 일이 된다. 무기고 위치와 상태를 보고하면 위원회는 조를 보낸다 (탄약이 무리 창고에 들어간다). 숨기면 당장은 넘어가지만, 누가 봤다는 말이 사실이면 나중에 문제가 된다.
   choices:

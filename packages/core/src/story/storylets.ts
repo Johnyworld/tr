@@ -1,4 +1,5 @@
 import { situationOf, storyFits } from "../rules/situation.ts";
+import { ableNow } from "../rules/company.ts";
 import { preferRested, resting } from "../rules/rest.ts";
 import { heldOf, playerHeld, heldByOwn } from "../rules/held.ts";
 import { disasterNear } from "../engine/disasters.ts";
@@ -33,7 +34,7 @@ import { careerStep, occupationOf, occupationTag } from "../game/occupation.ts";
 import { ownedBy } from "../rules/home.ts";
 import { learned } from "../rules/skill.ts";
 import {storyPlaceFits, storyPlaces, storyPlacesFit, fireLitHere } from "../rules/place.ts";
-import { inZone, nearby, routineAway, storyIndoor, whereIs } from "../rules/place.ts";
+import { castHere, inZone, nearby, routineAway, storyIndoor, whereIs } from "../rules/place.ts";
 import { ownOffense } from "../rules/consequence.ts";
 import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
@@ -233,7 +234,16 @@ export function pickCast(state: GameState, content: Content, storylet: StoryletC
     }
     // 장면에 들어오는 배역에서 일과상 구역 밖에 나가 있는 사람은 뺀다 (PT20 졸병: 낮에 왕복 나간 사람이 초소 이야기에 들어왔다, 공통 규칙 15 routineAway).
     // 부르는 이야기(summons)는 주인공이 그 사람에게 가므로, 사람을 정해 둔 배역(ids: 오가는 심부름꾼 등)은 글이 그 사람을 부르므로 거르지 않는다
-    const all = castCandidates(state, content, role, cast).filter((id) => !used.has(id) && (!role.enter || !!role.ids || !!storylet.when.summons || state.scene.present.includes(id) || !routineAway(state, content, id)));
+    // 장면에 들어오는 배역은 지금 그 자리에 있을 사람만 (공통 규칙 15 castHere, 12-292). 문병(bedside)은 찾아오는 이야기다.
+    // 부르는 이야기(summons)는 주인공이 그 사람에게 가고, 사람을 정해 둔 배역(ids)은 글이 그 사람을 부르므로 거르지 않는다 (일과상 구역 밖만 뺀다)
+    const placed = role.enter && !role.ids && !storylet.when.summons && !role.captive;
+    const comes: boolean | "afar" = role.afar ? "afar" : !!role.comes || !!storylet.bedside;
+    const all = castCandidates(state, content, role, cast).filter(
+      (id) =>
+        !used.has(id) &&
+        (!role.enter || !!role.ids || !!storylet.when.summons || state.scene.present.includes(id) || !routineAway(state, content, id)) &&
+        (!placed || castHere(state, content, id, comes, ableNow(state, content, id))),
+    );
     if (all.length === 0) {
       if (role.optional) continue; // 있으면 쓰는 배역: 비워 둔다
       return null;

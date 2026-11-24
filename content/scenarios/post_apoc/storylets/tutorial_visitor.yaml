@@ -194,7 +194,7 @@
     flags_all: [bg_family_lost, tv_settled]
     flags_none: [tv_family_known, tv_family_where]
   cast:
-    villager: { faction: faction_b }
+    villager: { comes: true, faction: faction_b }
     kin: { background: family, enter: false }
   setup: "{villager:이/가} 가족을 찾는 사람이 있다는 말을 들었다며 다가온다. \"찾는 사람이 {kin}, 맞죠? 그 사람 우리 마을에 사는데.\""
   ai_direction: >-

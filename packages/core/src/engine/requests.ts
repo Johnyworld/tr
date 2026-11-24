@@ -7,14 +7,15 @@ import type { GameState } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import { talkProblem } from "../rules/company.ts";
 import { hostileLand, ownedBy } from "../rules/home.ts";
-import { inZone, knowsPlace, placeById, placeHint, placesIn, whereIs } from "../rules/place.ts";
-import { activeRequest, offeredQuests, questOf, questProgress, type Quest, type QuestKind } from "../rules/request.ts";
+import { inZone, keepingPlaceOf, knowsPlace, placeById, placeHint, placesIn, whereIs } from "../rules/place.ts";
+import { activeRequest, offeredQuests, questOf, questProgress, questTopic, type Quest, type QuestKind } from "../rules/request.ts";
 import { dayOf } from "../rules/time.ts";
+import { attemptValue, bestStatOf } from "../rules/skill.ts";
 import { neighbors } from "../sim/war.ts";
 import { josa } from "../text.ts";
 import { captureNpc } from "./captivity.ts";
 import { createExtraCharacter } from "./extras.ts";
-import { handOver, settleKept } from "./promises.ts";
+import { abandonRequest, handOver, settleKept } from "./promises.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
@@ -82,8 +83,15 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
   const from = whereIs(state, content, giverId)?.zone ?? state.playerZone;
   if (!rule || !from) return null;
   const near = zonesWithin(state, content, from, r.reach);
-  const unowned = near.filter((z) => !state.zones[z.zone]?.owner);
-  const wild = unowned.length ? unowned : near;
+  // 사람·짐승을 두는 의뢰는 주인 없는 구역에만 (PT24 섬: 맞닿은 구역이 없어 목표가 우리 땅 식당, 의뢰인 바로 곁에 놓였다). 없으면 찾아오기만
+  const wild = near.filter((z) => !state.zones[z.zone]?.owner);
+  const me = state.characters[state.playerId];
+  // 싸움 의뢰는 싸울 줄 아는 주인공에게만 (PT24 졸병·섬: 다섯 번 덤벼 한 번도 못 맞히고 치명상 셋)
+  const canFight = !r.fight || r.fight.moves.some((m) => {
+    const move = content.scenario.moves.find((x) => x.id === m);
+    const skill = me ? attemptValue(content.scenario, me.skills, m) : null;
+    return !!move && skill !== null && (me?.stats[bestStatOf(state, move)] ?? 0) + skill >= r.fight!.min;
+  });
   // 처음 해 볼 종류를 굴리고, 목표를 둘 수 없으면 다음 종류로
   const start = Math.floor(rng() * rule.kinds.length);
   const kinds = [...rule.kinds.slice(start), ...rule.kinds.slice(0, start)];
@@ -91,22 +99,28 @@ function makeOffer(state: GameState, content: Content, giverId: string, rng: Rng
     if (kind === "fetch") {
       // 남의 땅을 뒤지는 일(도둑질)이 되지 않게 주인 없는 구역·의뢰인 무리 땅부터 (없으면 근처 어디든)
       const giverFaction = state.characters[giverId]?.factionId;
-      const lootIn = (zs: typeof near) => zs.flatMap((z) => (content.locations[z.zone]?.loot?.items ?? []).filter((i) => !rule.items || rule.items.includes(i.item)).map((i) => ({ ...z, item: i.item })));
+      // 수색표에서 흔한 것만(드문 것은 찾다 막힌다, PT24 분대장 모르핀), 이미 지닌 것은 빼고(받자마자 건네 끝났다, PT24 하얀매 붕대)
+      const lootIn = (zs: typeof near) =>
+        zs.flatMap((z) =>
+          (content.locations[z.zone]?.loot?.items ?? [])
+            .filter((i) => i.weight >= r.kinds.fetch.min_weight && (!rule.items || rule.items.includes(i.item)) && !(me?.inventory[i.item] ?? 0))
+            .map((i) => ({ ...z, item: i.item })),
+        );
       const free = lootIn(near.filter((z) => !state.zones[z.zone]?.owner || ownedBy(state, z.zone, giverFaction)));
       const found = free.length ? free : lootIn(near);
       if (!found.length) continue;
       const f = pick(rng, found);
       const qty = between(rng, r.kinds.fetch.quantity);
-      return { what: `${content.items[f.item]?.name ?? f.item} ${qty}개를 구해 온다`, item: { id: f.item, quantity: qty }, goal: { kind, template: null, target: null, zone: f.zone, place: null, hops: f.hops, pay: payFor(content, kind, f.zone, f.hops, rng) } };
+      return { what: `${content.items[f.item]?.name ?? f.item} ${qty}개를 구해 온다`, item: { id: f.item, quantity: qty }, goal: { kind, template: null, target: null, zone: f.zone, place: null, hops: f.hops, pay: payFor(content, kind, f.zone, f.hops, rng), delivered: 0 } };
     }
-    if (!wild.length) continue;
+    if (!wild.length || (kind !== "find" && !canFight)) continue;
     const templates = r.kinds[kind].templates.filter((t) => !!content.extras[t]);
     if (!templates.length) continue;
     const template = pick(rng, templates);
     const z = pick(rng, wild);
     const label = content.extras[template]!.label;
     const verb = kind === "find" ? "찾는다" : kind === "capture" ? "산 채로 붙잡아 묶어 온다" : "처치한다";
-    return { what: `${josa(label, "을/를")} ${verb}`, item: null, goal: { kind, template, target: null, zone: z.zone, place: targetPlace(state, content, z.zone, rng), hops: z.hops, pay: payFor(content, kind, z.zone, z.hops, rng) } };
+    return { what: `${josa(label, "을/를")} ${verb}`, item: null, goal: { kind, template, target: null, zone: z.zone, place: targetPlace(state, content, z.zone, rng), hops: z.hops, pay: payFor(content, kind, z.zone, z.hops, rng), delivered: 0 } };
   }
   return null;
 }
@@ -149,11 +163,12 @@ const requestTool = defineTool({
   description:
     "의뢰 (보통의 RPG처럼 받는 반복 일거리). ask: 플레이어가 장면의 인물에게 일거리가 있는지 물으면 부른다. 그 사람이 줄 만한 의뢰(찾아오기·사람 찾기·붙잡아 오기·처치하기)와 목표·기한·보수를 시스템이 정한다. " +
     "accept·decline: 내놓은 의뢰(p_N)에 답한다. 받으면 목표가 세계에 생긴다. report: 의뢰인 앞에서 해낸 것을 보고한다 (해냈는지·보수는 시스템이 정한다. 찾아오기는 물건을 건넨다). " +
+    "abandon: 받은 의뢰를 그만둔다 (기한을 넘긴 것처럼 의뢰인의 신뢰가 깎이고, 곧바로 다른 의뢰를 받을 수 있다). " +
     "진행 중인 의뢰는 한 번에 하나다 (인물이 먼저 꺼낸 부탁을 받은 것도 센다). 목표·보수를 지어내지 않는다.",
   schema: z.strictObject({
-    action: z.enum(["ask", "accept", "decline", "report"]),
+    action: z.enum(["ask", "accept", "decline", "report", "abandon"]),
     npc_id: z.string().nullable().default(null).describe("ask: 일거리를 묻는 상대 (장면에 있어야 한다)"),
-    request_id: z.string().nullable().default(null).describe("accept·decline·report: 의뢰 id (p_N). report는 비우면 진행 중인 의뢰"),
+    request_id: z.string().nullable().default(null).describe("accept·decline·report·abandon: 의뢰 id (p_N). report·abandon은 비우면 진행 중인 의뢰"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content, rng } = ctx;
@@ -170,7 +185,7 @@ const requestTool = defineTool({
       if (bad) return { ok: false, error: bad };
       const who = playerCalls(state, content, input.npc_id);
       const busy = activeRequest(state);
-      if (busy) return { ok: false, error: `진행 중인 의뢰가 이미 있다 (${busy.id}: ${busy.what}). 의뢰는 한 번에 하나다. ${josa(who, "은/는")} 그 일부터 끝내라고 한다.` };
+      if (busy) return { ok: false, error: `진행 중인 의뢰가 이미 있다 (${busy.id}: ${busy.what}). 의뢰는 한 번에 하나다. ${josa(who, "은/는")} 그 일부터 끝내라고 한다. 그만두려면 request abandon (신뢰가 깎인다).` };
       const waiting = offeredQuests(state, input.npc_id)[0];
       if (waiting) return { ok: true, resultText: offerText(state, content, who, waiting), display: QUIET };
       if ((state.relations[input.npc_id]?.[me.id]?.trust ?? 0) < -2) return { ok: true, resultText: `${josa(who, "은/는")} 당신에게 맡길 일이 없다고 한다 (믿지 않는다). 이 결과대로 서술하라.`, display: QUIET };
@@ -195,7 +210,7 @@ const requestTool = defineTool({
         return { ok: true, resultText: `${who}의 의뢰를 거절했다. 관계는 그대로다. 이 결과대로 서술하라.`, display: QUIET };
       }
       const busy = activeRequest(state);
-      if (busy) return { ok: false, error: `진행 중인 의뢰가 이미 있다 (${busy.id}). 의뢰는 한 번에 하나다.` };
+      if (busy) return { ok: false, error: `진행 중인 의뢰가 이미 있다 (${busy.id}). 의뢰는 한 번에 하나다. 그만두려면 request abandon (신뢰가 깎인다).` };
       const q = questOf(p)!;
       const days = between(rng, r.days) + q.hops * r.per_hop_days;
       const target = q.template ? placeTarget(ctx, q) : null;
@@ -204,15 +219,21 @@ const requestTool = defineTool({
       const where = questWhere(now, content, q);
       const t = target ? now.characters[target] : undefined;
       const fact = `${who}의 의뢰(${p.id}, ${kindLabel(content, q.kind)}): ${p.what}. ${q.kind === "fetch" ? "구할 만한 곳" : "있는 곳"}: ${where}`;
-      store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "exact", learnedAt: now.time } });
+      store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "seen", accuracy: "exact", learnedAt: now.time, topic: questTopic(p.id) } });
       return {
         ok: true,
         resultText:
           `${who}의 의뢰를 받았다 (${p.id}, ${kindLabel(content, q.kind)}, ${days}일 안에): ${p.what}.\n` +
-          (q.kind === "fetch" ? `구할 만한 곳: ${[where, ...itemSources(content, p.item!.id).slice(0, 2)].join(", ")}. 물건을 ${who}에게 건네면 해낸 것이다 (transfer_item 또는 request report).` : `있는 곳 (${josa(who, "이/가")} 아는 만큼): ${where}.${t?.extra ? ` 생김새: ${t.extra.look}.` : ""} ${q.kind === "find" ? "찾아 만나면 해낸 것이다 (데려오면 보수가 더). 그 뒤 의뢰인에게 request report." : q.kind === "capture" ? "쓰러뜨려 handle_prisoner bind로 묶어 의뢰인 앞으로 끌고 와 request report. 죽이면 실패다." : "처치한 뒤 의뢰인에게 request report."}`) +
+          (q.kind === "fetch" ? `구할 만한 곳: ${[where, ...itemSources(content, p.item!.id).slice(0, 2)].join(", ")}. 물건을 ${who}에게 건네면 해낸 것이다 (transfer_item 또는 request report).` : `있는 곳 (${josa(who, "이/가")} 아는 만큼): ${where}.${t?.extra ? ` 생김새: ${t.extra.look}.` : ""} ${q.kind === "find" ? "찾아 만나면 해낸 것이다 (데려오면 보수 +${r.reward.brought}). 그 뒤 의뢰인에게 request report." : q.kind === "capture" ? "쓰러뜨려 handle_prisoner bind로 묶어 의뢰인 앞으로 끌고 와 request report. 죽이면 실패다." : "처치한 뒤 의뢰인에게 request report."}`) +
           `\n보수: ${payLabel(content, q)}. 기한을 넘기면 ${josa(who, "이/가")} 실망한다 (신뢰가 깎인다). 이 결과대로 ${who}의 말투로 일을 맡기는 장면을 서술하라. 목표의 이름·장소를 지어내지 않는다.`,
         display: QUIET,
       };
+    }
+
+    if (input.action === "abandon") {
+      const p = input.request_id ? (state.promises ?? []).find((x) => x.id === input.request_id && x.by === me.id && x.status === "open") : activeRequest(state);
+      if (!p) return { ok: false, error: `그만둘 의뢰가 없다: ${input.request_id ?? "(진행 중인 의뢰 없음)"}` };
+      return { ok: true, resultText: abandonRequest(ctx, p).join("\n"), display: QUIET };
     }
 
     // report
@@ -230,7 +251,7 @@ const requestTool = defineTool({
     const lines: string[] = [];
     const target = q.target;
     const giver = state.characters[p.to]!;
-    const at = whereIs(state, content, p.to);
+    const at = keepingPlaceOf(state, content, p.to);
     if (prog.brought && target && q.kind === "find" && at?.zone) {
       store.append({ type: "extra_rehomed", characterId: target, zone: at.zone, place: at.place });
       lines.push(`데려온 ${josa(playerCalls(state, content, target), "은/는")} 이제 ${playerCalls(state, content, p.to)} 곁에 머문다.`);
@@ -285,7 +306,7 @@ export function describeRequestForGm(state: GameState, content: Content): string
   const who = playerCalls(state, content, p.to);
   const left = p.due - dayOf(state.time);
   const q = questOf(p);
-  const head = `진행 중인 의뢰 ${p.id} (${q ? kindLabel(content, q.kind) : "부탁"}, 의뢰인 ${who} ${p.to}): ${p.what} — ${left > 0 ? `${left}일 남음` : "오늘까지"}`;
+  const head = `진행 중인 의뢰 ${p.id} (${q ? kindLabel(content, q.kind) : "인물의 부탁"}, 의뢰인 ${who} ${p.to}): ${p.what} — ${left > 0 ? `${left}일 남음` : "오늘까지"}`;
   if (!q) return head;
   const prog = q.kind === "fetch" ? null : questProgress(state, content, p, hereNow(state));
   return `${head}. ${q.kind === "fetch" ? "구할 만한 곳" : "있는 곳"}: ${questWhere(state, content, q)}. ${prog ? (prog.done ? "해냈다: 의뢰인 앞에서 request report" : `남은 일: ${prog.left}`) : "물건을 의뢰인에게 건네면 끝난다"}`;

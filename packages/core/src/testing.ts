@@ -326,6 +326,7 @@ export const TEST_CONTENT: Content = {
       traits: [],
       voice: { style: "짧은 명령조", samples: ["질문은 돌아와서 해."] },
       routine: { day: "초소 순찰" },
+      zone: "a_home",
       rules: ["불복종을 싫어한다"],
       knows: ["동쪽 초소 교대 시간"],
       keeps: [],

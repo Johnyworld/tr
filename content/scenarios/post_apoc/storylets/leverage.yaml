@@ -64,7 +64,7 @@
     segments: [morning, day, evening, night]
   cast:
     captive: { companion: { kinds: [prisoner] } }
-    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+    patrol: { comes: true, faction: zone_owner, ranks: [grunt, squad_leader] }
   setup: '끌고 가던 {captive:을/를} 데리고 골목을 돌자 {patrol:이/가} 이끄는 이 땅의 순찰조와 정면으로 맞닥뜨린다. 총구가 올라온다. {captive}의 묶인 손이 떨린다. 순찰조가 {captive:을/를} 알아보는 눈치다.'
   ai_direction: "순찰조는 여럿이고 무장했다. {captive:을/를} 앞세우면 그들이 물러설 수도 있다. 그 사람이 이 무리 사람이면 더 그렇다 (아니어도 사람 목숨을 앞세운 자로 기억한다). 인질을 실제로 해치는 일은 이 이야기에서 일어나지 않는다. 더 가면 GM이 판정으로 넘긴다. 위험은 판정 전에 선언한다."
   choices:

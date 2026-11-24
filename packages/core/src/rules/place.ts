@@ -15,6 +15,7 @@ import { roleOf, type GameState } from "../game/state.ts";
 import { npcZoneAt } from "../game/whereabouts.ts";
 import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
 import { josa } from "../text.ts";
+import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
@@ -391,7 +392,16 @@ export function peopleHere(state: GameState, content: Content): string[] {
  * 그리고 옮겨 가는 장소가 일과상 제자리인 사람만 남는다. 나머지는 원래 자리에 남는다
  */
 export function comesAlong(state: GameState, content: Content, to: string | null, involved: readonly string[]): string[] {
-  return state.scene.present.filter((id) => involved.includes(id) || (to !== null && npcPlaceAt(state, content, id) === to));
+  // 그리로 가던 참인 사람은 스스로 걸을 수 있을 때만 (PT24 하얀매: 치명상·출혈인 동료가 "가던 참이라 같이 왔다")
+  return state.scene.present.filter((id) => involved.includes(id) || (to !== null && npcPlaceAt(state, content, id) === to && walksOnOwn(state, content, id)));
+}
+
+/** 스스로 걸어 다닐 수 있는가: 무력화(부상 문턱)·의식불명 증상·기절이 아니다 (12-292) */
+export function walksOnOwn(state: GameState, content: Content, id: string): boolean {
+  const c = state.characters[id];
+  if (!c || c.dead) return false;
+  if ((state.knockedOut?.[id] ?? -Infinity) > state.time) return false;
+  return !harmIncapacitates(content.scenario, c) && !incapacitatingSymptom(content.scenario, c);
 }
 
 /**
@@ -516,6 +526,50 @@ export function inZone(state: GameState, content: Content, id: string): boolean 
   return !!w && !!w.zone && w.zone === state.playerZone;
 }
 
+/**
+ * 이야기 배역이 장면에 들어올 수 있는가 (12-292, PT20~24 매 회차: 의무실 치료사가 담 밖 길 이야기에, 운동장의 동료가 다른 구역 건물에 깔려 나왔다).
+ * 장면·곁의 사람은 늘. 그 밖에는 같은 장소에 있을 사람만. 찾아오는 배역(comes: 문병·부르러 옴·순찰)은 같은 구역에서 스스로 움직일 수 있으면 (able).
+ * 다른 구역에서는 끌어오지 않는다 (멀리서 오는 배역 afar만: 갇힌 주인공을 구하러 온 사람)
+ */
+export function castHere(state: GameState, content: Content, id: string, comes: boolean | "afar", able: boolean): boolean {
+  if (state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart)) return true;
+  if (comes === "afar") return able;
+  const w = whereIs(state, content, id);
+  if (!w?.zone || w.zone !== state.playerZone) return false;
+  if (!state.playerPlace || !w.place || w.place === state.playerPlace) return true;
+  return comes && able;
+}
+
+/**
+ * 머무는 장소가 정해진 이름 없는 인물(가족의 집, 의뢰 목표)이 지금 주인공 곁에 없는가 (12-292, npc_presence).
+ * 없으면 null, 있으면 어디에 있는지 (다른 구역이면 zone만)
+ */
+export function fixedPlaceAway(state: GameState, content: Content, id: string): { zone: string | null; place: Place | null; known: boolean } | null {
+  const ex = state.characters[id]?.extra;
+  if (!ex?.place || state.companions.includes(id)) return null;
+  if (ex.zone === state.playerZone && (!state.playerPlace || ex.place === state.playerPlace)) return null;
+  if (ex.zone !== state.playerZone) return { zone: ex.zone, place: null, known: false };
+  const p = placeById(state, content, ex.place, ex.zone);
+  return { zone: ex.zone, place: p, known: !!p && !!ex.zone && knowsPlace(state, content, ex.zone, ex.place) };
+}
+
+/**
+ * 이 사람이 데려온 사람을 맡아 둘 자리 (12-292, PT24 졸병: 의뢰인이 이야기로 끌려 나와 있던 담 밖 길이 데려온 사람의 거처가 됐다).
+ * 이름 있는 인물은 일과 구역의 일과 장소, 그 장소가 길·담 문이거나 없으면 그 구역의 담 안 첫 장소. 이름 없는 인물은 머무는 자리
+ */
+export function keepingPlaceOf(state: GameState, content: Content, id: string): { zone: string; place: string | null } | null {
+  const npc = content.npcs[id];
+  const zone = npc ? (npcZoneAt(npc, state.time) ?? whereIs(state, content, id)?.zone ?? null) : (state.characters[id]?.extra?.zone ?? whereIs(state, content, id)?.zone ?? null);
+  if (!zone) return null;
+  const places = placesIn(state, content, zone).filter((p) => !p.spawned);
+  const fits = (pid: string | null | undefined) => {
+    const p = pid ? places.find((x) => x.id === pid) : undefined;
+    return p && !p.road && !p.gate && !p.jail ? p.id : null;
+  };
+  const own = npc ? fits(npcPlaceAt(state, content, id)) : fits(state.characters[id]?.extra?.place);
+  return { zone, place: own ?? places.find((p) => !p.road && !p.gate && !p.jail)?.id ?? null };
+}
+
 /** 시간대 열쇠 (날 × 시간대): 둘이 다르면 시간대가 바뀌었다 */
 function segmentKey(time: number): number {
   return Math.floor(time / 1440) * TIME_SEGMENTS.length + TIME_SEGMENTS.indexOf(segmentOf(time));
@@ -538,6 +592,8 @@ export function sceneLeavesAt(state: GameState, content: Content, from: number, 
   return state.scene.present.filter((id) => {
     const c = state.characters[id];
     if (!c || c.dead || companions.has(id) || cast.has(id) || heldOf(c) || involved.includes(id)) return false;
+    // 스스로 걷지 못하는 사람(무력화·의식불명·기절)은 제 할 일로 떠나지 않는다 (12-292, PT24 하얀매: 치명상·의식장애인 동료가 "제 할 일로 자리를 떴다")
+    if (!walksOnOwn(state, content, id)) return false;
     if (c.extra && !content.npcs[id]) {
       // 이름 없는 사람: 사람이 아닌 것은 남고, 집이 이 장소면 남는다
       if (isCreature(content, c)) return false;

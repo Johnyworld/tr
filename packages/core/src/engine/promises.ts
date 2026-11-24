@@ -12,7 +12,7 @@ import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome }
 import { ownedBy } from "../rules/home.ts";
 import { itemSources } from "../content/sources.ts";
 import { inZone, whereIs } from "../rules/place.ts";
-import { activeRequest, isFavorAsk, questOf } from "../rules/request.ts";
+import { activeRequest, isFavorAsk, questDelivered, questOf, questTopic } from "../rules/request.ts";
 
 /**
  * 약속 (기획서 8.11, 12-160·12-181). 주인공이 장면의 인물과 맺은 약속을 코드가 기억한다. 수치는 월드의 promises.
@@ -51,20 +51,20 @@ const sourcesNote = (content: Content, item: { id: string } | null | undefined) 
 };
 
 /** 상태 화면·명령어의 한 줄 (12-174): 내가 한 약속인지, 받아 준 부탁인지 */
-export type Pledge = { id: string; kind: "약속" | "부탁"; who: string; text: string; leftLabel: string; urgent: boolean };
+export type Pledge = { id: string; kind: "약속" | "의뢰"; who: string; text: string; leftLabel: string; urgent: boolean };
 
 export function pledges(state: GameState, content: Content, to?: string): Pledge[] {
   const today = dayOf(state.time);
   return openPromises(state, to).map((p) => {
     const left = p.due - today;
-    return { id: p.id, kind: p.favor || questOf(p) ? "부탁" : "약속", who: playerCalls(state, content, p.to), text: describe(content, p), leftLabel: left > 0 ? `${left}일 남음` : "오늘까지", urgent: left <= 0 };
+    return { id: p.id, kind: p.favor || questOf(p) ? "의뢰" : "약속", who: playerCalls(state, content, p.to), text: describe(content, p), leftLabel: left > 0 ? `${left}일 남음` : "오늘까지", urgent: left <= 0 };
   });
 }
 
 /** 인물 카드·?임무의 줄: 이 사람에게 한 약속(또는 받아 준 부탁)과 남은 날. 인물 카드(to)에는 아직 꺼내지 않은 부탁도 */
 export function promiseLines(state: GameState, content: Content, to?: string): string[] {
   const open = pledges(state, content, to).map((p) => {
-    const head = p.kind === "부탁" ? `${to ? "이 인물의 " : `${p.who}의 `}부탁 ${p.id} (들어주기로 했다)` : `${to ? "당신이 이 인물에게 한 " : `${p.who}에게 한 `}약속 ${p.id}`;
+    const head = p.kind === "의뢰" ? `${to ? "이 인물의 " : `${p.who}의 `}의뢰 ${p.id} (맡았다)` : `${to ? "당신이 이 인물에게 한 " : `${p.who}에게 한 `}약속 ${p.id}`;
     const record = (state.promises ?? []).find((x) => x.id === p.id);
     return `${head}: ${p.text} — ${p.leftLabel}${record?.favor ? sourcesNote(content, record.item) : ""}`;
   });
@@ -150,6 +150,7 @@ const promiseTool = defineTool({
     if (!p || p.status !== "open") return { ok: false, error: `지킬 수 있는 약속이 아니다: ${input.promise_id ?? "(없음)"} (열린 약속: ${openPromises(state).map((x) => x.id).join(", ") || "없음"})` };
     const who = playerCalls(state, content, p.to);
     if (input.action === "fold") {
+      if (questOf(p) || p.favor) return { ok: true, resultText: abandonRequest(ctx, p).join("\n"), display: QUIET };
       store.append({ type: "promise_settled", id: p.id, status: "folded" });
       relate(ctx, p.to, r.folded, "못 지키겠다고 털어놓은 약속");
       return { ok: true, resultText: `${who}에게 약속을 못 지키겠다고 털어놓았다. 실망했지만 숨기지 않은 것은 안다. 이 결과대로 서술하라.`, display: QUIET };
@@ -169,10 +170,12 @@ export function handOver(ctx: ToolContext, p: PromiseRecord): string[] | string 
   const me = store.getState().characters[store.getState().playerId]!;
   if (p.item) {
     const worn = (["weapon", "body", "head", "arms", "outer"] as const).filter((s) => equippedItem(me, s) === p.item!.id).length;
-    if ((me.inventory[p.item.id] ?? 0) - worn < p.item.quantity) {
-      return `${josa(content.items[p.item.id]?.name ?? p.item.id, "이/가")} ${p.item.quantity}개 있어야 한다 (지금 ${Math.max(0, (me.inventory[p.item.id] ?? 0) - worn)}개, 걸친 것은 먼저 벗는다).${sourcesNote(content, p.item)}`;
+    // 이미 나눠 건넨 만큼은 빼고 (12-292, PT24 튜토리얼: 하나씩 건넨 통조림을 세지 않았다)
+    const need = p.item.quantity - questDelivered(p);
+    if ((me.inventory[p.item.id] ?? 0) - worn < need) {
+      return `${josa(content.items[p.item.id]?.name ?? p.item.id, "이/가")} ${need}개 더 있어야 한다 (지금 ${Math.max(0, (me.inventory[p.item.id] ?? 0) - worn)}개${questDelivered(p) ? `, 이미 ${questDelivered(p)}개 건넸다` : ""}, 걸친 것은 먼저 벗는다).${sourcesNote(content, p.item)}`;
     }
-    store.append({ type: "item_transferred", from: me.id, to: p.to, itemId: p.item.id, quantity: p.item.quantity });
+    if (need > 0) store.append({ type: "item_transferred", from: me.id, to: p.to, itemId: p.item.id, quantity: need });
   }
   return settleKept(ctx, p);
 }
@@ -187,7 +190,8 @@ export function settleKept(ctx: ToolContext, p: PromiseRecord, extra = 0): strin
   const quest = questOf(p);
   const req = content.scenario.requests;
   relate(ctx, p.to, quest && req ? req.reward.relation : r.kept, quest ? "해낸 의뢰" : "지킨 약속");
-  recordDeed(ctx, { summary: quest ? `${who}의 의뢰를 해냈다: ${promiseGist(ctx.content, p)}` : `${who}에게 한 약속을 지켰다: ${promiseGist(ctx.content, p)}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
+  recordDeed(ctx, { summary: quest ? `${who}의 의뢰를 해냈다: ${promiseGist(ctx.content, p)}` : `${who}에게 한 약속을 지켰다: ${promiseGist(ctx.content, p)}`, tags: ["honesty"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen", only: "none" });
+  dropRequestBelief(ctx, p.id);
   const lines = [quest ? `${who}의 의뢰를 해냈다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.` : `${who}에게 한 약속을 지켰다${p.item ? " (물건을 건넸다)" : ""}. 이 결과대로 서술하라.`];
   if (quest?.pay) {
     const qty = quest.pay.quantity + extra;
@@ -209,8 +213,15 @@ export function settleKept(ctx: ToolContext, p: PromiseRecord, extra = 0): strin
 export function keepByGift(ctx: ToolContext, to: string, itemId: string, quantity: number): string[] {
   if (!rules(ctx.content)) return [];
   const state = ctx.store.getState();
-  const p = openPromises(state).find((x) => x.to === to && x.item?.id === itemId && x.item.quantity <= quantity);
+  const p = openPromises(state).find((x) => x.to === to && x.item?.id === itemId && x.item.quantity - questDelivered(x) <= quantity);
   if (p) return settleKept(ctx, p);
+  // 찾아오기 의뢰는 나눠 건네도 센다 (12-292)
+  const part = openPromises(state).find((x) => x.to === to && x.item?.id === itemId && !!questOf(x));
+  if (part) {
+    ctx.store.append({ type: "request_delivered", id: part.id, quantity });
+    const left = part.item!.quantity - questDelivered(part) - quantity;
+    return [`의뢰 ${part.id}: ${ctx.content.items[itemId]?.name ?? itemId} ${part.item!.quantity - left}/${part.item!.quantity}개를 건넸다. ${left}개 남았다.`];
+  }
   // 아직 받는다고 답하지 않은 부탁이라도, 그 물건을 건넸으면 받아 주고 지킨 것이다 (12-265, PT18 분대장: 탄 한 발을 건넸는데 부탁이 그대로 남았다)
   const asked = askedPromises(state, to).find((x) => {
     const c = askContent(ctx.content, x);
@@ -251,7 +262,8 @@ export function runBrokenPromises(ctx: ToolContext): string[] {
     relate(ctx, p.to, req ? req.failed : r.broken, req ? "기한을 넘긴 의뢰" : "어긴 약속");
     const who = playerCalls(state, ctx.content, p.to);
     recordDeed(ctx, { summary: `${who}에게 한 약속을 어겼다: ${promiseGist(ctx.content, p)}`, tags: ["deceit"], severity: 1, privacy: "private", noisy: false }, { npcId: p.to, source: "seen" });
-    const line = `${who}에게 한 약속(${p.what})의 기한이 지났다. 지키지 못했다`;
+    dropRequestBelief(ctx, p.id);
+    const line = questOf(p) || p.favor ? `${who}의 의뢰(${p.what})의 기한이 지났다. 해내지 못했다` : `${who}에게 한 약속(${p.what})의 기한이 지났다. 지키지 못했다`;
     const now = ctx.store.getState();
     ctx.store.append({ type: "belief_added", characterId: now.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact: `${line}.`, source: "seen", accuracy: "exact", learnedAt: now.time } });
     lines.push(`${line}.`);
@@ -299,4 +311,21 @@ export function runAsksDaily(ctx: ToolContext): void {
 function promiseGist(content: Content, p: { what: string; item?: { id: string; quantity: number } | null }): string {
   if (!p.item) return p.what;
   return `${content.items[p.item.id]?.name ?? p.item.id} ${p.item.quantity}개를 구해 주기로 한 약속`;
+}
+
+/** 받은 의뢰(부탁 포함)를 그만둔다 (12-292, PT24 막힘 세 판: 해낼 수 없는 의뢰가 기한까지 다른 의뢰를 막았다). 기한을 넘긴 것과 같은 관계 변화 */
+export function abandonRequest(ctx: ToolContext, p: PromiseRecord): string[] {
+  const state = ctx.store.getState();
+  const who = playerCalls(state, ctx.content, p.to);
+  ctx.store.append({ type: "promise_settled", id: p.id, status: "folded" });
+  dropRequestBelief(ctx, p.id);
+  const failed = ctx.content.scenario.requests?.failed ?? rules(ctx.content)?.folded;
+  if (failed && state.characters[p.to] && !state.characters[p.to]!.dead) relate(ctx, p.to, failed, "그만둔 의뢰");
+  return [`${who}의 의뢰(${p.id})를 그만두었다. ${josa(who, "은/는")} 실망한다 (신뢰가 깎였다). 이제 다른 의뢰를 받을 수 있다. 이 결과대로 서술하라.`];
+}
+
+/** 끝난 의뢰의 믿음을 내려놓는다 (12-292, PT24 네 판: 끝난 의뢰가 "알고 있다고 믿는 것"에 남았다) */
+function dropRequestBelief(ctx: ToolContext, id: string): void {
+  const state = ctx.store.getState();
+  for (const b of state.beliefs[state.playerId] ?? []) if (b.topic === questTopic(id)) ctx.store.append({ type: "belief_dropped", characterId: state.playerId, beliefId: b.id });
 }

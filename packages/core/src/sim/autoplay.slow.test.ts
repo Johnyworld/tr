@@ -63,7 +63,8 @@ describe("시나리오마다 자동 플레이 (실제 콘텐츠)", () => {
       let proposals = 0;
       const needsOrders = !!role.squad?.length;
       const needsCouncil = !!content.scenario.command?.council_ranks.includes(role.rank);
-      for (const seed of [111, 113]) {
+      // 12-292: 이야기 배역을 같은 장소의 사람으로 좁히자 붉은연합 약탈조가 두 판에 시나리오 이야기 하나뿐이었다 (셋째 판까지 본다)
+      for (const seed of [111, 113, 115]) {
         const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(11) });
         const world = m.create("mcp", role.id);
         expect(world.state().playerZone).toBe(role.start_location ?? world.state().playerZone);

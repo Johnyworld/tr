@@ -482,7 +482,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 같은 자리에서 오래 걸리는 일은 이야기를 두고 하지 않는다: 시간이 흐르기 전에 먼저 고르거나 외면하라고 돌려보낸다 (플레이 테스트 13: 망을 봤는데 "혼자 빠져나온다"를 고른 것이 됐다)
   // 스스로 못 움직이면(부상·열병으로 의식을 잃음) 시간만 흐른다: 막지 않는다 (12-245: 의식불명인 채 기다리기가 막혔다)
   // 자리를 옮기는 것도 같다 (12-240, A1: 이야기가 열린 결과 뒤 같은 턴에 묶어 보낸 이동이 이야기를 외면한 것으로 처리됐다). 판정을 건 행동(맞서기·달아나기)은 이야기 안의 일이다
-  if (start.activeStorylet && !input.check && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !isIncapacitated(ctx.content, player) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
+  // 스스로 움직일 수 없을 때(의식불명)만 막지 않는다. 중상(무력화 문턱)은 걷고 싸우므로 막는다 (12-292, PT24 분대장·섬: 중상이면 이야기를 두고 떠나도 말없이 사라졌다).
+  // 구역 이동(move_to)은 판정을 붙여도 막는다: 판정 걸고 물러나기는 place_to다 (PT24 졸병: 깔린 동료를 두고 은밀 판정 이동으로 떠났는데 외면 결과가 없었다)
+  if (start.activeStorylet && (!input.check || !!input.move_to) && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
     const s0 = storyletOf(start, content, start.activeStorylet.id);
     const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
     return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 먼저 장면으로 연출하고 플레이어의 선택을 받는다: resolve_storylet으로 고르거나, 플레이어가 두고 다른 일(자리 옮기기 포함)을 하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
@@ -515,7 +517,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const escaping = !!input.move_to && !!heldOf(player);
   if (ignoredLine) leftLines.push(ignoredLine);
   // 자리를 뜨는 것(옮겨 가기)과 길 위 장면을 두고 하는 일만 외면 선택지로 푼다
-  if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !isIncapacitated(ctx.content, player)) leftLines.push(...walkAwayFromStory(ctx, start));
+  if (store.getState().activeStorylet && (!!input.move_to || onRoad) && !escaping && !incapacitatingSymptom(scenario, player)) leftLines.push(...walkAwayFromStory(ctx, start));
   // 혼란은 그 자리의 일이다: 자리를 옮기거나 오래 쉬면 가신다 (플레이 테스트 11: 매복의 혼란이 14시간 잠 뒤 판정에 붙었다)
   if (long && isConfused(start, start.playerId)) store.append({ type: "confusion_changed", characterId: start.playerId, on: false });
   // 잠입 중 (12-154): 옮기거나 오래 머물지 않는다. 잠입은 infiltrate로 (빠지기부터)
@@ -794,7 +796,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (moments.length) lines.push("성격 줄 (서술 끝에 그대로 옮겨 적는다. 플레이어가 말하지 않은 반응이니 그 장면을 연출한다):", ...moments.map((m) => `\`${m}\``));
     // 이야기할 사람이 없다 (설계 목록 10-2, PT16 튜토리얼: 빈 장면에서 talk가 그대로 흘렀다)
     const alone = store.getState().scene.present.length === 0;
-    if (talk && alone && !input.broadcast) lines.push("장면에 아무도 없다: 혼잣말로 서술하거나, 이야기할 사람을 npc_presence로 들인 뒤 다시 한다.");
+    // 말 상대(target)를 정했으면 옮긴 자리에서 곧 들인다: 먼저 "아무도 없다"를 찍지 않는다 (12-292, PT24 졸병·하얀매)
+    if (talk && alone && !input.broadcast && !input.target) lines.push("장면에 아무도 없다: 혼잣말로 서술하거나, 이야기할 사람을 npc_presence로 들인 뒤 다시 한다.");
   }
 
   // 0. 겁먹을 일이 드러났으면 공포부터 (이번 판정에 바로 붙는다, 12-95)

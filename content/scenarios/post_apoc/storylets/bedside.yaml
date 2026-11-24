@@ -17,7 +17,7 @@
     harm_at_least: critical
     own_territory: true
   cast:
-    mate: { faction: own, known: true, adult: true }
+    mate: { comes: true, faction: own, known: true, adult: true }
   setup: "{mate:이/가} 찾아와 자리 옆에 쪼그려 앉는다. 손에 든 것은 없다. 한참 당신 얼굴을 보다가 \"꼴이 말이 아니네\" 하고 웃는데, 웃음이 끝까지 가지 않는다."
   variants:
     - "누가 깔개 끝에 앉는 기척에 눈을 뜬다. {mate:이/가} 무릎을 세우고 앉아 있다. \"깼어? 그냥, 지나가다가.\" 지나가다 들를 자리가 아니다."
@@ -187,7 +187,7 @@
     harm_at_least: critical
     own_territory: true
   cast:
-    mate: { faction: own, ranks: [grunt, squad_leader], known: true, adult: true }
+    mate: { comes: true, faction: own, ranks: [grunt, squad_leader], known: true, adult: true }
   setup: "{mate:이/가} 흙투성이 신발로 들어와 물을 한 바가지 들이켠다. 당신 쪽을 보며 어깨를 으쓱한다. \"네 몫까지 하고 왔다. 갚아.\""
   ai_direction: "당신이 누운 동안 무리의 일은 멈추지 않았고, 당신 자리는 {mate:이/가} 메웠다. 무슨 일이었는지는 {mate:이/가} 말하는 만큼만 (구체적인 임무를 지어내지 않는다: 순찰, 짐, 보초 정도). {mate:은/는} 생색을 내지만 원망하지는 않는다."
   choices:

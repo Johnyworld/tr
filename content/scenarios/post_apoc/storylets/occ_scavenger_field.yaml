@@ -416,7 +416,7 @@
     segments: [evening, night]
     flags_none: [os_red_ears_done]
   cast:
-    snoop: { faction: own, ranks: [staff, squad_leader, officer] }
+    snoop: { comes: true, faction: own, ranks: [staff, squad_leader, officer] }
     grumbler: { faction: own, ranks: [grunt], known: true }
   setup: 점호가 끝나고 {snoop:이/가} 막사 뒤로 당신을 부른다. 담배를 한 대 권하며 웃는다. "고참쯤 되면 조 안에서 무슨 말이 오가는지 다 알지? {grumbler} 말이야. 요즘 할당량 얘기를 자꾸 한다며. 무슨 말을 하는지만 알려 줘. 네 조 배급은 내가 챙기지."
   ai_direction: 붉은연합에서는 수상한 동료를 규율반에 알리는 것이 규칙이다. 그 동료는 배급이 깎인 날 불평을 몇 마디 했을 뿐이다. 알리면 그 사람은 광장에 서게 될 수 있다. 거절하면 규율반은 고참을 다시 본다. 조원들은 누가 귀인지 알아내려 한다.

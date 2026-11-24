@@ -43,10 +43,10 @@ describe("부탁", () => {
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     const p = w.state().promises.find((x) => x.id === f.id)!;
     expect(p.item).toEqual({ id: "antibiotics", quantity: 1 });
-    // ?임무·인물 카드·상태 화면에는 '부탁'으로 보인다
-    expect(w.sceneForGm()).toContain(`이 인물의 부탁 ${p.id} (들어주기로 했다)`);
-    expect(runCommand("?임무", { state: w.state(), content, summaries: [] })).toContain(`의 부탁 ${p.id}`);
-    expect(buildPlayerView(w.state(), content).todos.filter((t) => t.kind === "부탁")).toMatchObject([{ key: p.id, who: "윤채원" }]);
+    // ?임무·인물 카드·상태 화면에는 '의뢰'로 보인다
+    expect(w.sceneForGm()).toContain(`이 인물의 의뢰 ${p.id} (맡았다)`);
+    expect(runCommand("?임무", { state: w.state(), content, summaries: [] })).toContain(`의 의뢰 ${p.id}`);
+    expect(buildPlayerView(w.state(), content).todos.filter((t) => t.kind === "의뢰")).toMatchObject([{ key: p.id, who: "윤채원" }]);
     expect(w.runCheat("~give antibiotics 1").ok).toBe(true);
     const pain = me(w).inventory.painkiller ?? 0;
     const k = w.executeTool("promise", { action: "keep", promise_id: p.id });

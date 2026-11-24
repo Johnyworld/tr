@@ -69,7 +69,7 @@
     zone_noise_gte: 2
     zone_owner: [other]
   cast:
-    patrol: { faction: zone_owner, ranks: [grunt, squad_leader] }
+    patrol: { comes: true, faction: zone_owner, ranks: [grunt, squad_leader] }
   setup: '소리가 가라앉기도 전에 골목 양쪽에서 발소리가 난다. 감염체의 끄는 걸음이 아니다. {patrol:이/가} 이끄는 순찰조가 총구를 낮게 들고 다가온다. "여기서 총 쏜 놈 누구야. 우리 땅에 그것들 불러들이는 놈은 그냥 안 보낸다."'
   variants:
     - '{zone}의 무너진 담 위로 손전등 불빛이 훑고 지나간다. 이 땅의 순찰조다. 앞장선 {patrol:이/가} 땅에 떨어진 탄피를 집어 들고 이쪽을 본다.'

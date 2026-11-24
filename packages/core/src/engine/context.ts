@@ -75,7 +75,7 @@ import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
 import { maskUnknownIds } from "../rules/knowledge.ts";
-import { currentPlace, depthAt, directionTo, doorLabel, homeHidden, knowsPlace, knowsZone, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
+import { currentPlace, depthAt, directionTo, doorLabel, homeHidden, knowsPlace, knowsWhoIsAt, knowsZone, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
 import { beliefText, deedText, matureCard, MENACE_COVER, shownOccupationTitle, toneDownLine } from "../rules/lens.ts";
 
@@ -575,7 +575,8 @@ function describePlaces(state: GameState, content: Content): string {
   const line = (p: (typeof places)[number]) => {
     // 갇힌 사람은 그 자리에 있는 것을 주인공이 알 때만 (12-262, PT16·PT17 졸병: 적 거점에 막 들어서자 행방 모를 실종자의 자리가 보였다)
     // 집이 있는 아는 사람(가족 등)은 이 판에서 직접 본 뒤에만 (12-267, PT19·PT20 튜토리얼, 공통 규칙 15 homeHidden)
-    const people = peopleAt(state, content, state.playerZone, p.id).filter((id) => known.has(id) && (p.id === here?.id || !homeHidden(state, id)) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
+    // 남의 땅에서는 있어 본 장소의 사람만 (12-305)
+    const people = (knowsWhoIsAt(state, content, state.playerZone, p.id) ? peopleAt(state, content, state.playerZone, p.id) : []).filter((id) => known.has(id) && (p.id === here?.id || !homeHidden(state, id)) && (!heldOf(state.characters[id]) || p.id === here?.id || heldSeenZone(state, id) === state.playerZone));
     // 이웃과 길 (장소 개편): 이웃은 5분, 길은 이어지는 구역
     // 처음 가는 구역은 이 길에서만 떠난다 (12-304, knowsZone)
     const toZones = p.road && p.to.length ? `, 길: ${p.to.map((z) => `${content.locations[z]?.name ?? z}${knowsZone(state, content, z) ? "" : "(처음 가는 곳: 이 길에서)"}`).join("·")} 쪽` : "";
@@ -594,7 +595,7 @@ function describePlaces(state: GameState, content: Content): string {
     ...(doors.length
       ? [
           `지금 자리에서 이어지는 모르는 곳 (place_to에 "문1"처럼. 들어가 봐야 무엇이 있는지 안다. 플레이어에게 보이는 대로 묘사하고 이름·쓰임을 지어내지 않는다):`,
-          ...doors.map((p, i) => `- ${here ? `${directionTo(state, content, here.id, p.id) ?? "곁"}: ` : ""}${doorLabel(p, i)}`),
+          ...doors.map((p) => `- ${here ? `${directionTo(state, content, here.id, p.id) ?? "곁"}: ` : ""}${doorLabel(state, content, p)}`),
         ]
       : []),
     ...(hidden > 0 ? ["(이 구역에는 주인공이 아직 모르는 곳이 더 있다. 모르는 곳을 spawn_place로 만들어 대신하지 않는다: 문을 지나 찾아간다)"] : []),

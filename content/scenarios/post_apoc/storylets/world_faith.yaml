@@ -103,6 +103,8 @@
     zones: [rest_stop, overpass, south_fields, riverside]
     segments: [morning, day]
     indoor: false
+    # 글이 "도로 한가운데"다 (12-305, PT29: 밭에서 열렸다)
+    place_kinds: [road, street]
   cast:
     pilgrim: { extra: highway_traveler, label: 나무 십자가를 멘 사람 }
   setup: "도로 한가운데를 {pilgrim:이/가} 걸어온다. 등에 사람 키만 한 나무 십자가를 묶었다. 뒤로 서넛이 따른다. 무기는 아무도 없다. \"남쪽으로 갑니다. 물 한 모금만 얻을 수 있을까요.\""

@@ -504,7 +504,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 구역 이동(move_to)은 판정을 붙여도 막는다: 판정 걸고 물러나기는 place_to다 (PT24 졸병: 깔린 동료를 두고 은밀 판정 이동으로 떠났는데 외면 결과가 없었다)
   // 매복(몸이 붙들린 이야기)은 판정을 걸고 뿌리쳐 달아나는 것이 이야기 안의 일이다: 막지 않는다 (12-302: 아래 매복 규칙은 ignore_story를 막고 이 규칙은 move_to를 막아 달아날 길이 없었다)
   const ambushEscape = !!input.move_to && !!input.check && !!start.activeStorylet && !!storyletOf(start, content, start.activeStorylet.id)?.ambush;
-  if (start.activeStorylet && !ambushEscape && (!input.check || !!input.move_to) && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
+  // 판정을 건 행동이 이야기 안의 일인 것은 그 이야기 선택지의 스킬이거나 판정을 걸고 물러나는 것(place_to)일 때만 (12-305, PT29 튜토리얼:
+  // 우는 아이를 버스에 둔 채 수색 판정으로 1시간 30분을 뒤졌다)
+  const openStory = start.activeStorylet ? storyletOf(start, content, start.activeStorylet.id) : undefined;
+  const storyChoiceCheck = !!input.check && (!!input.place_to || !!openStory?.choices.some((c) => c.check === input.check!.move));
+  if (start.activeStorylet && !ambushEscape && (!storyChoiceCheck || !!input.move_to) && !input.ignore_story && (!!input.move_to || !!input.place_to || (!!input.activity && ["sleep", "wait", "guard_duty", "rest", "search", "work", "treat"].includes(input.activity.kind))) && !incapacitatingSymptom(scenario, player) && !heldOf(player)) {
     const s0 = storyletOf(start, content, start.activeStorylet.id);
     const openTitle = s0 ? storyTitle(start, ctx.content, s0) : start.activeStorylet.id;
     return { ok: false, error: `이야기 "${openTitle}"${josa(openTitle, "이/가").slice(openTitle.length)} 열려 있다. 먼저 장면으로 연출하고 플레이어의 선택을 받는다: resolve_storylet으로 고르거나, 플레이어가 두고 다른 일(자리 옮기기 포함)을 하기로 했으면 ignore_story: true를 함께 넣는다 (시간은 흐르지 않았다).` };
@@ -764,7 +768,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const herePlace = currentPlace(start, content);
     if (hostileHere(ctx) && herePlace && stepsBetween(start, content, herePlace.id, to.id) > 1) {
       const doors = unknownDoors(start, content);
-      const via = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail).map((p) => (doors.some((d) => d.id === p.id) ? doorLabel(p, doors.findIndex((d) => d.id === p.id)) : `${p.id}(${p.name})`)).join(", ");
+      const via = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail).map((p) => (doors.some((d) => d.id === p.id) ? doorLabel(start, content, p) : `${p.id}(${p.name})`)).join(", ");
       return { ok: false, error: `적 땅에서는 이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)

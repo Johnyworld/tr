@@ -180,10 +180,10 @@ describe("플레이 테스트 14: 판정 보정", () => {
     w.state().characters[w.state().playerId]!.skills.history = 1;
     const search = content.scenario.exploration!.search_move;
     const other = content.scenario.moves.find((m) => m.id !== search && m.category === content.scenario.moves.find((x) => x.id === search)!.category && m.kind !== "expert")!;
-    const r = w.executeTool("take_action", act({ activity: { kind: "search", until: null }, check: check(other.id, other.stats[0]!) }));
+    const r = w.executeTool("take_action", act({ ignore_story: true, activity: { kind: "search", until: null }, check: check(other.id, other.stats[0]!) }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(r.ok && r.resultText).not.toMatch(/뒤질 거리가 많은 구역|털린 구역|옛 건물 쓰임/);
-    const r2 = w.executeTool("take_action", act({ activity: { kind: "search", until: null }, check: check(search, content.scenario.moves.find((m) => m.id === search)!.stats[0]!) }));
+    const r2 = w.executeTool("take_action", act({ ignore_story: true, activity: { kind: "search", until: null }, check: check(search, content.scenario.moves.find((m) => m.id === search)!.stats[0]!) }));
     expect(r2.ok, r2.ok ? "" : r2.error).toBe(true);
     expect(r2.ok && r2.resultText).toMatch(/뒤질 거리가 많은 구역|털린 구역/);
   });

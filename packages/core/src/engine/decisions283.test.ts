@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { StoryletEffect } from "../content/schemas.ts";
-import { knowsPlace, peopleAt, unknownDoors, whereIs } from "../rules/place.ts";
+import { knowsPlace, peopleAt, unknownDoors, doorNumber, whereIs } from "../rules/place.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
@@ -15,7 +15,7 @@ const make = (roll = 0.99) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-283-")), content, rngFactory: () => () => roll }).create("mcp", "role_a_grunt", { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] } as never);
 type W = ReturnType<typeof make>;
 const inf = (w: W, action: string, extra: Record<string, unknown> = {}) => w.executeTool("infiltrate", { action, goal: null, place: null, target: null, ...extra });
-const doorOf = (w: W, id: string) => `문${unknownDoors(w.state(), content).findIndex((p) => p.id === id) + 1}`;
+const doorOf = (w: W, id: string) => `문${doorNumber(w.state(), content, id)}`;
 const captiveOf = (w: W) => Object.values(w.state().characters).find((c) => c.captive?.by === "faction_c" && c.captive.zone === "c_warehouse")!.id;
 const move = content.scenario.captivity!.interrogate_moves[0]!;
 const ask = (w: W, target: string, action: string, extra: Record<string, unknown> = {}) =>

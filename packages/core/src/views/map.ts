@@ -1,7 +1,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { neighbors } from "../sim/war.ts";
-import { currentPlace, depthAt, directionTo, knowsPlace, knowsZone, placeCoord, placesIn, unknownDoors } from "../rules/place.ts";
+import { currentPlace, depthAt, directionTo, knowsPlace, knowsZone, placeCoord, placesIn, unknownDoors, doorNumber } from "../rules/place.ts";
 
 /**
  * 지도 (12-201): 주인공이 아는 만큼만.
@@ -82,11 +82,12 @@ export function buildPlaceMapView(state: GameState, content: Content): PlaceMapV
   const walled = all.some((p) => p.gate);
   const known = all.filter((p) => knowsPlace(state, content, zone, p.id));
   const doors = unknownDoors(state, content);
-  const node = (p: (typeof all)[number], kind: PlaceMapNode["state"], i = 0): PlaceMapNode => {
+  const node = (p: (typeof all)[number], kind: PlaceMapNode["state"]): PlaceMapNode => {
+    const n = doorNumber(state, content, p.id);
     const c = placeCoord(state, content, p.id, zone) ?? { x: 50, y: 50 };
     return {
-      id: kind === "door" ? `door${i + 1}` : p.id,
-      name: kind === "door" ? `문${i + 1}` : p.name,
+      id: kind === "door" ? `door${n}` : p.id,
+      name: kind === "door" ? `문${n}` : p.name,
       x: c.x,
       y: c.y,
       state: kind,
@@ -96,8 +97,8 @@ export function buildPlaceMapView(state: GameState, content: Content): PlaceMapV
       direction: here && p.id !== here.id ? directionTo(state, content, here.id, p.id, zone) : null,
     };
   };
-  const nodes = [...known.map((p) => node(p, p.id === here?.id ? "here" : "known")), ...doors.map((p, i) => node(p, "door", i))];
-  const ids = new Map<string, string>([...known.map((p) => [p.id, p.id] as const), ...doors.map((p, i) => [p.id, `door${i + 1}`] as const)]);
+  const nodes = [...known.map((p) => node(p, p.id === here?.id ? "here" : "known")), ...doors.map((p) => node(p, "door"))];
+  const ids = new Map<string, string>([...known.map((p) => [p.id, p.id] as const), ...doors.map((p) => [p.id, `door${doorNumber(state, content, p.id)}`] as const)]);
   const edges: [string, string][] = [];
   const seen = new Set<string>();
   for (const p of known) {
@@ -115,18 +116,21 @@ export function buildPlaceMapView(state: GameState, content: Content): PlaceMapV
   return { zone, zoneName: content.locations[zone]?.name ?? zone, nodes, edges };
 }
 
-/** ?지도의 구역 안 글 목록 (12-304): ★ 지금 자리 — 이웃들, [담 밖]·[담 안], 길은 이어지는 구역. 글자 그림은 쓰지 않는다 */
+/** ?지도의 구역 안 글 목록 (12-304): ★ 지금 자리 — 이웃들, 담 깊이 이름(GM 장소 줄과 같게), 길은 이어지는 구역. 글자 그림은 쓰지 않는다 */
 export function placeListLines(state: GameState, content: Content): string[] {
   const view = buildPlaceMapView(state, content);
   if (!view) return [];
   const byId = new Map(view.nodes.map((n) => [n.id, n]));
   const neighborsOf = (id: string) => view.edges.filter(([a, b]) => a === id || b === id).map(([a, b]) => byId.get(a === id ? b : a)!).filter(Boolean);
-  const walled = view.nodes.some((n) => n.inside);
+  const walled = placesIn(state, content, state.playerZone).some((p) => p.gate);
+  const depthNames = content.scenario.infiltration?.depths ?? [];
   return view.nodes
     .filter((n) => n.state !== "door")
     .sort((a, b) => Number(b.state === "here") - Number(a.state === "here"))
     .map((n) => {
-      const wall = walled ? (n.inside ? " [담 안]" : " [담 밖]") : "";
+      // 깊이 이름은 GM 장소 줄과 같게 (12-305, PT29 두 판: ?지도 "[담 안]", 장소 줄 "[깊은 곳]")
+      const depth = depthNames.length ? depthNames[depthAt(state, content, n.id, state.playerZone) ?? 0] : undefined;
+      const wall = walled ? ` [${depth ?? (n.inside ? "담 안" : "담 밖")}]` : "";
       const road = n.roads.length ? ` · 길: ${n.roads.map((r) => (r.known ? r.name : `${r.name}(처음)`)).join("·")} 쪽` : "";
       const near = neighborsOf(n.id).map((m) => (m.state === "door" ? `?${m.name}` : m.name));
       const where = n.state === "here" ? "★ " : n.direction ? `${n.direction} ` : "";

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { heldSeenTopic } from "../rules/held.ts";
-import { knowsPlace, placeById, unknownDoors, whereIs, whereLabel } from "../rules/place.ts";
+import { knowsPlace, placeById, unknownDoors, doorNumber, whereIs, whereLabel } from "../rules/place.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { crowdStep } from "./infiltration.ts";
@@ -14,7 +14,7 @@ const make = (role = "role_a_grunt", roll = 0.99) =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-282-")), content, rngFactory: () => () => roll }).create("mcp", role, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] } as never);
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ignore_story: true, ...input });
 const sceneText = (w: ReturnType<typeof make>) => w.sceneForGm();
-const doorOf = (w: ReturnType<typeof make>, id: string) => `문${unknownDoors(w.state(), content).findIndex((p) => p.id === id) + 1}`;
+const doorOf = (w: ReturnType<typeof make>, id: string) => `문${doorNumber(w.state(), content, id)}`;
 
 describe("모르는 장소 (12-282)", () => {
   it("우리 땅은 다 알고, 남의 땅은 길·담 문·담 밖만 안다", () => {

@@ -6,7 +6,7 @@
 
 - id: cr_toll_rope
   title: 길을 막은 밧줄
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 8
   weight: 0.8
@@ -71,7 +71,7 @@
 
 - id: cr_passerby
   title: 마주 오는 사람
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 5
   when:
@@ -110,7 +110,7 @@
 
 - id: cr_chalk_marks
   title: 담벼락의 표식
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 7
   when:
@@ -148,7 +148,7 @@
 
 - id: cr_dropped_pack
   title: 버려진 짐
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 6
   when:
@@ -191,7 +191,7 @@
 
 - id: cr_open_ground
   title: 몸을 가릴 데 없는 길
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 6
   weight: 0.8
@@ -241,7 +241,7 @@
 
 - id: cr_ruin_rest
   title: 무너진 건물 안의 손님
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 7
   when:
@@ -289,7 +289,7 @@
 
 - id: cr_patrol_traces
   title: 엇갈린 순찰의 흔적
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 8
   when:
@@ -329,7 +329,7 @@
 - id: cr_lone_infected
   title: 길 위를 헤매는 것
   fright: 1
-  tags: [world]
+  tags: [world, road]
   repeatable: true
   cooldown_days: 6
   when:

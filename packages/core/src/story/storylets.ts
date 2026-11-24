@@ -461,6 +461,10 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (!m || !w.mission.includes(m.templateId) || !atMissionPlace(m, state.playerZone, state.zones, state.factions)) return false;
     // 결과 조건(goal)을 이미 채웠으면 그 자리의 이야기는 다시 열리지 않는다 (플레이 테스트 12: 조건을 채운 뒤에도 세 번 열렸다)
     if (m.requirements.some((r, i) => "goal" in r && (m.progress[i] ?? 0) >= 1)) return false;
+    // 이 임무에서 한 번 골라 끝낸 이야기는 다시 열리지 않는다: 놓친 사람이 다른 얼굴로 다시 나오지 않는다 (12-305, PT29 약탈자:
+    // 탈영병이 달아날 때마다 새 탈영병으로 35분 간격 네 번). 외면해 흘려보낸 것(expired)은 다시 열린다
+    const log = state.storyletLog[storylet.id];
+    if (log && log.lastFiredAt >= m.assignedAt && log.lastEnd && log.lastEnd !== "expired") return false;
   }
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;

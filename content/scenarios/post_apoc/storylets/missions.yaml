@@ -12,7 +12,7 @@
     mission: [c_deserter_hunt]
   cast:
     runner: { extra: c_raider, label: 담을 넘은 조원, enter: true, starts: { hunger: hungry } }
-  setup: "발자국이 무너진 상가 뒤에서 끊긴다. 셔터 틈으로 숨소리가 새어 나온다. 안쪽 어둠에서 {runner:이/가} 쇠막대를 쥐고 웅크린 채 당신의 완장을 본다. \"…데리러 온 거냐.\""
+  setup: "발자국이 무너진 담 뒤에서 끊긴다. 무너진 틈으로 숨소리가 새어 나온다. 안쪽 어둠에서 {runner:이/가} 쇠막대를 쥐고 웅크린 채 당신의 완장을 본다. \"…데리러 온 거냐.\""
   ai_direction: "{runner:은/는} 이틀을 굶었고 지쳐 있다. 돌아가면 광장에서 본보기가 된다는 것을 안다. 그래도 겨울 밖에서 혼자 죽기는 싫어한다. 살아서 데려오라는 것이 규율반의 명령이다. 붙잡는 판정은 {runner:을/를} opponent로 둔다."
   choices:
     - id: talk_back
@@ -30,7 +30,7 @@
           - belief: { fact: "{runner:은/는} 따라오기로 했지만 걸음마다 뒤를 돌아본다", source: seen }
         miss:
           - npc_depart: { who: runner }
-          - belief: { fact: "{runner:은/는} 말이 끝나기 전에 셔터 밑으로 빠져 달아났다", source: seen }
+          - belief: { fact: "{runner:은/는} 말이 끝나기 전에 틈으로 빠져 달아났다", source: seen }
     - id: grab
       label: 덮쳐서 붙잡는다
       check: fight

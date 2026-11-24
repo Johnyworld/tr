@@ -1089,7 +1089,9 @@ export function applyEffect(
         ? { ...(u?.flag ? { flag: u.flag } : {}), ...(u?.zone ? { zone: u.zone } : {}), ...(u?.hours || !(u?.flag || u?.zone) ? { at: state.time + (u?.hours ?? 48) * 60 } : {}) }
         : undefined;
     // 임무 이야기로 데려가는 사람은 임무가 끝나면 거점에 넘긴다 (플레이 테스트 13: 데려온 탈영병이 보고 뒤에도 따라다녔다)
-    const story = state.activeStorylet ? storyletOf(state, content, state.activeStorylet.id) : undefined;
+    // 효과는 이야기를 끝낸 뒤 적용되니 열린 이야기가 아니라 source로 찾는다 (12-305, PT29 약탈자: 그래서 늘 임무 없이 붙었다)
+    const storyId = options.source ?? state.activeStorylet?.id;
+    const story = storyId ? storyletOf(state, content, storyId) : undefined;
     const forMission = story?.when?.mission?.length ? activeMissionOf(state.missions, playerId)?.id : undefined;
     store.append({ type: "companion_joined", characterId: id, kind, ...(until ? { until } : {}), ...(forMission ? { missionId: forMission } : {}) });
     const name = playerCalls(store.getState(), content, id);
@@ -1266,7 +1268,11 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   if (rng() >= chance) return [];
   // 우리 땅끼리 오가는 길에서는 위협 이야기를 고르지 않는다 (공통 규칙 11, 12-240: 우리 땅 두 구역 사이 30분 길에서 밤길의 발소리)
   const ownRoad = onOwnLand(state, state.lastRoute.from) && onOwnLand(state, state.lastRoute.to);
-  const storylet = pickStorylet(roadStorylets(state, content, travel.tag).filter((s) => !ownRoad || !isThreat(content, s)), rng);
+  const candidates = roadStorylets(state, content, travel.tag).filter((s) => !ownRoad || !isThreat(content, s));
+  // 이 구역 종류(길목 등)를 적은 이야기가 있으면 그것을 먼저 (12-305, PT29 네 판: 길목 공통 이야기가 세계·길 이야기에 밀려 0편)
+  const zoneKind = state.playerZone ? content.locations[state.playerZone]?.kind : undefined;
+  const fitting = zoneKind ? candidates.filter((s) => s.when.zone_kinds?.includes(zoneKind)) : [];
+  const storylet = pickStorylet(fitting.length ? fitting : candidates, rng);
   if (!storylet) return [];
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });

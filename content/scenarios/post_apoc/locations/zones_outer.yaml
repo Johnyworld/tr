@@ -45,7 +45,7 @@
     - { id: turbine_hall, name: "발전동·사무동", indoor: true, map: { x: 60, y: 40 }, kinds: [ruin], description: "발전동과 사무동. 거대한 터빈이 녹슬어 서 있다", aliases: ["발전동", "사무동", "발전기"], near: [workshop] }
     - { id: to_south, name: "강변·물류창고 가는 길", indoor: false, map: { x: 45, y: 92 }, description: "남쪽 강변과 물류창고로 가는 길", near: [coal_yard], road: true, to: [riverside, c_warehouse] }
     - { id: highway_ramp, name: "휴게소 가는 고속도로 진입로", indoor: false, map: { x: 88, y: 85 }, description: "고속도로로 오르는 진입로. 난간이 휘었다", near: [coal_yard], road: true, to: [rest_stop] }
-    - { id: to_prison, name: "교도소 가는 길", indoor: false, map: { x: 8, y: 40 }, description: "서쪽 교도소로 가는 길", near: [chimney], road: true, to: [prison] }
+    - { id: to_prison, name: "교도소 가는 길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 교도소로 가는 길", near: [chimney], road: true, to: [prison] }
     - { id: chimney, name: "굴뚝 밑", indoor: false, map: { x: 28, y: 45 }, kinds: [yard], description: "도시 어디서나 보이는 굴뚝 밑. 깃발 자국이 남았다" }
     - { id: workshop, name: "정비동", indoor: true, map: { x: 80, y: 28 }, kinds: [ruin], description: "공구 선반이 털린 정비동. 천장 크레인이 녹슬어 멈췄다", aliases: ["정비동", "정비 창고", "크레인"], near: [turbine_hall] }
   cover: 4
@@ -143,7 +143,7 @@
     - { id: bell_tower, name: "종탑", indoor: true, map: { x: 68, y: 22 }, kinds: [watch], description: "좁은 계단을 올라가는 종탑. 도시가 멀리 보인다", aliases: ["종탑"] }
     - { id: churchyard, name: "뒤뜰·묘지", indoor: false, map: { x: 28, y: 58 }, kinds: [yard], description: "뒤뜰과 묘지. 새 무덤이 늘었다", aliases: ["뒤뜰", "묘지"], near: [convent] }
     - { id: hill_steps, name: "구시가·버들마을 가는 언덕 계단", indoor: false, map: { x: 55, y: 92 }, description: "언덕 아래로 내려가는 돌계단", near: [front_steps], road: true, to: [old_town, b_base] }
-    - { id: to_campus, name: "캠퍼스 가는 오솔길", indoor: false, map: { x: 8, y: 45 }, description: "서쪽 캠퍼스로 가는 오솔길", near: [churchyard], road: true, to: [campus] }
+    - { id: to_campus, name: "캠퍼스 가는 오솔길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 캠퍼스로 가는 오솔길", near: [churchyard], road: true, to: [campus] }
     - { id: front_steps, name: "성당 앞 계단", indoor: false, map: { x: 55, y: 70 }, kinds: [street], description: "성당 문 앞 넓은 계단. 피난민이 볕을 쬔다", near: [nave, churchyard] }
     - { id: convent, name: "옛 수녀원", indoor: true, map: { x: 25, y: 30 }, kinds: [ruin], description: "뒤뜰 너머 지붕이 내려앉은 옛 수녀원. 쓸 만한 방 몇 칸만 남았다", aliases: ["수녀원", "사제관"], near: [churchyard] }
   cover: 5

@@ -274,6 +274,8 @@
   when:
     indoor: false
     factions: [faction_a, faction_b, faction_d, faction_e, faction_y]
+    # 우리 땅에 들어서는 길(우리 땅 사이 길·거점 앞)에서는 열리지 않는다 (12-305, PT28·PT29 분대장)
+    zone_owner: [none, other]
     dispositions:
       - { from: faction_c, to: own, lte: -1 }
   cast:
@@ -528,7 +530,7 @@
   when:
     indoor: false
     road_touches: [riverside, power_plant, c_warehouse, a_east_post, rest_stop]
-  setup: "{to:으로/로} 건너가는 고가 다리 가운데가 내려앉았다. 끊어진 자리 사이를 누가 철근과 판자로 이어 놓았다. 판자 밑으로 강물인지 도로인지 까마득하다. 바람이 불 때마다 판자가 삐걱거린다."
+  setup: "{to:으로/로} 가는 길이 건너는 낡은 다리 가운데가 내려앉았다. 끊어진 자리 사이를 누가 철근과 판자로 이어 놓았다. 판자 밑으로 강물인지 도로인지 까마득하다. 바람이 불 때마다 판자가 삐걱거린다."
   ai_direction: 판자 다리는 누군가 쓰려고 이어 놓은 것이고, 몇 번은 버틴다. 위험은 판정 전에 선언한다 (떨어질 뻔하다, 짐을 놓칠 수 있다). 이야기는 사람을 죽이지 않는다. 떨어지는 결과를 지어내지 않고, 실패는 몸과 마음의 효과로만. 목공 도구가 있으면 판자를 고쳐 놓을 수 있다 (다음 사람이 쓴다).
   choices:
     - id: cross

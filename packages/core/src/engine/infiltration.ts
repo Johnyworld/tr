@@ -135,10 +135,9 @@ function moveOptions(state: GameState, content: Content, depth: number): Place[]
 
 /** 목록 한 칸: 아는 곳은 "id 이름 (깊이)", 모르는 곳은 문 번호 */
 function optionLabel(state: GameState, content: Content, p: Place, depthLabel: (d: number) => string): string {
-  const doors = unknownDoors(state, content);
-  const i = doors.findIndex((d) => d.id === p.id);
+  const door = unknownDoors(state, content).some((d) => d.id === p.id);
   const depth = depthLabel(depthAt(state, content, p.id) ?? 0);
-  return i >= 0 ? `${doorLabel(p, i)} → ${depth}` : `${p.id} ${p.name} (${depth})`;
+  return door ? `${doorLabel(state, content, p)} → ${depth}` : `${p.id} ${p.name} (${depth})`;
 }
 
 /** 숨어들 곳을 고른다: 고른 것이 목록에 없거나 여럿인데 고르지 않았으면 오류 글. 장소가 없는 구역이면 null */

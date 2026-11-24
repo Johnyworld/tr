@@ -108,6 +108,8 @@
     segments: [morning, day, evening]
     indoor: "any"
     day_gte: 2
+    # "다음에 밖으로 나가는 일 있으면": 원정 도중이 아니라 우리 땅에서 (12-305, PT29)
+    own_territory: true
   cast:
     eager: { faction: own, ranks: [grunt], known: true }
   # 플레이 테스트 12: 웃는 걸 본 사람이 드문 냉정한 사람에게 "눈이 지나치게 반짝인다". 성격을 가리지 않는 말로

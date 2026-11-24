@@ -17,7 +17,7 @@
     - { id: storehouse, name: "보급 창고·무기고", indoor: true, map: { x: 72, y: 46 }, kinds: [store, work], description: "자물쇠 채운 옛 창고. 상자와 자루, 총기 거치대가 줄지어 있다", aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }
     - { id: yard_gate, name: "운동장·정문·담장", indoor: false, map: { x: 48, y: 56 }, kinds: [yard, gate], description: "흙바닥 운동장과 철판 덧댄 정문, 담장 위 망루", aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불", "보초 보조", "분대 훈련", "쪽문"], near: [mess, barracks, storehouse, staff_room, infirmary, stockade], gate: true }
     - { id: stockade, name: "수용소", indoor: true, map: { x: 64, y: 66 }, description: "체육 창고에 철망을 친 우리. 바닥이 차다", aliases: ["수용소"], jail: true }
-    - { id: to_post, name: "초소·고가 가는 길", indoor: false, map: { x: 58, y: 4 }, description: "북쪽 동쪽 초소와 끊긴 고가로 이어지는 흙길. 바퀴 자국이 깊다", near: [wall_path], road: true, to: [a_east_post, overpass] }
+    - { id: to_post, name: "초소·고가 가는 길", indoor: false, map: { x: 58, y: 4 }, description: "북쪽으로 올라가 동쪽 초소와 끊긴 고가에 닿는 흙길. 바퀴 자국이 깊다", near: [wall_path], road: true, to: [a_east_post, overpass] }
     - { id: to_old_town, name: "구시가 가는 길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 구시가로 내려가는 아스팔트 길. 갈라진 틈에 풀이 솟았다", near: [wall_path], road: true, to: [old_town] }
     - { id: to_riverside, name: "강변 가는 길", indoor: false, map: { x: 96, y: 50 }, description: "동쪽 강변 공장 지대로 가는 길. 바람에 기름 냄새가 실려 온다", near: [wall_path], road: true, to: [riverside] }
     - { id: to_south, name: "버들마을·텃밭 가는 길", indoor: false, map: { x: 35, y: 96 }, description: "남쪽 버들마을과 텃밭으로 갈라지는 길. 사람 발자국이 잦다", near: [wall_path], road: true, to: [b_base, south_fields] }
@@ -127,11 +127,15 @@
     - { id: wall, name: "담·감시탑·사격장", indoor: false, map: { x: 52, y: 24 }, kinds: [watch], description: "철조망 담과 감시탑, 담 밑 사격장. 총소리가 잦다", aliases: ["담벼락", "담 그늘", "사격장", "감시탑", "망루", "연습장"], gate: true }
     - { id: armory, name: "무기고", indoor: true, map: { x: 74, y: 38 }, near: [workshop], kinds: [store], description: "쇠문 두 겹의 무기고. 열쇠는 간부만 지닌다", aliases: ["무기고"] }
     - { id: cells, name: "철망 감방", indoor: true, map: { x: 72, y: 60 }, description: "철망으로 칸을 나눈 감방. 서로 얼굴이 보인다", aliases: ["감방", "철망 감방"], jail: true }
-    - { id: to_warehouse, name: "물류창고 가는 길", indoor: false, map: { x: 96, y: 58 }, description: "동쪽 물류창고로 가는 길. 트럭이 줄지어 다닌다", near: [checkpoint_1], road: true, to: [c_warehouse] }
-    - { id: to_old_town, name: "붉은 다리 가는 길", indoor: false, map: { x: 48, y: 96 }, description: "남쪽 붉은 다리로 내려가는 길. 약탈조가 오가는 길이다", near: [checkpoint_1], road: true, to: [red_bridge] }
+    - { id: to_warehouse, name: "물류창고 가는 길", indoor: false, map: { x: 96, y: 58 }, description: "동쪽 물류창고로 가는 길. 트럭이 줄지어 다닌다", near: [checkpoint_1, south_fence, east_fence], road: true, to: [c_warehouse] }
+    - { id: to_old_town, name: "붉은 다리 가는 길", indoor: false, map: { x: 48, y: 96 }, description: "남쪽 붉은 다리로 내려가는 길. 약탈조가 오가는 길이다", near: [checkpoint_1, south_fence], road: true, to: [red_bridge] }
     - { id: to_prison, name: "교도소 가는 길", indoor: false, map: { x: 50, y: 3 }, description: "북쪽 교도소로 가는 길. 높은 담이 멀리 보인다", near: [range_fence], road: true, to: [prison] }
     - { id: checkpoint_1, name: "1번 초소", indoor: false, map: { x: 74, y: 80 }, kinds: [gate], description: "철조망 정문 앞 초소. 규율반이 드나드는 사람을 적는다", aliases: ["1번 초소"], near: [yard] }
-    - { id: range_fence, name: "사격장 철조망 밖", indoor: false, map: { x: 36, y: 12 }, kinds: [field], description: "사격장 철조망 바깥 둔덕. 총소리가 가까이서 울린다", near: [wall] }
+    - { id: range_fence, name: "사격장 철조망 밖", indoor: false, map: { x: 36, y: 12 }, kinds: [field], description: "사격장 철조망 바깥 둔덕. 총소리가 가까이서 울린다", near: [wall, north_fence] }
+    # 담 밖 둘레: 초소를 거치지 않고 길끼리 잇는다 (12-305, PT29 졸병 [막힘]: 다리 쪽 길의 이웃이 1번 초소뿐이었다)
+    - { id: south_fence, name: "공단 남쪽 담 밖 배수로", indoor: false, map: { x: 82, y: 94 }, kinds: [street], description: "담 밖을 따라 난 마른 배수로. 철조망 너머로 초소 불빛이 보인다", aliases: ["배수로", "담 밖 둘레"], near: [to_old_town, to_warehouse] }
+    - { id: east_fence, name: "공단 동쪽 담 밖 둘레길", indoor: false, map: { x: 96, y: 36 }, kinds: [street], description: "공장 담 바깥을 도는 좁은 흙길. 정비 공장 굴뚝이 담 너머로 보인다", aliases: ["둘레길"], near: [to_warehouse, north_fence] }
+    - { id: north_fence, name: "공단 북쪽 담 밖 둔덕", indoor: false, map: { x: 72, y: 6 }, kinds: [field], description: "담 북쪽 바깥의 잡풀 둔덕. 감시탑 그림자가 길게 눕는다", near: [east_fence, range_fence] }
     - { id: workshop, name: "정비 공장", indoor: true, map: { x: 88, y: 22 }, kinds: [work], description: "녹슨 선반과 용접기가 남은 옛 공장동. 트럭과 총을 여기서 고친다", aliases: ["정비 공장", "용접"], near: [armory] }
     - { id: sick_bay, name: "공단 의무실", indoor: true, map: { x: 10, y: 22 }, kinds: [care], description: "기숙사 끝방을 비운 의무실. 침상 둘과 자물쇠 채운 약 상자", aliases: ["의무실"], near: [barracks] }
     - { id: assembly, name: "공장 강당", indoor: true, map: { x: 12, y: 82 }, kinds: [hall], description: "공장 식당을 비운 강당. 위원회 집회와 자아비판이 여기서 열린다", aliases: ["강당", "자아비판"], near: [office_block, kitchen] }
@@ -238,7 +242,7 @@
 - id: b_base
   name: 버들마을 거점
   map: { x: 16.2, y: 82.7, label: 버들마을 }
-  description: 청솔형제단 거점 서쪽의 옛 아파트 단지.
+  description: 청솔형제단 거점 남서쪽의 옛 아파트 단지.
   kind: base
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:

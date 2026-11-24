@@ -155,6 +155,8 @@
     zones: [a_base]
     indoor: "any"
     flags_none: [tv_settled]
+    # 거점 안을 안내한다: 담 밖 떠나는 길에서는 열지 않는다 (12-305, PT29 튜토리얼: 첫 원정을 막았다)
+    place_kinds: [gate, yard, mess, sleep, store, work, care, command, watch, hall]
   cast:
     host: { ids: [a_bokja] }
   setup: "{host:이/가} 국자를 허리에 꽂은 채 앞장선다. \"따라와, 숙소부터 보여 줄게.\" 칠판이 그대로 남은 교실들 쪽을 턱으로 가리킨다. \"저기가 공용 숙소야. 책상 붙여서 침대 만들었어. 밥은 하루 한 번, 식당에서. 줄 서.\""
@@ -198,7 +200,7 @@
     kin: { background: family, enter: false }
   setup: "{villager:이/가} 가족을 찾는 사람이 있다는 말을 들었다며 다가온다. \"찾는 사람이 {kin}, 맞죠? 그 사람 우리 마을에 사는데.\""
   ai_direction: >-
-    {villager:은/는} 버들마을 사람이다. 가족은 모두 살아서 버들마을(청솔형제단 거점 서쪽의 옛 아파트 단지)에 산다.
+    {villager:은/는} 버들마을 사람이다. 가족은 모두 살아서 버들마을(청솔형제단 거점 남서쪽의 옛 아파트 단지)에 산다.
     {villager:은/는} 가족의 얼굴과 사는 동을 안다. 데려다 달라고 하면 길을 알려 주거나 함께 가겠다고 한다. 가족은 이 장면에 나오지 않는다:
     만나는 것은 주인공이 버들마을에 들어간 뒤 재회 이야기에서다.
   choices:
@@ -207,7 +209,7 @@
       effects:
         - set_flag: tv_family_known
         - relation: { who: villager, axis: affection, delta: 1 }
-        - belief: { fact: "가족이 살아 있다. 버들마을(청솔형제단 거점 서쪽의 옛 아파트 단지)에 산다고 버들마을 사람에게 들었다", source: seen }
+        - belief: { fact: "가족이 살아 있다. 버들마을(청솔형제단 거점 남서쪽의 옛 아파트 단지)에 산다고 버들마을 사람에게 들었다", source: seen }
     - id: doubt
       label: 정말인지 몇 번이고 되묻는다
       effects:

@@ -16,7 +16,7 @@ import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
 import { learned } from "../rules/skill.ts";
-import {nearby, fireLitHere, currentPlace, knowsPlace, placesIn, unknownDoors } from "../rules/place.ts";
+import {nearby, fireLitHere, currentPlace, knowsPlace, placesIn, unknownDoors, doorNumber } from "../rules/place.ts";
 
 /**
  * 랜덤 자동 플레이 (기획서 17: 막힘과 밸런스 점검). LLM 없이 tool만 무작위로 부른다.
@@ -77,7 +77,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       if (!direct.ok) {
         for (const step of pathTo(world, road)) {
           const s0 = world.state();
-          const label = knowsPlace(s0, world.content, s0.playerZone, step) ? step : `문${unknownDoors(s0, world.content).findIndex((p) => p.id === step) + 1}`;
+          const label = knowsPlace(s0, world.content, s0.playerZone, step) ? step : `문${unknownDoors(s0, world.content).some((p) => p.id === step) ? doorNumber(s0, world.content, step) : 0}`;
           if (label === "문0" || !world.executeTool("take_action", { ...base, intent: "한 칸 나간다", place_to: label, ignore_story: true }).ok) break;
         }
       }
@@ -571,7 +571,7 @@ function walkTarget(s: GameState, content: Content, rng: () => number): string |
   const here = currentPlace(s, content);
   if (!here) return null;
   const known = placesIn(s, content, s.playerZone).filter((p) => p.id !== here.id && !p.jail && knowsPlace(s, content, s.playerZone, p.id)).map((p) => p.id);
-  const doors = unknownDoors(s, content).filter((p) => !p.jail).map((_, i) => `문${i + 1}`);
+  const doors = unknownDoors(s, content).filter((p) => !p.jail).map((p) => `문${doorNumber(s, content, p.id)}`);
   const options = [...known, ...doors];
   return options.length ? options[Math.floor(rng() * options.length)]! : null;
 }

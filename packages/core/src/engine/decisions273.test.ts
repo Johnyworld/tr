@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { depthAt, unknownDoors } from "../rules/place.ts";
+import { depthAt, doorNumber } from "../rules/place.ts";
 import { heldSeenTopic } from "../rules/held.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
@@ -58,7 +58,7 @@ describe("잠입 깊이와 장소 (12-273)", () => {
     w.ctx().store.append({ type: "place_moved", from: null, to: "yard" });
     expect(go(w, "start", "free").ok).toBe(true);
     // 수용소는 모르는 곳이라 문으로만 고른다 (설계 목록 C-1)
-    const door = unknownDoors(w.state(), content).findIndex((p) => p.id === "stockade") + 1;
+    const door = doorNumber(w.state(), content, "stockade");
     expect(door).toBeGreaterThan(0);
     go(w, "advance", null, `문${door}`);
     expect(w.state().playerPlace).toBe("stockade");

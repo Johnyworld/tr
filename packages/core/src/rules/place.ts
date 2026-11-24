@@ -586,6 +586,17 @@ export function knowsPlace(state: GameState, content: Content, zone: string | nu
   return depthAt(state, content, placeId, zone) === 0;
 }
 
+/**
+ * 그 장소에 누가 있을지 아는가 (12-305, PT29 졸병 [정보 누설]: 처음 닿은 적 거점의 담 안 광장에 원수가 "있을 사람"으로 보였다).
+ * 장소를 아는 것(knowsPlace: 길·담 문·담 밖은 보여서 안다)과 따로, 우리 땅이거나 지금 그곳에 있거나 있어 본 곳만
+ */
+export function knowsWhoIsAt(state: GameState, content: Content, zone: string | null | undefined, placeId: string): boolean {
+  if (!zone) return false;
+  if (zone === state.playerZone && placeId === state.playerPlace) return true;
+  if (onOwnLand(state, zone)) return true;
+  return (state.knownPlaces?.[state.playerId] ?? []).includes(`${zone}:${placeId}`);
+}
+
 /** 지금 자리의 이웃 가운데 모르는 곳: '알 수 없는 문 1, 2…' (이웃 목록 순서, 같은 자리면 늘 같은 번호) */
 export function unknownDoors(state: GameState, content: Content): Place[] {
   const here = currentPlace(state, content);
@@ -593,9 +604,17 @@ export function unknownDoors(state: GameState, content: Content): Place[] {
   return here.near.map((id) => placeById(state, content, id)).filter((p): p is Place => !!p && !knowsPlace(state, content, state.playerZone, p.id));
 }
 
+/**
+ * 모르는 문의 번호: 지금 자리의 이웃 순서로 고정한다. 알게 된 문은 번호만 빠지고 남은 문의 번호는 그대로다
+ * (12-305, PT29 세 판: 문 하나를 알게 되자 남은 문 번호가 당겨져 전날 본 "문2"가 거절됐다). 지금 자리의 이웃이 아니면 0
+ */
+export function doorNumber(state: GameState, content: Content, placeId: string): number {
+  return (currentPlace(state, content)?.near.indexOf(placeId) ?? -1) + 1;
+}
+
 /** 문 하나의 표기: 문 번호와, 눈으로 보이는 것(건물로 드는 문인지 바깥으로 이어지는지)만 */
-export function doorLabel(p: Place, i: number): string {
-  return `문${i + 1} (알 수 없는 곳, ${p.indoor ? "건물 안으로" : "바깥으로"})`;
+export function doorLabel(state: GameState, content: Content, p: Place): string {
+  return `문${doorNumber(state, content, p.id)} (알 수 없는 곳, ${p.indoor ? "건물 안으로" : "바깥으로"})`;
 }
 
 /**
@@ -604,7 +623,7 @@ export function doorLabel(p: Place, i: number): string {
  */
 export function resolvePlace(state: GameState, content: Content, input: string): Place | undefined {
   const door = /^(?:문|door)\s*(\d+)$/i.exec(input.trim());
-  if (door) return unknownDoors(state, content)[Number(door[1]) - 1];
+  if (door) return unknownDoors(state, content).find((p) => doorNumber(state, content, p.id) === Number(door[1]));
   const p = placeById(state, content, input.trim());
   return p && knowsPlace(state, content, state.playerZone, p.id) ? p : undefined;
 }
@@ -612,7 +631,7 @@ export function resolvePlace(state: GameState, content: Content, input: string):
 /** 옮겨 갈 수 있다고 GM에게 보일 장소 목록: 아는 장소 "id(이름)"와 지금 자리의 문 */
 export function placeChoices(state: GameState, content: Content): string {
   const known = placesIn(state, content, state.playerZone).filter((p) => knowsPlace(state, content, state.playerZone, p.id)).map((p) => `${p.id}(${p.name})`);
-  return [...known, ...unknownDoors(state, content).map(doorLabel)].join(", ");
+  return [...known, ...unknownDoors(state, content).map((p) => doorLabel(state, content, p))].join(", ");
 }
 
 /** 이 인물이 주인공과 같은 구역에 있는가 (장소는 보지 않는다) */

@@ -1010,6 +1010,11 @@ export function createContentSchemas(s: Scenario) {
     /** 역할의 storylet_tags와 겹쳐야 한다 (비어 있으면 모든 역할) */
     tags: z.array(contentIdSchema).default([]),
     repeatable: z.boolean().default(false),
+    /**
+     * 다른 무리의 순찰·정찰·추격·약탈조를 그리는 바깥 이야기인가 (이야기 묶음, 사용자 결정). true면 when.party_near(근처의 실제 부대)가 있어야 하고,
+     * false는 그런 글이 있어도 무리 부대가 아닌 이야기(땅 주인의 경보, 무리 안의 일, 떠돌이)라고 정한 것. content:check가 정하지 않은 바깥 이야기를 잡는다
+     */
+    party_story: z.boolean().optional(),
     /** 잠을 깨울 만큼 급한 일인지. 아니면 자는 동안에는 열리지 않는다 */
     urgent: z.boolean().default(false),
     /** 꼭 열려야 하는 이야기 (플레이 테스트 12: 튜토리얼 엔딩이 하루 상한에 막혔다). 하루 상한·위협 상한에 막히지 않는다 */

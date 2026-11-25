@@ -919,6 +919,8 @@
         - belief: { fact: "의장이 겨울 잔치 준비를 알리자 다들 박수를 쳤다. 노인 몇은 손을 주머니에 넣은 채 바다만 봤다", source: seen }
 
 - id: yl_gangho_doubt
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 경비조장의 물음
   tags: [world]
   when:

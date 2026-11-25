@@ -1236,9 +1236,19 @@ export function checkMatureLines(content: Content): string[] {
 }
 
 /** 길 위의 일·야영 이야기가 다른 무리의 부대원(party_extra)을 배역으로 들이면 근처에 실제 그 무리 부대가 있어야 한다 (PT31: 부대가 하나도 없는데 매복·통행세가 열렸다) */
+/** 다른 무리의 바깥 무리를 그리는 글 (party_story를 정해야 하는 이야기를 찾는 낌새) */
+const PARTY_WORDS = /순찰|정찰대|정찰병|약탈조|추격|쫓는 사람|분대가 온다|무장한 (?:무리|사람들|일행)/;
+
 export function checkPartyStories(content: Content): string[] {
   const problems: string[] = [];
   if (!content.scenario.war?.parties) return problems;
+  // 바깥 무리를 그리는 이야기는 실제 부대에 묶을지(party_story: true + party_near) 아닌지(false) 정한다 (이야기 묶음 사용자 결정)
+  for (const st of Object.values(content.storylets)) {
+    if (st.party_story === true && !st.when.party_near) problems.push(`storylets.${st.id}: party_story: true면 when.party_near가 있어야 한다 (근처에 실제 부대가 있을 때만)`);
+    if (st.party_story !== undefined || st.when.indoor === true || st.when.party_near) continue;
+    const text = JSON.stringify([st.title, st.setup, st.variants ?? [], st.ai_direction ?? "", st.choices.map((c) => c.label)]);
+    if (PARTY_WORDS.test(text)) problems.push(`storylets.${st.id}: 다른 무리의 바깥 무리(순찰·정찰·추격·약탈조)를 그리는 글이 있다. 실제 부대에 묶으려면 party_story: true와 when.party_near, 무리 부대가 아니면 party_story: false`);
+  }
   const partyExtra = new Map(Object.values(content.factions).flatMap((f) => (f.party_extra ? [[f.party_extra, f.id] as const] : [])));
   for (const st of Object.values(content.storylets)) {
     if (!st.tags.some((t) => t === "road" || t === "camp")) continue;

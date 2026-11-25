@@ -185,11 +185,14 @@
           - zone_noise: 1
 
 - id: rd_runner
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 근처에 실제 그 무리 부대가 있을 때만
+  party_story: true
   title: 뛰어오는 사람
   tags: [road]
   repeatable: true
   cooldown_days: 8
   when:
+    party_near: {}
     # 장소 종류 (12-300)
     place_kinds: [road]
     indoor: false

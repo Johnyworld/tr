@@ -37,6 +37,8 @@
         - deed: { summary: 점호에서 할당량에 대고 툴툴댔다, tags: [disobedience], severity: 1, privacy: public }
 
 - id: c_prisoner_water
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 간수의 물통
   tags: [c_raider]
   when:
@@ -70,6 +72,8 @@
       effects: []
 
 - id: c_prisoner_whisper
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 창살 너머의 부탁
   tags: [c_raider]
   when:
@@ -101,6 +105,8 @@
         - set_flag: c_prisoner_refused
 
 - id: c_message_out
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 망루 아래 돌무더기
   tags: [c_raider]
   when:
@@ -143,6 +149,8 @@
       effects: []
 
 - id: c_prisoner_example
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 간부의 본보기
   tags: [c_raider]
   urgent: true
@@ -288,6 +296,8 @@
         - belief: { fact: "신호가 없자 {sora}의 그림자는 배수로 안으로 다시 숨어들었다", source: seen }
 
 - id: c_hunt_order
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 추격 명령
   tags: [red_life]
   when:

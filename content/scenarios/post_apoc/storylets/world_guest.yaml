@@ -263,6 +263,8 @@
       effects: []
 
 - id: gu_patrol_hand
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 순찰에 한 사람
   tags: [world]
   repeatable: true
@@ -579,6 +581,8 @@
       effects: []
 
 - id: gu_e_caravan_talk
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 상단 짐꾼들의 저녁
   tags: [world]
   repeatable: true

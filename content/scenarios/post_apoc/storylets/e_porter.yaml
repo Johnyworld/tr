@@ -46,6 +46,8 @@
         - belief: { fact: "주옥희가 짐 무게를 다시 재 보더니 '네 셈이 틀렸다'고만 했다", source: seen }
 
 - id: e_road_ambush
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 강변 길의 검댕 얼굴들
   fright: 1
   urgent: true
@@ -113,6 +115,8 @@
           - deed: { summary: 강변 길에서 약탈자들과 싸우다 상단 짐을 모두 잃었다, tags: [bravery], severity: 1, privacy: public }
 
 - id: e_hana_confession
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 물가의 쪽지
   tags: [e_porter]
   when:
@@ -167,6 +171,8 @@
           - belief: { fact: "진하나는 거짓 시간을 적으면 오빠가 죽는다며 고개를 저었다", source: seen }
 
 - id: e_decoy_raid
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 빈 짐마차
   tags: [e_porter]
   when:

@@ -39,13 +39,15 @@ describe("판정 줄·설정 거스르기 (12-260)", () => {
 });
 
 describe("표시 (12-260)", () => {
-  it("즉흥 이야기 자리는 곁에 사람이 없으면 한 줄만", () => {
+  it("즉흥 이야기 자리는 곁에 사람이 없으면 사람 없는 자리로, 짧게 (이야기 묶음: 12-260의 한 줄을 바꾼다)", () => {
     const w = world("role_y_islander");
     w.ctx().store.append({ type: "improv_slot_opened", expiresAt: w.state().time + 600 });
     const s = { ...w.state(), playerPlace: null, scene: { ...w.state().scene, present: [] }, companions: [] };
     const line = describeImprovSlotForGm(s, content);
     expect(line).toContain("곁에 사람이 없다");
-    expect(line.split("\n")).toHaveLength(1);
+    expect(line).toContain("사람 없는 작은 이야기");
+    expect(line).not.toContain("배역으로 쓸 수 있는 사람");
+    expect(line.split("\n").length).toBeLessThanOrEqual(5);
   });
 
   it("?인물에 내 비밀을 아는 사람이 보인다", () => {

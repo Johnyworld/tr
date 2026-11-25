@@ -215,9 +215,12 @@
         - belief: { fact: "펌프 견습 선지오가 장터 뒤 골목에서 상단 우두머리의 심부름꾼에게 통조림 자루를 받았다", source: seen }
 
 - id: pw2_gate_man
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 근처에 실제 그 무리 부대가 있을 때만
+  party_story: true
   title: 문 위의 사내
   tags: [world]
   when:
+    party_near: { faction: faction_a }
     indoor: false
     zones: [old_town, riverside]
     segments: [evening, night]

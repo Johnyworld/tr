@@ -131,6 +131,8 @@
         - belief: { fact: "보급 간부 한도윤은 버들마을로 보낼 쌀자루를 두고 아직 고민 중이다", source: seen }
 
 - id: wp_red_gift_run
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 쪽문까지 가는 통조림
   tags: [world]
   when:

@@ -55,8 +55,7 @@ export function shouldImprovise(state: GameState, content: Content, s: StoryletC
   // 1로 올리면 쉬는 날이 긴 반복 이야기를 두 번 보기 어려워 즉흥 자리가 거의 안 열린다): 앞 즉흥 자리(없으면 판의 시작) 뒤에 쓰인 이야기가 한 편 열린 뒤에만
   const since = state.lastImprovSlotAt ?? -Infinity;
   if (!Object.values(state.storyletLog).some((l) => l.lastFiredAt > since)) return false;
-  // 곁에 쓸 사람(장면·동행, 또는 이 장소에 있을 사람)이 없으면 즉흥 자리 대신 쓰인 이야기를 연다 (12-307, PT28~30 세 회차: 혼자일 때 열려 사람을 지어 들이거나 쓰지 못했다)
-  if (!castable(state).length && !peopleHere(state, content)) return false;
+  // 곁에 사람이 없어도 연다: 그때는 사람 없는 자리(흔적·물건·풍경·소리) (이야기 묶음 사용자 결정: 빈 길목에서는 거의 열리지 않았다. 12-307의 "혼자면 열지 않는다"를 바꾼다)
   return state.lastImprovSlotAt === null || at - state.lastImprovSlotAt >= rule.gap_hours * 60;
 }
 
@@ -115,16 +114,19 @@ export function describeImprovSlotForGm(state: GameState, content: Content): str
   if (!slot || !rule || state.activeStorylet || !slotUsable(state, content)) return "";
   const people = castable(state).map((id) => `${playerCalls(state, content, id)}(${id})`);
   // 곁에 사람이 없으면 한 줄만 (12-260, PT15 섬: 혼자 자는 동안 보상·대가 설명이 9시간 실렸다). 사람이 생기면 전체를 싣는다
+  const track = content.scenario.condition_tracks.find((t) => t.id === rule.costs.body.track)?.label ?? rule.costs.body.track;
   if (!people.length) {
     // 이 장소에 있을 사람이 있으면 부르면 된다 (12-261, PT16 졸병: 막사에 열다섯이 있는데 "곁에 사람이 없다")
     const nearby = peopleHere(state, content);
-    // 보상 축은 늘 보인다 (12-307, PT30 하얀매: 사람 없이 열린 자리에서 축을 몰라 affinity로 적어 오류)
-    const axes = `보상 축(reward_axis): ${RELATION_AXES.join("·")}`;
-    return nearby
-      ? `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 장면에 사람이 없다. 이 장소에 있을 사람 ${nearby}명 가운데 누구를 npc_presence로 장면에 들이면 배역으로 쓸 수 있다. ${axes}.`
-      : `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 곁에 사람이 없다. 사람을 만나면(장면에 들이거나 spawn_extra) 쓸 수 있다. ${axes}.`;
+    // 사람 없는 자리 (이야기 묶음 사용자 결정): 흔적·물건·풍경·소리만으로 짓는다. 사람을 지어 들이지 않는다
+    return [
+      `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 곁에 사람이 없다. 사람 없는 작은 이야기를 improvise_storylet로 지어 열 수 있다 (cast는 비운다): 흔적·버려진 물건·풍경·소리·날씨처럼 이 자리에 있을 법한 것만. 사람·무리·짐승 떼를 지어내지 않는다. 지금 장면이 맞지 않으면 기다렸다 써도 된다.`,
+      ...(nearby ? [`  이 장소에 있을 사람 ${nearby}명 가운데 누구를 npc_presence로 장면에 들이면 사람이 나오는 이야기도 지을 수 있다.`] : []),
+      `  보상 (등급 small·medium, 숫자와 물건은 시스템이 정한다): item 물건(reward_item에 갈래: ${Object.entries(rule.item_kinds).map(([k, v]) => `${k} ${v}`).join("·")}), merit 공적. relation은 배역이 없어 쓸 수 없다`,
+      `  대가: noise 이 구역에 소리, time 시간이 더 걸림, body ${track}, give 주인공이 가진 물건 하나를 내준다 (cost_item에 소지품 id)`,
+      "  판정이 붙은 선택지는 성공=보상, 대가 있는 성공=한 등급 낮은 보상+대가, 실패=대가. 판정이 없는 선택지는 보상 small까지이고 보상이 있으면 대가도 있어야 한다.",
+    ].join("\n");
   }
-  const track = content.scenario.condition_tracks.find((t) => t.id === rule.costs.body.track)?.label ?? rule.costs.body.track;
   return [
     `즉흥 이야기 자리 (${formatTime(slot.expiresAt)}까지): 반복되는 이야기 대신 장면에 맞는 작은 이야기를 improvise_storylet로 지어 열 수 있다. 지금 장면이 맞지 않으면(할 일이 뚜렷하다, 막 이야기가 끝났다, 혼자 쉬는 중) 맞는 순간까지 기다렸다 써도 된다. 쓰지 않으면 지나간다.`,
     `  배역으로 쓸 수 있는 사람: ${people.join(", ")} (이 장소에 있을 사람은 npc_presence로 장면에 들이면 배역이 된다. 이름 없는 사람이 필요하면 먼저 spawn_extra)`,

@@ -51,6 +51,8 @@
 # ── 차영만의 수첩, 두 갈래 명령 ───────────────────────────────
 
 - id: b_sl_yeongman_notebook
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 계단 밑의 배낭
   tags: [b_squad_leader]
   weight: 2
@@ -92,6 +94,8 @@
         - belief: { fact: "차영만의 수첩을 몰래 가지고 있다. 마지막 장에는 쪽문 밖 발자국이 단지 안으로 이어졌고 자정에 관리사무소에 불이 켜졌다고 적혀 있다. 누가 쪽문을 열었는지는 없다", source: seen }
 
 - id: b_sl_two_orders
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 두 갈래 명령
   tags: [b_squad_leader]
   when:
@@ -245,6 +249,8 @@
 # ── 도해솔: 붉은 완장 ───────────────────────────────
 
 - id: b_sl_haesol_pack
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 배낭 바닥의 붉은 천
   tags: [b_squad_leader]
   when:
@@ -290,6 +296,8 @@
         - deed: { summary: 분대원이 숨긴 붉은연합 완장을 연락 간부에게 알렸다, tags: [diligence, betrayal], severity: 1, privacy: semi_private }
 
 - id: b_sl_haesol_envoy
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 쪽문 밖의 붉은 완장
   tags: [b_squad_leader]
   when:
@@ -450,6 +458,8 @@
 # ── 구본식: 철물점 지하 ───────────────────────────────
 
 - id: b_sl_bonsik_cellar
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 철물점 지하
   fright_tags: [enclosed]
   tags: [b_squad_leader]

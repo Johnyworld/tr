@@ -175,10 +175,13 @@
         - belief: { fact: 떠돌이 무리의 아이가 열에 시달린다. 우두머리는 더 묻지 않았지만 그 뒤로 눈을 마주치지 않는다, source: seen }
 
 - id: wa_band_sold
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 근처에 실제 그 무리 부대가 있을 때만
+  party_story: true
   title: 팔린 은신처
   urgent: true
   tags: [world]
   when:
+    party_near: { faction: faction_c }
     # 장소 종류 (12-300)
     place_kinds: [street]
     indoor: false

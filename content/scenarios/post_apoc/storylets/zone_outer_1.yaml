@@ -502,9 +502,12 @@
           - belief: { fact: "감독이 석탄 더미 쪽으로 총구를 돌렸다. 손을 들고 물러났다", source: seen }
 
 - id: zo1_pp_yard_clash
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 근처에 실제 그 무리 부대가 있을 때만
+  party_story: true
   title: 저탄장의 두 조
   tags: [world]
   when:
+    party_near: { faction: faction_c }
     zones: [power_plant]
     indoor: false
     places: [coal_yard]
@@ -815,10 +818,13 @@
         - belief: { fact: "북쪽 교도소 감방동 끝 방에 아직 누가 갇혀 있다. 배식구로 물을 달라고 했다", source: seen }
 
 - id: zo1_pr_patrol
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 근처에 실제 그 무리 부대가 있을 때만
+  party_story: true
   title: 담 밑의 붉은 완장
   urgent: true
   tags: [world]
   when:
+    party_near: { faction: faction_c }
     # 장소 종류 (12-300)
     place_kinds: [road, gate]
     zones: [prison, power_plant]

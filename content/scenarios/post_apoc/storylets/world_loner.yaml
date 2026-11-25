@@ -3,9 +3,12 @@
 # - 담 밖의 하루벌이와 거래 (give_item / take_item), 다른 떠돌이들
 
 - id: wl_pine_patrol
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 근처에 실제 그 무리 부대가 있을 때만
+  party_story: true
   title: 청솔형제단 순찰조
   tags: [world]
   when:
+    party_near: { faction: faction_a }
     # 장소 종류 (12-300)
     place_kinds: [street]
     factions: [none]

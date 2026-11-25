@@ -55,6 +55,8 @@
         - deed: { summary: "{lost}의 몸값을 내주지 말자고 했다", tags: [diligence], severity: 1, privacy: public }
 
 - id: lv_hostage_shield
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 앞세운 포로
   tags: [world]
   urgent: true

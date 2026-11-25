@@ -100,4 +100,17 @@ describe("content:check 부대 이야기 (PT31)", () => {
     delete (broken.storylets.rd_ambush!.when as { party_near?: unknown }).party_near;
     expect(checkPartyStories(broken).join()).toContain("storylets.rd_ambush");
   });
+
+  it("다른 무리의 바깥 무리를 그리는 이야기는 party_story를 정해야 하고, true면 party_near가 있어야 한다 (이야기 묶음)", async () => {
+    const { checkPartyStories } = await import("../content/loader.ts");
+    const real = loadRealContent();
+    const unmarked = structuredClone(real);
+    delete (unmarked.storylets.wl_pine_patrol as { party_story?: boolean }).party_story;
+    delete (unmarked.storylets.wl_pine_patrol!.when as { party_near?: unknown }).party_near;
+    expect(checkPartyStories(unmarked).join()).toContain("storylets.wl_pine_patrol: 다른 무리의 바깥 무리");
+    const noNear = structuredClone(real);
+    delete (noNear.storylets.wl_pine_patrol!.when as { party_near?: unknown }).party_near;
+    expect(checkPartyStories(noNear).join()).toContain("party_story: true면 when.party_near");
+    expect(real.storylets.wl_pine_patrol!.when.party_near?.faction).toBe("faction_a");
+  });
 });

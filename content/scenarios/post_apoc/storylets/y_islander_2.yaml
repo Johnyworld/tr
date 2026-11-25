@@ -181,6 +181,8 @@
         - relation: { who: host, axis: affection, delta: -1 }
 
 - id: y2_low_tide
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 썰물의 바위길
   tags: [y_islander]
   when:

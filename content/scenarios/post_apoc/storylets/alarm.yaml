@@ -3,6 +3,8 @@
 # 땅 주인을 고르는 조건이 따로 없어 처음 그 무리의 땅(zones)으로 가른다. 전쟁으로 주인이 바뀐 땅·새로 얻은 땅은 마지막 이야기(al_patrol_any)가 받는다
 
 - id: al_pine_sentry
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 초소의 호루라기
   urgent: true
   tags: [alarm]
@@ -340,6 +342,8 @@
 
 # 어느 무리든: 처음의 땅이 아닌 곳 (전쟁으로 얻은 땅, 주인이 바뀐 땅). 그 땅 주인 무리의 이름 있는 사람이 이끄는 순찰조
 - id: al_patrol_any
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 들킨 발소리
   urgent: true
   tags: [alarm]

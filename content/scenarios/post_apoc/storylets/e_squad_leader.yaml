@@ -311,6 +311,8 @@
         - belief: { fact: "정문 안에서 버들마을 사람 몇이 공은채를 알아보고 수군거렸다. 물값을 받는 내내 그쪽 눈빛이 차가웠다", source: seen }
 
 - id: es_dongju_armband
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 붉은 완장의 눈
   tags: [e_squad_leader]
   when:

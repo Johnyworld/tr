@@ -182,6 +182,8 @@
         - deed: { summary: 오랜 동료가 포로에게 몰래 먹을 것을 준다고 경비조장에게 알렸다, tags: [betrayal, diligence], severity: 2, privacy: semi_private }
 
 - id: cm_night_raid
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 감염체가 아닌 집
   tags: [c_comrades]
   when:

@@ -177,6 +177,8 @@
           - belief: { fact: "하재문 이름을 꺼내자 남민호가 입을 닫았다. 올라가는 내내 한 마디도 하지 않았다", source: seen }
 
 - id: d_sl_side_gate
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 풀려 있는 빗장
   tags: [d_squad_leader]
   when:
@@ -329,6 +331,8 @@
         - relation: { who: commander, axis: respect, delta: 1 }
 
 - id: d_sl_escort_stop
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 골목의 청솔 정찰병
   tags: [d_squad_leader]
   when:
@@ -389,6 +393,8 @@
           - belief: { fact: "정찰병을 메고 가다 주저앉았다. 의사와 번갈아 끌며 겨우 진료소에 닿았다", source: seen }
 
 - id: d_sl_fence_offer
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 담 너머의 담배
   tags: [d_squad_leader]
   when:

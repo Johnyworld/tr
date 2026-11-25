@@ -288,6 +288,8 @@
         - belief: { fact: "{zone}의 무너진 건물 안에 앓는 피난민 하나가 쉬고 있었다", source: seen }
 
 - id: cr_patrol_traces
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 엇갈린 순찰의 흔적
   tags: [world, road]
   repeatable: true

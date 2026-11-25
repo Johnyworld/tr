@@ -1,0 +1,468 @@
+# 직분별 전쟁 이야기 (docs/war-parties-plan.md 파트 13, 12-322). 전쟁이 남긴 일(war_cause)을 직분 임무로 하는 자리에서만 열린다 (when.mission).
+# 직분마다 두 편: 수색대원(싸움터 수습하기), 의무병·간호사·의사(실려 온 부상자 돌보기), 목수(부서진 것 다시 세우기), 수비대원(위협받는 자리 지키기).
+# 실제 부대는 엔진이 다룬다: 이 이야기들은 다른 무리의 무장한 무리·순찰을 등장시키지 않는다. 이미 쓰러진 사람, 우리 사람, 소리·흔적까지만.
+# 임무 자리의 이야기는 간격 바닥에 막히지 않는다(12-294). 결과 조건(goal)을 채우는 이야기가 아니라 일하는 동안 생기는 일이라 weight는 그대로 둔다
+
+# ── 수색대원: 싸움터 수습하기 ─────────────────────────────
+
+- id: ow_sc_still_breathing
+  title: 아직 숨이 붙은 사람
+  tags: [occ_scavenger]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    mission: [occ_scavenger_war_traces]
+    indoor: false
+    segments: [morning, day, evening]
+  cast:
+    # 어느 무리였는지 모르는 사람 (ms_riverside_wounded처럼): 완장이 가려져 있다. 글대로 다쳐 있다
+    fallen: { extra: refugee, label: 탄피 사이에 쓰러진 사람, starts: { harm: critical, bleeding: bleeding } }
+  setup: >-
+    탄피와 찢어진 짐 사이를 뒤지다가 손이 멈춘다. 엎어져 있던 {fallen:이/가} 손가락을 움직인다. 숨이 가늘게 붙어 있다.
+    완장은 뜯겨 나갔고 옷은 피와 흙으로 덮여 어느 쪽 사람인지 알 수 없다. 허리춤의 탄띠에는 아직 몇 발이 남아 있다.
+  variants:
+    - >-
+      무너진 담 그늘에서 신음이 들린다. 다리를 끌어안은 {fallen:이/가} 당신을 보고 손을 들어 보인다. 쏘지 말라는 것인지 도와 달라는 것인지 모른다.
+      어제 싸움에 끼었던 사람이다. 어느 무리였는지는 옷만 봐서는 알 수 없다.
+  ai_direction: >-
+    어제 이 자리의 교전에서 남겨진 사람이다. 어느 무리였는지는 스스로 말하지 않는다 (물어도 얼버무린다. 지어내서 밝히지 않는다).
+    피를 많이 흘렸다. 지혈하면 몸을 끌고 제 길로 간다. 두고 가면 이 이야기 안에서는 다시 보지 못한다.
+    위험은 판정 전에 말한다: 지혈이 서툴면 피가 멎지 않는다. 오래 머물면 이 자리를 아는 다른 사람이 올지 모른다는 것은 말로만 (부대를 등장시키지 않는다).
+    탄띠를 챙기는 것은 우리 무리에 쓸 것을 거두는 일이지만, 숨이 붙은 사람에게서 뺏는 일이기도 하다.
+  choices:
+    - id: stop_bleeding
+      label: 그 자리에서 지혈해 준다
+      check: first_aid
+      outcomes:
+        success:
+          - npc_body: { who: fallen, track: bleeding, delta: -3 }
+          - relation: { who: fallen, axis: trust, delta: 2 }
+          - npc_depart: { who: fallen }
+          - deed: { summary: 싸움터에 남겨진 누군지 모를 부상자의 피를 막아 주었다, tags: [mercy], severity: 1, privacy: private }
+          - belief: { fact: "싸움터에 남겨진 사람의 피를 막아 주었다. 그는 고개를 한 번 숙이고 몸을 끌고 떠났다", source: seen }
+        partial:
+          - npc_body: { who: fallen, track: bleeding, delta: -2 }
+          - npc_depart: { who: fallen }
+          - belief: { fact: "싸움터에 남겨진 사람의 피를 겨우 늦췄다. 그는 비틀거리며 떠났고, 멀리 가지는 못할 것 같았다", source: seen }
+        miss:
+          - npc_depart: { who: fallen }
+          - belief: { fact: "싸움터에 남겨진 사람의 피를 막지 못했다. 그는 피를 흘리며 몸을 끌고 떠났다", source: seen }
+    - id: take_rounds
+      label: 탄띠만 풀어 챙기고 일어선다
+      effects:
+        - give_item: { item: rifle_rounds, quantity: 2 }
+        - npc_depart: { who: fallen }
+        - deed: { summary: 싸움터에 숨이 붙은 채 남겨진 사람의 탄띠를 풀어 갔다, tags: [cruelty, selfishness], severity: 1, privacy: private }
+        - belief: { fact: "숨이 붙은 사람의 탄띠를 풀어 왔다. 그는 아무 말도 하지 않고 나를 보기만 했다", source: seen }
+    - id: leave
+      label: 건드리지 않고 하던 일로 돌아간다
+      effects:
+        - npc_depart: { who: fallen }
+        - belief: { fact: "싸움터에 숨이 붙은 사람을 두고 지나쳤다", source: seen }
+
+- id: ow_sc_unsent_photo
+  title: 품속의 사진
+  tags: [occ_scavenger]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    mission: [occ_scavenger_war_traces]
+    indoor: false
+    segments: [morning, day, evening]
+  setup: >-
+    쓰러진 사람이 남긴 가방을 뒤집는다. 쓸 것은 거의 없다. 바닥에서 비닐에 싼 사진 한 장이 나온다. 아이 둘과 웃는 여자.
+    뒷면에 연필로 "돌아가면"이라고만 적혀 있다. 가방 주인은 이미 이 자리에 없다. 어느 쪽 사람이었는지도 모른다.
+  variants:
+    - >-
+      찢어진 겉옷 안주머니에서 접힌 사진이 떨어진다. 모서리가 닳도록 꺼내 본 사진이다. 주인이 누구였는지, 어느 쪽에 섰던 사람인지 적힌 것은 없다.
+  ai_direction: >-
+    사진의 주인은 어제 교전에서 쓰러진 사람이다. 누구인지, 어느 무리였는지 밝히지 않는다 (지어내지 않는다). 사진 속 사람들을 찾을 길도 없다.
+    묻어 주려면 시간이 든다: 판정 전에 말한다. 서투르면 해가 기울도록 손이 묶이고 수습할 것을 다 거두지 못한다.
+    사진을 챙기는 것은 아무 값도 없는 일이다. 무리 사람들은 그런 걸 왜 들고 다니느냐고 할 수도, 말없이 고개를 끄덕일 수도 있다.
+  choices:
+    - id: keep_photo
+      label: 사진을 품에 넣어 가져간다
+      effects:
+        - give_item: { item: faded_photo }
+        - belief: { fact: "싸움터에서 누군지 모를 사람이 품고 다니던 사진을 거둬 왔다. 뒷면에 '돌아가면'이라고 적혀 있었다", source: seen }
+    - id: bury_with
+      label: 근처에 얕게 묻을 자리를 파고 사진을 함께 넣어 준다
+      check: endure
+      outcomes:
+        success:
+          - delay: 60
+          - deed: { summary: 싸움터에서 누군지 모를 사람의 사진을 묻어 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "싸움터 한쪽에 얕은 자리를 파고 누군지 모를 사람의 사진을 묻었다. 돌 하나를 얹어 두었다", source: seen }
+        partial:
+          - delay: 120
+          - belief: { fact: "싸움터 한쪽에 사진을 묻느라 손이 오래 묶였다. 해가 많이 기울었다", source: seen }
+        miss:
+          - delay: 180
+          - standing: -1
+          - belief: { fact: "언 땅을 파다가 해가 졌다. 사진은 돌 밑에 끼워 두고 왔고, 수습할 것은 반도 못 거뒀다", source: seen }
+    - id: leave_it
+      label: 쓸 데 없는 것이다. 다시 가방에 넣고 지나간다
+      effects:
+        - belief: { fact: "싸움터에서 누군지 모를 사람의 사진을 보고 그대로 두고 왔다", source: seen }
+
+# ── 의무병·간호사·의사: 실려 온 부상자 돌보기 ─────────────────────
+
+- id: ow_md_cot_confession
+  title: 들것 위의 고백
+  tags: [occ_medic]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    mission: [occ_medic_war_wounded]
+    place_kinds: [care]
+    own_territory: true
+    indoor: true
+  cast:
+    # 의무실에 실려 온 교전 부상자 (엔진이 넣는 중상자) 가운데: 같은 자리에 누운 우리 사람
+    pt: { faction: own, not_companion: true, condition: { track: harm, at_least: serious } }
+  setup: >-
+    붕대를 갈아 주는데 {pt:이/가} 당신 손목을 붙든다. 열에 들뜬 눈이다. "그때… 내가 엎드려만 있었어. 옆에서 소리 지르는데도 못 일어났어."
+    말끝이 떨린다. 주변 침상은 조용하다. 다들 자는 척하는지, 정말 자는지 모른다.
+  variants:
+    - >-
+      등잔을 낮추고 돌아서려는데 {pt:이/가} 부른다. "아무한테도 말 안 할 거지." 대답을 기다리지 않고 말을 잇는다. 싸움 한가운데서 총을 놓쳤다고, 그 사이에 옆 사람이 쓰러졌다고.
+  ai_direction: >-
+    {pt:은/는} 교전 중에 얼어붙었다고 털어놓는다. 그 탓에 다른 사람이 다쳤다고 믿는다 (정말 그런지는 아무도 모른다. 교전의 자리·적의 수·움직임 같은 것은 말하지 않는다).
+    주인공은 그 자리에 없었다: 이 말은 들은 것(report)일 뿐이다. 위에 알리면 {pt:은/는} 다 나은 뒤 규율을 받을 수 있다. 무리의 원칙(culture)을 따른다.
+    다독이는 판정이 서투르면 {pt:은/는} 말한 것을 후회하고 입을 닫는다.
+  choices:
+    - id: reassure
+      label: 싸움판에서 얼어붙는 건 누구나 그렇다고 다독인다
+      check: insight
+      outcomes:
+        success:
+          - relation: { who: pt, axis: trust, delta: 2, kind: secret_shared }
+          - belief: { fact: "{pt:은/는} 교전에서 얼어붙었던 일을 내게만 털어놓았다. 다독이자 처음으로 깊이 잠들었다", source: report }
+        partial:
+          - relation: { who: pt, axis: trust, delta: 1 }
+          - belief: { fact: "{pt:은/는} 교전에서 얼어붙었다고 털어놓았다. 다독였지만 밤새 뒤척였다", source: report }
+        miss:
+          - relation: { who: pt, axis: trust, delta: -1 }
+          - belief: { fact: "{pt:은/는} 교전에서 얼어붙었다고 말하고는 곧 후회하는 얼굴로 돌아누웠다", source: report }
+    - id: keep_quiet
+      label: 아무 말 없이 손을 잡아 주고, 들은 건 묻어 둔다
+      effects:
+        - relation: { who: pt, axis: affection, delta: 1 }
+        - belief: { fact: "{pt:은/는} 교전에서 얼어붙었다고 털어놓았다. 나는 들은 것을 묻어 두기로 했다", source: report }
+    - id: report_up
+      label: 다 나으면 다시 내보낼 사람이다. 상관에게 알린다
+      effects:
+        - relation: { who: pt, axis: trust, delta: -2 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: 의무실 부상자가 털어놓은 교전 중의 실수를 위에 알렸다, tags: [diligence, betrayal], severity: 1, privacy: semi_private }
+        - belief: { fact: "{pt:이/가} 교전에서 얼어붙었다고 털어놓은 것을 상관에게 알렸다", source: seen }
+
+- id: ow_md_short_bandage
+  title: 모자란 붕대
+  tags: [occ_medic]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    mission: [occ_medic_war_wounded]
+    place_kinds: [care]
+    own_territory: true
+    indoor: true
+    segments: [evening, night]
+  cast:
+    pt: { faction: own, not_companion: true, condition: { track: harm, at_least: serious } }
+  setup: >-
+    붕대 바구니 바닥이 보인다. 아침까지 갈아 줘야 할 상처가 아직 남았고, 맨 끝 침상의 {pt:이/가} 배어 나온 피를 손으로 누르고 있다.
+    창고 문은 잠겼고 열쇠는 위에 있다. 당신 가방에도 붕대가 조금 있다.
+  variants:
+    - >-
+      마지막 남은 붕대를 잘라 반으로 나눈다. 그래도 모자란다. {pt:이/가} 괜찮다고, 내일 갈아도 된다고 한다. 괜찮지 않다는 것은 둘 다 안다.
+  ai_direction: >-
+    오늘 밤 붕대가 모자란다. 무리 창고에는 약품이 있지만 함부로 풀면 다음 싸움에 쓸 것이 줄어든다. 위에 청하려면 자는 사람을 깨워야 한다.
+    헌 천을 삶아 쓰는 것은 판정이다: 판정 전에 말한다. 서투르면 상처가 덧나 {pt:이/가} 한 단계 나빠진다.
+    자기 붕대를 쓰면 다음에 자기가 다쳤을 때 쓸 것이 없다.
+  choices:
+    - id: boil_cloth
+      label: 헌 천을 끓는 물에 삶아 붕대 대신 쓴다
+      check: improvise
+      outcomes:
+        success:
+          - standing: 1
+          - npc_body: { who: pt, track: bleeding, delta: -2 }
+          - belief: { fact: "붕대가 모자란 밤, 헌 천을 삶아 상처를 감쌌다. 아침까지 버텼다", source: seen }
+        partial:
+          - npc_body: { who: pt, track: bleeding, delta: -1 }
+          - belief: { fact: "헌 천을 삶아 감쌌지만 얇아서 금세 배어 나왔다. 밤새 몇 번을 갈았다", source: seen }
+        miss:
+          - npc_hurt: { who: pt, steps: 1 }
+          - standing: -1
+          - belief: { fact: "덜 삶긴 천을 감은 {pt}의 상처가 덧났다", source: seen }
+    - id: own_bandage
+      label: 내 가방의 붕대를 꺼내 쓴다
+      effects:
+        - take_item: { item: bandage }
+        - npc_body: { who: pt, track: bleeding, delta: -3 }
+        - relation: { who: pt, axis: trust, delta: 1 }
+        - belief: { fact: "붕대가 모자란 밤, 내 몫의 붕대를 {pt}에게 썼다", source: seen }
+    - id: wake_superior
+      label: 상관을 깨워 창고를 열어 달라고 청한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_resource: { faction: own, resource: medicine, delta: -1 }
+          - npc_body: { who: pt, track: bleeding, delta: -3 }
+          - relation: { who: commander, axis: respect, delta: 1 }
+          - belief: { fact: "한밤에 상관을 깨워 창고 약품을 풀었다. 의무실 붕대가 아침까지 넉넉했다", source: seen }
+        partial:
+          - faction_resource: { faction: own, resource: medicine, delta: -1 }
+          - npc_body: { who: pt, track: bleeding, delta: -2 }
+          - relation: { who: commander, axis: affection, delta: -1 }
+          - belief: { fact: "상관이 투덜대며 창고를 열어 주었다. 다음엔 낮에 미리 챙기라고 했다", source: seen }
+        miss:
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: "한밤에 깨운 상관은 아침까지 있는 걸로 버티라며 돌아누웠다", source: seen }
+
+# ── 목수: 부서진 것 다시 세우기 ─────────────────────────────
+
+- id: ow_cp_wall_cache
+  title: 무너진 담 속의 꾸러미
+  tags: [occ_carpenter]
+  repeatable: true
+  cooldown_days: 6
+  when:
+    mission: [occ_carpenter_war_repair]
+    own_territory: true
+    indoor: false
+    segments: [morning, day, evening]
+  cast:
+    # 꾸러미의 주인 (그 자리에 없다): 같은 무리 사람
+    owner: { faction: own, ranks: [grunt, resident], not_companion: true, enter: false }
+  setup: >-
+    싸움통에 무너진 자리를 걷어 내다가 벽돌 틈에서 기름천 꾸러미가 나온다. 풀어 보니 통조림 하나와 담배 몇 갑.
+    천 귀퉁이에 칼끝으로 {owner}의 이름이 긁혀 있다. 배급 몫을 몰래 모아 둔 것이다. 주변에서 일하는 사람들은 아직 못 봤다.
+  variants:
+    - >-
+      부서진 판자를 들어내자 안쪽 빈 틈에 깡통 하나가 끼어 있다. 뚜껑을 비틀어 여니 담배와 통조림, 그리고 {owner}의 이름을 적은 쪽지.
+      무리 몫을 따로 숨겨 둔 사람이 있었다.
+  ai_direction: >-
+    {owner:은/는} 배급을 조금씩 떼어 숨겨 둔 사람이다. 무리 규칙상 따로 쟁여 두는 것은 꾸중거리다 (얼마나 무거운지는 culture를 따른다). 왜 모았는지는 {owner:이/가} 말할 때까지 모른다.
+    몰래 챙기는 것은 판정이다: 판정 전에 말한다. 들키면 일하던 사람들이 본다.
+    돌려주면 {owner:은/는} 고마워하면서도 누가 더 아는지 신경 쓴다. 위에 내면 무리 창고가 조금 늘고 {owner:은/는} 그 일을 잊지 않는다.
+  choices:
+    - id: return_owner
+      label: 아무도 모르게 {owner}에게 돌려준다
+      effects:
+        - relation: { who: owner, axis: trust, delta: 2, kind: secret_shared }
+        - deed: { summary: 무너진 담에서 나온 남의 숨긴 몫을 위에 알리지 않고 주인에게 돌려주었다, tags: [loyalty, disobedience], severity: 1, privacy: private }
+        - belief: { fact: "{owner:이/가} 무너진 담 속에 배급 몫을 숨겨 두었다. 위에 알리지 않고 돌려주었다", source: seen }
+    - id: hand_in
+      label: 무리 창고에 낸다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: 1 }
+        - relation: { who: owner, axis: trust, delta: -2 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: 무너진 담에서 나온 남의 숨긴 배급 몫을 무리 창고에 냈다, tags: [diligence, honesty], severity: 1, privacy: semi_private }
+        - belief: { fact: "{owner:이/가} 무너진 담 속에 숨겨 둔 배급 몫을 무리 창고에 냈다", source: seen }
+    - id: pocket
+      label: 아무도 못 봤다. 내 가방에 넣는다
+      check: stealth
+      outcomes:
+        success:
+          - give_item: { item: canned_food }
+          - give_item: { item: cigarettes }
+          - deed: { summary: 무너진 담에서 나온 남의 숨긴 몫을 몰래 챙겼다, tags: [theft], severity: 1, privacy: private }
+          - belief: { fact: "{owner:이/가} 무너진 담 속에 숨겨 둔 것을 내가 챙겼다. 아무도 보지 못했다", source: seen }
+        partial:
+          - give_item: { item: cigarettes }
+          - deed: { summary: 무너진 담에서 나온 남의 숨긴 몫을 몰래 챙겼다, tags: [theft], severity: 1, privacy: private }
+          - belief: { fact: "꾸러미를 챙기다 통조림을 벽돌 틈에 떨어뜨렸다. 담배만 건졌다", source: seen }
+        miss:
+          - standing: -1
+          - deed: { summary: 무너진 담에서 나온 남의 숨긴 몫을 챙기다 일하던 사람들에게 들켰다, tags: [theft], severity: 1, privacy: semi_private }
+          - belief: { fact: "꾸러미를 가방에 넣다가 같이 일하던 사람이 봤다. 말없이 고개를 저었다", source: seen }
+
+- id: ow_cp_borrowed_boards
+  title: 모자란 판자
+  tags: [occ_carpenter]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    mission: [occ_carpenter_war_repair]
+    own_territory: true
+    indoor: false
+    segments: [morning, day, evening]
+  cast:
+    # 판자를 내줄지 말지 정하는 같은 무리 사람: 그 구역에 있어 찾아올 수 있는 사람
+    neighbor: { faction: own, ranks: [grunt, resident], not_companion: true, comes: true }
+  setup: >-
+    부서진 자리를 메우려면 판자가 한참 모자란다. 쓸 만한 것은 가까이에 하나뿐이다. {neighbor:이/가} 지난겨울 손수 덧댄 처마 밑 판자벽.
+    {neighbor:이/가} 팔짱을 끼고 당신이 그 벽을 쳐다보는 것을 본다. "설마 그거 뜯을 생각은 아니지?"
+  variants:
+    - >-
+      자재 더미가 바닥났다. 남은 건 {neighbor:이/가} 아끼는 판자 궤짝 몇 개와 그 사람이 덧대 놓은 칸막이뿐이다.
+      다음에 또 오면 이 자리가 막아 줘야 한다는 것은 {neighbor}도 안다. 그래도 제 것을 뜯기는 건 다른 일이다.
+  ai_direction: >-
+    {neighbor}의 판자벽은 그 사람이 손수 모은 것이다. 무리 일에 쓰자고 하면 말은 맞지만 마음이 상한다.
+    폐허에서 더 찾아오는 것은 판정이다: 판정 전에 말한다. 서투르면 무너진 데를 헤집다 다친다 (경상 한 단계).
+    판자를 얼마나 얻었는지는 효과가 정한다. 다시 세우는 일 자체는 임무가 셈한다.
+  choices:
+    - id: ask_nicely
+      label: 다음에 오면 이 자리가 막아 준다고, 빌려 달라고 청한다
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: planks, quantity: 2 }
+          - relation: { who: neighbor, axis: respect, delta: 1 }
+          - belief: { fact: "{neighbor:이/가} 아끼던 판자를 내주었다. 다 쓰고 남으면 돌려 달라고 했다", source: seen }
+        partial:
+          - give_item: { item: planks }
+          - relation: { who: neighbor, axis: affection, delta: -1 }
+          - belief: { fact: "{neighbor:이/가} 판자 몇 장을 마지못해 내주었다. 얼굴이 굳어 있었다", source: seen }
+        miss:
+          - relation: { who: neighbor, axis: trust, delta: -1 }
+          - belief: { fact: "{neighbor:은/는} 제 판자는 못 내준다며 벽 앞을 막아섰다", source: seen }
+    - id: tear_down
+      label: 무리 일이 먼저다. 말없이 뜯어 온다
+      effects:
+        - give_item: { item: planks, quantity: 2 }
+        - relation: { who: neighbor, axis: trust, delta: -2 }
+        - standing: 1
+        - deed: { summary: 부서진 자리를 메우려고 같은 무리 사람의 판자벽을 말없이 뜯었다, tags: [diligence, selfishness], severity: 1, privacy: semi_private }
+        - belief: { fact: "{neighbor}의 판자벽을 뜯어 부서진 자리를 메웠다. {neighbor:은/는} 아무 말도 하지 않았다", source: seen }
+    - id: scrounge
+      label: 남의 것은 두고, 근처 폐허를 뒤져 찾아온다
+      check: scavenge
+      outcomes:
+        success:
+          - give_item: { item: planks, quantity: 2 }
+          - relation: { who: neighbor, axis: affection, delta: 1 }
+          - belief: { fact: "{neighbor}의 판자는 두고 근처 폐허에서 쓸 만한 판자를 뜯어 왔다", source: seen }
+        partial:
+          - give_item: { item: planks }
+          - delay: 90
+          - belief: { fact: "근처 폐허를 오래 뒤져 판자 몇 장을 겨우 건졌다", source: seen }
+        miss:
+          - wound: { steps: 1, cause: "폐허에서 판자를 뜯다 무너진 더미" }
+          - belief: { fact: "폐허에서 판자를 뜯다가 더미가 무너져 다쳤다. 빈손으로 돌아왔다", source: seen }
+
+# ── 수비대원: 위협받는 자리 지키기 ─────────────────────────────
+
+- id: ow_gd_shaking_muzzle
+  title: 떨리는 총구
+  tags: [occ_guard]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    mission: [occ_guard_war_hold]
+    own_territory: true
+    indoor: false
+    segments: [evening, night]
+  cast:
+    # 함께 선 같은 무리의 젊은 사람
+    partner: { faction: own, ranks: [grunt], age_lte: 30, adult: true, not_companion: true, comes: true }
+  setup: >-
+    {partner:이/가} 당신 옆에 붙어 선다. 총을 쥔 손이 떨려 개머리판이 덜그럭거린다. 바람에 깡통이 굴러가자 총구가 그쪽으로 홱 돈다.
+    "저쪽 애들이 이리로 온다던데. 진짜 오면… 어떻게 해야 돼?"
+  variants:
+    - >-
+      어둠이 내려앉자 {partner}의 말수가 줄었다. 담 너머 어둠을 보지 않으려는 듯 자꾸 발끝만 내려다본다. 숨이 짧다.
+      "나 이런 거 처음이야." 들릴 듯 말 듯한 소리다.
+  ai_direction: >-
+    {partner:은/는} 이 자리가 노려진다는 말을 듣고 겁에 질렸다. 담 밖에 정말 누가 있는지는 이 이야기가 정하지 않는다 (소리·그림자까지만. 부대를 지어내지 않는다. 실제로 든 무리는 엔진이 알린다).
+    판정 전에 위험을 말한다: 다독이는 것이 서투르면 {partner:이/가} 헛것에 방아쇠를 당겨 총소리가 난다 (구역 소음). 윽박지르는 것이 서투르면 마음이 상한다.
+    돌려보내면 자리는 혼자 지킨다. 무리 사람들이 그걸 어떻게 볼지는 culture를 따른다.
+  choices:
+    - id: steady
+      label: 숨 쉬는 법부터, 무엇을 보고 언제 알리는지 차근차근 일러 준다
+      check: leadership
+      outcomes:
+        success:
+          - relation: { who: partner, axis: trust, delta: 2 }
+          - relation: { who: partner, axis: respect, delta: 1 }
+          - belief: { fact: "겁에 질린 {partner}에게 보초 서는 법을 일러 주었다. 밤이 깊어지자 총구가 더는 떨리지 않았다", source: seen }
+        partial:
+          - relation: { who: partner, axis: trust, delta: 1 }
+          - belief: { fact: "{partner:은/는} 조금 진정했지만 소리가 날 때마다 몸을 움찔했다", source: seen }
+        miss:
+          - zone_noise: 1
+          - relation: { who: partner, axis: respect, delta: -1 }
+          - belief: { fact: "{partner:이/가} 그림자에 놀라 한 발을 쏘았다. 총소리가 담 밖으로 멀리 퍼졌다", source: seen }
+    - id: harden
+      label: 겁먹을 거면 총 내려놓으라고 딱 잘라 말한다
+      check: intimidate
+      outcomes:
+        success:
+          - relation: { who: partner, axis: respect, delta: 1 }
+          - relation: { who: partner, axis: affection, delta: -1 }
+          - belief: { fact: "{partner:은/는} 이를 악물고 끝까지 섰다. 나를 보는 눈이 조금 서늘해졌다", source: seen }
+        partial:
+          - relation: { who: partner, axis: affection, delta: -1 }
+          - belief: { fact: "{partner:은/는} 대꾸 없이 섰지만 내 쪽으로는 고개를 돌리지 않았다", source: seen }
+        miss:
+          - relation: { who: partner, axis: trust, delta: -2 }
+          - belief: { fact: "{partner:은/는} 내 말에 더 얼어붙었다. 남은 밤 내내 한마디도 하지 않았다", source: seen }
+    - id: send_back
+      label: 들어가 있으라고 돌려보내고 혼자 선다
+      effects:
+        - relation: { who: partner, axis: affection, delta: 1 }
+        - relation: { who: partner, axis: respect, delta: -1 }
+        - deed: { summary: 겁에 질린 보초를 들여보내고 위협받는 자리를 혼자 지켰다, tags: [mercy, bravery], severity: 1, privacy: semi_private }
+        - belief: { fact: "겁에 질린 {partner:을/를} 들여보내고 혼자 자리를 지켰다", source: seen }
+
+- id: ow_gd_no_relief
+  title: 오지 않는 교대
+  tags: [occ_guard]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    mission: [occ_guard_war_hold]
+    own_territory: true
+    indoor: false
+    segments: [night]
+  cast:
+    # 교대하러 와야 할 같은 무리 사람 (그 자리에 없다)
+    relief: { faction: own, ranks: [grunt], not_companion: true, enter: false }
+  setup: >-
+    교대 시각이 한참 지났다. 올 사람은 {relief}였다. 눈꺼풀이 무겁고 발가락 끝이 저리다. 올 길 쪽은 캄캄하고 발소리 하나 없다.
+    이 자리를 비우면 아무도 지키지 않는다.
+  variants:
+    - >-
+      별이 한 뼘쯤 기울었다. {relief:은/는} 오지 않는다. 담 밖은 조용하다. 조용해서 더 눈을 떼기 어렵다.
+  ai_direction: >-
+    {relief:이/가} 왜 오지 않는지 이 이야기는 정하지 않는다 (잠들었을 수도, 다른 데 불려 갔을 수도 있다. 다치거나 죽었다고 지어내지 않는다).
+    담 밖에 정말 누가 있는지도 정하지 않는다: 소리·기척까지만. 실제로 든 무리는 엔진이 알린다.
+    판정 전에 위험을 말한다: 버티기가 서투르면 깜빡 졸아 자리를 지킨 몫이 깎인다. 데리러 가는 것이 서투르면 자리를 비운 사이를 누가 본다.
+  choices:
+    - id: hold_on
+      label: 교대가 올 때까지, 아니면 날이 밝을 때까지 버틴다
+      check: endure
+      outcomes:
+        success:
+          - standing: 1
+          - relation: { who: commander, axis: trust, delta: 1 }
+          - belief: { fact: "교대가 오지 않은 밤, 날이 밝을 때까지 자리를 지켰다", source: seen }
+        partial:
+          - belief: { fact: "교대 없이 밤을 버텼다. 새벽녘엔 눈을 뜨고 있는 게 고작이었다", source: seen }
+        miss:
+          - standing: -1
+          - belief: { fact: "교대를 기다리다 담에 기대 깜빡 졸았다. 깨어 보니 동이 트고 있었다", source: seen }
+    - id: fetch_relief
+      label: 잠깐이면 된다. 올 길을 거슬러 가서 {relief:을/를} 데려온다
+      check: athletics
+      outcomes:
+        success:
+          - relation: { who: relief, axis: affection, delta: 1 }
+          - belief: { fact: "{relief:을/를} 찾아 데려와 교대했다. 자리를 비운 것은 잠깐이었고 아무도 몰랐다", source: seen }
+        partial:
+          - relation: { who: relief, axis: trust, delta: -1 }
+          - belief: { fact: "{relief:을/를} 데려왔지만 오래 걸렸다. 돌아오는 길 내내 서로 말이 없었다", source: seen }
+        miss:
+          - standing: -1
+          - relation: { who: commander, axis: trust, delta: -1 }
+          - belief: { fact: "교대를 데리러 자리를 비운 사이를 위에서 알았다. 위협받는 자리를 비웠다는 말을 들었다", source: seen }
+    - id: report_relief
+      label: 날이 밝으면 {relief:이/가} 오지 않은 것을 위에 알린다
+      effects:
+        - relation: { who: relief, axis: trust, delta: -2 }
+        - relation: { who: commander, axis: trust, delta: 1 }
+        - deed: { summary: 위협받는 자리에 교대하러 오지 않은 동료를 위에 알렸다, tags: [diligence, betrayal], severity: 1, privacy: semi_private }
+        - belief: { fact: "{relief:이/가} 교대하러 오지 않은 것을 위에 알렸다", source: seen }

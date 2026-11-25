@@ -207,6 +207,8 @@
         - belief: { fact: 밤새 담을 긁는 소리를 듣고도 나가 보지 않았다, source: seen }
 
 - id: w_omen_tracks
+  # 다른 무리의 바깥 무리를 그리는가 (이야기 묶음): 아니다 (땅 주인의 경보·무리 안의 일·무리 없는 사람)
+  party_story: false
   title: 남쪽 담 밑의 발자국
   tags: [world]
   repeatable: true

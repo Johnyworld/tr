@@ -123,8 +123,8 @@ describe("즉흥 이야기 자리", () => {
     const later = s.time + 60;
     s.storyletLog = { chatter: { fired: 1, lastFiredAt: s.time }, swarm: { fired: 1, lastFiredAt: s.time }, alarm: { fired: 1, lastFiredAt: s.time } };
     expect(shouldImprovise(s, c, c.storylets.chatter!, later)).toBe(true);
-    // 곁에 쓸 사람이 없으면 즉흥 자리 대신 쓰인 이야기 (12-307)
-    expect(shouldImprovise({ ...s, scene: { ...s.scene, present: [] }, companions: [] }, c, c.storylets.chatter!, later)).toBe(false);
+    // 곁에 사람이 없어도 사람 없는 자리로 연다 (이야기 묶음 사용자 결정: 12-307을 바꾼다)
+    expect(shouldImprovise({ ...s, scene: { ...s.scene, present: [] }, companions: [] }, c, c.storylets.chatter!, later)).toBe(true);
     expect(shouldImprovise(s, c, c.storylets.swarm!, later)).toBe(false);
     expect(shouldImprovise(s, c, c.storylets.alarm!, later)).toBe(false);
     s.storyletLog.secret = s.storyletLog.vow = { fired: 1, lastFiredAt: s.time };

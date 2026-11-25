@@ -161,10 +161,13 @@ describe("플레이 테스트 14: 판정 보정", () => {
 
   it("with로 함께하는 사람은 target이어도 맞서는 상대가 아니고, 잘하면 판정을 돕는다 (여울섬 T71: 같이 숨은 설다빈)", () => {
     const w = world("role_a_grunt");
+
     const tpl = Object.entries(content.extras).find(([, t]) => t.kind !== "infected" && t.kind !== "animal")![0];
     expect(w.executeTool("spawn_extra", { template: tpl, label: "같이 숨는 사람" }).ok).toBe(true);
     const mate = w.state().scene.present.find((x) => x.startsWith("ex_"))!;
     w.state().characters[mate]!.skills.stealth = 2;
+    // 상대 보정이 0이면 줄이 빠지므로 경계를 높여 둔다 (만들어지는 엑스트라의 능력은 난수에 따라 다르다)
+    w.state().characters[mate]!.skills.sense_danger = 3;
     const alone = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate, stakes: true });
     expect(alone.ok && alone.display.line).toContain("상대가");
     const together = rollPlayerCheck({ move: "stealth", stat: "agility", difficulty: "normal", intent: "숨는다" }, w.ctx(), { target: mate, allies: [mate], stakes: true });

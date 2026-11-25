@@ -1,3 +1,4 @@
+import { startPartyFight } from "./partyTools.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState, Party } from "../game/state.ts";
 import { canAmbush, isNight, partyChoice, partyNoticeBonus, personNoticeBonus, sightings, type Concealment } from "../rules/encounter.ts";
@@ -7,7 +8,7 @@ import { currentPlace, directionTo, guardedHere, kindsOf, neighborsOf, placesIn,
 import { formatTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
-import { arrivalOf, hidingAt, partyLabel, partyZoneAt } from "../sim/parties.ts";
+import { arrivalOf, hidingAt, partyLabel, partyZoneAt, visitStart } from "../sim/parties.ts";
 import { josa } from "../text.ts";
 import { forceWords, playerInvolvement } from "./battleTools.ts";
 import { campWatched } from "./camp.ts";
@@ -24,7 +25,13 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
 export const PARTY_INTERRUPT = "party";
 
-const sightKey = (party: Party, zone: string) => `${party.id}@${zone}`;
+/**
+ * 마주침 기록의 열쇠: 부대·구역·그 방문 (PT32 분대장: 한 번 본 부대가 그 구역에서 계속 본 것으로 남아, 다시 들어서자 지금 자리가 새었다).
+ * 주인공이 그 구역을 떠나면 그 구역의 기록은 지운다 (zone_moved)
+ */
+export function sightKey(party: Party, zone: string, t: number): string {
+  return `${party.id}@${zone}@${visitStart(party, zone, t) ?? t}`;
+}
 
 /** 주인공 쪽 사람 수 (주인공 + 곁의 동행) */
 function groupSize(state: GameState, content: Content): number {
@@ -40,10 +47,18 @@ function outdoorsHere(state: GameState, content: Content): boolean {
 /** 부대가 이 구역에서 머무는 칸과 그 앞뒤 구역 */
 function legAround(party: Party, zone: string, t: number) {
   const legs = [...party.legs, ...party.back];
-  let i = legs.findIndex((l) => l.zone === zone && t >= l.from && t <= l.to);
+  let i = -1;
+  legs.forEach((l, k) => {
+    if (l.zone === zone && t >= l.from && t <= l.to) i = k;
+  });
   if (i < 0) i = legs.findIndex((l) => l.zone === zone && l.to >= t);
   if (i < 0) return null;
-  return { prev: i > 0 ? legs[i - 1]!.zone : null, next: i < legs.length - 1 ? legs[i + 1]!.zone : null };
+  // 같은 구역 칸이 이어지면(목표에서 머문 뒤 돌아오는 길의 첫 칸) 그 앞뒤의 다른 구역 (PT32 떠돌이: 앞 구역이 같은 구역이 되어 자리가 임의의 길로 잡혔다)
+  let a = i;
+  while (a > 0 && legs[a - 1]!.zone === zone) a--;
+  let b = i;
+  while (b < legs.length - 1 && legs[b + 1]!.zone === zone) b++;
+  return { prev: a > 0 ? legs[a - 1]!.zone : null, next: b < legs.length - 1 ? legs[b + 1]!.zone : null };
 }
 
 /**
@@ -134,9 +149,11 @@ function arrivingParties(state: GameState, from: number, to: number): { party: P
   if (!zone) return [];
   const out: { party: Party; at: number }[] = [];
   for (const party of [...state.parties].sort((a, b) => a.id.localeCompare(b.id))) {
-    if (party.size <= 0 || state.partySightings[sightKey(party, zone)]) continue;
     const leg = [...party.legs, ...party.back].find((l) => l.zone === zone && l.to > from && l.from <= to);
-    if (leg) out.push({ party, at: Math.max(leg.from, from + 1) });
+    if (!leg || party.size <= 0) continue;
+    const at = Math.max(leg.from, from + 1);
+    if (state.partySightings[sightKey(party, zone, at)]) continue;
+    out.push({ party, at });
   }
   return out.sort((a, b) => a.at - b.at);
 }
@@ -160,7 +177,7 @@ export function createPartyCheck(content: Content, activity: string): InterruptC
     const watched = asleep && campWatched(content, state, activity);
     for (const { party, at } of arrivingParties(state, from, to)) {
       if (!hostileFaction(state, content, party.faction)) continue;
-      const key = sightKey(party, state.playerZone);
+      const key = sightKey(party, state.playerZone, at);
       if (rolled.has(key)) continue;
       rolled.add(key);
       const r = rollPartySight(state, content, rng, party, at, { asleep, watched });
@@ -192,7 +209,7 @@ export function settleSighting(ctx: ToolContext, party: Party, roll: SightRoll, 
   const state = store.getState();
   const zone = state.playerZone;
   if (!zone) return [];
-  store.append({ type: "party_sighted", key: sightKey(party, zone), player: roll.player, party: roll.party });
+  store.append({ type: "party_sighted", key: sightKey(party, zone, at), player: roll.player, party: roll.party });
   const displays: ToolDisplayEvent[] = [];
   const me = state.characters[state.playerId];
   const ours = !!me?.factionId && me.factionId === party.faction;
@@ -205,15 +222,26 @@ export function settleSighting(ctx: ToolContext, party: Party, roll: SightRoll, 
     store.append({
       type: "belief_added",
       characterId: state.playerId,
-      belief: { id: `b_${state.nextBeliefNo}`, fact: `${formatTime(at)}께 ${content.locations[zone]?.name ?? zone}에서 ${line.replace(/ 이 구역에 들어섰다$/, " 지나가는 것을 봤다")}`, source: "seen", accuracy: "approximate", learnedAt: state.time, topic: "war" },
+      belief: { id: `b_${state.nextBeliefNo}`, fact: `${formatTime(at)}께 ${content.locations[zone]?.name ?? zone}에서 ${line.replace(/ 이 구역에 들어섰다$/, party.goal === zone && !party.done ? " 와서 자리를 잡는 것을 봤다" : " 지나가는 것을 봤다")}`, source: "seen", accuracy: "approximate", learnedAt: state.time, topic: "war" },
     });
     displays.push({ type: "belief", fact: line, sourceLabel: "본 것", note: `${line}. 몇 명인지는 대략으로만, 무엇을 하러 왔는지는 지어내지 않는다. 숨기·피하기·지켜보기·맞서기는 플레이어가 고른다.` });
   }
+  // 주인공이 매복해 있었는데 저쪽이 알아챘으면 매복은 깨진다 (PT32 졸병: 매복 +1과 매복당함 -2가 한 판정에 함께 붙었다)
+  if (roll.party && state.ambush) store.append({ type: "ambush_changed", ambush: null });
   if (roll.attacks) {
-    const ambushHours = content.scenario.ambush?.hours ?? 2;
-    store.append({ type: "ambushed_changed", until: state.time + Math.min(2, ambushHours) * 60 });
+    // 서로 봤으면 어느 쪽도 기습이 아니다. 저쪽만 봤을 때만 매복당함
+    if (!roll.player) {
+      const ambushHours = content.scenario.ambush?.hours ?? 2;
+      store.append({ type: "ambushed_changed", until: state.time + Math.min(2, ambushHours) * 60 });
+    }
     const line = roll.player ? "저쪽도 이쪽을 봤다. 덤벼 온다" : "누군가 먼저 이쪽을 봤다. 낌새를 챘을 때는 이미 덤벼 오고 있다";
-    displays.push({ type: "belief", fact: line, sourceLabel: "본 것", note: `${line} (매복당함: 다음 판정이 불리하다). 상대 규모는 ${forceWords(party.size)}. 싸움이 되면 위험을 먼저 선언한다.` });
+    displays.push({ type: "belief", fact: line, sourceLabel: "본 것", note: `${line}${roll.player ? "" : " (매복당함: 다음 판정이 불리하다)"}. 상대 규모는 ${forceWords(party.size)}. 싸움이 되면 위험을 먼저 선언한다.` });
+    // 덤벼 오면 실제로 맞붙음이 열린다 (PT32 세 판: "덤벼 온다"인데 아무 일도 열리지 않았다)
+    const now = store.getState();
+    if (!now.battle && !now.partyFights[party.id]) {
+      const fight = startPartyFight(ctx, party, { byParty: true });
+      if (fight.ok) displays.push({ type: "belief", fact: "", sourceLabel: "", note: fight.resultText });
+    }
   }
   return displays;
 }
@@ -238,7 +266,7 @@ export function runPartySightings(ctx: ToolContext): ToolDisplayEvent[] {
   if (!zone || !me || me.dead || state.battle || !state.parties.length || guardedHere(content, state)) return [];
   const displays: ToolDisplayEvent[] = [];
   for (const party of [...state.parties].sort((a, b) => a.id.localeCompare(b.id))) {
-    if (party.size <= 0 || partyZoneAt(party, state.time) !== zone || store.getState().partySightings[sightKey(party, zone)]) continue;
+    if (party.size <= 0 || partyZoneAt(party, state.time) !== zone || store.getState().partySightings[sightKey(party, zone, state.time)]) continue;
     const roll = rollPartySight(store.getState(), content, rng, party, state.time);
     // 굴리지 않았으면(실내·멀다) 기록하지 않는다: 밖으로 나오거나 가까워지면 그때 굴린다 (PT31 떠돌이: 초소 안에서 한 번 넘긴 순찰대를 참호에서 다시 못 봤다)
     if (!roll.rolled) continue;
@@ -252,6 +280,6 @@ export function seenPartiesLines(state: GameState, content: Content): string[] {
   const zone = state.playerZone;
   if (!zone) return [];
   return state.parties
-    .filter((p) => p.size > 0 && partyZoneAt(p, state.time) === zone && state.partySightings[sightKey(p, zone)]?.player)
+    .filter((p) => p.size > 0 && partyZoneAt(p, state.time) === zone && state.partySightings[sightKey(p, zone, state.time)]?.player)
     .map((p) => `- ${sightLine(state, content, p, state.time).replace(/ 이 구역에 들어섰다$/, " 이 구역에 있다")} (id: ${p.id}${state.partyFights[p.id] ? ", 맞붙는 중" : ""})`);
 }

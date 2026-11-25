@@ -485,7 +485,8 @@
           - resolve_step: { text: "{target} 안쪽의 요즘 사정을 들었다" }
           - belief: { fact: "{target}에 살던 사람에게 옛 동네 안쪽으로 들어가는 골목이 아직 다 막히진 않았다고 들었다", source: report }
         partial:
-          - belief: { fact: "{target}에 살던 사람을 만났다. 동네는 많이 변했다고 한다", source: rumor }
+          # 만난 것은 직접 겪은 일이다 (PT32 떠돌이: [소문]으로 남았다)
+          - belief: { fact: "{target}에 살던 사람을 만났다. 동네는 많이 변했다고 한다", source: seen }
         miss: []
     - id: share
       label: 아무것도 묻지 않고 먹을 것을 나눈다

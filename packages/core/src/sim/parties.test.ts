@@ -10,9 +10,9 @@ import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRou
 import { warConfessions } from "../engine/partyTools.ts";
 import { endBattle, forceWords } from "../engine/battleTools.ts";
 import { applyEffect } from "../engine/storyletTools.ts";
-import { initialWarWorld, simulateWarDay, type WarWorld } from "./war.ts";
+import { initialWarWorld, simulateWarDay, spawnWatchParties, type WarWorld } from "./war.ts";
 import type { Party } from "../game/state.ts";
-import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting } from "../engine/partySight.ts";
+import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting, sightKey } from "../engine/partySight.ts";
 
 const content = loadRealContent();
 const cfg = partiesConfig(content)!;
@@ -234,7 +234,7 @@ describe("주인공과 부대 (공통 규칙 23, 9-1·9-2)", () => {
     const w = make();
     const s = w.state();
     const p = raider("a_east_post", s.time - 10);
-    const state = { ...s, playerZone: "a_east_post", playerPlace: "watchtower", parties: [p], partySightings: { "pr@a_east_post": { at: s.time, player: true, party: false } } };
+    const state = { ...s, playerZone: "a_east_post", playerPlace: "watchtower", parties: [p], partySightings: { [sightKey(p, "a_east_post", s.time)]: { at: s.time, player: true, party: false } } };
     const lines = seenPartiesLines(state, content);
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("예닐곱 명");
@@ -311,7 +311,7 @@ describe("③-2 부대와 맞붙기·우두머리·지렛대", () => {
     const t = w.state().time;
     return party({ id: "pr", faction: "faction_c", kind: "raid", size, leader, goal: "a_east_post", legs: [{ zone: "c_base", from: t - 600, to: t - 300 }, { zone: "rail_embankment", from: t - 300, to: t - 10 }, { zone: "a_east_post", from: t - 10, to: t + 120 }], task: { kind: "clash", clash: "raid", defender: "faction_a" } });
   };
-  const seen = (w: W) => w.ctx().store.append({ type: "party_sighted", key: "pr@a_east_post", player: true, party: false });
+  const seen = (w: W) => w.ctx().store.append({ type: "party_sighted", key: sightKey(w.state().parties.find((x) => x.id === "pr")!, "a_east_post", w.state().time), player: true, party: false });
   const harm = (w: W, id: string, to: string) => {
     const c = w.state().characters[id]!;
     w.ctx().store.append({ type: "condition_changed", targetId: id, track: content.scenario.harm_track, from: c.conditions[content.scenario.harm_track] ?? "none", to, fatal: false, by: w.state().playerId, cause: "test", day: 1, harmTrack: true });
@@ -438,10 +438,10 @@ describe("PT31 뒤 고친 것", () => {
     at(w, "bunker");
     put(w, [band("faction_c", 4, w.state().time)]);
     w.runCheat("~time +1h");
-    expect(w.state().partySightings["pp@a_east_post"]).toBeUndefined();
+    expect(Object.keys(w.state().partySightings).some((k) => k.startsWith("pp@a_east_post"))).toBe(false);
     w.ctx().store.append({ type: "place_moved", from: "bunker", to: "trench" });
     w.runCheat("~time +1h");
-    expect(w.state().partySightings["pp@a_east_post"]).toBeDefined();
+    expect(Object.keys(w.state().partySightings).some((k) => k.startsWith("pp@a_east_post"))).toBe(true);
     w.close();
   });
 
@@ -467,6 +467,77 @@ describe("PT31 뒤 고친 것", () => {
     w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "firewood", quantity: 1 });
     applyEffect(w.ctx(), { light_fire: { item: "firewood" } } as never, {}, {}, "테스트");
     expect(Object.values(w.state().fires).some((until) => until > w.state().time)).toBe(true);
+    w.close();
+  });
+});
+
+describe("PT32 뒤 고친 것", () => {
+  const make = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt32-")), content, rngFactory: () => createSeededRng(13) }).create("mcp", "role_a_grunt");
+  type W = ReturnType<typeof make>;
+  const put = (w: W, parties: Party[]) => {
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties, partiesUpTo: s.time, clashes: [], scheduled: [] });
+  };
+
+  it("칸 경계(막 들어선 그 분)에는 들어선 구역에 있다", () => {
+    const p = party({ id: "x", faction: "faction_c", kind: "scout", size: 3, goal: "a_east_post", legs: [{ zone: "rail_embankment", from: 0, to: 100 }, { zone: "a_east_post", from: 100, to: 200 }], task: { kind: "watch" } });
+    expect(partyZoneAt(p, 100)).toBe("a_east_post");
+    expect(partyZoneAt(p, 99)).toBe("rail_embankment");
+  });
+
+  it("떠난 구역의 마주침은 잊고, 돌아오는 길의 첫 칸이 목표와 같아도 앞뒤 구역으로 자리를 잡는다", () => {
+    const w = make();
+    const t = w.state().time;
+    // 목표(동쪽 초소)에서 머문 뒤 같은 구역에서 돌아오기 시작한 정찰대
+    const p = party({ id: "pv", faction: "faction_c", kind: "scout", size: 3, goal: "a_east_post", done: true, legs: [{ zone: "rail_embankment", from: t - 300, to: t - 100 }, { zone: "a_east_post", from: t - 100, to: t - 50 }], back: [{ zone: "a_east_post", from: t - 50, to: t + 100 }, { zone: "rail_embankment", from: t + 100, to: t + 200 }], task: { kind: "watch" } });
+    put(w, [p]);
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
+    expect(partyPlacePath(w.state(), content, p, "a_east_post", t).enter).toBe("to_warehouse");
+    w.ctx().store.append({ type: "party_sighted", key: sightKey(p, "a_east_post", t), player: true, party: false });
+    expect(seenPartiesLines(w.state(), content)).toHaveLength(1);
+    w.ctx().store.append({ type: "zone_moved", from: "a_east_post", to: "a_base", place: "yard_gate" });
+    expect(Object.keys(w.state().partySightings)).toEqual([]);
+    w.close();
+  });
+
+  it("부대가 덤벼 오면 맞붙음이 열리고, 서로 봤으면 매복당함이 붙지 않으며, 들킨 매복은 깨진다", () => {
+    const w = make();
+    const t = w.state().time;
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
+    w.ctx().store.append({ type: "ambush_changed", ambush: { zone: "a_east_post", until: t + 600, bonus: 2, confuse: true } });
+    const p = party({ id: "pa", faction: "faction_c", kind: "raid", size: 5, goal: "a_east_post", legs: [{ zone: "rail_embankment", from: t - 300, to: t - 10 }, { zone: "a_east_post", from: t - 10, to: t + 120 }], task: { kind: "clash", clash: "raid", defender: "faction_a" } });
+    put(w, [p]);
+    settleSighting(w.ctx(), w.state().parties[0]!, { player: true, party: true, attacks: true, rolled: true }, t);
+    expect(w.state().ambush).toBeNull();
+    expect(w.state().ambushed).toBeNull();
+    expect(w.state().partyFights.pa?.members.length).toBeGreaterThan(0);
+    w.close();
+  });
+
+  it("정찰은 몇 칸 안의 적대하는 무리 땅으로 간다", () => {
+    const w = fresh();
+    spawnWatchParties(w, content, () => 0, 2, ["faction_a", "faction_c"]);
+    const scouts = (w.parties ?? []).filter((p) => p.kind === "scout");
+    expect(scouts.find((p) => p.faction === "faction_a")?.goal).toBe("c_warehouse");
+    expect(scouts.find((p) => p.faction === "faction_c")?.goal).toBe("a_east_post");
+  });
+
+  it("세계가 열린 첫날에도 정찰·순찰이 나간다", () => {
+    let any = false;
+    for (let seed = 1; seed <= 5 && !any; seed++) {
+      const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-day1-")), content, rngFactory: () => createSeededRng(seed) }).create("mcp", "role_a_grunt");
+      any = w.state().nextPartyNo > 0;
+      w.close();
+    }
+    expect(any).toBe(true);
+  });
+
+  it("그 자리에 있는 동안 주인이 바뀌면 본 대로 안다", () => {
+    const w = make();
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "red_bridge", place: null });
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: { ...s.zones, red_bridge: { owner: "faction_c" } }, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: [], partiesUpTo: s.time, clashes: [], scheduled: [] });
+    expect(w.state().zoneSeen.red_bridge).toBe("faction_c");
     w.close();
   });
 });

@@ -101,6 +101,8 @@ const REFUGEE_SUSTAIN_DAYS = 60;
 export const WEAK_RAID_RATIO = 0.5;
 /** 공격 종류 가중치 */
 const KIND_WEIGHT: Record<Clash["kind"], number> = { occupy: 3, raid: 3, skirmish: 2, assault: 1 };
+/** 정찰이 적대하는 무리 땅을 찾는 칸 수 (PT32, *임시*) */
+const SCOUT_REACH = 4;
 /** 부대가 본 무리를 고르는 가중치 배수 (7-2, *임시*) */
 const GAP_WEIGHT = 3;
 
@@ -570,25 +572,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
 
   // 4-1. 움직이는 부대: 싸움을 거는 무리의 정찰, 할 일 없는 날 자기 땅 가장자리를 도는 순찰, 그리고 오늘(또는 resolveUpTo까지) 닿은 부대의 할 일
   if (cfg) {
-    // 정찰: 적대하는 무리의 맞닿은 땅(없으면 그 쪽으로 난 빈 땅)을 살피고 돌아온다. 싸우지 않고, 본 것은 빈틈 노리기(7-2)로
-    for (const id of alive) {
-      if ((content.factions[id]?.aggression ?? 0) <= 0 || rng() >= cfg.scout_chance) continue;
-      const mine = Object.keys(next.zones).filter((z) => next.zones[z]!.owner === id);
-      const front = [...new Set(mine.flatMap((z) => neighbors(content, z)))].filter((z) => next.zones[z]?.owner !== id && content.locations[z]?.kind !== "base").sort();
-      const hostileOwned = front.filter((z) => { const o = next.zones[z]?.owner; return !!o && disposition(content, id, o, next) <= HOSTILE; });
-      const pool = hostileOwned.length ? hostileOwned : front;
-      if (!pool.length) continue;
-      spawnParty(next, content, rng, { faction: id, kind: "scout", goal: pool[Math.floor(rng() * pool.length)]!, size: sizeOf("scout"), dayStart, task: { kind: "watch" } });
-    }
-    for (const id of alive) {
-      if (rng() >= cfg.patrol_chance) continue;
-      const border = borderZones(content, next, id);
-      if (!border.length) continue;
-      // 적대하는 무리와 맞닿은 가장자리를 먼저 돈다 (*임시* 세 배)
-      const facing = (z: string) => neighbors(content, z).some((n) => { const o = next.zones[n]?.owner; return !!o && o !== id && disposition(content, id, o, next) <= HOSTILE; });
-      const goal = pickWeighted(rng, border.map((z) => ({ item: z, weight: facing(z) ? 3 : 1 })));
-      if (goal) spawnParty(next, content, rng, { faction: id, kind: "patrol", goal, size: sizeOf("patrol"), dayStart, task: { kind: "watch" } });
-    }
+    spawnWatchParties(next, content, rng, day, alive);
     const arrived = advanceParties(next, content, rng, options.resolveUpTo ?? dayStart + MINUTES_PER_DAY - 1, { defer: options.defer, ...(options.endUpTo !== undefined ? { endUpTo: options.endUpTo } : {}) });
     clashes.push(...arrived.clashes);
     deferred.push(...arrived.deferred);
@@ -844,4 +828,49 @@ function defenseOf(content: Content, f: FactionState): number {
 function lose(f: FactionState, n: number) {
   f.combatants = Math.max(0, f.combatants - n);
   f.population = Math.max(0, f.population - n);
+}
+
+/**
+ * 싸우지 않는 부대를 낸다 (하루 틱, 그리고 세계가 열린 첫날): 싸움을 거는 무리의 정찰, 할 일 없는 날 자기 땅 가장자리를 도는 순찰 (12-319)
+ */
+export function spawnWatchParties(world: WarWorld, content: Content, rng: Rng, day: number, alive: string[] = Object.keys(world.factions).filter((id) => world.factions[id]!.population > 0).sort()): void {
+  const cfg = partiesConfig(content);
+  if (!cfg) return;
+  world.parties ??= [];
+  world.nextPartyNo ??= 0;
+  const dayStart = (day - 1) * MINUTES_PER_DAY;
+  const pick = ([a, b]: readonly [number, number]) => a + Math.floor(rng() * (b - a + 1));
+  const sizeOf = (kind: PartyKind) => pick(cfg.kinds[kind]?.size ?? [3, 4]);
+  // 정찰: 적대하는 무리의 맞닿은 땅(없으면 그 쪽으로 난 빈 땅)을 살피고 돌아온다. 싸우지 않고, 본 것은 빈틈 노리기(7-2)로
+  for (const id of alive) {
+    if ((content.factions[id]?.aggression ?? 0) <= 0 || rng() >= cfg.scout_chance) continue;
+    // 몇 칸 안(SCOUT_REACH)의 적대하는 무리 땅 가운데 가장 가까운 곳 (PT32 네 판: 맞닿은 빈 길목까지만 가서 적 전선에 오지 않았다).
+    // 거점은 고르지 않는다. 없으면 맞닿은 빈 땅
+    const mine = Object.keys(world.zones).filter((z) => world.zones[z]!.owner === id);
+    const dist = new Map<string, number>(mine.map((z) => [z, 0]));
+    const queue = [...mine];
+    while (queue.length) {
+      const z = queue.shift()!;
+      const d = dist.get(z)!;
+      if (d >= SCOUT_REACH) continue;
+      for (const n of neighbors(content, z)) if (!dist.has(n)) { dist.set(n, d + 1); queue.push(n); }
+    }
+    const hostileOwned = [...dist.entries()]
+      .filter(([z]) => { const o = world.zones[z]?.owner; return !!o && o !== id && content.locations[z]?.kind !== "base" && disposition(content, id, o, world) <= HOSTILE; })
+      .sort(([a, x], [b, y]) => x - y || a.localeCompare(b));
+    const nearest = hostileOwned.length ? hostileOwned.filter(([, d]) => d === hostileOwned[0]![1]).map(([z]) => z) : [];
+    const front = [...dist.entries()].filter(([z, d]) => d === 1 && world.zones[z]?.owner !== id && content.locations[z]?.kind !== "base").map(([z]) => z).sort();
+    const pool = nearest.length ? nearest : front;
+    if (!pool.length) continue;
+    spawnParty(world, content, rng, { faction: id, kind: "scout", goal: pool[Math.floor(rng() * pool.length)]!, size: sizeOf("scout"), dayStart, task: { kind: "watch" } });
+  }
+  for (const id of alive) {
+    if (rng() >= cfg.patrol_chance) continue;
+    const border = borderZones(content, world, id);
+    if (!border.length) continue;
+    // 적대하는 무리와 맞닿은 가장자리를 먼저 돈다 (*임시* 세 배)
+    const facing = (z: string) => neighbors(content, z).some((n) => { const o = world.zones[n]?.owner; return !!o && o !== id && disposition(content, id, o, world) <= HOSTILE; });
+    const goal = pickWeighted(rng, border.map((z) => ({ item: z, weight: facing(z) ? 3 : 1 })));
+    if (goal) spawnParty(world, content, rng, { faction: id, kind: "patrol", goal, size: sizeOf("patrol"), dayStart, task: { kind: "watch" } });
+  }
 }

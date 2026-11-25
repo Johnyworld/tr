@@ -96,7 +96,8 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     const fired = new Set<string>();
     let joined = 0;
     // 무리에 드는 판은 열에 한두 판이라 씨앗을 스물로 (12-206: 감염 굴림이 바뀌어 씨앗 1이 들지 않게 됐다. 12-269: 경보 쉬기·주인 없는 땅 규칙으로 붙잡혀 회유당하는 판이 줄어 열두 판에 0, 스무 판에 2)
-    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]) {
+    // 12-320: 첫날 정찰·순찰로 난수 순서가 바뀌어 스무 판에 0 (마흔 판에 3, 씨앗 27·29·30) → 서른 판
+    for (let seed = 1; seed <= 30; seed++) {
       const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-auto-")), content, rngFactory: () => createSeededRng(seed) });
       const role = buildCustomRole(content, {
         faction: null, rank: "loner", title: "떠돌이", location: "old_town", kit: "wanderer", skills: { scavenge: 1, survival: 1 }, age: 30, opening: "폐허에서 눈을 뜬다.", background: [],
@@ -110,7 +111,7 @@ describe("무소속 자유 시나리오 자동 플레이 (실제 콘텐츠)", ()
     }
     expect(fired.size).toBeGreaterThanOrEqual(3);
     expect(joined).toBeGreaterThanOrEqual(1);
-  }, 180_000);
+  }, 300_000);
 });
 
 describe("연고와 함께 다니는 떠돌이 자동 플레이 (기획서 7.9)", () => {

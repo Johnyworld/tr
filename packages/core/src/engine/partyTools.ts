@@ -1,3 +1,4 @@
+import { sightKey } from "./partySight.ts";
 import { z } from "zod";
 import type { BattleState, GameState, Party } from "../game/state.ts";
 import { heldOf } from "../rules/held.ts";
@@ -12,7 +13,7 @@ import type { Rng } from "../rng.ts";
 import { josa } from "../text.ts";
 import { forceWords } from "./battleTools.ts";
 import { createExtraCharacter, enterScene, noteFirstMeeting } from "./extras.ts";
-import { defineTool, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
+import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 
 /**
  * 길 위의 부대와 맞붙기 (docs/war-parties-plan.md 파트 5-1·6-1, 움직이는 부대 ③-2).
@@ -27,7 +28,7 @@ const SMALL_MAX = 6;
 /** 장면에서 본 부대 (지금 이 구역에 있고, 주인공이 봤다) */
 function seenHere(state: GameState, party: Party): boolean {
   const zone = state.playerZone;
-  return !!zone && party.size > 0 && partyZoneAt(party, state.time) === zone && !!state.partySightings[`${party.id}@${zone}`]?.player;
+  return !!zone && party.size > 0 && partyZoneAt(party, state.time) === zone && !!state.partySightings[sightKey(party, zone, state.time)]?.player;
 }
 
 /** 부대를 붙잡아 둔다: 지금 칸을 minutes만큼 늘리고 뒤의 일정을 미룬다 (맞붙은 동안 떠나지 않는다) */
@@ -74,8 +75,7 @@ export const engageParty = defineTool({
     party_id: z.string().describe("상태의 '눈에 띈 무리' 줄의 id"),
   }),
   run(input, ctx) {
-    const { store, content, rng } = ctx;
-    const state = store.getState();
+    const state = ctx.store.getState();
     const me = state.characters[state.playerId];
     if (!me || me.dead) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
     if (state.battle) return { ok: false, error: "이미 전투 중이다." };
@@ -84,6 +84,17 @@ export const engageParty = defineTool({
     if (state.partyFights[party.id]) return { ok: false, error: "이미 맞붙은 무리다. take_action으로 싸운다." };
     // 우리 무리 부대에는 덤비지 않는다 (PT31 분대장: 우리 순찰대가 맞서는 엑스트라로 들어왔다). 무리를 배신하려면 이야기·행동으로
     if (me.factionId && party.faction === me.factionId) return { ok: false, error: "우리 무리 사람들이다. engage_party는 다른 무리의 무리에만 쓴다." };
+    return startPartyFight(ctx, party);
+  },
+});
+
+/**
+ * 부대와 맞붙는다 (engage_party, 또는 부대가 먼저 보고 덤벼 왔을 때 byParty). 작은 싸움이면 부대원이 엑스트라로 장면에, 큰 부대와 무리에 속한 주인공이면 전투 장면
+ */
+export function startPartyFight(ctx: ToolContext, party: Party, opts: { byParty?: boolean } = {}): ToolOutcome {
+  const { store, content, rng } = ctx;
+  const state = store.getState();
+  const me = state.characters[state.playerId]!;
     const zone = state.playerZone!;
     const label = partyLabel(content, party);
     const world = worldOf(state);
@@ -117,7 +128,7 @@ export const engageParty = defineTool({
       store.append({ type: "battle_started", pendingId: battle.id, battle, barrierUsed: [] });
       return {
         ok: true,
-        resultText: `${josa(label, "과/와")} 맞붙었다. 전투 장면이 열린다: 적은 ${forceWords(party.size)}, 우리 편은 ${forceWords(group + defenders)}. 전투 중 행동은 take_action.battle.`,
+        resultText: `${opts.byParty ? `${josa(label, "이/가")} 덤벼 왔다.` : `${josa(label, "과/와")} 맞붙었다.`} 전투 장면이 열린다: 적은 ${forceWords(party.size)}, 우리 편은 ${forceWords(group + defenders)}. 전투 중 행동은 take_action.battle.`,
         display: { type: "battle", event: "started", title: `${content.locations[zone]?.name ?? zone}의 맞붙음`, detail: `${label} ${forceWords(party.size)}` },
       };
     }
@@ -149,12 +160,11 @@ export const engageParty = defineTool({
     return {
       ok: true,
       resultText:
-        `${josa(label, "과/와")} 맞붙었다. 장면에 들어온 사람: ${members.join(", ")}${rest > 0 ? ` (뒤에 ${forceWords(rest)}이 더 있다)` : ""}. ` +
+        `${opts.byParty ? `${josa(label, "이/가")} 덤벼 왔다.` : `${josa(label, "과/와")} 맞붙었다.`} 장면에 들어온 사람: ${members.join(", ")}${rest > 0 ? ` (뒤에 ${forceWords(rest)}이 더 있다)` : ""}. ` +
         `이제 take_action 싸움 판정으로 한다(target·target_harm). 절반이 쓰러지거나${leader ? " 우두머리가 쓰러지거나" : ""} 하면 무리가 달아난다. 몸의 위험을 먼저 선언한다.`,
       display: { type: "presence", npcName: label, action: "enter", note: `${label} ${forceWords(party.size)}과 맞붙었다` },
     };
-  },
-});
+}
 
 export const PARTY_TOOLS = [engageParty] as const;
 

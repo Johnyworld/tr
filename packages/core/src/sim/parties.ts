@@ -137,8 +137,22 @@ export function planLegs(
 
 /** 부대가 이 시각에 있는 구역 (나가기 전이거나 돌아온 뒤면 null) */
 export function partyZoneAt(party: Party, t: number): string | null {
-  for (const leg of [...party.legs, ...party.back]) if (t >= leg.from && t <= leg.to) return leg.zone;
-  return null;
+  // 칸 경계(앞 칸의 to = 뒤 칸의 from)에서는 뒤 칸: 막 들어선 구역에 있다 (PT32 네 판: 빨리감기가 멈춘 그 분에 앞 구역으로 셌다)
+  let zone: string | null = null;
+  for (const leg of [...party.legs, ...party.back]) if (t >= leg.from && t <= leg.to) zone = leg.zone;
+  return zone;
+}
+
+/** 부대가 이 구역에 머무는 이번 방문이 시작된 시각 (같은 구역 칸이 이어지면 하나로). 머물지 않으면 null */
+export function visitStart(party: Party, zone: string, t: number): number | null {
+  const legs = [...party.legs, ...party.back];
+  let i = -1;
+  legs.forEach((l, k) => {
+    if (l.zone === zone && t >= l.from && t <= l.to) i = k;
+  });
+  if (i < 0) return null;
+  while (i > 0 && legs[i - 1]!.zone === zone) i--;
+  return legs[i]!.from;
 }
 
 /** 목표에 닿는 시각 */

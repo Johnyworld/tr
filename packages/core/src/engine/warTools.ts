@@ -17,7 +17,7 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
-import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay, type WarWorld } from "../sim/war.ts";
+import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay, spawnWatchParties, type WarWorld } from "../sim/war.ts";
 import { advanceParties, partiesConfig } from "../sim/parties.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
@@ -56,6 +56,15 @@ export function initFactions(ctx: ToolContext): boolean {
   if (Object.keys(store.getState().factions).length > 0) return false;
   const { factions, zones, clocks } = initialWarWorld(content);
   store.append({ type: "factions_initialized", day: dayOf(store.getState().time), factions, zones, clocks });
+  // 첫날의 정찰·순찰 (PT32 네 판: 세계가 05:30에 열리고 첫날 틱이 돌지 않아 1일차에 부대가 하나도 없었다). 싸우지 않는 부대만, 나머지 하루 일은 이튿날부터
+  if (partiesConfig(content)) {
+    const s = store.getState();
+    const world: WarWorld = { factions: structuredClone(s.factions), zones: structuredClone(s.zones), clocks: structuredClone(s.clocks), parties: [], nextPartyNo: s.nextPartyNo, partiesUpTo: s.time };
+    spawnWatchParties(world, content, ctx.rng, dayOf(s.time));
+    if (world.parties?.length) {
+      store.append({ type: "parties_advanced", factions: world.factions, zones: world.zones, clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: world.parties, partiesUpTo: s.time, nextPartyNo: world.nextPartyNo ?? s.nextPartyNo, clashes: [], scheduled: [] });
+    }
+  }
   return true;
 }
 

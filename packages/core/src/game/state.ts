@@ -49,7 +49,8 @@ import { startingSkills } from "./creation.ts";
 // 114: 움직이는 부대 ③-1 (12-316). 닿을 때 계산(이벤트 parties_advanced), recentClashes.party
 // 115: 움직이는 부대 ③-2 (12-317). partyFights, battle.party, 세력 defeats, 이벤트 party_engaged·party_fight_ended
 // 116: 움직이는 부대 ③-3 (12-318). 클락 credits, 교전·부대 할 일 credits·surprise, 이벤트 clock_credited
-export const SAVE_SCHEMA_VERSION = 116;
+// 117: PT32 고침 (12-320). 마주침 기록 열쇠에 방문, parties_advanced.nextPartyNo
+export const SAVE_SCHEMA_VERSION = 117;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -1128,6 +1129,8 @@ export function createGameSchemas(s: Scenario) {
       clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
       parties: z.array(partySchema),
       partiesUpTo: z.number().int(),
+      /** 새로 낸 부대가 있으면 다음 부대 번호 */
+      nextPartyNo: z.number().int().min(0).optional(),
       clashes: z.array(clashSchema),
       scheduled: z.array(pendingClashSchema).default([]),
     }),
@@ -1585,6 +1588,14 @@ function swapGround(next: GameState, from: string | null, to: string) {
   next.scene = { ...next.scene, items };
   delete ground[to];
   next.groundItems = ground;
+}
+
+/** 주인공이 있는 구역의 주인이 그 자리에서 바뀌었으면 본 대로 안다 (PT32 졸병: 붉은 다리를 차지하는 것을 봤는데 떠난 뒤 지도는 "주인 없음") */
+function seeHereOwner(next: GameState) {
+  const zone = next.playerZone;
+  if (!zone) return;
+  const owner = next.zones[zone]?.owner ?? null;
+  if ((next.zoneSeen[zone] ?? undefined) !== owner) next.zoneSeen = { ...next.zoneSeen, [zone]: owner };
 }
 
 function rememberClashes(next: GameState, clashes: readonly Clash[], at: number, party = false) {
@@ -2544,6 +2555,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.parties) next.parties = structuredClone(event.parties);
       if (event.nextPartyNo !== undefined) next.nextPartyNo = event.nextPartyNo;
       if (event.partiesUpTo !== undefined) next.partiesUpTo = event.partiesUpTo;
+      seeHereOwner(next);
       if (event.parties) {
         // 사라진 부대의 마주침 기록은 지운다
         const alive = new Set(event.parties.map((p) => p.id));
@@ -2556,9 +2568,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
       next.parties = structuredClone(event.parties);
       next.partiesUpTo = event.partiesUpTo;
+      if (event.nextPartyNo !== undefined) next.nextPartyNo = event.nextPartyNo;
       next.pendingClashes.push(...structuredClone(event.scheduled));
       next.nextBattleNo += event.scheduled.length;
       rememberClashes(next, event.clashes, state.time, true);
+      seeHereOwner(next);
       const alive = new Set(event.parties.map((p) => p.id));
       for (const key of Object.keys(next.partySightings)) if (!alive.has(key.split("@")[0]!)) delete next.partySightings[key];
       break;
@@ -2622,6 +2636,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const mine = next.characters[next.playerId]?.factionId;
       if (mine && next.leftHomeAt === null && next.zones[event.to]?.owner !== mine) next.leftHomeAt = state.time;
       next.zoneSeen = { ...next.zoneSeen, [event.to]: next.zones[event.to]?.owner ?? null };
+      // 떠난 구역의 부대 마주침은 잊는다: 다시 들어서면 새로 굴린다 (PT32 분대장)
+      if (event.from && event.from !== event.to) for (const key of Object.keys(next.partySightings)) if (key.split("@")[1] === event.from) delete next.partySightings[key];
       // 바닥의 물건은 그 구역에 남기고, 가는 구역에 남아 있던 것을 장면에 둔다
       if (event.from !== event.to) {
         swapGround(next, event.from === null ? null : spotKey(event.from, state.playerPlace), spotKey(event.to, event.place ?? null));
@@ -2969,6 +2985,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
       rememberClashes(next, [event.clash], state.time);
+      seeHereOwner(next);
       break;
     case "battle_started":
       if (state.battle) throw new Error("이미 전투 중입니다.");

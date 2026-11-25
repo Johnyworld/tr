@@ -6,7 +6,7 @@ import { ownedBy } from "../rules/home.ts";
 import { companyHere } from "../rules/company.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { battleConfig } from "../sim/battle.ts";
-import { partyLabel, partyZoneAt, recordDefeat, routParty } from "../sim/parties.ts";
+import { chaseInto, partyLabel, partyZoneAt, recordDefeat, routParty } from "../sim/parties.ts";
 import { DEFENSE_COMMIT, frontierTarget, type WarWorld } from "../sim/war.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
@@ -161,9 +161,25 @@ export function startPartyFight(ctx: ToolContext, party: Party, opts: { byParty?
       ok: true,
       resultText:
         `${opts.byParty ? `${josa(label, "이/가")} 덤벼 왔다.` : `${josa(label, "과/와")} 맞붙었다.`} 장면에 들어온 사람: ${members.join(", ")}${rest > 0 ? ` (뒤에 ${forceWords(rest)}이 더 있다)` : ""}. ` +
-        `이제 take_action 싸움 판정으로 한다(target·target_harm). 절반이 쓰러지거나${leader ? " 우두머리가 쓰러지거나" : ""} 하면 무리가 달아난다. 몸의 위험을 먼저 선언한다.`,
+        `이제 take_action 싸움 판정으로 한다(target·target_harm). 절반이 쓰러지거나${leader ? " 우두머리가 쓰러지거나" : ""} 하면 무리가 달아난다. 몸의 위험을 먼저 선언한다. 달아나려면 판정을 걸고 자리를 옮긴다(place_to·move_to + check): 빗나가면 쫓아와 맞붙음이 이어진다.`,
       display: { type: "presence", npcName: label, action: "enter", note: `${label} ${forceWords(party.size)}과 맞붙었다` },
     };
+}
+
+/** 지금 구역에서 맞붙은 부대원 (판정을 건 이동이 빗나가면 쫓아온다, PT32 사용자 결정) */
+export function fightMembersHere(state: GameState): string[] {
+  return Object.values(state.partyFights).filter((f) => f.zone === state.playerZone).flatMap((f) => f.members);
+}
+
+/** 맞붙은 주인공이 옆 구역으로 달아나다 빗나가 부대원이 쫓아왔다: 맞붙음과 부대 자리를 그 구역으로 옮긴다 (부대는 하던 일을 접는다) */
+export function chaseParties(ctx: ToolContext, from: string, to: string, chasing: readonly string[]): void {
+  const state = ctx.store.getState();
+  const fights = Object.entries(state.partyFights).filter(([, f]) => f.zone === from && f.members.some((id) => chasing.includes(id)));
+  if (!fights.length) return;
+  const world = worldOf(state);
+  for (const [partyId] of fights) chaseInto(world, ctx.content, ctx.rng, partyId, to, state.time, 60);
+  saveWorld(ctx, world);
+  for (const [partyId, f] of fights) ctx.store.append({ type: "party_engaged", partyId, members: [...f.members], zone: to });
 }
 
 export const PARTY_TOOLS = [engageParty] as const;

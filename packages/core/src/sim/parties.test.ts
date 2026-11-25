@@ -8,6 +8,10 @@ import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
 import { warConfessions } from "../engine/partyTools.ts";
+import { executeTool } from "../engine/tools.ts";
+import { frontBusy } from "../engine/missionTools.ts";
+import { pickDailyOffers, warMission } from "../game/missions.ts";
+import { placesIn } from "../rules/place.ts";
 import { endBattle, forceWords } from "../engine/battleTools.ts";
 import { applyEffect } from "../engine/storyletTools.ts";
 import { initialWarWorld, simulateWarDay, spawnWatchParties, type WarWorld } from "./war.ts";
@@ -538,6 +542,79 @@ describe("PT32 뒤 고친 것", () => {
     const s = w.state();
     w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: { ...s.zones, red_bridge: { owner: "faction_c" } }, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: [], partiesUpTo: s.time, clashes: [], scheduled: [] });
     expect(w.state().zoneSeen.red_bridge).toBe("faction_c");
+    w.close();
+  });
+});
+
+describe("PT32 정할 것: 달아나기 실패·전선이 바쁜 날", () => {
+  const make = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-chase-")), content, rngFactory: () => createSeededRng(9) }).create("mcp", "role_a_grunt");
+  type W = ReturnType<typeof make>;
+  const engaged = (w: W) => {
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
+    const s = w.state();
+    const t = s.time;
+    const p = party({ id: "pr", faction: "faction_c", kind: "scout", size: 4, goal: "a_east_post", legs: [{ zone: "c_base", from: t - 600, to: t - 300 }, { zone: "rail_embankment", from: t - 300, to: t - 10 }, { zone: "a_east_post", from: t - 10, to: t + 240 }], task: { kind: "watch" } });
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: [p], partiesUpTo: t, clashes: [], scheduled: [] });
+    w.ctx().store.append({ type: "party_sighted", key: sightKey(w.state().parties[0]!, "a_east_post", t), player: true, party: false });
+    expect(w.executeTool("engage_party", { party_id: "pr" }).ok).toBe(true);
+    return w.state().partyFights.pr!.members;
+  };
+  const flee = (w: W, roll: number, where: { move_to?: string; place_to?: string }) =>
+    executeTool("take_action", { intent: "달아난다", check: { move: "athletics", stat: "agility", difficulty: "normal", harm_on_failure: "none", harm_cause: "" }, activity: null, deed: null, target: null, narration_summary: null, ...where }, { ...w.ctx(), rng: () => roll });
+
+  it("옆 구역으로 달아나다 빗나가면 맞붙은 부대원이 쫓아와 맞붙음이 그 구역에서 이어진다", () => {
+    const w = make();
+    const members = engaged(w);
+    const r = flee(w, 0.01, { move_to: "rail_embankment" });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().playerZone).toBe("rail_embankment");
+    expect(r.ok && r.resultText).toContain("쫓아왔다");
+    expect(r.ok && r.resultText).not.toContain("오는 길에 일이 생겼다");
+    for (const id of members) expect(w.state().scene.present).toContain(id);
+    expect(w.state().partyFights.pr?.zone).toBe("rail_embankment");
+    const p = w.state().parties.find((x) => x.id === "pr")!;
+    expect(partyZoneAt(p, w.state().time)).toBe("rail_embankment");
+    expect(p.done).toBe(true);
+    expect(p.back.at(-1)?.zone).toBe("c_base");
+    w.close();
+  });
+
+  it("달아나기가 맞으면 쫓아오지 않고 부대는 갈 길을 간다", () => {
+    const w = make();
+    const members = engaged(w);
+    const r = flee(w, 0.99, { move_to: "rail_embankment" });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    for (const id of members) expect(w.state().scene.present).not.toContain(id);
+    expect(w.state().partyFights.pr).toBeUndefined();
+    w.close();
+  });
+
+  it("같은 구역의 다른 장소로 물러나다 빗나가도 맞붙은 부대원이 쫓아온다", () => {
+    const w = make();
+    const members = engaged(w);
+    const to = placesIn(w.state(), content, "a_east_post").find((p) => p.id !== w.state().playerPlace && !p.road)!;
+    const r = flee(w, 0.01, { place_to: to.id });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().playerPlace).toBe(to.id);
+    for (const id of members) expect(w.state().scene.present).toContain(id);
+    expect(w.state().partyFights.pr).toBeTruthy();
+    w.close();
+  });
+
+  it("전선이 바쁜 날(계획 절반·하루 안 교전·우리 땅의 적 부대)이면 오늘의 일감 한 자리는 전쟁 임무다", () => {
+    const w = make();
+    const s = w.state();
+    expect(frontBusy({ ...s, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { ...c, filled: 0 }])), recentClashes: [], parties: [] }, content, "faction_a")).toBe(false);
+    const clocks = Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { ...c, filled: c.factionId === "faction_a" ? c.max : 0 }]));
+    expect(frontBusy({ ...s, clocks, recentClashes: [], parties: [] }, content, "faction_a")).toBe(true);
+    const clash = { kind: "skirmish" as const, attacker: "faction_c", defender: "faction_a", zone: "a_east_post", success: false, attackerLosses: 1, defenderLosses: 0 };
+    expect(frontBusy({ ...s, clocks: {}, recentClashes: [{ clash, at: s.time - 60 }], parties: [] }, content, "faction_a")).toBe(true);
+    expect(frontBusy({ ...s, clocks: {}, recentClashes: [{ clash, at: s.time - 2 * MINUTES_PER_DAY }], parties: [] }, content, "faction_a")).toBe(false);
+    const roles = content.roles.role_a_squad_leader!;
+    for (let seed = 1; seed <= 20; seed++) {
+      const offers = pickDailyOffers(content, "role_a_squad_leader", MINUTES_PER_DAY * 3, null, createSeededRng(seed), [], false, undefined, roles.rank, undefined, [], false, undefined, true)!;
+      expect(offers.templateIds.some((id) => warMission(content.missions[id]!)), `seed ${seed}`).toBe(true);
+    }
     w.close();
   });
 });

@@ -667,10 +667,22 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
     const unfit = !!me && !!unfitFrom && at(me.conditions[harm.id]) >= at(unfitFrom) && at(unfitFrom) >= 0;
     const safeOnly = (state.missionGraceUntil ?? 0) > state.time || unfit;
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly, (move) => !!me && weakAt(ctx.content, me, move));
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly, (move) => !!me && weakAt(ctx.content, me, move), frontBusy(state, ctx.content, me?.factionId));
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;
+}
+
+/**
+ * 전선이 바쁜 날 (PT32 사용자 결정, 오늘의 일감에 전쟁 임무 한 자리): 우리 무리의 공격 계획이 절반 넘게 찼거나,
+ * 지난 하루 안에 우리 무리가 교전했거나, 우리를 적대하는 무리의 부대가 우리 땅에 있다
+ */
+export function frontBusy(state: GameState, content: Content, factionId: string | null | undefined): boolean {
+  if (!factionId) return false;
+  const planKind = (id: string) => content.factions[factionId]?.plans.find((p) => p.id === id)?.kind;
+  if (Object.entries(state.clocks).some(([id, c]) => c.factionId === factionId && planKind(id) !== "shift" && c.filled * 2 >= c.max)) return true;
+  if (state.recentClashes.some((r) => state.time - r.at <= MINUTES_PER_DAY && (r.clash.attacker === factionId || r.clash.defender === factionId))) return true;
+  return state.parties.some((p) => p.size > 0 && hostileFaction(state, content, p.faction) && ownedBy(state, partyZoneAt(p, state.time), factionId));
 }
 
 /** 불복종 하나가 지워지는 날 수 (C8) */

@@ -335,6 +335,25 @@ export function routParty(world: WarWorld, content: Content, rng: Rng, partyId: 
   turnBack(world, content, rng, cfg, party, zone, at);
 }
 
+/**
+ * 맞붙은 주인공이 옆 구역으로 달아나다 빗나갔다: 부대가 하던 일을 접고 쫓아가 그 구역에 hold분 머문 뒤 거점으로 돌아간다 (PT32 사용자 결정)
+ */
+export function chaseInto(world: WarWorld, content: Content, rng: Rng, partyId: string, zone: string, at: number, hold: number): void {
+  const cfg = partiesConfig(content);
+  const party = (world.parties ?? []).find((p) => p.id === partyId);
+  if (!cfg || !party || party.size <= 0) return;
+  const before = (legs: PartyLeg[]) => legs.filter((l) => l.from <= at).map((l) => (l.to > at ? { ...l, to: at } : l));
+  const stay = { zone, from: at, to: at + hold };
+  if (party.done) party.back = [...before(party.back), stay];
+  else {
+    party.legs = [...before(party.legs), stay];
+    party.back = [];
+    party.done = true;
+  }
+  const route = partyRoute(content, world, party.faction, zone, party.home);
+  if (route && route.length >= 2) party.back = [...party.back, ...planLegs(content, cfg, party.kind, route, at + hold, at + hold, party.size, rng).slice(1)];
+}
+
 /** 길을 접고 지금 자리에서 거점으로 돌아간다 */
 function turnBack(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, party: Party, zone: string, at: number) {
   const before = (legs: PartyLeg[]) => legs.filter((l) => l.from <= at).map((l) => (l.to > at ? { ...l, to: at } : l));

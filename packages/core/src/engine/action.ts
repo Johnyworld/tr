@@ -65,6 +65,7 @@ import { createInterruptChecks, fastForward } from "../sim/fastForward.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { recordDeed, spottedEntering } from "./reputationTools.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
+import { chaseParties, fightMembersHere } from "./partyTools.ts";
 import { SQUAD_REPORT_PREFIX } from "./command.ts";
 import { activeMissionOf, atMissionPlace, commanderOf as commanderIdOf, MISSION_CHECK_TRIES, MISSION_FAIL_MINUTES } from "../game/missions.ts";
 import { neighbors } from "../sim/war.ts";
@@ -87,7 +88,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
+import {comesAlong, pursuers, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -938,15 +939,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (placeMove) {
       const live = store.getState().activeStorylet;
       const cast = live ? Object.values(live.cast ?? {}) : [];
-      // 쓰러졌거나 기어다니는 것(엑스트라 틀 slow)은 쫓아오지 못한다 (PT22·PT23)
-      const canChase = (id: string) => {
-        const c = store.getState().characters[id];
-        return !!c && !c.dead && !isIncapacitated(content, c) && !content.extras[c.extra?.template ?? ""]?.slow;
-      };
-      const pursuers = [...new Set([input.check.opponent, ...cast].filter((id): id is string => !!id && start.scene.present.includes(id) && !store.getState().scene.present.includes(id) && canChase(id)))];
-      if (roll.outcome === "miss" && pursuers.length) {
-        for (const id of pursuers) enterScene(ctx, id);
-        lines.push(`쫓아왔다: ${pursuers.map((id) => playerCalls(store.getState(), content, id)).join(", ")}.`);
+      // 쓰러졌거나 기어다니는 것(엑스트라 틀 slow)은 쫓아오지 못한다 (PT22·PT23). 맞붙은 부대원도 쫓아온다 (PT32 사용자 결정)
+      const foes = [input.check.opponent, ...cast, ...fightMembersHere(start)];
+      const chasing = pursuers({ ...store.getState(), scene: start.scene }, content, foes).filter((id) => !store.getState().scene.present.includes(id));
+      if (roll.outcome === "miss" && chasing.length) {
+        for (const id of chasing) enterScene(ctx, id);
+        lines.push(`쫓아왔다: ${chasing.map((id) => playerCalls(store.getState(), content, id)).join(", ")}.`);
       } else {
         const behind = [input.check.opponent, ...cast].filter((id): id is string => !!id && start.scene.present.includes(id) && !store.getState().scene.present.includes(id));
         if (behind.length) lines.push(`떨쳐 내고 왔다: ${[...new Set(behind)].map((id) => playerCalls(store.getState(), content, id)).join(", ")} (원래 자리에 남았다).`);
@@ -1438,18 +1436,21 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     displays.push(...endActiveStorylet(ctx, "자리를 떴다"));
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     leaveAmbush(ctx);
-    const alongZone = comesAlong(start, content, null, input.with);
+    // 판정을 걸고 달아났는데 빗나가면 맞선 상대와 맞붙은 부대원이 쫓아온다 (공통 규칙 15, PT32 사용자 결정: 실패해도 그대로 닿고 아무도 쫓지 않았다)
+    const chasing = outcome === "miss" && !escapeAttempt && input.check ? pursuers({ ...store.getState(), scene: start.scene }, content, [input.check.opponent, ...fightMembersHere(start)]).filter((id) => !input.with.includes(id)) : [];
+    const alongZone = [...comesAlong(start, content, null, input.with), ...chasing];
     movePlayer(ctx, { zone: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone) }, "travel", { with: alongZone });
+    if (chasing.length && start.playerZone) chaseParties(ctx, start.playerZone, input.move_to, chasing);
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)
     lines.push(...deliverPrisoners(ctx));
     // 동행은 따라온다. 그 밖의 장면 인물만 남는다 (플레이 테스트 11: 동행이 왔는데 "따라오지 않는다"가 늘 나왔다)
     const came = activeCompanions(store.getState()).map((id) => playerCalls(store.getState(), content, id));
-    const brought = alongZone.filter((id) => store.getState().scene.present.includes(id) && !store.getState().companions.includes(id)).map((id) => playerCalls(store.getState(), content, id));
+    const brought = alongZone.filter((id) => !chasing.includes(id) && store.getState().scene.present.includes(id) && !store.getState().companions.includes(id)).map((id) => playerCalls(store.getState(), content, id));
     const leftBehind = start.scene.present.filter((id) => !alongZone.includes(id) && !start.companions.includes(id)).length > 0;
     // 함께 달아나 갇힌 곳에서 꺼내 온 사람 (공통 규칙 1 welcomeRescued, 설계 목록 2-12)
     const rescued = escapeAttempt ? alongZone.filter((id) => !!heldOf(start.characters[id]) && !heldOf(store.getState().characters[id])) : [];
-    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""}${brought.length ? ` 함께 데려왔다: ${brought.join(", ")}${escapeAttempt ? " (함께 달아났다)" : ""}.` : ""}${leftBehind ? " 그 밖에 함께 있던 인물은 따라오지 않는다 (데려가려면 with, 같이 왔다면 npc_presence로 다시 등장시킨다)." : ""}`);
+    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""}${brought.length ? ` 함께 데려왔다: ${brought.join(", ")}${escapeAttempt ? " (함께 달아났다)" : ""}.` : ""}${chasing.length ? ` 달아나지 못하고 쫓아왔다: ${chasing.map((id) => playerCalls(store.getState(), content, id)).join(", ")} (도착한 자리에서 맞붙음이 이어진다).` : ""}${leftBehind ? " 그 밖에 함께 있던 인물은 따라오지 않는다 (데려가려면 with, 같이 왔다면 npc_presence로 다시 등장시킨다)." : ""}`);
     lines.push(...welcomeRescued(ctx, rescued));
     if (rideUsed) {
       lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 몇 시간 안에 무언가 몰려들 수 있다." : ""}`);
@@ -1470,7 +1471,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const metParty = arrival.length ? [] : runPartySightings(ctx);
     displays.push(...metParty);
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
-    if (!arrival.length && !metParty.length) for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
+    // 쫓겨 왔으면 길 위의 일은 없다: 맞붙음이 이어진다
+    if (!arrival.length && !metParty.length && !chasing.length) for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }

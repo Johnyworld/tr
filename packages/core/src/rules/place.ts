@@ -496,6 +496,17 @@ export function comesAlong(state: GameState, content: Content, to: string | null
   return state.scene.present.filter((id) => involved.includes(id) || (to !== null && npcPlaceAt(state, content, id) === to && walksOnOwn(state, content, id)));
 }
 
+/**
+ * 판정을 건 이동(물러나기·달아나기)이 빗나가면 쫓아오는 사람 (공통 규칙 15, PT32 사용자 결정: 맞붙은 부대원·싸움 상대도 쫓아온다).
+ * 옮기기 전 장면에 있었고, 스스로 걸을 수 있고, 기어다니는 것(엑스트라 틀 slow)이 아니어야 한다
+ */
+export function pursuers(state: GameState, content: Content, candidates: readonly (string | null | undefined)[]): string[] {
+  return [...new Set(candidates.filter((id): id is string => !!id && state.scene.present.includes(id)))].filter((id) => {
+    const c = state.characters[id];
+    return !!c && walksOnOwn(state, content, id) && !content.extras[c.extra?.template ?? ""]?.slow;
+  });
+}
+
 /** 스스로 걸어 다닐 수 있는가: 무력화(부상 문턱)·의식불명 증상·기절이 아니다 (12-292) */
 export function walksOnOwn(state: GameState, content: Content, id: string): boolean {
   const c = state.characters[id];
@@ -706,7 +717,7 @@ function segmentKey(time: number): number {
  * 시간대가 바뀌면 장면을 비운다 (B④ 2026-11-23, 장소 개편 위에서. PT12 떠돌이: 새벽에 들인 할머니가 다음 날 새벽까지 "함께 있는 인물",
  * PT17 섬: 저장고로 들어간 배역이 부두 장면에 남아 임무 짝이 됐다). 긴 잠 뒤에 흩어지던 규칙(12-261·12-265)을 이것으로 합친다.
  * 남는 사람: 곁의 동행, 진행 중인 이야기의 배역, 갇힌 사람(함께 갇힌 사람), 새 시간대 자리가 지금 장소인 사람(일과·집),
- * 이번 행동이 겨눈 사람(involved), 사람이 아닌 것(감염체·짐승: 위협은 공통 규칙 4의 몫). 새 시간대 일과가 구역 밖이면 빠진다.
+ * 이번 행동이 겨눈 사람(involved), 맞붙은 부대원, 사람이 아닌 것(감염체·짐승: 위협은 공통 규칙 4의 몫). 새 시간대 일과가 구역 밖이면 빠진다.
  * 전투·잠입 중이면 비우지 않는다. 돌려주는 것: 장면에서 뺄 사람
  */
 export function sceneLeavesAt(state: GameState, content: Content, from: number, involved: readonly string[] = []): string[] {
@@ -716,9 +727,11 @@ export function sceneLeavesAt(state: GameState, content: Content, from: number, 
   if (state.characters[state.playerId]?.dead || state.helplessAt !== null) return [];
   const companions = new Set(state.companions.filter((id) => !state.bonds[id]?.apart));
   const cast = new Set(Object.values(state.activeStorylet?.cast ?? {}));
+  // 맞붙은 부대원은 싸움이 끝날 때까지 남는다 (runPartyFights가 정한다)
+  const fighting = new Set(Object.values(state.partyFights).flatMap((f) => f.members));
   return state.scene.present.filter((id) => {
     const c = state.characters[id];
-    if (!c || c.dead || companions.has(id) || cast.has(id) || heldOf(c) || involved.includes(id)) return false;
+    if (!c || c.dead || companions.has(id) || cast.has(id) || fighting.has(id) || heldOf(c) || involved.includes(id)) return false;
     // 스스로 걷지 못하는 사람(무력화·의식불명·기절)은 제 할 일로 떠나지 않는다 (12-292, PT24 하얀매: 치명상·의식장애인 동료가 "제 할 일로 자리를 떴다")
     if (!walksOnOwn(state, content, id)) return false;
     if (c.extra && !content.npcs[id]) {

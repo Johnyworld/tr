@@ -246,6 +246,11 @@ export function riskyMission(m: { armed?: boolean | undefined; where?: string | 
   return !!m.armed || m.where === "enemy";
 }
 
+/** 전쟁에 닿는 임무: 정찰(scouts)·파괴공작(sabotages)·계획 앞당김(advances) (움직이는 부대 파트 11) */
+export function warMission(m: { scouts?: boolean | undefined; sabotages?: unknown; advances?: unknown }): boolean {
+  return !!m.scouts || !!m.sabotages || !!m.advances;
+}
+
 export function pickDailyOffers(
   content: Content,
   roleId: string,
@@ -268,6 +273,8 @@ export function pickDailyOffers(
   safeOnly = false,
   /** 받을 사람에게 보정이 음수인 판정인지 (설계 목록 5-3, PT16·17 섬: 스킬 -1인 새 식구에게 판정 두 개짜리). 다른 후보가 있으면 뒤로 미룬다 */
   weakAt?: (move: string) => boolean,
+  /** 전선이 바쁜 날 (PT32 사용자 결정): 전쟁 임무가 있으면 두 자리 중 하나를 전쟁 임무로 채운다 */
+  warDay = false,
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
@@ -302,6 +309,15 @@ export function pickDailyOffers(
   const isExtra = (id: string) => !own.has(id) && extra.includes(id);
   const roleFirst = pool.some((x) => !isExtra(x) && !weak(x));
   const allowed = (id: string) => (picked.length === 0 && roleFirst ? !isExtra(id) : !isExtra(id) || !picked.some(isExtra));
+  if (warDay && count > 0) {
+    const war = (ids: readonly string[]) => ids.filter((id) => warMission(content.missions[id]!));
+    const choice = [war(fresh).filter((id) => !isExtra(id)), war(fresh), war(stale).filter((id) => !isExtra(id)), war(stale), war(weakest)].find((c) => c.length);
+    if (choice) {
+      const id = choice[Math.floor(rng() * choice.length)]!;
+      for (const list of [fresh, stale, weakest]) if (list.includes(id)) list.splice(list.indexOf(id), 1);
+      picked.push(id);
+    }
+  }
   while (picked.length < count) {
     // 역할·직분 몫이 쉬기보다 먼저다: 쉬는 일감밖에 없으면 쉬는 역할 일감을 다시 낸다. 약한 일감은 맨 뒤
     const choice = [fresh.filter(allowed), stale.filter(allowed), fresh, stale, weakest.filter(allowed), weakest].find((c) => c.length)!;

@@ -1492,7 +1492,7 @@ promises:
 # fight: 싸움 의뢰는 주인공이 근접전·사격 중 하나로 능력+스킬 min 이상일 때만. fetch.min_share: 수색표에서 그만한 몫 이상인 물건만 (흔할수록 자주)
 # reward: 보수 물건 수 = base[종류] + 거리 × per_hop + 목표 구역 위험 × per_danger (사람을 데려오면 brought만큼 더)
 requests:
-  reach: 2
+  reach: 3
   days: [2, 3]
   per_hop_days: 1
   kinds:

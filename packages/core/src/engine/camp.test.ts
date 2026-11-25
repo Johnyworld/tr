@@ -40,13 +40,13 @@ describe("야영", () => {
   it("우리 거점은 지켜 주는 지붕이라 야영이 아니고, 바깥 구역은 야영이다", () => {
     const w = make(0);
     expect(campSite(content, w.state())).toBeNull();
-    go(w, "old_town");
+    go(w, "bus_depot");
     expect(campSite(content, w.state())).not.toBeNull();
   });
 
   it("바깥에서 혼자 잠들면 아무도 지키지 않은 밤의 이야기가 잠을 끊는다", () => {
     const w = make(0);
-    go(w, "old_town");
+    go(w, "bus_depot");
     const out = spend(w, "sleep");
     expect(w.state().activeStorylet?.id).toBe("camp_asleep_test");
     expect(out.ok && out.resultText).toContain("아무도 지키지 않고 잠들어 있었다");
@@ -54,7 +54,7 @@ describe("야영", () => {
 
   it("지친 채로 잠들면 보초가 있어도 늦게 안다. 이야기는 그대로 열린다 (12-188)", () => {
     const w = make(0);
-    go(w, "old_town");
+    go(w, "bus_depot");
     // 보초를 설 동행이 있다
     expect(w.runCheat("~summon a_jiho").ok).toBe(true);
     w.ctx().store.append({ type: "companion_joined", characterId: "a_jiho", kind: "purpose" });
@@ -67,7 +67,7 @@ describe("야영", () => {
 
   it("깨어서 보초를 서면 지켜보는 밤의 이야기가 열린다", () => {
     const w = make(0);
-    go(w, "old_town");
+    go(w, "bus_depot");
     const out = spend(w, "guard_duty");
     expect(w.state().activeStorylet?.id).toBe("camp_watched_test");
     expect(out.ok && out.resultText).toContain("먼저 알아챘다");
@@ -81,14 +81,14 @@ describe("야영", () => {
 
   it("확률을 넘기면 열리지 않는다", () => {
     const w = make(0.99);
-    go(w, "old_town");
+    go(w, "bus_depot");
     spend(w, "sleep");
     expect(w.state().activeStorylet).toBeNull();
   });
 
   it("모닥불은 확률을 높이고, 우리 땅은 낮춘다", () => {
     const w = make(0.99);
-    go(w, "old_town");
+    go(w, "bus_depot");
     const state = w.state();
     const site = campSite(content, state)!;
     const plain = campChance(content, state, { ...site, ownLand: false }, state.time);
@@ -99,7 +99,7 @@ describe("야영", () => {
 
   it("저녁·밤·새벽에 바깥이면 GM 상태에 잠자리 줄이 나온다 (숫자는 없다)", () => {
     const w = make(0.99);
-    go(w, "old_town");
+    go(w, "bus_depot");
     const night = { ...w.state(), time: w.state().time - (w.state().time % 1440) + 22 * 60 };
     const line = describeCamp(content, night);
     expect(line).toContain("야영");

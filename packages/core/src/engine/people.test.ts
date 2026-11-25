@@ -125,8 +125,8 @@ describe("상황에 맞는 등장", () => {
     const atBase = w.sceneForGm();
     expect(atBase).not.toContain("drifter_young");
     expect(atBase).not.toContain("kin_young");
-    stepToRoad(w, "old_town");
-    w.executeTool("take_action", act("구시가로 간다", { move_to: "old_town" }));
+    stepToRoad(w, "bus_depot");
+    w.executeTool("take_action", act("차고지로 간다", { move_to: "bus_depot" }));
     const outside = w.sceneForGm();
     expect(outside).toContain("drifter_young");
     expect(outside).not.toContain("kin_young");

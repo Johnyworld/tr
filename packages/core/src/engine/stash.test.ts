@@ -28,7 +28,7 @@ describe("무리의 사물함", () => {
     expect(w.state().stashes[me(w).id]?.[w.state().playerZone!]?.[item]).toBe(1);
     expect(buildPlayerView(w.state(), content).stash?.canPut).toBe(true);
 
-    go(w, "old_town");
+    go(w, "bus_depot");
     // 상태 화면은 넣을 수 있는 자리(canPut)에서만 창고를 보인다
     expect(buildPlayerView(w.state(), content).stash?.canPut ?? false).toBe(false);
     expect(stash(w, "put", [{ item_id: item, quantity: 1 }]).ok).toBe(false);
@@ -72,7 +72,7 @@ describe("떠돌이의 거처", () => {
 
   it("무리에 든 사람은 거처를 정하지 않는다", () => {
     const w = make();
-    go(w, "old_town");
+    go(w, "bus_depot");
     expect(stash(w, "settle").ok).toBe(false);
   });
 });

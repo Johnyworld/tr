@@ -108,10 +108,10 @@ describe("무게", () => {
     give(w, "scrap_metal", 7);
     expect(carriedWeight(w.content, me(w))).toBeGreaterThan(18);
     expect(encumbrance(w.content, me(w))).toBe(2);
-    expect(w.executeTool("take_action", act("구시가로 간다", { move_to: "old_town", ignore_story: true })).ok).toBe(false);
+    expect(w.executeTool("take_action", act("차고지로 간다", { move_to: "bus_depot", ignore_story: true })).ok).toBe(false);
     expect(w.executeTool("transfer_item", { from: "player", to: "scene", item_id: "scrap_metal", quantity: 10 }).ok).toBe(true);
-    stepToRoad(w, "old_town");
-    expect(w.executeTool("take_action", act("구시가로 간다", { move_to: "old_town", ignore_story: true })).ok).toBe(true);
+    stepToRoad(w, "bus_depot");
+    expect(w.executeTool("take_action", act("차고지로 간다", { move_to: "bus_depot", ignore_story: true })).ok).toBe(true);
   });
 });
 

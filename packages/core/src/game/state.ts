@@ -43,7 +43,8 @@ import { startingSkills } from "./creation.ts";
  */
 // 109: 길목 다섯 (12-302). 구역과 맞닿음이 바뀌어 이전 세이브는 보관함으로
 // 110: 받아들임·들어갈 자리 (12-308~311). 손님·자리·복무 시작 상태와 주민 계급 id(resident)가 바뀌어 이전 세이브는 보관함으로
-export const SAVE_SCHEMA_VERSION = 110;
+// 111: 길목 더 늘리기와 길목·구역 합치기 (12-313). 구역 32곳, 맞닿음이 바뀌어 이전 세이브는 보관함으로
+export const SAVE_SCHEMA_VERSION = 111;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 

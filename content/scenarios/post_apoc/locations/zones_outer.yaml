@@ -10,11 +10,13 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: concourse, name: "개찰구·지하상가", indoor: true, map: { x: 35, y: 35 }, kinds: [ruin], description: "개찰구와 지하상가. 떠돌이들이 불을 피운 자국", aliases: ["개찰구", "지하상가", "매대"], near: [platform, station_office] }
-    - { id: platform, name: "승강장·터널", indoor: true, map: { x: 55, y: 58 }, kinds: [ruin], description: "승강장과 터널. 어둠이 끝없이 이어진다", aliases: ["승강장", "터널"] }
+    - { id: platform, name: "승강장·터널", indoor: true, map: { x: 55, y: 58 }, kinds: [ruin], description: "승강장과 터널. 어둠이 끝없이 이어진다", aliases: ["승강장", "터널"], near: [flooded_track] }
     - { id: to_old_town, name: "구시가 가는 출구 계단", indoor: false, map: { x: 15, y: 18 }, description: "구시가로 올라가는 출구 계단. 위에서 빛이 든다", near: [concourse], road: true, to: [old_town] }
     - { id: tunnel_east, name: "강변 가는 터널", indoor: true, map: { x: 90, y: 40 }, description: "강변 쪽으로 이어지는 캄캄한 터널", near: [platform], road: true, to: [riverside] }
     - { id: tunnel_southwest, name: "마트 가는 터널", indoor: true, map: { x: 15, y: 85 }, description: "마트 밑으로 이어지는 터널. 물이 발목까지 찬다", near: [platform], road: true, to: [mall_ruins] }
-    - { id: station_office, name: "역무실", indoor: true, map: { x: 55, y: 25 }, kinds: [ruin], description: "개찰구 옆 역무실. 유리창이 깨지고 노선도가 벽에 비뚤게 걸렸다", aliases: ["역무실", "매표 창구", "노선도"], near: [concourse] }
+    - { id: station_office, name: "역무실", indoor: true, map: { x: 55, y: 25 }, kinds: [ruin], description: "개찰구 옆 역무실. 유리창이 깨지고 노선도가 벽에 비뚤게 걸렸다", aliases: ["역무실", "매표 창구", "노선도"], near: [concourse, power_room] }
+    - { id: power_room, name: "역 전기실", indoor: true, map: { x: 80, y: 18 }, kinds: [ruin], description: "배전반이 벽을 메운 전기실. 누가 구리선을 벗겨 가 바닥에 피복이 수북하다", aliases: ["전기실", "배전반"], near: [station_office] }
+    - { id: flooded_track, name: "물 찬 선로", indoor: true, map: { x: 72, y: 82 }, kinds: [ruin], description: "정강이까지 검은 물이 찬 선로 구간. 물 위로 무언가 떠다닌다", aliases: ["선로", "물 찬 터널"], near: [platform], wade: true }
   cover: 6
   owner: null
   danger: 3
@@ -42,12 +44,14 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: coal_yard, name: "저탄장", indoor: false, map: { x: 60, y: 68 }, kinds: [yard], description: "검은 석탄 더미가 무너진 저탄장", aliases: ["저탄장"], near: [turbine_hall, chimney] }
-    - { id: turbine_hall, name: "발전동·사무동", indoor: true, map: { x: 60, y: 40 }, kinds: [ruin], description: "발전동과 사무동. 거대한 터빈이 녹슬어 서 있다", aliases: ["발전동", "사무동", "발전기"], near: [workshop] }
+    - { id: turbine_hall, name: "발전동·사무동", indoor: true, map: { x: 60, y: 40 }, kinds: [ruin], description: "발전동과 사무동. 거대한 터빈이 녹슬어 서 있다", aliases: ["발전동", "사무동", "발전기"], near: [workshop, control_room] }
     - { id: to_south, name: "강변·물류창고 가는 길", indoor: false, map: { x: 45, y: 92 }, description: "남쪽 강변과 물류창고로 가는 길", near: [coal_yard], road: true, to: [riverside, c_warehouse] }
     - { id: highway_ramp, name: "휴게소 가는 고속도로 진입로", indoor: false, map: { x: 88, y: 85 }, description: "고속도로로 오르는 진입로. 난간이 휘었다", near: [coal_yard], road: true, to: [rest_stop] }
     - { id: to_prison, name: "교도소 가는 길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 교도소로 가는 길", near: [chimney], road: true, to: [prison] }
-    - { id: chimney, name: "굴뚝 밑", indoor: false, map: { x: 28, y: 45 }, kinds: [yard], description: "도시 어디서나 보이는 굴뚝 밑. 깃발 자국이 남았다" }
+    - { id: chimney, name: "굴뚝 밑", indoor: false, map: { x: 28, y: 45 }, kinds: [yard], description: "도시 어디서나 보이는 굴뚝 밑. 깃발 자국이 남았다", near: [cooling_pond] }
     - { id: workshop, name: "정비동", indoor: true, map: { x: 80, y: 28 }, kinds: [ruin], description: "공구 선반이 털린 정비동. 천장 크레인이 녹슬어 멈췄다", aliases: ["정비동", "정비 창고", "크레인"], near: [turbine_hall] }
+    - { id: cooling_pond, name: "냉각수 못", indoor: false, map: { x: 18, y: 80 }, kinds: [field], description: "녹조가 낀 넓은 냉각수 못. 물새가 앉았다 날아오른다", aliases: ["냉각수 못", "못"], near: [chimney], wade: true }
+    - { id: control_room, name: "중앙 제어실", indoor: true, map: { x: 40, y: 18 }, kinds: [ruin], description: "계기판이 벽을 두른 제어실. 바늘이 모두 0에 멈췄고 의자 하나만 바로 놓여 있다", aliases: ["제어실"], near: [turbine_hall] }
   cover: 4
   owner: null
   danger: 2
@@ -71,12 +75,14 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: cellblock, name: "감방동", indoor: true, map: { x: 62, y: 28 }, description: "철창이 끝없이 이어진 감방동", aliases: ["감방"], jail: true }
-    - { id: admin, name: "행정동", indoor: true, map: { x: 35, y: 32 }, kinds: [ruin], description: "행정동. 안쪽 무기고 철문은 굳게 닫혀 있다 (그 안은 뒤져야 찾는다)", aliases: ["행정동", "무기고 철문", "무기고"] }
+    - { id: admin, name: "행정동", indoor: true, map: { x: 35, y: 32 }, kinds: [ruin], description: "행정동. 안쪽 무기고 철문은 굳게 닫혀 있다 (그 안은 뒤져야 찾는다)", aliases: ["행정동", "무기고 철문", "무기고"], near: [infirmary] }
     - { id: yard, name: "운동장·담", indoor: false, map: { x: 50, y: 55 }, kinds: [yard], description: "높은 담에 둘러싸인 운동장", aliases: ["운동장", "담"], near: [admin, cellblock, guard_quarters], gate: true }
     - { id: to_power_plant, name: "발전소 가는 길", indoor: false, map: { x: 92, y: 62 }, description: "동쪽 발전소로 가는 길", near: [outer_gate, wall_road], road: true, to: [power_plant] }
     - { id: to_red_base, name: "붉은연합 거점 가는 길", indoor: false, map: { x: 50, y: 92 }, description: "남쪽 붉은연합 거점으로 가는 길", near: [outer_gate, wall_road], road: true, to: [c_base] }
     - { id: outer_gate, name: "바깥 정문·면회소", indoor: false, map: { x: 70, y: 78 }, kinds: [gate], description: "교도소 바깥 정문과 무너진 면회소. 철문이 반쯤 열렸다", near: [yard] }
-    - { id: guard_quarters, name: "교도관 숙소", indoor: true, map: { x: 28, y: 62 }, kinds: [ruin], description: "운동장 한쪽 교도관 숙소. 철제 침대가 뒤엉키고 벽에 탈출 날짜를 센 금이 있다", aliases: ["교도관 숙소", "숙소동"], near: [yard] }
+    - { id: guard_quarters, name: "교도관 숙소", indoor: true, map: { x: 28, y: 62 }, kinds: [ruin], description: "운동장 한쪽 교도관 숙소. 철제 침대가 뒤엉키고 벽에 탈출 날짜를 센 금이 있다", aliases: ["교도관 숙소", "숙소동"], near: [yard, corner_tower] }
+    - { id: infirmary, name: "교도소 의무과", indoor: true, map: { x: 22, y: 18 }, kinds: [ruin], description: "약장이 부서진 의무과. 철제 침대에 수갑 고리가 달려 있다", aliases: ["의무과"], near: [admin] }
+    - { id: corner_tower, name: "담 모서리 감시탑", indoor: false, map: { x: 10, y: 80 }, kinds: [watch], description: "담 모서리에 선 감시탑. 사다리 몇 칸이 빠졌지만 오르면 교도소 둘레가 다 보인다", aliases: ["감시탑"], near: [guard_quarters] }
     # 담 밖 둘레 (12-307, content:check: 길끼리는 바깥 정문을 지나지 않고 이어진다)
     - { id: wall_road, name: "교도소 바깥 담 아래 길", indoor: false, map: { x: 82, y: 90 }, kinds: [street], description: "높은 담 그늘을 따라 도는 아스팔트 길. 감시탑 창이 모두 깨졌다", aliases: ["담 아래 길"], near: [to_red_base, to_power_plant] }
   cover: 6
@@ -104,13 +110,15 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: sales_floor, name: "매장", indoor: true, map: { x: 65, y: 35 }, kinds: [ruin], description: "뒤집힌 진열대가 끝없는 매장", aliases: ["매장", "매대"], near: [stockroom] }
+    - { id: sales_floor, name: "매장", indoor: true, map: { x: 65, y: 35 }, kinds: [ruin], description: "뒤집힌 진열대가 끝없는 매장", aliases: ["매장", "매대"], near: [stockroom, food_court] }
     - { id: stockroom, name: "무너진 창고·하역장", indoor: true, map: { x: 35, y: 42 }, kinds: [ruin, store], description: "무너진 창고와 하역장. 지게차가 쓰러져 있다", aliases: ["창고", "하역장"] }
     - { id: parking, name: "주차장", indoor: false, map: { x: 62, y: 68 }, kinds: [yard], description: "빈 차들이 녹슨 넓은 주차장", aliases: ["주차장"], near: [sales_floor, underground_lot] }
     - { id: avenue, name: "버들마을·텃밭 가는 대로", indoor: false, map: { x: 50, y: 92 }, description: "마트 앞 남쪽 대로. 버려진 차들이 줄지어 섰다", near: [parking, loading_dock], road: true, to: [b_base, south_fields] }
-    - { id: subway_stairs, name: "환승역 가는 지하철 계단", indoor: false, map: { x: 85, y: 12 }, description: "매장 옆 지하철 계단. 아래로 내려갈수록 어둡다", near: [sales_floor], road: true, to: [subway_hub] }
+    - { id: subway_stairs, name: "환승역 가는 지하철 계단", indoor: false, map: { x: 85, y: 12 }, description: "매장 옆 지하철 계단. 아래로 내려갈수록 어둡다", near: [sales_floor, roof_lot], road: true, to: [subway_hub] }
     - { id: loading_dock, name: "하역장 뒤 골목", indoor: false, map: { x: 28, y: 72 }, kinds: [street], description: "하역장 뒤 좁은 골목. 쓰러진 지게차가 길을 막았다", near: [stockroom] }
     - { id: underground_lot, name: "지하 주차장", indoor: true, map: { x: 82, y: 76 }, kinds: [ruin], description: "물이 고인 지하 주차장. 차 지붕마다 먼지가 두껍고 소리가 울린다", aliases: ["지하 주차장", "지하"], near: [parking] }
+    - { id: food_court, name: "푸드코트", indoor: true, map: { x: 85, y: 48 }, kinds: [ruin], description: "의자가 뒤엉킨 푸드코트. 가게 셔터마다 누가 다녀갔는지 숯으로 표시가 되어 있다", aliases: ["푸드코트"], near: [sales_floor] }
+    - { id: roof_lot, name: "옥상 주차장", indoor: false, map: { x: 62, y: 8 }, kinds: [watch], description: "차 몇 대만 남은 옥상 주차장. 난간에 서면 버들마을과 텃밭이 보인다", aliases: ["옥상 주차장", "옥상"], near: [subway_stairs] }
   cover: 4
   # 갈아입을 옷 (12-186): 옷 매장 쪽 선반에 헌 옷이 아직 남아 있다
   clothes: true
@@ -143,11 +151,13 @@
   places:
     - { id: nave, name: "성당 안", indoor: true, map: { x: 55, y: 45 }, kinds: [hall], description: "긴 의자를 침상 삼아 피난민이 사는 성당 안. 난로 연기가 오른다", aliases: ["제대", "기도", "고해소", "아이들 방", "성당 부엌", "피난민 거처"], near: [bell_tower] }
     - { id: bell_tower, name: "종탑", indoor: true, map: { x: 68, y: 22 }, kinds: [watch], description: "좁은 계단을 올라가는 종탑. 도시가 멀리 보인다", aliases: ["종탑"] }
-    - { id: churchyard, name: "뒤뜰·묘지", indoor: false, map: { x: 28, y: 58 }, kinds: [yard], description: "뒤뜰과 묘지. 새 무덤이 늘었다", aliases: ["뒤뜰", "묘지"], near: [convent] }
-    - { id: hill_steps, name: "구시가·버들마을 가는 언덕 계단", indoor: false, map: { x: 55, y: 92 }, description: "언덕 아래로 내려가는 돌계단", near: [front_steps], road: true, to: [old_town, b_base] }
+    - { id: churchyard, name: "뒤뜰·묘지", indoor: false, map: { x: 28, y: 58 }, kinds: [yard], description: "뒤뜰과 묘지. 새 무덤이 늘었다", aliases: ["뒤뜰", "묘지"], near: [convent, church_garden] }
+    - { id: hill_steps, name: "구시가·묘지 산길 가는 언덕 계단", indoor: false, map: { x: 55, y: 92 }, description: "언덕 아래로 내려가는 돌계단", near: [front_steps], road: true, to: [old_town, hill_cemetery] }
     - { id: to_campus, name: "캠퍼스 가는 오솔길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 캠퍼스로 가는 오솔길", near: [churchyard], road: true, to: [campus] }
     - { id: front_steps, name: "성당 앞 계단", indoor: false, map: { x: 55, y: 70 }, kinds: [street], description: "성당 문 앞 넓은 계단. 피난민이 볕을 쬔다", near: [nave, churchyard] }
-    - { id: convent, name: "옛 수녀원", indoor: true, map: { x: 25, y: 30 }, kinds: [ruin], description: "뒤뜰 너머 지붕이 내려앉은 옛 수녀원. 쓸 만한 방 몇 칸만 남았다", aliases: ["수녀원", "사제관"], near: [churchyard] }
+    - { id: convent, name: "옛 수녀원", indoor: true, map: { x: 25, y: 30 }, kinds: [ruin], description: "뒤뜰 너머 지붕이 내려앉은 옛 수녀원. 쓸 만한 방 몇 칸만 남았다", aliases: ["수녀원", "사제관"], near: [churchyard, refectory] }
+    - { id: refectory, name: "수도원 식당", indoor: true, map: { x: 12, y: 42 }, kinds: [mess], description: "긴 나무 식탁 둘이 놓인 수도원 식당. 피난 온 사람들이 저녁이면 여기 모여 죽을 나눈다", aliases: ["수도원 식당", "식당"], near: [convent] }
+    - { id: church_garden, name: "성당 텃밭", indoor: false, map: { x: 40, y: 78 }, kinds: [field], description: "뒤뜰 아래 비탈에 일군 작은 텃밭. 나무 팻말에 심은 사람 이름이 적혀 있다", aliases: ["텃밭"], near: [churchyard] }
   cover: 5
   # 갈아입을 옷 (12-186): 피난민들이 모아 둔 헌 옷 상자가 있다
   clothes: true
@@ -156,7 +166,7 @@
   danger: 0
   # 끓이지 않은 물을 뜰 곳 (12-251)
   stream: "성당 뒤뜰의 옛 우물"
-  adjacent: [old_town, b_base, campus]
+  adjacent: [old_town, campus]
   loot:
     modifier: -1
     items:
@@ -173,13 +183,15 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: library, name: "도서관", indoor: true, map: { x: 35, y: 30 }, kinds: [hall], description: "책장이 쓰러진 도서관. 피난민이 자리를 잡았다", aliases: ["서고", "열람실", "도서관"] }
-    - { id: lab, name: "약대 실험실", indoor: true, map: { x: 62, y: 25 }, kinds: [work], description: "유리 기구가 깨진 약대 실험실", aliases: ["실험실"] }
+    - { id: library, name: "도서관", indoor: true, map: { x: 35, y: 30 }, kinds: [hall], description: "책장이 쓰러진 도서관. 피난민이 자리를 잡았다", aliases: ["서고", "열람실", "도서관"], near: [clock_tower] }
+    - { id: lab, name: "약대 실험실", indoor: true, map: { x: 62, y: 25 }, kinds: [work], description: "유리 기구가 깨진 약대 실험실", aliases: ["실험실"], near: [gym] }
     - { id: greenhouse, name: "농대 온실", indoor: true, map: { x: 25, y: 62 }, kinds: [work], description: "비닐이 찢긴 농대 온실. 아직 푸른 것이 자란다", aliases: ["온실"] }
     - { id: east_gate, name: "성당 가는 동쪽 교문", indoor: false, map: { x: 92, y: 50 }, description: "동쪽 교문. 학교 이름 돌판이 쓰러졌다", near: [quad], road: true, to: [cathedral] }
     - { id: south_gate, name: "진료소·병원 가는 남쪽 교문", indoor: false, map: { x: 50, y: 92 }, description: "남쪽 교문. 차단기가 꺾였다", near: [quad, dorm], road: true, to: [d_clinic, hospital_ruins] }
     - { id: quad, name: "잔디 광장", indoor: false, map: { x: 55, y: 55 }, kinds: [yard], description: "잡초가 무릎까지 자란 잔디 광장. 건물들이 둘러쌌다", near: [library, lab, greenhouse] }
     - { id: dorm, name: "무너진 기숙사", indoor: true, map: { x: 78, y: 80 }, kinds: [ruin], description: "남쪽 교문 옆 무너진 기숙사. 창마다 이불이 걸려 바람에 펄럭인다", aliases: ["기숙사"], near: [south_gate] }
+    - { id: gym, name: "체육관", indoor: true, map: { x: 82, y: 32 }, kinds: [hall], description: "농구 골대가 꺾인 체육관. 바닥에 매트를 깔고 지내던 흔적이 줄지어 남았다", aliases: ["체육관"], near: [lab] }
+    - { id: clock_tower, name: "본관 시계탑", indoor: false, map: { x: 48, y: 8 }, kinds: [watch], description: "멈춘 시계 아래 좁은 난간. 캠퍼스와 성당 언덕이 내려다보인다", aliases: ["시계탑"], near: [library] }
   cover: 6
   owner: null
   sanctuary: true
@@ -214,12 +226,14 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: canopy, name: "주유소 지붕 밑", indoor: false, map: { x: 45, y: 55 }, kinds: [street], description: "주유소 지붕 밑. 비는 피하지만 바람은 들이친다", aliases: ["주유소", "휴게소 지붕", "칠판"], near: [diner] }
-    - { id: diner, name: "휴게소 식당 안", indoor: true, map: { x: 72, y: 45 }, kinds: [mess], description: "의자가 뒤집힌 휴게소 식당 안. 안쪽 계단 위 옛 직원 숙소를 여관으로 꾸려 짐꾼과 호위대에게 방과 술을 판다", aliases: ["식당", "여관", "이층 방"] }
+    - { id: canopy, name: "주유소 지붕 밑", indoor: false, map: { x: 45, y: 55 }, kinds: [street], description: "주유소 지붕 밑. 비는 피하지만 바람은 들이친다", aliases: ["주유소", "휴게소 지붕", "칠판"], near: [diner, truck_bay] }
+    - { id: diner, name: "휴게소 식당 안", indoor: true, map: { x: 72, y: 45 }, kinds: [mess], description: "의자가 뒤집힌 휴게소 식당 안. 안쪽 계단 위 옛 직원 숙소를 여관으로 꾸려 짐꾼과 호위대에게 방과 술을 판다", aliases: ["식당", "여관", "이층 방"], near: [rest_area] }
     - { id: tollgate, name: "톨게이트", indoor: false, map: { x: 15, y: 15 }, description: "톨게이트. 차단기와 부스가 줄지어 섰다", aliases: ["톨게이트"], near: [canopy, parking_lot], road: true, to: [power_plant] }
     - { id: to_market, name: "장터 가는 뒷길", indoor: false, map: { x: 55, y: 92 }, description: "휴게소 뒤로 장터에 이어지는 길", near: [canopy], road: true, to: [e_market] }
     - { id: parking_lot, name: "화물차 주차장", indoor: false, map: { x: 22, y: 40 }, kinds: [yard], description: "화물차가 녹슨 넓은 주차장. 숨을 데가 많다", near: [shop] }
     - { id: shop, name: "털린 편의점", indoor: true, map: { x: 18, y: 65 }, kinds: [ruin], description: "주차장 끝 휴게소 편의점. 진열대는 비었고 냉장고 문이 다 열렸다", aliases: ["편의점"], near: [parking_lot] }
+    - { id: truck_bay, name: "화물차 정비고", indoor: true, map: { x: 85, y: 72 }, kinds: [work], description: "리프트가 내려앉은 정비고. 나루상단 짐마차 바퀴를 여기서 고친다", aliases: ["정비고"], near: [canopy] }
+    - { id: rest_area, name: "휴게소 뒤 쉼터", indoor: false, map: { x: 78, y: 18 }, kinds: [yard], description: "정자와 벤치가 남은 휴게소 뒤 쉼터. 고속도로 너머 들판이 넓게 보인다", aliases: ["쉼터", "정자"], near: [diner] }
   cover: 4
   owner: faction_e
   danger: 1
@@ -248,12 +262,14 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: deck, name: "고가 위", indoor: false, map: { x: 65, y: 45 }, kinds: [street], description: "끊긴 고가 위. 멀리까지 보이고 몸이 드러난다", aliases: ["고가 위", "차량 행렬"], near: [car_line] }
-    - { id: underpass, name: "고가 밑", indoor: false, map: { x: 50, y: 72 }, kinds: [street], description: "고가 밑 그늘. 무너진 판 사이로 길이 난다", aliases: ["고가 밑", "굴다리"], near: [roadside_shops] }
+    - { id: deck, name: "고가 위", indoor: false, map: { x: 65, y: 45 }, kinds: [street], description: "끊긴 고가 위. 멀리까지 보이고 몸이 드러난다", aliases: ["고가 위", "차량 행렬"], near: [car_line, broken_end] }
+    - { id: underpass, name: "고가 밑", indoor: false, map: { x: 50, y: 72 }, kinds: [street], description: "고가 밑 그늘. 무너진 판 사이로 길이 난다", aliases: ["고가 밑", "굴다리"], near: [roadside_shops, tent_lot] }
     - { id: ramp_southeast, name: "청솔·강변 가는 진입로", indoor: false, map: { x: 90, y: 82 }, description: "남동쪽으로 내려가는 진입로", near: [deck, underpass], road: true, to: [a_base, riverside] }
     - { id: ramp_southwest, name: "구시가 가는 진입로", indoor: false, map: { x: 10, y: 85 }, description: "남서쪽 구시가로 내려가는 진입로", near: [underpass], road: true, to: [old_town] }
     - { id: car_line, name: "버려진 차 행렬", indoor: false, map: { x: 45, y: 25 }, kinds: [street], description: "고가 위에 줄지어 선 버려진 차들. 문이 열린 채다" }
     - { id: roadside_shops, name: "고가 옆 상가 건물", indoor: true, map: { x: 28, y: 62 }, kinds: [ruin], description: "고가 밑 길가의 삼층 상가. 간판이 떨어지고 계단에 유리 조각이 깔렸다", aliases: ["상가 건물", "길가 상가"], near: [underpass] }
+    - { id: broken_end, name: "끊긴 상판 끝", indoor: false, map: { x: 85, y: 15 }, kinds: [watch], description: "고가가 뚝 끊겨 허공으로 철근이 삐져나온 끝. 멀리 동서 양쪽이 다 보인다", aliases: ["상판 끝", "끊긴 끝"], near: [deck] }
+    - { id: tent_lot, name: "기둥 사이 천막촌 터", indoor: false, map: { x: 70, y: 88 }, kinds: [yard], description: "고가 기둥 사이에 천막을 쳤던 자리. 찢긴 방수포와 꺼진 화덕이 남았다", aliases: ["천막촌", "천막 터"], near: [underpass] }
   cover: 0
   owner: null
   danger: 1
@@ -273,14 +289,15 @@
       - { item: moonshine, weight: 1, qty: [1, 1] }
 
 # ── 길목 (12-302, docs/map-expansion-plan.md 2단계) ──────────────────────
-# 거점과 거점 사이에 끼운 짧은 길. 주인 없음, 장소는 길 둘 + 바깥 장소 1~2. 지나는 이동은 scenario.corridor_travel_minutes(약 1시간).
-# 이야기는 길 위 이야기(travel)·수색·감염체가 주로 채우고, 새 이야기는 when.zone_kinds: [corridor]로 길목마다 따로 쓰지 않는다
+# 거점과 거점 사이에 끼운 짧은 길. 주인 없음(차지할 수는 있다), 장소는 길 둘 + 바깥 장소 1~2. 드나드는 이동은 crossing_minutes(약 1시간).
+# 12-313: 구역 종류 corridor는 구역으로 합쳤다. 길목은 "짧게 지나가는 작은 구역"이라는 콘텐츠 값일 뿐이다
 
 - id: rail_embankment
   name: 철길 둑
   map: { x: 69.1, y: 28.9, label: 철길 둑 }
   description: 동쪽 초소와 물류창고 사이를 가르는 녹슨 철길 둑. 청솔형제단과 붉은연합이 서로를 가장 가까이 보는 정면이다. 둑 위에 서면 양쪽 담이 다 보인다.
-  kind: corridor
+  kind: zone
+  crossing_minutes: 60
   places:
     - { id: to_post, name: "동쪽 초소 가는 둑 아래 길", indoor: false, map: { x: 50, y: 90 }, description: "둑 남쪽 아래로 초소까지 이어지는 자갈길. 모래주머니 몇 개가 굴러다닌다", near: [rail_cut], road: true, to: [a_east_post] }
     - { id: to_warehouse, name: "물류창고 가는 건널목", indoor: false, map: { x: 50, y: 10 }, description: "차단봉이 부러진 건널목. 북쪽으로 물류창고 담이 보인다", near: [rail_cut], road: true, to: [c_warehouse] }
@@ -303,7 +320,8 @@
   name: 강둑 북길
   map: { x: 78.0, y: 36.5, label: 강둑 북길 }
   description: 강을 끼고 강변 공장 지대에서 물류창고로 올라가는 둑길. 둑 아래로 강물이 느리고, 수문 몇 개가 녹슬어 닫혀 있다.
-  kind: corridor
+  kind: zone
+  crossing_minutes: 60
   places:
     - { id: to_riverside, name: "강변 공장 가는 둑길", indoor: false, map: { x: 80, y: 90 }, description: "남쪽 공장 굴뚝 쪽으로 내려가는 둑길", near: [levee_top], road: true, to: [riverside] }
     - { id: to_warehouse, name: "물류창고 가는 둑 끝", indoor: false, map: { x: 20, y: 10 }, description: "둑이 끝나고 고가도로 밑으로 들어가는 길. 물류창고 감시탑 불빛이 닿는다", near: [levee_top], road: true, to: [c_warehouse] }
@@ -326,7 +344,8 @@
   name: 붉은 다리
   map: { x: 41.9, y: 36.5, label: 붉은 다리 }
   description: 구시가에서 붉은연합 거점으로 건너는 다리. 난간에 붉은 천이 묶여 있다. 붉은연합 거점의 앞마당이라 약탈조가 자주 오간다.
-  kind: corridor
+  kind: zone
+  crossing_minutes: 60
   places:
     - { id: to_old_town, name: "구시가 가는 다리 남쪽 끝", indoor: false, map: { x: 35, y: 90 }, description: "다리가 끝나고 구시가 큰길로 이어진다. 버려진 버스가 길을 반쯤 막았다", near: [bridge_span], road: true, to: [old_town] }
     - { id: to_red_base, name: "붉은연합 거점 가는 다리 북쪽 끝", indoor: false, map: { x: 65, y: 10 }, description: "다리 북쪽 끝. 붉은 천을 맨 말뚝이 줄지어 섰다", near: [bridge_span], road: true, to: [c_base] }
@@ -349,7 +368,8 @@
   name: 강둑 나루길
   map: { x: 87.5, y: 67.3, label: 나루길 }
   description: 강변 공장 지대에서 나루상단 장터로 내려가는 강둑길. 갈대가 길을 덮고, 짐마차 바퀴 자국이 깊다.
-  kind: corridor
+  kind: zone
+  crossing_minutes: 60
   places:
     - { id: to_riverside, name: "강변 공장 가는 강둑", indoor: false, map: { x: 50, y: 10 }, description: "북쪽 공장 지대로 올라가는 강둑", near: [reed_path], road: true, to: [riverside] }
     - { id: to_market, name: "장터 가는 강둑 끝", indoor: false, map: { x: 50, y: 90 }, description: "남쪽 장터 천막이 보이기 시작하는 강둑 끝", near: [reed_path, toll_booth], road: true, to: [e_market] }
@@ -373,7 +393,8 @@
   name: 아파트 뒷길
   map: { x: 25.8, y: 67.3, label: 뒷길 }
   description: 구시가에서 버들마을로 가는 아파트 단지 뒤편 길. 빈 동들이 늘어서 창마다 커튼이 흔들린다.
-  kind: corridor
+  kind: zone
+  crossing_minutes: 60
   places:
     - { id: to_old_town, name: "구시가 가는 뒷길 입구", indoor: false, map: { x: 85, y: 15 }, description: "구시가 쪽으로 열린 뒷길 입구. 무너진 담 사이로 큰길이 보인다", near: [backyard], road: true, to: [old_town] }
     - { id: to_willow, name: "버들마을 가는 뒷길 끝", indoor: false, map: { x: 15, y: 85 }, description: "버들마을 정문 망루가 보이는 뒷길 끝. 텃밭 냄새가 난다", near: [backyard, empty_block], road: true, to: [b_base] }
@@ -391,3 +412,150 @@
       - { item: cloth, weight: 2, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: duct_tape, weight: 1, qty: [1, 1] }
+
+# ── 길목 더 늘리기 (12-313) ──────────────────────
+# 거점과 거점 사이에 구역이 최소 셋이 되도록 끼운 짧은 길 여섯. 청솔–버들 직통은 끊었다 (청솔에 바로 닿는 구역은 동쪽 초소·고가도로와 이 길목들뿐)
+
+- id: bus_depot
+  name: 버스 차고지
+  map: { x: 50.0, y: 51.0, label: 차고지 }
+  description: 청솔 거점에서 서쪽 구시가로 가는 길에 있는 옛 시내버스 차고지. 바퀴 빠진 버스들이 줄지어 녹슬고, 정비 구덩이에 빗물이 고였다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_pine, name: "청솔 거점 가는 차고지 동쪽 문", indoor: false, map: { x: 92, y: 45 }, description: "차고지 동쪽 철문. 문짝 하나가 떨어져 길가에 누웠다. 학교 담이 멀리 보인다", near: [bus_rows], road: true, to: [a_base] }
+    - { id: to_old_town, name: "구시가 가는 차고지 서쪽 출구", indoor: false, map: { x: 8, y: 55 }, description: "버스가 드나들던 서쪽 출구. 차단기가 꺾인 채 하늘을 가리킨다", near: [bus_rows, depot_office], road: true, to: [old_town] }
+    - { id: bus_rows, name: "녹슨 버스 줄", indoor: false, map: { x: 50, y: 40 }, kinds: [street], description: "번호판 떼인 버스가 줄지어 선 마당. 버스 사이 좁은 틈이 골목처럼 이어진다", aliases: ["버스 줄", "차고지 마당"], near: [service_pit] }
+    - { id: depot_office, name: "배차 사무실", indoor: true, map: { x: 35, y: 75 }, kinds: [ruin], description: "유리창이 깨진 배차 사무실. 벽에 붙은 노선도 위에 누가 매직으로 길을 그어 놓았다", aliases: ["사무실", "배차실"] }
+    - { id: service_pit, name: "정비 구덩이", indoor: false, map: { x: 65, y: 70 }, kinds: [ruin], description: "버스 밑을 고치던 정비 구덩이. 바닥에 빗물과 기름이 섞여 무지개빛이 돈다", aliases: ["구덩이", "정비고"] }
+  cover: 4
+  owner: null
+  danger: 1
+  adjacent: [a_base, old_town]
+  loot:
+    modifier: 0
+    items:
+      - { item: scrap_metal, weight: 3, qty: [1, 2] }
+      - { item: fuel_bottle, weight: 1, qty: [1, 1] }
+      - { item: duct_tape, weight: 2, qty: [1, 1] }
+      - { item: toolkit, weight: 1, qty: [1, 1] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+
+- id: pharmacy_alley
+  name: 약국 골목
+  map: { x: 22.8, y: 58.2, label: 약국 골목 }
+  description: 구시가 서쪽에서 하얀매 진료소로 내려가는 좁은 골목. 약국 간판이 여럿 매달린 길이라 붕괴 직후 가장 먼저 털렸다. 지금은 진료소를 찾아가는 사람들이 지나간다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_old_town, name: "구시가 가는 골목 북쪽 입구", indoor: false, map: { x: 70, y: 10 }, description: "골목이 큰길로 열리는 입구. 무너진 간판 아래로 몸을 숙여 나간다", near: [alley_mid], road: true, to: [old_town] }
+    - { id: to_clinic, name: "진료소 가는 골목 남쪽 끝", indoor: false, map: { x: 30, y: 92 }, description: "흰 천을 맨 말뚝이 서 있는 골목 끝. 진료소 줄이 여기까지 늘어설 때도 있다", near: [alley_mid, looted_pharmacy], road: true, to: [d_clinic] }
+    - { id: alley_mid, name: "간판 골목", indoor: false, map: { x: 50, y: 50 }, kinds: [street], description: "녹색 십자 간판이 줄지어 매달린 골목. 바람이 불면 간판끼리 부딪혀 덜그럭거린다", aliases: ["골목", "간판 골목"] }
+    - { id: looted_pharmacy, name: "털린 약국", indoor: true, map: { x: 25, y: 60 }, kinds: [ruin], description: "셔터가 뜯긴 약국. 진열장은 비고 바닥에 빈 약상자와 처방전이 눈처럼 쌓였다", aliases: ["약국"] }
+  cover: 4
+  owner: null
+  danger: 1
+  adjacent: [old_town, d_clinic]
+  loot:
+    modifier: -1
+    items:
+      - { item: bandage, weight: 2, qty: [1, 1] }
+      - { item: painkiller, weight: 1, qty: [1, 1] }
+      - { item: empty_bottle, weight: 3, qty: [1, 2] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+      - { item: fever_reducer, weight: 1, qty: [1, 1] }
+
+- id: drain_canal
+  name: 공단 배수로
+  map: { x: 75.8, y: 51.0, label: 배수로 }
+  description: 청솔 거점에서 동쪽 강변 공장 지대로 가는 콘크리트 배수로 길. 둑 위로 난 길과 마른 수로 바닥 길이 나란히 간다. 공장 폐수 냄새가 아직 가시지 않았다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_pine, name: "청솔 거점 가는 배수로 서쪽 끝", indoor: false, map: { x: 8, y: 50 }, description: "배수로가 끝나고 흙길이 학교 쪽으로 오른다. 철망 울타리 너머로 망루가 보인다", near: [canal_bank], road: true, to: [a_base] }
+    - { id: to_riverside, name: "강변 공장 가는 배수로 동쪽 끝", indoor: false, map: { x: 92, y: 50 }, description: "배수로가 공장 담 밑 수문으로 이어지는 곳. 굴뚝이 가깝다", near: [canal_bank, canal_bed], road: true, to: [riverside] }
+    - { id: canal_bank, name: "배수로 둑길", indoor: false, map: { x: 50, y: 30 }, kinds: [street], description: "배수로 위로 난 좁은 둑길. 사방이 트여 멀리서도 사람이 보인다", aliases: ["둑길"], near: [canal_bed] }
+    - { id: canal_bed, name: "마른 수로 바닥", indoor: false, map: { x: 50, y: 70 }, kinds: [field], description: "어른 키보다 깊은 콘크리트 수로 바닥. 위에서는 잘 안 보이지만 빠져나갈 계단이 드물다", aliases: ["수로 바닥", "배수로 바닥"], wade: true }
+  cover: 1
+  owner: null
+  danger: 2
+  stream: "수로 바닥에 고인 물"
+  adjacent: [a_base, riverside]
+  loot:
+    modifier: 0
+    items:
+      - { item: scrap_metal, weight: 3, qty: [1, 2] }
+      - { item: casings, weight: 1, qty: [1, 2] }
+      - { item: wire_roll, weight: 1, qty: [1, 1] }
+      - { item: empty_bottle, weight: 2, qty: [1, 1] }
+
+- id: coop_crossroads
+  name: 농협 사거리
+  map: { x: 56.6, y: 65.4, label: 농협 }
+  description: 청솔 거점 남쪽, 텃밭으로 내려가는 길의 사거리. 옛 농협 창고와 비료 야적장이 남았다. 씨앗과 농기구를 찾아 사람들이 몇 번이고 뒤진 곳이다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_pine, name: "청솔 거점 가는 사거리 북쪽 길", indoor: false, map: { x: 60, y: 8 }, description: "학교 쪽으로 오르는 북쪽 길. 청솔 사람들이 텃밭을 오가며 낸 발자국이 잦다", near: [canopy], road: true, to: [a_base] }
+    - { id: to_fields, name: "남쪽 텃밭 가는 사거리 남쪽 길", indoor: false, map: { x: 40, y: 92 }, description: "밭 쪽으로 내려가는 남쪽 길. 수레바퀴 자국이 깊다", near: [canopy, kiosk], road: true, to: [south_fields] }
+    - { id: canopy, name: "비료 야적장", indoor: false, map: { x: 50, y: 45 }, kinds: [yard], description: "찢어진 비료 포대가 쌓인 사거리 옆 공터. 경운기 한 대가 바퀴 없이 주저앉았다", aliases: ["야적장", "공터"], near: [kiosk] }
+    - { id: kiosk, name: "농협 창고", indoor: true, map: { x: 25, y: 55 }, kinds: [ruin], description: "철문이 뜯긴 농협 창고. 빈 선반 사이로 쥐똥과 볍씨가 흩어져 있다", aliases: ["농협 창고", "창고"] }
+  cover: 4
+  owner: null
+  danger: 1
+  adjacent: [a_base, south_fields]
+  loot:
+    modifier: -1
+    items:
+      - { item: seed_packet, weight: 1, qty: [1, 1] }
+      - { item: potato, weight: 2, qty: [1, 2] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+      - { item: wire_roll, weight: 1, qty: [1, 1] }
+      - { item: empty_bottle, weight: 2, qty: [1, 1] }
+
+- id: stepping_stones
+  name: 냇가 징검다리
+  map: { x: 32.4, y: 89.6, label: 징검다리 }
+  description: 남쪽 텃밭과 버들마을 사이를 흐르는 얕은 내. 다리는 무너졌고 큰 돌을 놓아 만든 징검다리로 건넌다. 물가 버드나무 아래로 빨래하러 오는 사람도 있다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_fields, name: "남쪽 텃밭 가는 냇가 동쪽 둑", indoor: false, map: { x: 90, y: 40 }, description: "내 동쪽 둑. 밭 울타리가 둑 위까지 이어진다", near: [stones], road: true, to: [south_fields] }
+    - { id: to_willow, name: "버들마을 가는 냇가 서쪽 둑", indoor: false, map: { x: 10, y: 45 }, description: "버들마을 쪽 둑. 아파트 단지 망루가 나무 사이로 보인다", near: [stones, willow_shade], road: true, to: [b_base] }
+    - { id: stones, name: "징검다리", indoor: false, map: { x: 50, y: 50 }, kinds: [field], description: "물살이 발목을 적시는 징검다리. 돌 몇 개가 흔들린다", aliases: ["징검다리", "냇물"], near: [willow_shade, broken_bridge], wade: true }
+    - { id: willow_shade, name: "버드나무 그늘", indoor: false, map: { x: 30, y: 75 }, kinds: [field], description: "물가에 늘어진 버드나무 아래. 빨래 방망이와 평평한 돌이 놓여 있다", aliases: ["버드나무", "빨래터"], wade: true }
+    - { id: broken_bridge, name: "무너진 다리 밑", indoor: false, map: { x: 62, y: 20 }, kinds: [ruin], description: "가운데가 내려앉은 옛 다리의 교각 아래. 비를 피할 수 있다", aliases: ["다리 밑", "교각"] }
+  cover: 2
+  owner: null
+  danger: 1
+  stream: "얕은 냇물"
+  adjacent: [south_fields, b_base]
+  loot:
+    modifier: 0
+    items:
+      - { item: firewood, weight: 3, qty: [1, 2] }
+      - { item: fishing_kit, weight: 1, qty: [1, 1] }
+      - { item: wild_greens, weight: 2, qty: [1, 2] }
+      - { item: water_bottle, weight: 1, qty: [1, 1] }
+
+- id: hill_cemetery
+  name: 묘지 산길
+  map: { x: 24.5, y: 43.5, label: 묘지 산길 }
+  description: 언덕 위 성당에서 버들마을로 내려가는 산길. 비탈에 공동묘지가 있고, 붕괴 뒤에 판 새 무덤들이 길가까지 내려와 있다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_cathedral, name: "성당 가는 산길 위쪽", indoor: false, map: { x: 60, y: 8 }, description: "종탑이 올려다보이는 산길 위쪽. 돌계단 몇 개가 남았다", near: [graves], road: true, to: [cathedral] }
+    - { id: to_willow, name: "버들마을 가는 산길 아래쪽", indoor: false, map: { x: 35, y: 92 }, description: "산길이 끝나고 아파트 단지 뒤편으로 내려서는 곳", near: [graves, keeper_hut], road: true, to: [b_base] }
+    - { id: graves, name: "비탈 공동묘지", indoor: false, map: { x: 50, y: 50 }, kinds: [field], description: "비석이 기운 비탈 묘지. 길가 쪽엔 나무 십자가만 꽂은 새 무덤이 줄지었다", aliases: ["묘지", "무덤"] }
+    - { id: keeper_hut, name: "묘지 관리인 집", indoor: true, map: { x: 25, y: 65 }, kinds: [ruin], description: "문이 떨어진 작은 관리인 집. 벽에 묻힌 사람 이름을 적은 종이가 빼곡하다", aliases: ["관리인 집", "관리소"] }
+  cover: 3
+  owner: null
+  danger: 1
+  adjacent: [cathedral, b_base]
+  loot:
+    modifier: -1
+    items:
+      - { item: firewood, weight: 2, qty: [1, 2] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+      - { item: planks, weight: 2, qty: [1, 1] }

@@ -181,9 +181,10 @@ export const MIN_TURN_MINUTES = 5;
  * 길마다 정해진 이동 시간 (12-239, 플레이 테스트 13: 장터 → 강변이 30분·45분·1시간으로 매번 달랐다).
  * 두 구역 짝에서 정해지는 travel 범위 안의 15분 단위. 오가는 방향이 같다
  */
-export function routeMinutes(from: string, to: string, content?: { locations: Record<string, { kind: string } | undefined>; scenario: { corridor_travel_minutes: number } }): number {
-  // 길목을 지나는 길은 짧다 (12-302)
-  if (content && (content.locations[from]?.kind === "corridor" || content.locations[to]?.kind === "corridor")) return content.scenario.corridor_travel_minutes;
+export function routeMinutes(from: string, to: string, content?: { locations: Record<string, { crossing_minutes?: number } | undefined> }): number {
+  // 짧게 지나가는 구역을 드나드는 길은 그 구역의 시간 (12-302 길목, 12-313 구역 데이터로). 양쪽 다 있으면 짧은 쪽
+  const crossing = [content?.locations[from]?.crossing_minutes, content?.locations[to]?.crossing_minutes].filter((m): m is number => m !== undefined);
+  if (crossing.length) return Math.min(...crossing);
   const cost = ACTIVITY_COSTS.travel as { kind: "range"; min: number; max: number };
   const key = [from, to].sort().join("|");
   let h = 2166136261;

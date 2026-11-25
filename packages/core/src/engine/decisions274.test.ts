@@ -23,12 +23,12 @@ describe("장소 개편 (12-274)", () => {
   it("모든 구역에 길이 있고, 구역에 들어오면 떠나온 쪽 길에 도착한다", () => {
     const w = make();
     for (const zone of Object.keys(content.locations)) expect(placesIn(w.state(), content, zone).some((p) => p.road), zone).toBe(true);
-    expect(arrivalPlace(w.state(), content, "a_base", "old_town")).toBe("to_old_town");
-    expect(arrivalPlace(w.state(), content, "a_base", "riverside")).toBe("to_riverside");
-    stepToRoad(w, "old_town");
-    w.executeTool("take_action", act({ move_to: "old_town" }));
-    expect(w.state().playerZone).toBe("old_town");
-    expect(currentPlace(w.state(), content)?.id).toBe("to_east");
+    expect(arrivalPlace(w.state(), content, "a_base", "bus_depot")).toBe("to_old_town");
+    expect(arrivalPlace(w.state(), content, "a_base", "drain_canal")).toBe("to_riverside");
+    stepToRoad(w, "bus_depot");
+    w.executeTool("take_action", act({ move_to: "bus_depot" }));
+    expect(w.state().playerZone).toBe("bus_depot");
+    expect(currentPlace(w.state(), content)?.id).toBe("to_pine");
   });
 
   it("장소를 옮기면 이웃 5분, 한 칸 멀 때마다 5분", () => {

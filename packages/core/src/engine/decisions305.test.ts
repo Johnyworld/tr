@@ -1,3 +1,4 @@
+import { routeMinutes } from "../rules/time.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +8,7 @@ import { conditionsMet, storyletOf } from "../story/storylets.ts";
 import { activeMissionOf, atMissionPlace } from "../game/missions.ts";
 import type { StoryletEffect } from "../content/schemas.ts";
 import { releaseBuddies } from "./companionTools.ts";
-import { applyEffect, runRoadEvent } from "./storyletTools.ts";
+import { applyEffect } from "./storyletTools.ts";
 import { doorNumber, knowsWhoIsAt, resolvePlace, unknownDoors } from "../rules/place.ts";
 import { createSeededRng } from "../rng.ts";
 import { loadRealContent } from "../testing.ts";
@@ -147,21 +148,15 @@ describe("탈영병 임무 (12-305)", () => {
   });
 });
 
-describe("길목 공통 이야기 (12-305)", () => {
-  it("길목에 들어설 때의 길 위의 일은 길목 이야기를 먼저 고른다", () => {
-    const seen = new Set<string>();
-    for (let seed = 1; seed <= 6; seed++) {
-      const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-305-")), content, rngFactory: () => createSeededRng(seed) }).create("mcp", "role_a_grunt");
-      const from = w.state().playerZone!;
-      w.ctx().store.append({ type: "zone_moved", from, to: "red_bridge" });
-      const road = content.locations.red_bridge!.places.find((p) => p.road)!;
-      w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: road.id });
-      if (w.state().activeStorylet) w.ctx().store.append({ type: "storylet_expired", storyletId: w.state().activeStorylet!.id });
-      runRoadEvent(w.ctx(), 100);
-      const open = w.state().activeStorylet;
-      if (open) seen.add(open.id);
-    }
-    expect(seen.size).toBeGreaterThan(0);
-    for (const id of seen) expect(content.storylets[id]?.when.zone_kinds, id).toContain("corridor");
+describe("길목은 구역 (12-313, 12-305의 길목 이야기 먼저는 뺐다)", () => {
+  it("길목이던 구역도 구역이고, 드나드는 길은 crossing_minutes만큼 걸린다", () => {
+    expect(content.locations.red_bridge!.kind).toBe("zone");
+    expect(routeMinutes("red_bridge", "old_town", content)).toBe(content.locations.red_bridge!.crossing_minutes);
+    expect(routeMinutes("old_town", "red_bridge", content)).toBe(routeMinutes("red_bridge", "old_town", content));
+  });
+  it("길목 공통 이야기는 주인 없는 땅의 길에서 열린다 (zone_owner none)", () => {
+    const ids = Object.values(content.storylets).filter((s) => s.id.startsWith("cr_")).map((s) => s.id);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(content.storylets[id]!.when.zone_owner, id).toEqual(["none"]);
   });
 });

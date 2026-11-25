@@ -71,7 +71,7 @@ describe("주인공이 붙잡힌다", () => {
 describe("포로를 잡고 다룬다", () => {
   it("크게 다친 사람만 묶고, 우리 거점에 닿으면 우리 무리의 포로가 되고, 심문·몸값·노역을 한다", () => {
     const w = open(() => 0.99);
-    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "bus_depot" });
     w.executeTool("npc_presence", { npc_id: "c_seokjin", action: "enter" });
     // 다른 곳에 있는 인물이면 장면에 넣는다
     if (!w.state().scene.present.includes("c_seokjin")) w.ctx().store.append({ type: "npc_entered", npcId: "c_seokjin" } as never);
@@ -102,7 +102,7 @@ describe("포로를 잡고 다룬다", () => {
 
   it("12-178: 끌고 다니는 포로는 그 자리에서 심문하고 풀어 줄 수 있고, 아는 게 없으면 자기 무리 형편을 털어놓는다", () => {
     const w = open(() => 0.99);
-    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "old_town" });
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "bus_depot" });
     if (!w.state().scene.present.includes("c_seokjin")) w.ctx().store.append({ type: "npc_entered", npcId: "c_seokjin" } as never);
     hurt(w, "c_seokjin", "serious");
     expect(w.executeTool("handle_prisoner", { target: "c_seokjin", action: "bind" }).ok).toBe(true);

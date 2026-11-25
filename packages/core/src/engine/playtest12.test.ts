@@ -1,3 +1,4 @@
+import { neighbors } from "../sim/war.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -429,7 +430,7 @@ describe("플레이 테스트 12: 누설과 작은 버그 (셋째)", () => {
     const w = world("role_l_wanderer");
     const ctx = w.ctx();
     const here = w.state().playerZone!;
-    const next = content.locations[here]!.adjacent[0]!;
+    const next = neighbors(content, here)[0]!;
     ctx.store.append({ type: "zone_moved", from: here, to: next });
     ctx.store.append({ type: "zone_moved", from: next, to: here });
     const before = w.state().zones[next]?.owner ?? null;

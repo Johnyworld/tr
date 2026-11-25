@@ -70,7 +70,7 @@ describe("잠시 떨어짐 (기획서 7.9)", () => {
     const w = open({ ...loner, kin: { template: "kin_elder", label: "아버지" } });
     const [kin] = w.state().companions;
     expect(w.executeTool("companion_part", { target: kin, how: "wait", hours: null }).ok).toBe(true);
-    move(w, "d_clinic");
+    move(w, "pharmacy_alley");
     expect(w.state().scene.present).not.toContain(kin);
     expect(w.executeTool("npc_presence", { npc_id: kin, action: "enter" }).ok).toBe(false);
     expect(w.sceneForGm()).toContain("떨어져 있는 동행");
@@ -153,6 +153,7 @@ describe("목적 동행과 갈림길", () => {
     const w = open();
     const elder = joinBy(w, "wc_elder_to_clinic", "escort");
     expect(w.state().bonds[elder]?.until?.zone).toBe("d_clinic");
+    move(w, "pharmacy_alley");
     const text = move(w, "d_clinic");
     expect(text).toContain("갈림길");
     w.close();

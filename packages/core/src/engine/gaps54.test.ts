@@ -31,7 +31,7 @@ describe("12-54 빈틈", () => {
     resolveWith(w, [{ deposit_weapons: true }]);
     expect(me().inventory.kitchen_knife).toBeUndefined();
     expect(me().equipped?.weapon ?? null).toBeNull();
-    const out = go(w, "old_town");
+    const out = go(w, "bus_depot");
     expect(out.ok && out.resultText).toContain("맡겨 둔 것을 돌려받고");
     expect(me().inventory.kitchen_knife).toBeGreaterThan(0);
   });
@@ -78,7 +78,7 @@ describe("남겨 둔 사람 (recall + here)", () => {
     fireStorylet({ ...w.ctx(), content: { ...w.content, storylets: { k: keepIt } } }, keepIt, { p: "@extra:refugee" });
     expect(eligibleStorylets(w.state(), content).map((s) => s.id)).toEqual(["again"]);
     w.ctx().store.append({ type: "storylet_expired", storyletId: "k" });
-    go(w, "old_town");
+    go(w, "bus_depot");
     expect(eligibleStorylets(w.state(), content).map((s) => s.id)).toEqual([]);
   });
 });

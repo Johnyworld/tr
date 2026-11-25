@@ -1,5 +1,5 @@
-# 길목 공통 이야기 (12-302, 맵 늘리기 2단계): 거점과 거점 사이에 끼운 짧은 길(구역 kind corridor)에서 열린다
-# - when.zone_kinds: [corridor]로 다섯 길목 어디서나 맞게 쓴다. 특정 길목의 이름·지형은 글에 쓰지 않고 {zone}으로
+# 길목 공통 이야기 (12-302, 맵 늘리기 2단계): 주인 없는 땅의 길에서 열린다
+# - 12-313에 구역 종류 corridor를 구역으로 합치며 when.zone_kinds: [corridor]를 when.zone_owner: [none]으로 바꿨다. 특정 구역의 이름·지형은 글에 쓰지 않고 {zone}으로
 # - 길목의 장소 종류는 road(길 둘)·street·field·ruin뿐이다. ruin이 없는 길목도 있다
 # - 길목은 주인 없는 땅이다. 어느 무리를 가정하지 않고, 공적(merit)과 무리 사기는 쓰지 않는다
 # - 이야기는 사람을 죽이지 않는다 (원칙 3). 맞붙으면 GM이 전투로 넘기고 위험을 먼저 선언한다
@@ -11,7 +11,7 @@
   cooldown_days: 8
   weight: 0.8
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [road]
     segments: [morning, day, evening]
@@ -75,7 +75,7 @@
   repeatable: true
   cooldown_days: 5
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [road]
     segments: [morning, day, evening]
@@ -114,7 +114,7 @@
   repeatable: true
   cooldown_days: 7
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [street]
     segments: [morning, day, evening]
@@ -152,7 +152,7 @@
   repeatable: true
   cooldown_days: 6
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [field, street]
     segments: [dawn, morning, day, evening]
@@ -196,7 +196,7 @@
   cooldown_days: 6
   weight: 0.8
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [street]
     segments: [morning, day]
@@ -245,7 +245,7 @@
   repeatable: true
   cooldown_days: 7
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: true
     place_kinds: [ruin]
     segments: [day, evening, night]
@@ -293,7 +293,7 @@
   repeatable: true
   cooldown_days: 8
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [road, street]
     segments: [dawn, morning, day]
@@ -333,7 +333,7 @@
   repeatable: true
   cooldown_days: 6
   when:
-    zone_kinds: [corridor]
+    zone_owner: [none]
     indoor: false
     place_kinds: [field, street, road]
     segments: [evening, night, dawn]

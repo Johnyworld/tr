@@ -1,3 +1,4 @@
+import { neighbors } from "../sim/war.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -42,7 +43,7 @@ describe("내 매복", () => {
     act(miss, { ambush: true, check: chk("stealth", "agility") });
     expect(miss.state().ambush).toBeNull();
     act(w, { ambush: true, check: chk("stealth", "agility") });
-    const next = real.locations[w.state().playerZone!]!.adjacent[0]!;
+    const next = neighbors(real, w.state().playerZone!)[0]!;
     stepToRoad(w, next);
     act(w, { move_to: next });
     expect(w.state().ambush).toBeNull();

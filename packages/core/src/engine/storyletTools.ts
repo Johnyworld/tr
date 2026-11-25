@@ -1284,10 +1284,8 @@ export function runRoadEvent(ctx: ToolContext, risk = 1): ToolDisplayEvent[] {
   // 우리 땅끼리 오가는 길에서는 위협 이야기를 고르지 않는다 (공통 규칙 11, 12-240: 우리 땅 두 구역 사이 30분 길에서 밤길의 발소리)
   const ownRoad = onOwnLand(state, state.lastRoute.from) && onOwnLand(state, state.lastRoute.to);
   const candidates = roadStorylets(state, content, travel.tag).filter((s) => !ownRoad || !isThreat(content, s));
-  // 이 구역 종류(길목 등)를 적은 이야기가 있으면 그것을 먼저 (12-305, PT29 네 판: 길목 공통 이야기가 세계·길 이야기에 밀려 0편)
-  const zoneKind = state.playerZone ? content.locations[state.playerZone]?.kind : undefined;
-  const fitting = zoneKind ? candidates.filter((s) => s.when.zone_kinds?.includes(zoneKind)) : [];
-  const storylet = pickStorylet(fitting.length ? fitting : candidates, rng);
+  // 12-305의 "길목 이야기 먼저"는 12-313에 길목을 구역으로 합치며 뺐다 (길목 이야기는 주인 없는 땅의 길 이야기로, 이야기 묶음에서 다시 본다)
+  const storylet = pickStorylet(candidates, rng);
   if (!storylet) return [];
   const displays = fireStorylet(ctx, storylet, pickCast(state, content, storylet, rng)!);
   displays.push({ type: "storylet", event: "started", title: storyTitle(store.getState(), content, storylet), detail: setupText(store.getState(), content) });

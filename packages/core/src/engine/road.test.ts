@@ -12,7 +12,7 @@ const road = createContentSchemas(base.scenario).storylet.parse({
   id: "road_test",
   title: "길 위의 사람",
   tags: ["road"],
-  when: { road_touches: ["old_town"] },
+  when: { road_touches: ["bus_depot"] },
   setup: "{from}에서 {to}로 가는 길에 누가 쓰러져 있다.",
   choices: [{ id: "pass", label: "지나간다", effects: [] }],
 });
@@ -23,15 +23,15 @@ const go = (w: ReturnType<WorldManager["create"]>, to: string) =>
 describe("길 위의 일", () => {
   it("구역을 옮기면 길의 위험만큼 확률로 길 위의 이야기가 열리고, {from} {to}가 채워진다", () => {
     const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-road-")), content, rngFactory: () => () => 0 }).create("mcp", "role_a_grunt");
-    const out = go(w, "old_town");
+    const out = go(w, "bus_depot");
     expect(out.ok && out.resultText).toContain("오는 길에 일이 생겼다");
     expect(w.state().activeStorylet?.id).toBe("road_test");
-    expect(w.state().lastRoute).toEqual({ from: "a_base", to: "old_town" });
+    expect(w.state().lastRoute).toEqual({ from: "a_base", to: "bus_depot" });
   });
 
   it("확률을 넘기면 열리지 않고, 길 위의 이야기는 평소에는 열리지 않는다", () => {
     const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-road-")), content, rngFactory: () => () => 0.99 }).create("mcp", "role_a_grunt");
-    go(w, "old_town");
+    go(w, "bus_depot");
     expect(w.state().activeStorylet).toBeNull();
   });
 });

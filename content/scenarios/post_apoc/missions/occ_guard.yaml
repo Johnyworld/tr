@@ -1,0 +1,35 @@
+# 수비대원 직분의 일감 (기획서 12.6, 파트 13-3). 무리를 가리지 않는다. 완수하면 엔진이 직분 평판 +1
+# requirements 형식은 a_grunt_basic.yaml 머리말 참고
+
+- id: occ_guard_gate
+  title: 정문 보초
+  briefing: 정문 앞에 서서 드나드는 사람을 본다. 아는 얼굴이어도 짐은 들여다보고, 모르는 얼굴은 들이기 전에 부른다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: guard_duty
+      minutes: 180
+
+- id: occ_guard_perimeter
+  title: 담 밖 한 바퀴
+  where: near
+  briefing: 담 밖 맞닿은 길을 한 바퀴 돌며 발자국과 새로 생긴 표시를 본다. 이상한 게 있으면 건드리지 말고 알린다.
+  giver_rank: squad_leader
+  deadline_hours: 10
+  requirements:
+    - activity: guard_duty
+      minutes: 120
+    - check: sense_danger
+      min_outcome: partial
+
+# 전쟁이 남긴 일 (파트 13-3): 적 부대가 우리 땅에 들었거나, 적이 노리는 우리 구역이 알려진 날
+- id: occ_guard_war_hold
+  title: 위협받는 자리 지키기
+  war_cause: threat
+  armed: true
+  briefing: 저쪽 무리가 우리 땅을 노린다. 그 자리에 가서 몇 시간 버티고 서 있어라. 혼자 막으라는 게 아니다. 보고 알리고, 덤비면 물러서지 마라.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: guard_duty
+      minutes: 180

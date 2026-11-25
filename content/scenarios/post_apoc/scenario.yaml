@@ -998,7 +998,7 @@ occupations:
     summary: 담과 문, 지붕과 침상을 고친다. 무너진 데를 메우는 사람이라 어디든 불려 다닌다
     skills: [carpentry]
     kit: [carpentry_kit, planks]
-    missions: [occ_carpenter_wall_patch, occ_carpenter_roof, occ_carpenter_watchtower, occ_carpenter_timber_run]
+    missions: [occ_carpenter_wall_patch, occ_carpenter_roof, occ_carpenter_watchtower, occ_carpenter_timber_run, occ_carpenter_war_repair]
   - id: trader
     label: 상인
     summary: 무리의 물건을 바깥과 바꾼다. 값과 소문을 다루고, 무리 밖에도 아는 얼굴이 많다
@@ -1016,7 +1016,7 @@ occupations:
     summary: 다친 사람을 꿰매고 열을 내린다. 약이 모자란 날마다 누구를 먼저 볼지 정해야 한다
     skills: [first_aid]
     kit: [bandage]
-    missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy, occ_medic_field]
+    missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy, occ_medic_field, occ_medic_war_wounded]
   - id: mechanic
     label: 정비공
     summary: 총과 펌프, 발전기와 무전기를 살린다. 쇳소리와 기름 냄새 속에서 산다
@@ -1028,27 +1028,27 @@ occupations:
     summary: 담 밖으로 나가는 사람. 폐허를 뒤지고, 길을 살피고, 싸움이 나면 총을 든다. 무리의 시나리오 임무와 이야기를 그대로 받는다
     skills: [shoot, scavenge]
     kit: [flashlight, crowbar]
-    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul]
+    missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul, occ_scavenger_war_traces]
   - id: guard
     label: 수비대원
     skills: [sense_danger]
     summary: 담과 문, 창고와 우물을 지킨다. 바깥에 나가는 날은 적지만, 거점이 습격당하면 가장 먼저 맞선다
     kit: [binoculars]
-    missions: []
+    missions: [occ_guard_gate, occ_guard_perimeter, occ_guard_war_hold]
   - id: nurse
     label: 간호사
     summary: 붕괴 전에 간호를 배웠다. 상처를 꿰매고 열을 재고, 환자 곁을 지킨다. 귀한 사람이라 바깥 싸움에는 내보내지 않는다
     skills: [first_aid]
     kit: [fever_reducer]
     storylet_tag: occ_medic
-    missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy]
+    missions: [occ_medic_rounds, occ_medic_boil, occ_medic_pharmacy, occ_medic_war_wounded]
   - id: doctor
     label: 의사
     summary: 붕괴 전에 의사였다. 약이 없어도 무엇이 사람을 죽이는지 안다. 무리마다 탐내는 사람이라 바깥에는 나가지 않는다
     skills: [first_aid]
     kit: [fever_reducer, medkit]
     storylet_tag: occ_medic
-    missions: [occ_medic_rounds, occ_medic_pharmacy]
+    missions: [occ_medic_rounds, occ_medic_pharmacy, occ_medic_war_wounded]
   # 성인 직업 (공통 규칙 21, docs/mature-plan.md 1): 사람(NPC)만 맡고 주인공은 고르지 않는다. 성인 옵션이 꺼져 있으면 cover(겉 직업)로 보인다
   - id: sex_worker
     label: 매춘부

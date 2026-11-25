@@ -48,3 +48,16 @@
       min_outcome: partial
     - check: first_aid
       min_outcome: partial
+
+# 전쟁이 남긴 일 (파트 13-2): 의무실에 교전 부상자가 있는 동안
+- id: occ_medic_war_wounded
+  title: 실려 온 부상자 돌보기
+  war_cause: wounded
+  briefing: 교전에서 다친 사람들이 의무실에 누워 있다. 상처를 다시 씻고 붕대를 갈고, 열이 오르는 사람부터 살핀다. 오늘 손을 놓으면 며칠 안에 누군가 잃는다.
+  giver_rank: squad_leader
+  deadline_hours: 12
+  requirements:
+    - activity: treat
+      minutes: 120
+    - check: first_aid
+      min_outcome: partial

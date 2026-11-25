@@ -275,11 +275,14 @@ export function pickDailyOffers(
   weakAt?: (move: string) => boolean,
   /** 전선이 바쁜 날 (PT32 사용자 결정): 전쟁 임무가 있으면 두 자리 중 하나를 전쟁 임무로 채운다 */
   warDay = false,
+  /** 지금 남은 전쟁의 일 (파트 13): war_cause 임무는 그 일이 있을 때만 후보에 오르고, 직분 몫 자리에 먼저 선다 */
+  causes: ReadonlySet<string> = new Set(),
 ): { day: number; templateIds: string[] } | null {
   const day = dayOf(now);
   if (lastOfferDay === day) return null;
   const clearing = overrun ? Object.values(content.missions).filter((m) => m.clears).map((m) => m.id) : [];
   const pool = [...new Set([...(content.roles[roleId]?.missions ?? []), ...extra, ...clearing])].filter((id) => content.missions[id] && (overrun || !content.missions[id]!.clears))
+    .filter((id) => !content.missions[id]!.war_cause || causes.has(content.missions[id]!.war_cause!))
     .filter((id) => {
       const min = content.missions[id]!.min_rank;
       if (!min || !rank) return true;
@@ -309,8 +312,15 @@ export function pickDailyOffers(
   const isExtra = (id: string) => !own.has(id) && extra.includes(id);
   const roleFirst = pool.some((x) => !isExtra(x) && !weak(x));
   const allowed = (id: string) => (picked.length === 0 && roleFirst ? !isExtra(id) : !isExtra(id) || !picked.some(isExtra));
-  if (warDay && count > 0) {
-    const war = (ids: readonly string[]) => ids.filter((id) => warMission(content.missions[id]!));
+  // 전쟁이 남긴 일 (파트 13-4): 직분 몫 자리에 먼저. 그 일이 남아 있는 동안 날마다 (쉬지 않는다)
+  const urgent = pool.filter((id) => isExtra(id) && !!content.missions[id]!.war_cause);
+  if (urgent.length && count > 0) {
+    const id = urgent[Math.floor(rng() * urgent.length)]!;
+    for (const list of [fresh, stale, weakest]) if (list.includes(id)) list.splice(list.indexOf(id), 1);
+    picked.push(id);
+  }
+  if (warDay && picked.length < count) {
+    const war = (ids: readonly string[]) => ids.filter((id) => warMission(content.missions[id]!) && (!isExtra(id) || !picked.some(isExtra)));
     const choice = [war(fresh).filter((id) => !isExtra(id)), war(fresh), war(stale).filter((id) => !isExtra(id)), war(stale), war(weakest)].find((c) => c.length);
     if (choice) {
       const id = choice[Math.floor(rng() * choice.length)]!;

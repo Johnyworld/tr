@@ -452,6 +452,11 @@ export function createContentSchemas(s: Scenario) {
      * 역할의 임무 목록과 상관없이, 그 무리 땅에 기준값보다 높은 구역이 있는 날에만 오늘의 후보에 오른다
      */
     clears: z.number().int().min(1).max(2).optional(),
+    /**
+     * 전쟁이 남긴 일 (파트 13): 그 일이 남아 있는 날에만 오늘의 후보에 오르고, 직분 몫 자리에 먼저 선다. 자리는 그 일이 있는 구역.
+     * repair 부서진 시설(우리 땅), wounded 의무실 부상자, traces 하루 안의 교전 흔적(우리 땅·맞닿은 곳), threat 적 부대가 든 우리 땅·노리는 우리 구역
+     */
+    war_cause: z.enum(["repair", "wounded", "traces", "threat"]).optional(),
   });
 
   const resourceAmounts = z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().min(0));

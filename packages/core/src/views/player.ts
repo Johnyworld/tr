@@ -41,7 +41,7 @@ import { conditionPenalty, initialConditions, raiseCost, rankLabel, shownLevel, 
 import { describeRequirement } from "../engine/missionTools.ts";
 import type { TranscriptEntry } from "../engine/log.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
-import { factionOutlook, zoneOutlook } from "../engine/warTools.ts";
+import { factionOutlook, WAR_INTEL_TOPIC, WAR_TOPIC, zoneOutlook } from "../engine/warTools.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
 import { alarmLabel, battleTitle, momentumLabel } from "../engine/battleTools.ts";
@@ -49,6 +49,7 @@ import { entrustedHeld, loanOf } from "../rules/entrusted.ts";
 import { learned } from "../rules/skill.ts";
 import { currentPlace } from "../rules/place.ts";
 import { beliefText, deedText } from "../rules/lens.ts";
+import { josa } from "../text.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -162,7 +163,8 @@ export type PlayerView = {
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel: string; urgent: boolean; requirements: string[] } | null;
   /** 소속 무리 사정 (거점에서 느끼는 것, 대략). 세력 시뮬레이션이 없으면 null */
   /** about: 무리 소개 (공개된 것, 월드 이야기와 같은 말) */
-  faction: { name: string; about: string; moraleLabel: string; rationLabel: string } | null;
+  /** plans: 우리 무리 계획의 단계, war: 최근 전황 세 줄 (파트 14-2, ?세력과 같은 데이터) */
+  faction: { name: string; about: string; moraleLabel: string; rationLabel: string; plans: string[]; war: string[] } | null;
   /** 지금 있는 구역 */
   zone: { name: string; owner: string } | null;
   /** 구역 안의 지금 장소 (12-244, 공통 규칙 15). 정하지 않았으면 null (헤더는 구역 이름) */
@@ -420,7 +422,20 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
             positionLabel: bc.positions.find((p) => p.id === b.position)?.label ?? b.position,
           }
         : null,
-    faction: outlook.own ? { name: outlook.own.name, about: content.factions[player.factionId]?.public ?? "", moraleLabel: outlook.own.moraleLabel, rationLabel: outlook.own.rationLabel } : null,
+    faction: outlook.own
+      ? {
+          name: outlook.own.name,
+          about: content.factions[player.factionId]?.public ?? "",
+          moraleLabel: outlook.own.moraleLabel,
+          rationLabel: outlook.own.rationLabel,
+          plans: outlook.own.plans.map((p) => `${p.label}: ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}`),
+          war: (state.beliefs[state.playerId] ?? [])
+            .filter((b) => b.topic === WAR_TOPIC || b.topic === WAR_INTEL_TOPIC)
+            .slice(-3)
+            .reverse()
+            .map((b) => `[${formatAgo(state.time, b.learnedAt)} · ${BELIEF_SOURCE_LABELS[b.source]}] ${withKnownNames(state, content, beliefText(state, b))}`),
+        }
+      : null,
     name: player.name,
     genderLabel: scenario.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
     portrait: player.portrait,

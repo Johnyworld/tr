@@ -50,7 +50,8 @@ import { startingSkills } from "./creation.ts";
 // 115: 움직이는 부대 ③-2 (12-317). partyFights, battle.party, 세력 defeats, 이벤트 party_engaged·party_fight_ended
 // 116: 움직이는 부대 ③-3 (12-318). 클락 credits, 교전·부대 할 일 credits·surprise, 이벤트 clock_credited
 // 117: PT32 고침 (12-320). 마주침 기록 열쇠에 방문, parties_advanced.nextPartyNo
-export const SAVE_SCHEMA_VERSION = 117;
+// 118: 파트 13·14 (12-322). 이벤트 zone_heard, 부서진 시설(wrecked), 의무실 부상자(wounded)
+export const SAVE_SCHEMA_VERSION = 118;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -523,6 +524,10 @@ export function createGameSchemas(s: Scenario) {
     agendas: z.record(z.string(), z.strictObject({ index: z.number().int().min(0), filled: z.number().int().min(0) })).default({}),
     /** 거점 손보기 (12-167): 구역마다 지어진 시설 id */
     facilities: z.record(z.string(), z.array(z.string())).default({}),
+    /** 부서진 채 남은 시설 (파트 13 보수): 다시 지으면 빠진다 */
+    wrecked: z.record(z.string(), z.array(z.string())).default({}),
+    /** 의무실의 이름 없는 부상자 (파트 13-2): 교전에서 다친 우리 무리 사람. 돌보면 돌아가고, 사흘 동안 아무도 돌보지 않으면 절반이 죽는다 */
+    wounded: z.array(z.strictObject({ id: z.string(), faction: z.string(), zone: z.string(), at: z.number().int() })).default([]),
     /** 다짐 (12-164): 캐릭터마다 지금 품은 다짐, 시나리오의 다짐을 세웠는지, 끝난 다짐의 기록 */
     resolves: z.record(z.string(), resolveSchema.nullable()).default({}),
     resolveSeeded: z.array(z.string()).default([]),
@@ -839,6 +844,10 @@ export function createGameSchemas(s: Scenario) {
     // 거점 손보기 (12-167)
     z.strictObject({ type: z.literal("facility_built"), zone: z.string(), facility: z.string() }),
     z.strictObject({ type: z.literal("facility_broken"), zone: z.string(), facility: z.string() }),
+    /** 교전에서 다친 사람이 의무실에 들어왔다 (파트 13-2). 사람은 extra_spawned(unseen)로 먼저 만든다 */
+    z.strictObject({ type: z.literal("wounded_arrived"), faction: z.string(), zone: z.string(), ids: z.array(z.string()) }),
+    /** 의무실 부상자의 끝: recovered 나아 제자리로(인원·전투원 +1), survived 혼자 버텨 일어남(인원 +1), died 숨짐 */
+    z.strictObject({ type: z.literal("wounded_settled"), id: z.string(), outcome: z.enum(["recovered", "survived", "died"]) }),
     // 다짐 (12-164)
     z.strictObject({ type: z.literal("resolve_set"), characterId: z.string(), resolve: resolveSchema }),
     z.strictObject({ type: z.literal("resolve_ended"), characterId: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]), text: z.string().optional() }),
@@ -942,6 +951,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("skill_trained"), characterId: z.string(), skill: z.string(), to: z.number().int() }),
     /** 구역 보강 ± (12-48) */
     z.strictObject({ type: z.literal("zone_fortified"), zone: z.string(), delta: z.number().int() }),
+    /** 땅 주인이 바뀐 소식을 들었다 (파트 14-3): 지도에 들은 대로 */
+    z.strictObject({ type: z.literal("zone_heard"), zone: z.string(), owner: z.string().nullable() }),
     /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
     z.strictObject({ type: z.literal("background_set"), entries: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })) }),
     /** 직분의 평판 ± (기획서 12.6) */
@@ -1418,6 +1429,8 @@ export const EMPTY_STATE: GameState = {
   ruinsFound: {},
   resolves: {},
   facilities: {},
+  wrecked: {},
+  wounded: [],
   agendas: {},
   disaster: null,
   lastDisasterDay: null,
@@ -2034,13 +2047,31 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     }
     case "facility_built": {
+      if (next.wrecked[event.zone]?.includes(event.facility)) next.wrecked = { ...next.wrecked, [event.zone]: next.wrecked[event.zone]!.filter((x) => x !== event.facility) };
       const had = next.facilities?.[event.zone] ?? [];
       if (!had.includes(event.facility)) next.facilities = { ...(next.facilities ?? {}), [event.zone]: [...had, event.facility] };
       return next;
     }
     case "facility_broken":
       next.facilities = { ...(next.facilities ?? {}), [event.zone]: (next.facilities?.[event.zone] ?? []).filter((x) => x !== event.facility) };
+      next.wrecked = { ...next.wrecked, [event.zone]: [...(next.wrecked[event.zone] ?? []).filter((x) => x !== event.facility), event.facility] };
       return next;
+    case "wounded_arrived":
+      next.wounded = [...next.wounded, ...event.ids.map((id) => ({ id, faction: event.faction, zone: event.zone, at: state.time }))];
+      return next;
+    case "wounded_settled": {
+      const w = next.wounded.find((x) => x.id === event.id);
+      next.wounded = next.wounded.filter((x) => x.id !== event.id);
+      const f = w ? next.factions[w.faction] : undefined;
+      if (f && event.outcome !== "died") {
+        f.population += 1;
+        if (event.outcome === "recovered") f.combatants += 1;
+      }
+      const c = next.characters[event.id];
+      if (c && event.outcome !== "died") c.away = true;
+      next.scene.present = next.scene.present.filter((id) => id !== event.id);
+      return next;
+    }
     case "resolve_set":
       next.resolves = { ...(next.resolves ?? {}), [event.characterId]: { ...event.resolve } };
       next.resolveNote = null;
@@ -2310,6 +2341,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "skill_lesson":
       next.lessons = { ...next.lessons, [event.skill]: (state.lessons[event.skill] ?? 0) + event.hours };
+      return next;
+    case "zone_heard":
+      next.zoneSeen = { ...next.zoneSeen, [event.zone]: event.owner };
       return next;
     case "zone_fortified": {
       const z = next.zones[event.zone];

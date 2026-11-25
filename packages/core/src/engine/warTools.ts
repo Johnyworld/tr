@@ -29,6 +29,7 @@ import {ownedBy, hostileLand, baseOfNow } from "../rules/home.ts";
 import { onOwnLand } from "../rules/home.ts";
 import { casualtiesToPeople } from "./felt.ts";
 import { protectedFromWorld } from "../rules/company.ts";
+import { woundedToInfirmary } from "./warAftermath.ts";
 import { hearNews } from "../rules/news.ts";
 
 /**
@@ -153,6 +154,7 @@ export function afterClashes(ctx: ToolContext, clashes: readonly Clash[], only: 
   if (only.news !== false) {
     displays.push(...deliverNews(ctx, clashes));
     displays.push(...casualtiesToPeople(ctx, clashes));
+    displays.push(...woundedToInfirmary(ctx, clashes));
     displays.push(...creditNews(ctx, clashes));
   }
   if (only.facilities !== false) {
@@ -210,7 +212,14 @@ function ensurePlayerZone(ctx: ToolContext) {
 
 /** 교전 소식을 플레이어의 믿음으로 남긴다 (공통 규칙 14) */
 function deliverNews(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEvent[] {
-  return clashes.flatMap((clash) => hearNews(ctx, { fact: describeClash(ctx.content, clash), factions: [clash.attacker, clash.defender], topic: WAR_TOPIC, showOursOnly: true }));
+  return clashes.flatMap((clash) => {
+    // 땅 주인이 바뀐 일은 남의 일이어도 늘 닿고, 지도에 들은 대로 남는다 (파트 14-3)
+    const taken = clash.kind === "occupy" || (clash.kind === "assault" && clash.success);
+    const before = ctx.store.getState().nextBeliefNo;
+    const shown = hearNews(ctx, { fact: describeClash(ctx.content, clash), factions: [clash.attacker, clash.defender], topic: WAR_TOPIC, showOursOnly: true, ...(taken ? { always: true } : {}) });
+    if (taken && ctx.store.getState().nextBeliefNo > before) ctx.store.append({ type: "zone_heard", zone: clash.zone, owner: clash.attacker });
+    return shown;
+  });
 }
 
 /** 사상자 수를 대략적인 말로 (정확한 수는 간부나 알 일이다) */

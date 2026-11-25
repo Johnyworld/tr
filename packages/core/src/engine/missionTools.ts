@@ -1,4 +1,5 @@
 import { partyZoneAt } from "../sim/parties.ts";
+import { settleWarCause, warCauses, type WarCause } from "./warAftermath.ts";
 import { hostileFaction } from "../rules/home.ts";
 import { forceWords } from "./battleTools.ts";
 import { activeCompanions } from "../game/companions.ts";
@@ -147,6 +148,12 @@ export function missionPlace(state: GameState, content: Content, where: string |
   return { zone: where, notZone: null, enemyOf: null, label: zoneName(where) };
 }
 
+/** 전쟁이 남긴 일의 자리 (파트 13): 그 일이 있는 구역. 그사이 일이 없어졌으면 어디서든 */
+function causePlace(ctx: ToolContext, cause: WarCause, factionId: string | null): MissionInstance["place"] {
+  const zone = warCauses(ctx.store.getState(), ctx.content, factionId)[cause];
+  return zone ? { zone, notZone: null, enemyOf: null, label: ctx.content.locations[zone]?.name ?? zone } : null;
+}
+
 /** 이 판정의 보정(가장 나은 능력 + 쓰는 스킬)이 음수인가 (설계 목록 5-3) */
 function weakAt(content: Content, me: Character, move: string): boolean {
   const m = moveOf(content.scenario, move);
@@ -218,7 +225,8 @@ const assignMission = defineTool({
         const group = ctx.content.scenario.mission_move_groups.find((g) => g.includes(r.check));
         return group ? { ...r, alts: group.filter((m) => m !== r.check) } : r;
       }),
-      place: missionPlace(ctx.store.getState(), ctx.content, template.where, player.factionId),
+      // 전쟁이 남긴 일은 그 일이 있는 구역에서 (파트 13)
+      place: template.war_cause ? causePlace(ctx, template.war_cause, player.factionId) : missionPlace(ctx.store.getState(), ctx.content, template.where, player.factionId),
       progress: template.requirements.map(() => 0),
       fails: template.requirements.map(() => 0),
       ...(template.unseen ? { unseen: true } : {}),
@@ -399,6 +407,8 @@ const reportMission = defineTool({
     }
     // 정찰 임무 (파트 11): 해내면 그 구역과 맞닿은 구역에 있는 적 부대를 본 것으로 안다
     if (template?.scouts && result.outcome === "success") warLines.push(...scoutedParties(ctx, mission));
+    // 전쟁이 남긴 일 (파트 13): 보수는 부서진 시설을 다시 세우고, 의무실 돌봄은 부상자를 낫게 한다
+    warLines.push(...settleWarCause(ctx, mission, template?.war_cause, result.outcome));
     // 담을 메우는 일감은 그 무리 거점을 보강한다 (12-48)
     const fortifies = ctx.content.missions[mission.templateId]?.fortifies;
     const base = baseOfNow(ctx.store.getState(), ctx.content, lender);
@@ -667,7 +677,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
     const at = (lv: string | undefined) => harm.levels.findIndex((l) => l.id === lv);
     const unfit = !!me && !!unfitFrom && at(me.conditions[harm.id]) >= at(unfitFrom) && at(unfitFrom) >= 0;
     const safeOnly = (state.missionGraceUntil ?? 0) > state.time || unfit;
-    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly, (move) => !!me && weakAt(ctx.content, me, move), frontBusy(state, ctx.content, me?.factionId));
+    const offers = pickDailyOffers(ctx.content, state.roleId, state.time, state.offers?.day ?? null, ctx.rng, extra, overrun, { factionId: me?.factionId ?? null, owners: state.zones }, me?.rank, (move) => !me || learned(ctx.content.scenario, me.skills, move) !== null, recentTemplates(state, ctx.content), safeOnly, (move) => !!me && weakAt(ctx.content, me, move), frontBusy(state, ctx.content, me?.factionId), new Set(Object.keys(warCauses(state, ctx.content, me?.factionId))));
     if (offers) ctx.store.append({ type: "missions_offered", ...offers });
   }
   return displays;
@@ -734,7 +744,11 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
     const offers = state.offers.templateIds
       .map((id) => ctx.content.missions[id])
       .filter((m) => m !== undefined)
-      .map((m) => `  - ${m.id}: ${maskUnknownNames(state, ctx.content, m.title)} — ${maskUnknownNames(state, ctx.content, m.briefing)}\n    해야 할 일: ${m.requirements.map((r) => requirementLabel(ctx.content.scenario, r)).join(" · ")}`);
+      .map((m) => {
+        const causeZone = m.war_cause ? warCauses(state, ctx.content, player.factionId)[m.war_cause] : undefined;
+        const at = causeZone ? `\n    자리: ${ctx.content.locations[causeZone]?.name ?? causeZone} (전쟁이 남긴 일)` : "";
+        return `  - ${m.id}: ${maskUnknownNames(state, ctx.content, m.title)} — ${maskUnknownNames(state, ctx.content, m.briefing)}\n    해야 할 일: ${m.requirements.map((r) => requirementLabel(ctx.content.scenario, r)).join(" · ")}${at}`;
+      });
     lines.push(`오늘 받을 수 있는 임무 (상관이 장면에 있을 때 assign_mission):\n${offers.join("\n")}`);
   } else {
     lines.push("수행 중인 임무 없음");

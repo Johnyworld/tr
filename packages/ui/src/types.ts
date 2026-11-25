@@ -51,7 +51,7 @@ export type PlayerView = {
   }[];
   service: { rankLabel?: string; merit: number; disobedience: number; daysServed: number; promotionMissing: string[] | null };
   mission: { title: string; briefing: string; deadlineLabel: string; deadlineLeftLabel?: string; urgent?: boolean; requirements: string[] } | null;
-  faction: { name: string; about?: string; moraleLabel: string; rationLabel: string } | null;
+  faction: { name: string; about?: string; moraleLabel: string; rationLabel: string; plans?: string[]; war?: string[] } | null;
   zone: { name: string; owner: string } | null;
   /** 구역 안의 지금 장소 (12-244). 없으면 헤더는 구역 이름 */
   place?: { name: string; indoor: boolean; spawned: boolean } | null;

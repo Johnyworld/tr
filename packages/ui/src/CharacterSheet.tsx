@@ -442,6 +442,18 @@ function SubLine({ player }: { player: PlayerView }) {
         분위기 {f.moraleLabel} · 배급 {f.rationLabel}
       </div>
       {player.policy && player.policy.length > 0 && <div className="muted">방침: {player.policy.map((p) => `${p.label} ${p.option}`).join(" · ")}</div>}
+      {f.plans && f.plans.length > 0 && f.plans.map((p) => <div key={p} className="muted">{p}</div>)}
+      {f.war && f.war.length > 0 && (
+        <>
+          <div className="info-tip-sep" />
+          <div>최근 전황 (들은 것)</div>
+          {f.war.map((w) => (
+            <div key={w} className="muted">
+              {w}
+            </div>
+          ))}
+        </>
+      )}
       {player.zone && (
         <div className="muted">
           있는 곳: {player.place ? `${player.place.name} · ` : ""}

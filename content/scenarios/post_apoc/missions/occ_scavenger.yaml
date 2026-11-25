@@ -81,3 +81,17 @@
       minutes: 120
     - check: leadership
       min_outcome: partial
+
+# 전쟁이 남긴 일 (파트 13): 하루 안에 우리 땅이나 맞닿은 곳에서 교전이 있었으면
+- id: occ_scavenger_war_traces
+  title: 싸움터 수습하기
+  war_cause: traces
+  briefing: 어제 부딪친 자리에 아직 쓸 것이 떨어져 있다. 탄피, 버려진 짐, 쓰러진 사람이 남긴 것을 거둬 온다. 저쪽도 같은 생각을 할 테니 오래 머물지 마라.
+  giver_rank: squad_leader
+  supplies: { ammo: 4, medicine: 2 }
+  deadline_hours: 12
+  requirements:
+    - activity: work
+      minutes: 90
+    - check: scavenge
+      min_outcome: partial

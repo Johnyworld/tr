@@ -48,7 +48,7 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
   });
 
   it("규칙 11 (우리 땅): 땅 주인이 그 무리인지는 rules/home.ts로만 묻는다", () => {
-    expect(offenders(/\.zones\[[^\]]*\]\??\.owner\s*(===|!==)/, ["game/state.ts", "rules/home.ts", "sim/war.ts"])).toEqual([]);
+    expect(offenders(/\.zones\[[^\]]*\]\??\.owner\s*(===|!==)/, ["game/state.ts", "rules/home.ts", "sim/war.ts", "sim/parties.ts"])).toEqual([]);
   });
 
   it("규칙 12 (판정과 스킬): 배운 값은 rules/skill.ts로만 읽는다", () => {

@@ -51,7 +51,8 @@ export function initFactions(ctx: ToolContext): boolean {
   const { content, store } = ctx;
   if (!content.scenario.war || Object.keys(content.factions).length === 0) return false;
   if (Object.keys(store.getState().factions).length > 0) return false;
-  store.append({ type: "factions_initialized", day: dayOf(store.getState().time), ...initialWarWorld(content) });
+  const { factions, zones, clocks } = initialWarWorld(content);
+  store.append({ type: "factions_initialized", day: dayOf(store.getState().time), factions, zones, clocks });
   return true;
 }
 
@@ -69,14 +70,15 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     const state = store.getState();
     // 오늘 새벽 교전 중 플레이어가 그 자리에 있는 것은 계산하지 않고 예정해 둔다 (전투 장면, 기획서 9.5)
     const at = scheduleTime(day, ctx.rng);
-    const canDefer = day === today && at > state.time;
-    const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks }, content, ctx.rng, {
-      defer: (spec) => canDefer && playerInvolvement(state, content, spec) !== null,
+    // 움직이는 부대면 부대가 닿는 시각에 (그 시각이 아직 오지 않았을 때만)
+    const canDefer = (when: number) => day === today && when > state.time;
+    const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks, parties: state.parties, nextPartyNo: state.nextPartyNo }, content, ctx.rng, {
+      defer: (spec, arrival) => canDefer(arrival ?? at) && playerInvolvement(state, content, spec) !== null,
       season: seasonOfDay(content.scenario, day),
       infested: state.infested,
       day,
     });
-    const scheduled = result.deferred.map((spec, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at }));
+    const scheduled = result.deferred.map(({ at: arrival, ...spec }, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at: arrival ?? at }));
     store.append({
       type: "war_day_simulated",
       day,
@@ -85,6 +87,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       clocks: Object.fromEntries(Object.entries(result.clocks).map(([id, c]) => [id, { filled: c.filled }])),
       clashes: result.clashes,
       scheduled,
+      ...(result.parties ? { parties: result.parties, nextPartyNo: result.nextPartyNo ?? state.nextPartyNo } : {}),
     });
     // 감염체 압력: 전날의 소음, 오늘 새벽 교전의 시체 (12-112)
     for (const change of infestationDay(content, store.getState(), day, result.clashes, ctx.rng)) store.append({ type: "infestation_changed", ...change });

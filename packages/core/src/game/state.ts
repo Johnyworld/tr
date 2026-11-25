@@ -44,7 +44,8 @@ import { startingSkills } from "./creation.ts";
 // 109: 길목 다섯 (12-302). 구역과 맞닿음이 바뀌어 이전 세이브는 보관함으로
 // 110: 받아들임·들어갈 자리 (12-308~311). 손님·자리·복무 시작 상태와 주민 계급 id(resident)가 바뀌어 이전 세이브는 보관함으로
 // 111: 길목 더 늘리기와 길목·구역 합치기 (12-313). 구역 32곳, 맞닿음이 바뀌어 이전 세이브는 보관함으로
-export const SAVE_SCHEMA_VERSION = 111;
+// 112: 움직이는 부대 ① (docs/war-parties-plan.md). 상태 parties·nextPartyNo, war_day_simulated.parties
+export const SAVE_SCHEMA_VERSION = 112;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -181,6 +182,41 @@ export const clashSchema = z.strictObject({
   loot: z.record(z.string(), z.number().int().min(0)).optional(),
 });
 export type Clash = z.infer<typeof clashSchema>;
+
+/**
+ * 움직이는 부대 (docs/war-parties-plan.md 파트 1~3). 무리 전투원에서 빠져나가 길을 걷고, 목표에 닿으면 할 일(task)을 하고 돌아온다.
+ * 위치는 legs(구역마다 머무는 시각 범위)로 언제든 다시 센다. 진짜 위치·규모·목적은 GM에게 나가지 않는다 (원칙 4)
+ */
+export const partyLegSchema = z.strictObject({ zone: z.string(), from: z.number().int(), to: z.number().int() });
+export const partyTaskSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("clash"), clash: z.enum(["raid", "skirmish", "assault"]), defender: z.string(), plan: z.string().optional() }),
+  z.strictObject({ kind: z.literal("occupy"), plan: z.string().optional() }),
+  z.strictObject({ kind: z.literal("trade"), partner: z.string(), give: z.record(z.string(), z.number().int().min(0)), get: z.record(z.string(), z.number().int().min(0)) }),
+  /** 정찰·순찰: 가서 보고 돌아온다. plan이 있으면 그 공세를 앞두고 나간 정찰 */
+  z.strictObject({ kind: z.literal("watch"), plan: z.string().optional() }),
+]);
+export const partySchema = z.strictObject({
+  id: z.string(),
+  faction: z.string(),
+  kind: z.enum(["scout", "raid", "assault", "supply", "patrol"]),
+  size: z.number().int().min(0),
+  /** 이끄는 이름 있는 인물 (습격·공세만, 파트 1-3). 아직 정하지 않았으면 null */
+  leader: z.string().nullable().default(null),
+  home: z.string(),
+  goal: z.string(),
+  /** 가는 길 (마지막 칸이 goal, 그 to가 닿는 시각) */
+  legs: z.array(partyLegSchema).min(1),
+  task: partyTaskSchema,
+  /** 할 일을 마쳤으면 true (돌아오는 길) */
+  done: z.boolean().default(false),
+  /** 돌아오는 길 (마지막 칸의 to가 거점에 닿는 시각). 할 일을 마친 뒤에 정한다 */
+  back: z.array(partyLegSchema).default([]),
+  /** 나르는 것 (교역 짐·약탈물) */
+  carry: z.record(z.string(), z.number().int().min(0)).default({}),
+});
+export type PartyLeg = z.infer<typeof partyLegSchema>;
+export type PartyTask = z.infer<typeof partyTaskSchema>;
+export type Party = z.infer<typeof partySchema>;
 
 /** 플레이어가 낄 교전: 그날 새벽으로 예정해 두고, 그때 그 자리에 있으면 전투 장면으로 연다 (기획서 9.5) */
 export const pendingClashSchema = z.strictObject({
@@ -604,6 +640,9 @@ export function createGameSchemas(s: Scenario) {
     nextDeedNo: z.number().int().positive(),
     /** 세력 상태 (9단계). 이전 세이브는 세계를 열 때 콘텐츠의 시작값으로 채운다 */
     factions: z.record(z.string(), factionStateSchema).default({}),
+    /** 움직이는 부대 (docs/war-parties-plan.md) */
+    parties: z.array(partySchema).default([]),
+    nextPartyNo: z.number().int().min(0).default(0),
     /** 구역 소유 */
     zones: z.record(z.string(), zoneStateSchema).default({}),
     clocks: z.record(z.string(), clockStateSchema).default({}),
@@ -1042,7 +1081,11 @@ export function createGameSchemas(s: Scenario) {
       clashes: z.array(clashSchema),
       /** 플레이어가 낄 수 있어 미뤄 둔 교전 */
       scheduled: z.array(pendingClashSchema).default([]),
+      /** 움직이는 부대의 새 목록 (없으면 그대로) */
+      parties: z.array(partySchema).optional(),
+      nextPartyNo: z.number().int().min(0).optional(),
     }),
+
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional(), /** 도착하는 장소 (장소 개편: 길). 장소가 없는 구역이면 null */ place: z.string().nullable().optional() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
     // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
@@ -1410,6 +1453,8 @@ export const EMPTY_STATE: GameState = {
   lastSpreadDay: null,
   nextDeedNo: 1,
   factions: {},
+  parties: [],
+  nextPartyNo: 0,
   zones: {},
   clocks: {},
   lastWarDay: null,
@@ -2435,7 +2480,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.pendingClashes.push(...structuredClone(event.scheduled));
       rememberClashes(next, event.clashes, state.time);
       next.nextBattleNo += event.scheduled.length;
+      if (event.parties) next.parties = structuredClone(event.parties);
+      if (event.nextPartyNo !== undefined) next.nextPartyNo = event.nextPartyNo;
       break;
+
     case "weather_set":
       next.weather = { day: event.day, id: event.weatherId };
       break;

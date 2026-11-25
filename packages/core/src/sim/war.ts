@@ -1,7 +1,9 @@
 import { fill, josa } from "../text.ts";
 import type { Content, FactionContent } from "../content/schemas.ts";
 import { baseInfestation, infestationOf } from "../game/infestation.ts";
-import type { Clash, ClockState, FactionState } from "../game/state.ts";
+import type { Clash, ClockState, FactionState, Party } from "../game/state.ts";
+import { MINUTES_PER_DAY } from "../rules/time.ts";
+import { advanceParties, borderZones, partiesConfig, spawnParty, type PartyKind } from "./parties.ts";
 import type { Rng } from "../rng.ts";
 
 /**
@@ -24,6 +26,11 @@ export type WarWorld = {
   factions: Record<string, FactionState>;
   zones: Record<string, ZoneState>;
   clocks: Record<string, ClockState>;
+  /** 움직이는 부대 (docs/war-parties-plan.md). 시나리오에 war.parties가 없으면 쓰지 않는다 */
+  parties?: Party[];
+  nextPartyNo?: number;
+  /** 마지막으로 돈 날 (day를 넘기지 않고 돌릴 때 다음 날을 센다) */
+  day?: number;
 };
 
 /** 교전 하나의 명세 (아직 결과가 정해지지 않은 것) */
@@ -33,15 +40,17 @@ export type WarDayResult = WarWorld & {
   clashes: Clash[];
   /** 오늘 태도가 바뀐 세력 (shift 클락이 찼다) */
   shifts: { clockId: string; factionId: string; to: string; news: string }[];
-  /** defer로 미뤄 둔 교전 (전투 장면으로 열 수 있는 것) */
-  deferred: ClashSpec[];
+  /** defer로 미뤄 둔 교전 (전투 장면으로 열 수 있는 것). at: 부대가 닿는 시각 (움직이는 부대) */
+  deferred: (ClashSpec & { at?: number })[];
 };
 
 export type WarDayOptions = {
   /** 이 날의 계절 배수 (소모·산출). 없으면 1 */
   season?: { upkeep: Record<string, number>; yields: Record<string, number> } | null;
-  /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 그 자리에 있을 때) */
-  defer?: (spec: ClashSpec) => boolean;
+  /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 그 자리에 있을 때). at: 부대가 닿는 시각 (움직이는 부대) */
+  defer?: (spec: ClashSpec, at?: number) => boolean;
+  /** 움직이는 부대: 이 시각까지 닿은 부대의 할 일을 한다. 없으면 그날 끝까지 */
+  resolveUpTo?: number;
   /** 구역의 감염체 압력 (12-118). 기준값보다 높으면 산출이 준다. 없으면 기준값 */
   infested?: Record<string, number>;
   /** 오늘 (큰 재난으로 산출이 멈춘 구역을 가린다, 12-169) */
@@ -57,7 +66,7 @@ const PLAN_COMMIT = 0.5;
 /** 지원 방어 (12-140, *임시*): 이 태도 이상인 무리가 전투원의 이만큼을 보탠다 */
 const ALLY_AT = 2;
 const ALLY_COMMIT = 0.1;
-const DEFENSE_COMMIT = 0.2;
+export const DEFENSE_COMMIT = 0.2;
 /** 방침이 아무리 지키자고 해도 전투원의 이 비율까지만 지킨다 */
 const DEFENSE_COMMIT_MAX = 0.4;
 const BASE_DEFENSE_BONUS = 1.5;
@@ -105,7 +114,7 @@ export function initialWarWorld(content: Content): WarWorld {
   for (const f of Object.values(content.factions)) {
     for (const plan of f.plans) clocks[plan.id] = { factionId: f.id, label: plan.label, target: plan.target ?? "", filled: 0, max: plan.days };
   }
-  return { factions, zones, clocks };
+  return { factions, zones, clocks, parties: [], nextPartyNo: 0 };
 }
 
 /** 인접 구역 (한쪽에만 적혀 있어도 양쪽으로 본다) */
@@ -332,9 +341,33 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   if (!war) return { ...next, clashes, deferred, shifts: [] };
   // 오늘의 감염체 압력 (전쟁 몫이 이것으로 준다, 12-144)
   const infestedToday = options.infested ?? {};
+  // 움직이는 부대 (docs/war-parties-plan.md): 있으면 교전·땅 차지·교역이 부대를 낸다
+  const cfg = partiesConfig(content);
+  const day = options.day ?? (world.day ?? 0) + 1;
+  const dayStart = (day - 1) * MINUTES_PER_DAY;
+  next.day = day;
+  if (cfg) {
+    next.parties ??= [];
+    next.nextPartyNo ??= 0;
+  }
+  const pick = ([a, b]: readonly [number, number]) => a + Math.floor(rng() * (b - a + 1));
+  const sizeOf = (kind: PartyKind) => pick(cfg?.kinds[kind]?.size ?? [3, 4]);
   const fightOrDefer = (spec: ClashSpec) => {
+    if (cfg) {
+      // 부대를 낸다: 습격·교전은 습격대, 총공격은 공세 부대 (교전 병력 비율 그대로)
+      const share = warShareOf(content, next, spec.attacker, infestedToday);
+      const size = Math.max(1, Math.round(next.factions[spec.attacker]!.combatants * share * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
+      spawnParty(next, content, rng, { faction: spec.attacker, kind: spec.kind === "assault" ? "assault" : "raid", goal: spec.zone, size, dayStart, task: { kind: "clash", clash: spec.kind, defender: spec.defender, ...(spec.plan ? { plan: spec.plan } : {}) } });
+      return;
+    }
     if (options.defer?.(spec)) deferred.push(spec);
     else clashes.push(fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, warShareOf(content, next, spec.attacker, infestedToday)));
+  };
+  const occupyOrSend = (attacker: string, zone: string, plan?: string) => {
+    if (!cfg) return void clashes.push(occupy(next, attacker, zone, plan));
+    // 땅 차지는 순찰대가 닿아야 이뤄진다 (2-2)
+    const size = Math.max(sizeOf("patrol"), Math.round(next.factions[attacker]!.combatants * COMMIT.occupy));
+    spawnParty(next, content, rng, { faction: attacker, kind: "patrol", goal: zone, size, dayStart, task: { kind: "occupy", ...(plan ? { plan } : {}) } });
   };
 
   const alive = Object.keys(next.factions)
@@ -400,8 +433,24 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     }
   }
 
-  // 2-1. 교역 방침 (기획서 9.11): 서로 등을 돌리지 않았고 양쪽 창고에 있으면 바꾼다
+  // 2-1. 교역 방침 (기획서 9.11): 서로 등을 돌리지 않았고 양쪽 창고에 있으면 바꾼다.
+  // 움직이는 부대면 짐 행렬이 trade_every_days일마다 그만큼의 몫을 싣고 오간다 (2-3)
   for (const id of alive) {
+    if (cfg) {
+      if (day % cfg.trade_every_days !== 0) continue;
+      for (const { option } of factionPolicy(content, next.factions[id])) {
+        const t = option.trade;
+        if (!t) continue;
+        const partner = t.partner === id ? t.fallback_partner : t.partner;
+        if (!partner || partner === id || !alive.includes(partner)) continue;
+        if (disposition(content, id, partner, next) < t.min_disposition || disposition(content, partner, id, next) < t.min_disposition) continue;
+        const times = (need: Record<string, number>) => Object.fromEntries(Object.entries(need).map(([r, n]) => [r, n * cfg.trade_every_days]));
+        const give = times(t.give);
+        if (!Object.entries(give).every(([r, n]) => (next.factions[id]!.resources[r] ?? 0) >= n)) continue;
+        spawnParty(next, content, rng, { faction: id, kind: "supply", goal: homeBaseOf(content, next, partner) ?? "", size: sizeOf("supply"), dayStart, carry: give, task: { kind: "trade", partner, give, get: times(t.get) } });
+      }
+      continue;
+    }
     for (const { option } of factionPolicy(content, next.factions[id])) {
       const t = option.trade;
       if (!t) continue;
@@ -445,6 +494,11 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
       continue;
     }
     clock.filled += 1;
+    // 총공격 하루 전에 정찰대가 목표를 살피러 나간다 (2-1)
+    if (cfg && clock.filled === clock.max - 1) {
+      const target = clock.target || frontierTarget(next, content, clock.factionId);
+      if (target) spawnParty(next, content, rng, { faction: clock.factionId, kind: "scout", goal: target, size: sizeOf("scout"), dayStart, task: { kind: "watch", plan: clockId } });
+    }
     if (clock.filled >= clock.max) {
       clock.filled = 0; // 끝난 클락은 다시 시작한다 (기획서 10.4)
       planned.push({ clockId, clock });
@@ -456,7 +510,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const owner = next.zones[zoneId]?.owner ?? null;
     const target = content.locations[zoneId];
     if (!target || owner === clock.factionId) continue;
-    if (owner === null) clashes.push(occupy(next, clock.factionId, zoneId, clockId));
+    if (owner === null) occupyOrSend(clock.factionId, zoneId, clockId);
     else if (disposition(content, clock.factionId, owner, next) <= HOSTILE && target.kind !== "base") {
       fightOrDefer({ kind: "assault", attacker: clock.factionId, defender: owner, zone: zoneId, plan: clockId });
     }
@@ -477,8 +531,21 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     if (!choice) continue;
     // 상대 전투원의 절반도 안 되면 먼저 치지 않는다 (12-138: 청솔이 세 배 강한 붉은연합을 120일에 스무 번 쳐서 무너졌다). 클락으로 준비한 공세는 그대로
     if (choice.kind !== "occupy" && choice.defender && next.factions[attacker]!.combatants < (next.factions[choice.defender]?.combatants ?? 0) * WEAK_RAID_RATIO) continue;
-    if (choice.kind === "occupy") clashes.push(occupy(next, attacker, choice.zone));
+    if (choice.kind === "occupy") occupyOrSend(attacker, choice.zone);
     else fightOrDefer({ kind: choice.kind, attacker, defender: choice.defender!, zone: choice.zone });
+  }
+
+  // 4-1. 움직이는 부대: 할 일 없는 날 자기 땅 가장자리를 도는 순찰, 그리고 오늘(또는 resolveUpTo까지) 닿은 부대의 할 일
+  if (cfg) {
+    for (const id of alive) {
+      if (rng() >= cfg.patrol_chance) continue;
+      const border = borderZones(content, next, id);
+      if (!border.length) continue;
+      spawnParty(next, content, rng, { faction: id, kind: "patrol", goal: border[Math.floor(rng() * border.length)]!, size: sizeOf("patrol"), dayStart, task: { kind: "watch" } });
+    }
+    const arrived = advanceParties(next, content, rng, options.resolveUpTo ?? dayStart + MINUTES_PER_DAY - 1, { defer: options.defer });
+    clashes.push(...arrived.clashes);
+    deferred.push(...arrived.deferred);
   }
 
   // 5. 결속과 회복
@@ -511,6 +578,11 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   }
 
   return { ...next, clashes, deferred, shifts };
+}
+
+/** 무리의 거점 (지금 그 무리 땅인 base 구역) */
+function homeBaseOf(content: Content, world: WarWorld, factionId: string): string | null {
+  return Object.values(content.locations).find((l) => l.kind === "base" && world.zones[l.id]?.owner === factionId)?.id ?? null;
 }
 
 /** 미뤄 둔 교전을 화면 밖에서 계산한다 (플레이어가 자리를 떴을 때) */
@@ -609,6 +681,16 @@ function attackOptions(world: WarWorld, content: Content, attacker: FactionConte
   return options;
 }
 
+/** 부대가 닿아 싸운다 (움직이는 부대): 실제로 간 인원으로 */
+export function fightClash(world: WarWorld, content: Content, rng: Rng, spec: ClashSpec, force: number): Clash {
+  return fight(world, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, undefined, force);
+}
+
+/** 빈 구역에 자리를 잡는다 */
+export function occupyZone(world: WarWorld, attacker: string, zone: string, plan?: string): Clash {
+  return occupy(world, attacker, zone, plan);
+}
+
 function occupy(world: WarWorld, attacker: string, zone: string, plan?: string): Clash {
   world.zones[zone] = { owner: attacker };
   return { kind: "occupy", attacker, defender: null, zone, success: true, attackerLosses: 0, defenderLosses: 0, ...(plan ? { plan } : {}) };
@@ -624,12 +706,14 @@ function fight(
   zone: string,
   plan?: string,
   share: number = content.factions[attackerId]?.war_share ?? 1,
+  /** 움직이는 부대: 실제로 간 인원 (없으면 전투원 × 비율) */
+  force?: number,
 ): Clash {
   const war = content.scenario.war!;
   const a = world.factions[attackerId]!;
   const d = world.factions[defenderId]!;
   // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139, 12-144: 자기 땅에 감염체가 몰리면 더 준다)
-  const committed = Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
+  const committed = force ?? Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
   const own = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
   // 지원 방어 (12-140): 지키는 쪽을 우호(ALLY_AT 이상)로 보고 치는 쪽과는 우호가 아닌 무리가 전투원 일부를 보탠다
   const allies = Object.entries(world.factions)

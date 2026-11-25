@@ -179,11 +179,13 @@ describe("지도부 회의 (기획서 9.11)", () => {
     expect(attacks({ stance: "attack" })).toBeGreaterThan(attacks());
 
     // 교역: 날마다 상대 창고와 바꾼다. 서로 등을 돌리면 끊긴다
+    // (움직이는 부대가 없는 월드의 셈. 부대가 있으면 짐 행렬이 오간다: sim/parties.test.ts)
+    const instant = { ...content, scenario: { ...content.scenario, war: { ...content.scenario.war!, parties: undefined } } };
     const trade = (policy?: Record<string, string>, hostile = false) => {
       const world = structuredClone(base);
       world.factions.faction_a!.policy = policy;
       if (hostile) world.factions.faction_e!.disposition = { ...world.factions.faction_e!.disposition, faction_a: -3 };
-      const after = simulateWarDay(world, content, createSeededRng(1)).factions;
+      const after = simulateWarDay(world, instant, createSeededRng(1)).factions;
       return { food: after.faction_a!.resources.food!, ammo: after.faction_a!.resources.ammo!, traderFood: after.faction_e!.resources.food! };
     };
     const none = trade();
@@ -198,7 +200,7 @@ describe("지도부 회의 (기획서 9.11)", () => {
     const selfTrade = (policy?: Record<string, string>) => {
       const world = structuredClone(base);
       world.factions.faction_e!.policy = policy;
-      return simulateWarDay(world, content, createSeededRng(1)).factions.faction_c!.resources.food!;
+      return simulateWarDay(world, instant, createSeededRng(1)).factions.faction_c!.resources.food!;
     };
     expect(selfTrade({ trade: "food_for_ammo" })).toBe(selfTrade() + 10);
   });

@@ -1932,6 +1932,21 @@ war:
   medicine_per_casualty: 2
   # 공격 성향 1당 하루에 공격에 나설 확률
   attack_chance_per_aggression: 0.12
+  # 움직이는 부대 (docs/war-parties-plan.md, *임시*): 교전·땅 차지·교역이 그 자리에서 끝나지 않고 부대가 걸어가 닿았을 때 일어난다
+  # max: 전투원 이 수 이상이면 동시에 낼 수 있는 부대 수. stay: 지나는 구역마다 머무는 시간(시), strike: 목표 바로 앞에서 숨었다가 치는 시각(시)
+  parties:
+    max: [{ combatants: 40, count: 3 }, { combatants: 15, count: 2 }, { combatants: 0, count: 1 }]
+    slow_size: 10
+    slow_factor: 1.5
+    far_hops: 3
+    patrol_chance: 0.3
+    trade_every_days: 3
+    kinds:
+      scout: { label: 정찰대, size: [3, 4], depart: [6, 14], stay: [4, 6] }
+      raid: { label: 습격대, depart: [14, 20], stay: [0.5, 1], strike: [1, 4] }
+      assault: { label: 공세 부대, depart: [4, 6], stay: [0.5, 1], gather_hours: 24 }
+      supply: { label: 짐 행렬, size: [3, 5], depart: [7, 10], stay: [1, 2] }
+      patrol: { label: 순찰대, size: [3, 5], depart: [7, 15], stay: [1, 2] }
   # 배급: 무리의 식량이 며칠 치 남았는지로
   ration:
     resource: food

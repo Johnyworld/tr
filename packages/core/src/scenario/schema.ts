@@ -708,6 +708,40 @@ export const scenarioFileSchema = z
         medicine_per_casualty: z.number().int().min(0),
         /** 공격 성향 1당 하루에 공격에 나설 확률 */
         attack_chance_per_aggression: z.number().min(0).max(1),
+        /**
+         * 움직이는 부대 (docs/war-parties-plan.md 파트 1~3·7). 있으면 하루 틱의 교전·땅 차지·교역이 그 자리에서 끝나지 않고
+         * 부대가 실제로 걸어가 닿았을 때 일어난다. 없으면 예전처럼 그날 안에 계산한다
+         */
+        parties: z
+          .strictObject({
+            /** 전투원 이 수 이상이면 동시에 낼 수 있는 부대 수 (위에서부터 처음 맞는 줄) */
+            max: z.array(z.strictObject({ combatants: z.number().int().min(0), count: z.number().int().min(0) })).min(1),
+            /** 이 인원 이상이면 걸음이 느리다 (slow_factor배) */
+            slow_size: z.number().int().positive().default(10),
+            slow_factor: z.number().min(1).default(1.5),
+            /** 거점에서 이 칸 수보다 먼 곳을 치러 가면 사기 -1 (먼 길의 대가, 7-1) */
+            far_hops: z.number().int().positive().default(3),
+            /** 할 일 없는 날 자기 땅 가장자리를 도는 순찰을 낼 확률 */
+            patrol_chance: z.number().min(0).max(1).default(0),
+            /** 교역 짐 행렬은 이 날수마다, 이 날수만큼의 몫을 싣는다 (2-3) */
+            trade_every_days: z.number().int().positive().default(3),
+            /**
+             * 부대 종류 (정찰 scout, 습격 raid, 공세 assault, 짐 행렬 supply, 순찰 patrol). size: 인원 범위(정찰·순찰·짐 행렬, 나머지는 교전 병력 비율),
+             * depart: 떠나는 시각(시) 범위, stay: 지나는 구역마다 머무는 시간(시), strike: 목표 바로 앞에서 숨었다가 치는 시각(시) 범위, gather_hours: 거점에서 모이는 시간
+             */
+            kinds: z.record(
+              z.enum(["scout", "raid", "assault", "supply", "patrol"]),
+              z.strictObject({
+                label: z.string().min(1),
+                size: z.tuple([z.number().int().positive(), z.number().int().positive()]).optional(),
+                depart: z.tuple([z.number().int().min(0).max(23), z.number().int().min(0).max(23)]),
+                stay: z.tuple([z.number().min(0), z.number().min(0)]).default([0, 0]),
+                strike: z.tuple([z.number().int().min(0).max(23), z.number().int().min(0).max(23)]).optional(),
+                gather_hours: z.number().int().min(0).default(0),
+              }),
+            ),
+          })
+          .optional(),
         /** 배급 수준: 무리의 이 자원이 며칠 치 남았는지로 정한다. min_days 내림차순 */
         ration: z.strictObject({
           resource: id,

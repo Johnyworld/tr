@@ -1474,6 +1474,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 도착한 구역의 부대 (공통 규칙 23, 9-3): 길 위의 일보다 먼저. 마주쳤으면 그 길의 이야기는 열지 않는다
     const metParty = arrival.length ? [] : runPartySightings(ctx);
     displays.push(...metParty);
+    // 들어서 보니 이미 있던 무리도 결과 줄로 알린다 (PT34 붉은연합 분대장·PT33 졸병: 상태의 "눈에 띈 무리"에만 있어 놓쳤다)
+    for (const d of metParty) if (d.type === "belief" && d.fact) lines.push(`들어서 보니: ${d.fact}.`);
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
     // 쫓겨 왔으면 길 위의 일은 없다: 맞붙음이 이어진다
     if (!arrival.length && !metParty.length && !chasing.length) for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {

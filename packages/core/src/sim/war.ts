@@ -109,6 +109,20 @@ const SCOUT_REACH = 4;
 /** 부대가 본 무리를 고르는 가중치 배수 (7-2, *임시*) */
 const GAP_WEIGHT = 3;
 
+/** 세계가 열릴 때 싸움 거는 무리의 계획이 이만큼 차 있다 (PT34 사용자 결정, *임시*): 다섯 세계 모두 첫 사흘 교전이 0이었다 */
+export const PREFILL_RANGE: readonly [number, number] = [0.5, 0.8];
+
+/** 계획 시계를 미리 채운다 (싸움 거는 무리의 공격 계획만, 방침 바꾸기 계획은 빼고) */
+export function prefillClocks(world: WarWorld, content: Content, rng: Rng): void {
+  for (const [id, clock] of Object.entries(world.clocks).sort(([a], [b]) => a.localeCompare(b))) {
+    const f = content.factions[clock.factionId];
+    const plan = f?.plans.find((p) => p.id === id);
+    if (!f || (f.aggression ?? 0) <= 0 || !plan || plan.kind === "shift") continue;
+    const [a, b] = PREFILL_RANGE;
+    clock.filled = Math.min(clock.max - 1, Math.floor(clock.max * (a + rng() * (b - a))));
+  }
+}
+
 export function initialWarWorld(content: Content): WarWorld {
   const factions: Record<string, FactionState> = {};
   for (const f of Object.values(content.factions)) {
@@ -863,11 +877,15 @@ export function spawnWatchParties(world: WarWorld, content: Content, rng: Rng, d
     const hostileOwned = [...dist.entries()]
       .filter(([z]) => { const o = world.zones[z]?.owner; return !!o && o !== id && content.locations[z]?.kind !== "base" && disposition(content, id, o, world) <= HOSTILE; })
       .sort(([a, x], [b, y]) => x - y || a.localeCompare(b));
-    const nearest = hostileOwned.length ? hostileOwned.filter(([, d]) => d === hostileOwned[0]![1]).map(([z]) => z) : [];
+    // 적 땅과 그 땅으로 가는 길목(적 땅과 맞닿은 남의 땅·빈 땅, 적 거점 앞 포함) 가운데 가까울수록 자주, 적 땅은 두 배 (PT34 사용자 결정:
+    // 가장 가까운 적 땅만 골라 붉은연합 정찰은 늘 철길 둑 → 동쪽 초소였다. 네 칸 안의 청솔 땅이 동쪽 초소 하나뿐이다)
+    const hostileLand = (z: string) => { const o = world.zones[z]?.owner; return !!o && o !== id && disposition(content, id, o, world) <= HOSTILE; };
+    const approaches = [...dist.entries()].filter(([z, d]) => d >= 1 && !hostileLand(z) && world.zones[z]?.owner !== id && content.locations[z]?.kind !== "base" && neighbors(content, z).some(hostileLand));
+    const candidates = [...hostileOwned.map(([z, d]) => ({ item: z, weight: 2 / Math.max(1, d) })), ...approaches.map(([z, d]) => ({ item: z, weight: 1 / Math.max(1, d) }))].sort((a, b) => a.item.localeCompare(b.item));
     const front = [...dist.entries()].filter(([z, d]) => d === 1 && world.zones[z]?.owner !== id && content.locations[z]?.kind !== "base").map(([z]) => z).sort();
-    const pool = nearest.length ? nearest : front;
-    if (!pool.length) continue;
-    spawnParty(world, content, rng, { faction: id, kind: "scout", goal: pool[Math.floor(rng() * pool.length)]!, size: sizeOf("scout"), dayStart, task: { kind: "watch" } });
+    const goal = candidates.length ? pickWeighted(rng, candidates) : front.length ? front[Math.floor(rng() * front.length)]! : null;
+    if (!goal) continue;
+    spawnParty(world, content, rng, { faction: id, kind: "scout", goal, size: sizeOf("scout"), dayStart, task: { kind: "watch" } });
   }
   for (const id of alive) {
     if (rng() >= cfg.patrol_chance) continue;

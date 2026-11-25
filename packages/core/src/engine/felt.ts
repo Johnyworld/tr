@@ -37,6 +37,8 @@ export function casualtiesToPeople(ctx: ToolContext, clashes: readonly Clash[]):
   for (const clash of clashes) {
     for (const [faction, losses] of [[clash.attacker, clash.attackerLosses], [clash.defender, clash.defenderLosses]] as const) {
       if (!faction) continue;
+      // 분대 가로막기의 우리 쪽 손실은 분대원의 다침이다 (PT34 붉은연합 분대장: 분대 밖 사람이 다쳤다고 들렸다)
+      if (clash.squad && faction === ctx.store.getState().characters[ctx.store.getState().playerId]?.factionId) continue;
       for (let i = 0; i < losses; i++) {
         if (ctx.rng() >= f.chance) continue;
         const state = ctx.store.getState();

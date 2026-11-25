@@ -1385,8 +1385,14 @@ export function raiseAlarm(ctx: ToolContext): ToolDisplayEvent[] {
   if (!hostileHere(ctx)) return [];
   const out = runTagEvent(ctx, rule.tag);
   // 들킨 결과(공통 규칙 3)는 경보 이야기가 열렸든 아니든 남는다 (12-269, 우회 점검: 경보 이야기가 쉬는 중이면 들켜도 아무 일이 없었다)
-  const spotted = onSpotted(ctx, state.zones[state.playerZone ?? ""]?.owner ?? null).join(" ") || null;
+  const owner = state.zones[state.playerZone ?? ""]?.owner ?? null;
+  const spotted = onSpotted(ctx, owner).join(" ") || null;
   if (spotted) out.push({ type: "belief", fact: "들켰다. 들키지 않아야 하는 임무였다", sourceLabel: BELIEF_SOURCE_LABELS.seen, note: spotted });
+  // 경보 이야기가 열리지 않아도 들킨 일은 결과에 알린다 (PT34 졸병: 행적엔 "들켰다"가 남았는데 결과 글엔 아무 말이 없었다)
+  else if (!out.some((d) => d.type === "storylet") && owner) {
+    const line = `${ctx.content.factions[owner]?.name ?? "이 땅의 무리"} 쪽 누군가 낌새를 챘다. 들켰다`;
+    out.push({ type: "belief", fact: line, sourceLabel: BELIEF_SOURCE_LABELS.seen, note: `${line} (몰래 들어온 것이 행적으로 남았다). 들킨 장면을 서술한다: 멀리서 누가 소리치거나 발소리가 다가온다. 누가 몇 명인지는 지어내지 않는다.` });
+  }
   return out;
 }
 

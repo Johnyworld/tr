@@ -7,19 +7,19 @@ import { loadRealContent } from "../testing.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { advanceParties, arrivalOf, canSend, detourRoute, hidingAt, spawnIntercept, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
-import { settlePartyAlerts, warConfessions } from "../engine/partyTools.ts";
+import { runGarrisonWatch, settlePartyAlerts, warConfessions } from "../engine/partyTools.ts";
 import { executeTool } from "../engine/tools.ts";
 import { frontBusy } from "../engine/missionTools.ts";
 import { warCauses } from "../engine/warAftermath.ts";
 import { fearSourcePresent } from "../engine/fear.ts";
 import { baseOfNow } from "../rules/home.ts";
 import { pickDailyOffers, warMission } from "../game/missions.ts";
-import { placesIn } from "../rules/place.ts";
+import { placesIn, whereIs } from "../rules/place.ts";
 import { endBattle, forceWords } from "../engine/battleTools.ts";
 import { applyEffect } from "../engine/storyletTools.ts";
 import { clashForces, initialWarWorld, simulateWarDay, spawnWatchParties, type WarWorld } from "./war.ts";
 import type { Party } from "../game/state.ts";
-import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting, sightKey } from "../engine/partySight.ts";
+import { alertablePartiesLines, createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting, sightKey } from "../engine/partySight.ts";
 
 const content = loadRealContent();
 const cfg = partiesConfig(content)!;
@@ -399,8 +399,10 @@ describe("③-2 부대와 맞붙기·우두머리·지렛대", () => {
     const w = make();
     const prisoner = Object.values(content.npcs).find((n) => n.faction === "faction_c" && n.rank === "grunt")!.id;
     const truth = warConfessions(w.state(), content, () => 0.99, prisoner, "success");
-    expect(truth[0]!.fact).toContain(content.locations[w.state().clocks.c_east_offensive!.target]!.name);
-    expect(truth[0]!.accuracy).toBe("approximate");
+    // 나가 있는 부대가 있으면 그 이야기가 먼저다: 공세 목표는 그 뒤에
+    const offensive = truth.find((t) => t.fact.includes(content.locations[w.state().clocks.c_east_offensive!.target]!.name));
+    expect(offensive).toBeTruthy();
+    expect(offensive!.accuracy).toBe("approximate");
     const lie = warConfessions(w.state(), content, () => 0, prisoner, "partial");
     expect(lie[0]!.accuracy).toBe("false");
     w.close();
@@ -803,5 +805,87 @@ describe("④ 알리기·맞받아치기·분대 가로막기 (5-3·5-4)", () =>
     const reports = JSON.stringify(w.state().squadReports ?? w.state());
     expect(reports).toContain("아무도 오지 않았다");
     w.close();
+  });
+});
+
+describe("PT34 뒤 고친 것", () => {
+  const make = (role = "role_a_grunt") => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt34-")), content, rngFactory: () => createSeededRng(9) }).create("mcp", role);
+  type W = ReturnType<typeof make>;
+  const putParties = (w: W, parties: Party[]) => {
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties, partiesUpTo: s.time, clashes: [], scheduled: [] });
+  };
+  const scoutAt = (w: W, zone: string, id = "pe") => {
+    const t = w.state().time;
+    return party({ id, faction: "faction_c", kind: "scout", size: 3, goal: zone, legs: [{ zone: "c_base", from: t - 300, to: t - 200 }, { zone, from: t - 200, to: t + 600 }], task: { kind: "watch" } });
+  };
+
+  it("우리 땅에 든 적 부대는 지키는 사람이 알아채 소식이 돌고, 그 구역을 더 지키며, 알릴 수 있는 무리가 된다. 떠나면 거둔다", () => {
+    const w = make();
+    putParties(w, [scoutAt(w, "a_east_post")]);
+    runGarrisonWatch(w.ctx());
+    expect(w.state().partiesSeen.pe).toBeDefined();
+    expect(w.state().zones.a_east_post!.alerted).toBe("faction_a");
+    expect((w.state().beliefs[w.state().playerId] ?? []).some((b) => b.fact.includes("지키는 사람들이 알려 왔다"))).toBe(true);
+    runGarrisonWatch(w.ctx());
+    expect((w.state().beliefs[w.state().playerId] ?? []).filter((b) => b.fact.includes("지키는 사람들이 알려 왔다"))).toHaveLength(1);
+    putParties(w, []);
+    runGarrisonWatch(w.ctx());
+    expect(w.state().zones.a_east_post!.alerted).toBeUndefined();
+    w.close();
+  });
+
+  it("분대 정찰로 안 무리도 알릴 수 있고, 사라진 무리는 '이미 물러간 무리다'", () => {
+    const w = make();
+    putParties(w, [scoutAt(w, "rail_embankment")]);
+    w.ctx().store.append({ type: "party_reported", partyId: "pe", via: "squad", zone: "rail_embankment" });
+    expect(alertablePartiesLines(w.state(), content).join()).toContain("pe");
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: baseOfNow(w.state(), content, "faction_a")!, place: null });
+    putParties(w, []);
+    const r = w.executeTool("alert_party", { party_id: "pe" });
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toContain("이미 물러간");
+    w.close();
+  });
+
+  it("가로막는 부대는 나가는 길·출발 구역에서는 마주치지 않고 목표에 닿은 뒤에만", () => {
+    const w = fresh();
+    const enemy = party({ id: "pe", faction: "faction_c", kind: "scout", size: 3, goal: "a_east_post", legs: [{ zone: "c_base", from: -100, to: -50 }, { zone: "a_east_post", from: -50, to: 600 }], task: { kind: "watch" } });
+    w.parties = [enemy];
+    const ours = spawnIntercept(w, content, { faction: "faction_a", from: "a_east_post", goal: "rail_embankment", size: 3, at: 0, until: 400, squad: ["a_dongwook", "a_byungchul", "a_yejin"], by: "me", leader: "a_dongwook" })!;
+    advanceParties(w, content, createSeededRng(1), 500);
+    expect((w.parties ?? []).find((p) => p.id === ours.id)!.met).not.toContain("pe");
+  });
+
+  it("분대 일을 나간 사람은 장소의 '있을 사람'이 아니다", () => {
+    const w = make("role_a_squad_leader");
+    const id = content.roles.role_a_squad_leader!.squad![0]!;
+    w.executeTool("npc_presence", { npc_id: id, action: "enter" });
+    expect(w.executeTool("squad_order", { members: [id], task: "scout", zone: "rail_embankment" }).ok).toBe(true);
+    expect(whereIs(w.state(), content, id)).toEqual({ zone: "rail_embankment", place: null });
+    w.close();
+  });
+
+  it("세계가 열릴 때 싸움 거는 무리의 공격 계획은 절반~8할쯤 차 있고, 나머지는 비어 있다", () => {
+    const w = make();
+    const s = w.state();
+    for (const [id, c] of Object.entries(s.clocks)) {
+      const f = content.factions[c.factionId]!;
+      const plan = f.plans.find((p) => p.id === id)!;
+      if ((f.aggression ?? 0) > 0 && plan.kind !== "shift") expect(c.filled, id).toBeGreaterThanOrEqual(Math.floor(c.max * 0.5));
+      else expect(c.filled, id).toBe(0);
+    }
+    w.close();
+  });
+
+  it("정찰은 적 땅만이 아니라 적 땅으로 가는 길목으로도 나간다", () => {
+    const goals = new Set<string>();
+    for (let seed = 1; seed <= 40; seed++) {
+      const w = fresh();
+      spawnWatchParties(w, content, createSeededRng(seed), 2);
+      for (const p of w.parties ?? []) if (p.faction === "faction_c" && p.kind === "scout") goals.add(p.goal);
+    }
+    expect(goals.size).toBeGreaterThan(1);
+    expect([...goals].some((g) => g !== "a_east_post")).toBe(true);
   });
 });

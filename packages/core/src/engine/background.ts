@@ -122,8 +122,10 @@ export function settingBackingParts(ctx: ToolContext): HistoryPart[] {
       if (f) parts.push({ kind: "debt", faction: f, size: b.debt });
     }
     if (b.kin_enemy) {
-      const hostile = others.filter((f) => (mine ? (state.factions[f]?.disposition?.[mine] ?? 0) < 0 : !!content.scenario.helpless?.prey_on_strangers.includes(f)));
-      const f = pick(hostile.length ? hostile : others);
+      // 가족이 있을 수 있는 무리만 (걸어서 닿는 거점이 있는 무리): 섬 무리를 고르면 가족 없이 빠졌다
+      const reachable = others.filter((f) => Object.values(content.locations).some((l) => !l.isolated && l.kind === "base" && ownedBy(state, l.id, f)));
+      const hostile = reachable.filter((f) => (mine ? (state.factions[f]?.disposition?.[mine] ?? 0) < 0 : !!content.scenario.helpless?.prey_on_strangers.includes(f)));
+      const f = pick(hostile.length ? hostile : reachable);
       const base = f ? pick(Object.values(content.locations).filter((l) => !l.isolated && ownedBy(state, l.id, f) && l.kind === "base").map((l) => l.id)) : null;
       const template = pick((content.scenario.custom_start?.kin ?? []).filter((t) => content.extras[t] && templateKind(content.extras[t]) === "person"));
       if (base && template) parts.push({ kind: "kin_alive", template, label: content.extras[template]!.label, zone: base });

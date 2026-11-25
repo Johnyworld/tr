@@ -17,7 +17,7 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
-import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay, spawnWatchParties, type WarWorld } from "../sim/war.ts";
+import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, prefillClocks, rationLevel, simulateWarDay, spawnWatchParties, type WarWorld } from "../sim/war.ts";
 import { advanceParties, partiesConfig } from "../sim/parties.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
@@ -56,7 +56,10 @@ export function initFactions(ctx: ToolContext): boolean {
   const { content, store } = ctx;
   if (!content.scenario.war || Object.keys(content.factions).length === 0) return false;
   if (Object.keys(store.getState().factions).length > 0) return false;
-  const { factions, zones, clocks } = initialWarWorld(content);
+  const start = initialWarWorld(content);
+  // 싸움 거는 무리의 계획은 얼마쯤 찬 채로 시작한다 (PT34 사용자 결정)
+  prefillClocks(start, content, ctx.rng);
+  const { factions, zones, clocks } = start;
   store.append({ type: "factions_initialized", day: dayOf(store.getState().time), factions, zones, clocks });
   // 첫날의 정찰·순찰 (PT32 네 판: 세계가 05:30에 열리고 첫날 틱이 돌지 않아 1일차에 부대가 하나도 없었다). 싸우지 않는 부대만, 나머지 하루 일은 이튿날부터
   if (partiesConfig(content)) {
@@ -214,7 +217,8 @@ function ensurePlayerZone(ctx: ToolContext) {
 
 /** 교전 소식을 플레이어의 믿음으로 남긴다 (공통 규칙 14) */
 function deliverNews(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEvent[] {
-  return clashes.flatMap((clash) => {
+  // 주인공 분대가 한 교전은 분대 보고가 첫 소식이다 (PT34: 소문이 보고보다 여섯 시간 먼저 닿았다)
+  return clashes.filter((clash) => !clash.squad).flatMap((clash) => {
     // 땅 주인이 바뀐 일은 남의 일이어도 늘 닿고, 지도에 들은 대로 남는다 (파트 14-3)
     const taken = clash.kind === "occupy" || (clash.kind === "assault" && clash.success);
     const before = ctx.store.getState().nextBeliefNo;
@@ -307,7 +311,10 @@ export function factionOutlook(state: GameState, content: Content): FactionOutlo
               const target = shift ? null : c.target || frontierTarget(state, content, c.factionId);
               return {
                 label: c.label,
-                stage: shift && ratio >= 1 ? "이미 정해졌다는 말" : ratio < 0.34 ? "말만 돈다" : ratio < 0.75 ? (shift ? "윗사람들 사이에 오가는 말이 잦다" : "준비가 한창이라는 말") : shift ? "곧 정해질 거라는 말" : "임박했다는 말",
+                // 공격 계획은 더 잘게 (PT33·PT34 네 판: "앞당겨졌다" 뒤에도 "말만 돈다" 그대로였다)
+                stage: shift
+                  ? ratio >= 1 ? "이미 정해졌다는 말" : ratio < 0.34 ? "말만 돈다" : ratio < 0.75 ? "윗사람들 사이에 오가는 말이 잦다" : "곧 정해질 거라는 말"
+                  : ratio < 0.2 ? "말만 돈다" : ratio < 0.4 ? "사람을 모으기 시작했다는 말" : ratio < 0.6 ? "준비가 한창이라는 말" : ratio < 0.75 ? "준비가 거의 됐다는 말" : "임박했다는 말",
                 imminent: !shift && ratio >= 0.75,
                 targetName: target ? (content.locations[target]?.name ?? target) : null,
               };

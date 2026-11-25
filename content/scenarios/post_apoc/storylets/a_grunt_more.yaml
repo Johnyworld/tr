@@ -283,20 +283,24 @@
         partial:
           - put_down: { who: biter }
           - belief: { fact: 감염체는 처리했지만 담장 틈이 더 벌어졌다, source: seen }
+        # 어느 쪽이든 감염체는 끝난다: 놓치면 소란 끝에 몰려나온 사람들이 처리한다 (PT34 졸병: 깨운 뒤에도 운동장에 사흘 살아 있었다)
         miss:
+          - put_down: { who: biter }
           - faction_morale: { faction: own, delta: -1 }
-          - belief: { fact: 감염체를 놓쳐 거점 안에 소란이 났다, source: seen }
+          - belief: { fact: 감염체를 놓쳐 거점 안에 소란이 났다. 몰려나온 사람들이 겨우 처리했다, source: seen }
     - id: shoot
       label: 쏜다
       when: { has_items_any: [old_rifle, shotgun, pistol, sawn_shotgun, crossbow] }
       effects:
+        - put_down: { who: biter }
         - zone_noise: 2
         - faction_morale: { faction: own, delta: -1 }
         - deed: { summary: 거점 안에서 총을 쏴 감염체 무리를 불러들일 뻔했다, tags: [disobedience], severity: 2, privacy: public }
     - id: alert
       label: 소리쳐 사람들을 깨운다
       effects:
-        - belief: { fact: 담장 틈으로 감염체가 들어와 사람들이 몰려나왔다, source: seen }
+        - put_down: { who: biter }
+        - belief: { fact: 담장 틈으로 감염체가 들어와 사람들이 몰려나와 처리했다, source: seen }
 
 - id: refugee_at_gate
   title: 정문의 피란민

@@ -274,6 +274,13 @@ const hostile = (content: Content, world: WarWorld, a: string, b: string) =>
   a !== b && (disposition(content, a, b, world) <= HOSTILE || disposition(content, b, a, world) <= HOSTILE);
 
 /** 아직 마주치지 않은 적대 부대 짝 가운데 가장 이른 마주침 (같은 구역에 함께 있는 첫 시각) */
+/** 마주칠 수 있는 칸: 가로막는 부대는 목표 구역에 닿아 숨어 기다리는 동안만 (PT34 두 판: 나가는 길·출발 구역에서 바로 맞붙었다) */
+function meetLegs(p: Party): PartyLeg[] {
+  if (p.task.kind !== "intercept") return [...p.legs, ...p.back];
+  const arrived = arrivalOf(p);
+  return p.back.filter((l) => l.zone === p.goal && l.from >= arrived).slice(0, 1);
+}
+
 function nextEncounter(content: Content, world: WarWorld, from: number, upTo: number): { a: Party; b: Party; zone: string; at: number } | null {
   const parties = world.parties ?? [];
   let best: { a: Party; b: Party; zone: string; at: number } | null = null;
@@ -282,8 +289,8 @@ function nextEncounter(content: Content, world: WarWorld, from: number, upTo: nu
       const a = parties[i]!;
       const b = parties[j]!;
       if (a.size <= 0 || b.size <= 0 || a.met.includes(b.id) || !hostile(content, world, a.faction, b.faction)) continue;
-      for (const la of [...a.legs, ...a.back]) {
-        for (const lb of [...b.legs, ...b.back]) {
+      for (const la of meetLegs(a)) {
+        for (const lb of meetLegs(b)) {
           if (la.zone !== lb.zone) continue;
           const s = Math.max(la.from, lb.from, from);
           const e = Math.min(la.to, lb.to);
@@ -500,10 +507,11 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
   const sizes = { a: a.size, b: b.size };
   take(loser, loserLosses);
   take(winner, winnerLosses);
-  // 가로막은 결과를 그 부대에 남긴다 (보고·소식)
+  // 가로막은 결과를 그 부대에 남긴다 (보고·소식). 이긴 가로막는 부대도 더 기다리지 않고 돌아온다 (보고가 곧 온다)
   for (const [p, other, otherSize] of [[a, b, sizes.b], [b, a, sizes.a]] as const) {
     if (p.task.kind === "intercept" && !p.task.result) p.task.result = { enemy: other.id, faction: other.faction, size: otherSize, won: winner === p, losses: winner === p ? winnerLosses : loserLosses };
   }
+  if (winner.task.kind === "intercept" && winner.size > 0) turnBack(world, content, rng, cfg, winner, zone, at);
   out.clashes.push({
     kind: "skirmish",
     attacker: attacker.faction,

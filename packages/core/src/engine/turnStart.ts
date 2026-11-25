@@ -1,5 +1,5 @@
 import { runPartySightings } from "./partySight.ts";
-import { runPartyFights, settlePartyAlerts } from "./partyTools.ts";
+import { runGarrisonWatch, runPartyFights, settlePartyAlerts } from "./partyTools.ts";
 import { runInfirmary } from "./warAftermath.ts";
 import { runPartiesNow } from "./warTools.ts";
 import { onReturnedHome } from "../rules/consequence.ts";
@@ -85,6 +85,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   war.push(...runPartiesNow(ctx));
   // 알린 무리가 물러갔으면 더 지키던 것을 거둔다 (5-3)
   war.push(...settlePartyAlerts(ctx, []));
+  // 우리 땅에 든 적 부대는 지키는 사람이 알아챈다 (PT34 사용자 결정)
+  war.push(...runGarrisonWatch(ctx));
   // 예정 시각이 된 교전: 그 자리에 있으면 전투 장면이 열린다
   const battles = runPendingClashes(ctx);
   // 지금 구역에 든 부대 (공통 규칙 23 마주침): 아직 서로 알아채기를 굴리지 않았으면

@@ -433,11 +433,12 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   const led = (state.parties ?? []).find((p) => p.leader === id && p.size > 0);
   if (led) {
     const at = partyZoneAt(led, time);
-    if (at) return { zone: at, place: arrivalPlace(state, content, at) };
+    // 부대와 함께 움직이는 사람은 장소의 "있을 사람"이 아니다 (PT34: 숨어 기다리는 가로막기의 우두머리가 고가 밑 길에 있을 사람으로 나왔다)
+    if (at) return { zone: at, place: null };
   }
-  // 분대 일을 나간 사람은 그 구역의 길에 (일과 자리에 두지 않는다, 장소 개편: "구역 어딘가"는 없다)
+  // 분대 일을 나간 사람은 그 구역 어딘가에서 일한다: 장소의 "있을 사람"으로 두지 않는다 (PT34 두 판: 정찰·가로막기 중인 분대원이 길의 있을 사람으로 나왔다)
   const order = state.squadOrders?.[id];
-  if (order) return { zone: order.zone, place: arrivalPlace(state, content, order.zone) };
+  if (order) return { zone: order.zone, place: null };
   // 엑스트라는 머무는 장소, 없으면 마지막으로 본 구역의 길
   if (c.extra) return { zone: c.extra.zone, place: c.extra.place ?? (c.extra.zone ? arrivalPlace(state, content, c.extra.zone) : null) };
   const npc = content.npcs[id];

@@ -1,7 +1,7 @@
 import { partyZoneAt } from "../sim/parties.ts";
 import { hostileFaction, hostileLand } from "../rules/home.ts";
 import { forceWords } from "./battleTools.ts";
-import { collectSquadIntercept, sendSquadIntercept } from "./partyTools.ts";
+import { collectSquadIntercept, sendSquadIntercept, squadInterceptBack } from "./partyTools.ts";
 import { neighbors } from "../sim/war.ts";
 import { stakesOf } from "../rules/stakes.ts";
 import { foundCount } from "./scavenge.ts";
@@ -198,8 +198,9 @@ export const squadOrder = defineTool({
 export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
   const { store, content, rng } = ctx;
   const displays: ToolDisplayEvent[] = [];
+  // 분대 가로막기는 맞붙고 돌아오면 정한 때를 기다리지 않는다 (PT34: 보고가 여섯 시간 늦었다)
   const due = Object.entries(store.getState().squadOrders ?? {})
-    .filter(([, o]) => o.until <= store.getState().time)
+    .filter(([id, o]) => o.until <= store.getState().time || (!!taskOf(content, o.task)?.intercepts && squadInterceptBack(store.getState(), id)))
     .sort(([a, x], [b, y]) => x.until - y.until || a.localeCompare(b));
   for (const [id, order] of due) {
     const state = store.getState();
@@ -239,6 +240,10 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
         continue;
       }
       const r = done.result;
+      // 보고는 이끈 사람이 한다 (PT34 붉은연합 분대장: 보고 머리가 이끈 사람이 아니었다)
+      const lead = done.party.leader && store.getState().characters[done.party.leader] ? done.party.leader : id;
+      const leadName = playerCalls(state, content, lead);
+      const fill = (t: string) => fillText(t, { member: leadName, zone });
       const squad = done.party.task.kind === "intercept" ? done.party.task.squad : [id];
       const lines: string[] = [];
       let outcome: CheckOutcome | null = null;
@@ -251,6 +256,10 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
         const hurt = [...squad].filter((m) => !store.getState().characters[m]?.dead).sort(() => rng() - 0.5).slice(0, r.losses);
         for (const m of hurt) changeCondition(ctx, m, content.scenario.harm_track, 2, "harm", `${task.label} 중 다침`);
         if (hurt.length) lines.push(`크게 다친 사람: ${hurt.map((m) => playerCalls(store.getState(), content, m)).join(", ")}`);
+        // 분대 보고가 이 교전의 첫 소식이다: 전황에 남긴다
+        const fact = `${leadName}의 보고: ${zone}에서 ${r.won ? `${enemy}을 숨어 기다리다 쳐서 물리쳤다` : `${enemy}과 맞붙었다가 밀려 물러났다`}`;
+        const now = store.getState();
+        store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: now.time, topic: "war" } });
         if (r.won && task.rewards.merit > 0) {
           store.append({ type: "merit_awarded", characterId: state.playerId, delta: task.rewards.merit, reason: `분대: ${task.label}` });
           lines.push(`분대가 해낸 일로 공적 +${task.rewards.merit}`);
@@ -259,7 +268,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
         }
       }
       store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome, report: lines.join(" · ") });
-      displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: !r ? "아무도 오지 않음" : r.won ? "물리침" : "밀림" });
+      displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${leadName} · ${task.label}`, detail: !r ? "아무도 오지 않음" : r.won ? "물리침" : "밀림" });
       continue;
     }
 
@@ -286,6 +295,8 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
         const fact = `${name}의 정찰 보고: ${content.locations[z]?.name ?? z}에 ${content.factions[p.faction]?.name ?? "낯선"} 쪽 사람들 ${forceWords(p.size)}`;
         const now = store.getState();
         store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: now.time, topic: "war" } });
+        // 보고로 안 무리도 무리에 알릴 수 있다 (PT34 청솔 분대장: 분대 보고로 안 무리는 alert_party가 거절해 막혔다)
+        store.append({ type: "party_reported", partyId: p.id, via: "squad", zone: z });
         lines.push(fact);
       }
       if (!seen.length) lines.push("적의 무리는 보이지 않았다고 한다");

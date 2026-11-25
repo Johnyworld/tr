@@ -83,7 +83,7 @@ import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlo
 import { dayOf, MINUTES_PER_DAY } from "../rules/time.ts";
 import { DEATH_GUIDE, signed, type ToolContext, type ToolDisplayEvent } from "./toolkit.ts";
 import { cargoOf } from "../rules/entrusted.ts";
-import { ownedBy } from "../rules/home.ts";
+import { baseOfNow, ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
@@ -872,7 +872,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 장소 옮기기: 거절할 일을 모두 거른 뒤에 옮긴다 (막힌 행동의 이동·시간이 남지 않게)
-  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved, input.check ? [input.check.opponent, ...Object.values(start.activeStorylet?.cast ?? {})].filter((id): id is string => !!id) : []));
+  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved, input.check ? [input.check.opponent, ...Object.values(start.activeStorylet?.cast ?? {}), ...fightMembersHere(start)].filter((id): id is string => !!id) : []));
   for (const id of arriving) {
     if (store.getState().scene.present.includes(id)) continue;
     enterScene(ctx, id);
@@ -1437,7 +1437,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const deposited = start.playerZone ? store.getState().deposits?.[start.playerZone] : undefined;
     leaveAmbush(ctx);
     // 판정을 걸고 달아났는데 빗나가면 맞선 상대와 맞붙은 부대원이 쫓아온다 (공통 규칙 15, PT32 사용자 결정: 실패해도 그대로 닿고 아무도 쫓지 않았다)
-    const chasing = outcome === "miss" && !escapeAttempt && input.check ? pursuers({ ...store.getState(), scene: start.scene }, content, [input.check.opponent, ...fightMembersHere(start)]).filter((id) => !input.with.includes(id)) : [];
+    const chasing0 = outcome === "miss" && !escapeAttempt && input.check ? pursuers({ ...store.getState(), scene: start.scene }, content, [input.check.opponent, ...fightMembersHere(start)]).filter((id) => !input.with.includes(id)) : [];
+    // 우리 거점으로 쫓겨 오면 다른 무리 사람은 따라 들어오지 않는다: 보초들이 나오자 물러간다 (PT33 사용자 결정: 담 안 운동장까지 쫓아와 거기 있던 다섯이 보고만 있었다)
+    const myBase = player.factionId ? baseOfNow(store.getState(), content, player.factionId) : null;
+    const repelled = input.move_to === myBase ? chasing0.filter((id) => store.getState().characters[id]?.factionId !== player.factionId) : [];
+    const chasing = chasing0.filter((id) => !repelled.includes(id));
     const alongZone = [...comesAlong(start, content, null, input.with), ...chasing];
     movePlayer(ctx, { zone: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone) }, "travel", { with: alongZone });
     if (chasing.length && start.playerZone) chaseParties(ctx, start.playerZone, input.move_to, chasing);
@@ -1450,7 +1454,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const leftBehind = start.scene.present.filter((id) => !alongZone.includes(id) && !start.companions.includes(id)).length > 0;
     // 함께 달아나 갇힌 곳에서 꺼내 온 사람 (공통 규칙 1 welcomeRescued, 설계 목록 2-12)
     const rescued = escapeAttempt ? alongZone.filter((id) => !!heldOf(start.characters[id]) && !heldOf(store.getState().characters[id])) : [];
-    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""}${brought.length ? ` 함께 데려왔다: ${brought.join(", ")}${escapeAttempt ? " (함께 달아났다)" : ""}.` : ""}${chasing.length ? ` 달아나지 못하고 쫓아왔다: ${chasing.map((id) => playerCalls(store.getState(), content, id)).join(", ")} (도착한 자리에서 맞붙음이 이어진다).` : ""}${leftBehind ? " 그 밖에 함께 있던 인물은 따라오지 않는다 (데려가려면 with, 같이 왔다면 npc_presence로 다시 등장시킨다)." : ""}`);
+    lines.push(`${content.locations[input.move_to]?.name ?? input.move_to}에 도착했다.${came.length ? ` 동행(${came.join(", ")})은 함께 왔다.` : ""}${brought.length ? ` 함께 데려왔다: ${brought.join(", ")}${escapeAttempt ? " (함께 달아났다)" : ""}.` : ""}${repelled.length ? ` 뒤를 쫓던 ${repelled.map((id) => playerCalls(store.getState(), content, id)).join(", ")}${josa(playerCalls(store.getState(), content, repelled.at(-1)!), "은/는").slice(playerCalls(store.getState(), content, repelled.at(-1)!).length)} 거점의 보초들이 뛰어나오자 물러갔다 (맞붙음이 끝났다).` : ""}${chasing.length ? ` 달아나지 못하고 쫓아왔다: ${chasing.map((id) => playerCalls(store.getState(), content, id)).join(", ")} (도착한 자리에서 맞붙음이 이어진다).` : ""}${leftBehind ? " 그 밖에 함께 있던 인물은 따라오지 않는다 (데려가려면 with, 같이 왔다면 npc_presence로 다시 등장시킨다)." : ""}`);
     lines.push(...welcomeRescued(ctx, rescued));
     if (rideUsed) {
       lines.push(`${josa(rideUsed.name, "을/를")} 타고 왔다.${rideUsed.noise ? " 엔진 소리가 구역에 울렸다. 몇 시간 안에 무언가 몰려들 수 있다." : ""}`);

@@ -481,11 +481,12 @@
           - zone_noise: 1
           - relation: { who: raider, axis: trust, delta: -2 }
     - id: shoot_first
-      label: 셔터 밑을 향해 먼저 쏜다
+      # 수단을 박지 않는다 (PT33 졸병: 부엌칼로 즉흥으로 풀었는데 "먼저 총을 쏘았다"가 행적으로 남았다)
+      label: 셔터 밑을 향해 먼저 친다
       effects:
-        - zone_noise: 3
-        - deed: { summary: 길목에 매복한 약탈조에게 먼저 총을 쏘았다, tags: [bravery], severity: 1, privacy: semi_private }
-        - belief: { fact: "{to} 앞 길목에서 매복한 약탈조와 총격이 시작됐다", source: seen }
+        - zone_noise: 2
+        - deed: { summary: 길목에 매복한 약탈조에게 먼저 덤벼들었다, tags: [bravery], severity: 1, privacy: semi_private }
+        - belief: { fact: "{to} 앞 길목에서 매복한 약탈조와 싸움이 시작됐다", source: seen }
 
 - id: rd_flooded_underpass
   title: 잠긴 지하도

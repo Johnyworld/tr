@@ -86,6 +86,44 @@ export function partyRoute(content: Content, world: WarWorld, factionId: string,
   return path;
 }
 
+/** 갈래 길에 더 쓸 수 있는 비용 (PT33 사용자 결정): 가장 싼 길보다 빈 땅·남의 땅 한 칸 안쪽으로 긴 길까지 */
+export const DETOUR_SLACK = 1.5;
+
+/**
+ * 가장 싼 길보다 DETOUR_SLACK 안쪽으로 긴 길 가운데 하나를 고른다 (PT33 세 판: 부대가 철길 둑 한 갈래로만 다녀 구시가·버스 차고지·망루에서는 못 봤다).
+ * 칸마다 남은 여유 안에서 갈 수 있는 이웃을 고르게 뽑는다. 되돌아가는 길은 여유보다 비싸 생기지 않는다
+ */
+export function detourRoute(content: Content, world: WarWorld, factionId: string, from: string, to: string, rng: Rng): string[] | null {
+  if (from === to) return [from];
+  // 각 구역에서 도착까지의 가장 싼 비용 (들어가는 구역의 비용을 더한다)
+  const toGoal = new Map<string, number>([[to, 0]]);
+  const open = new Set([to]);
+  while (open.size) {
+    const here = [...open].sort((a, b) => toGoal.get(a)! - toGoal.get(b)! || a.localeCompare(b))[0]!;
+    open.delete(here);
+    for (const n of neighbors(content, here)) {
+      const d = toGoal.get(here)! + stepCost(content, world, factionId, here);
+      if (d < (toGoal.get(n) ?? Infinity)) {
+        toGoal.set(n, d);
+        open.add(n);
+      }
+    }
+  }
+  if (!toGoal.has(from)) return null;
+  const path = [from];
+  let slack = DETOUR_SLACK;
+  while (path.at(-1) !== to) {
+    const here = path.at(-1)!;
+    const extra = (n: string) => stepCost(content, world, factionId, n) + toGoal.get(n)! - toGoal.get(here)!;
+    const options = neighbors(content, here).filter((n) => toGoal.has(n) && !path.includes(n) && extra(n) <= slack + 1e-9).sort();
+    if (!options.length) return partyRoute(content, world, factionId, from, to);
+    const next = options[Math.floor(rng() * options.length)]!;
+    slack -= extra(next);
+    path.push(next);
+  }
+  return path;
+}
+
 const QUARTER = 15;
 const round15 = (m: number) => Math.round(m / QUARTER) * QUARTER;
 /** 시간 범위(시)에서 하나 (15분 단위, 분) */
@@ -184,9 +222,11 @@ export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: Sp
   const route = partyRoute(content, world, args.faction, home, args.goal);
   if (!route || route.length < 2) return null;
   if (!canSend(world, cfg, args.faction, args.size, args.kind)) return null;
+  // 나가는 길은 갈래 길 가운데 하나 (돌아오는 길은 가장 싼 길)
+  const walk = detourRoute(content, world, args.faction, home, args.goal, rng) ?? route;
   const start = args.dayStart + pickHours(rng, k.depart);
   const depart = start + k.gather_hours * 60;
-  const legs = planLegs(content, cfg, args.kind, route, start, depart, args.size, rng, { strike: args.task.kind === "clash" });
+  const legs = planLegs(content, cfg, args.kind, walk, start, depart, args.size, rng, { strike: args.task.kind === "clash" });
   const f = world.factions[args.faction]!;
   f.combatants -= args.size;
   const leader = args.kind === "raid" || args.kind === "assault" ? pickLeader(world, content, rng, args.faction, args.leaderOk) : null;

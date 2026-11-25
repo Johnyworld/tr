@@ -38,7 +38,8 @@ export function warCauses(state: GameState, content: Content, factionId: string 
   const hurt = state.wounded.find((w) => w.faction === factionId && !state.characters[w.id]?.dead);
   if (hurt) out.wounded = hurt.zone;
   const ours = (z: string) => ownedBy(state, z, factionId) || neighbors(content, z).some((n) => ownedBy(state, n, factionId));
-  const trace = [...state.recentClashes].reverse().find((r) => state.time - r.at <= MINUTES_PER_DAY && (r.clash.attacker === factionId || r.clash.defender === factionId) && ours(r.clash.zone));
+  // 상대가 있는 교전만: 빈 땅을 차지한 일(occupy)에는 수습할 싸움터가 없다 (PT33 약탈자)
+  const trace = [...state.recentClashes].reverse().find((r) => state.time - r.at <= MINUTES_PER_DAY && r.clash.kind !== "occupy" && !!r.clash.defender && (r.clash.attacker === factionId || r.clash.defender === factionId) && ours(r.clash.zone));
   if (trace) out.traces = trace.clash.zone;
   const party = state.parties.find((p) => p.size > 0 && hostileFaction(state, content, p.faction) && ownedBy(state, partyZoneAt(p, state.time), factionId));
   const threatZone = party ? partyZoneAt(party, state.time) : null;

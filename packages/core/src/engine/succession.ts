@@ -20,7 +20,7 @@ import { josa, sentence } from "../text.ts";
 import { defineTool, type ToolContext } from "./toolkit.ts";
 import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { hearNews } from "../rules/news.ts";
-import { zoneOf, arrivalPlace, currentPlace, movePlayer, whereIs } from "../rules/place.ts";
+import { zoneOf, arrivalPlace, currentPlace, movePlayer, peopleAt, whereIs } from "../rules/place.ts";
 
 /**
  * 사망과 계승 (기획서 3.1, 3.2).
@@ -299,7 +299,10 @@ export function switchCharacter(
     // 이어받는 사람이 부르는 말로. 같은 무리면 보고로, 아니면 소문으로 죽었다는 것만 (B14).
     // 사인은 그 자리를 본 사람(이어받는 사람이나 같은 무리)이 있을 때만 (플레이 테스트 12: 병원 지하에서 혼자 죽은 사인을 거점 사람이 바로 알았다)
     const report = !!heir.factionId && heir.factionId === r.factionId;
-    const seen = r.characterId === previous.id && state.scene.present.some((id) => id !== previous.id && !state.characters[id]?.dead && (id === heir.id || (!!heir.factionId && state.characters[id]?.factionId === heir.factionId)));
+    // 그 장소에 있을 사람도 본 사람이다 (PT33 졸병: 거점 운동장에 다섯이 "있을 사람"이었는데 "본 사람이 없다")
+    const diedAt = currentPlace(state, content)?.id ?? null;
+    const around = [...state.scene.present, ...(diedAt ? peopleAt(state, content, state.playerZone, diedAt) : [])];
+    const seen = r.characterId === previous.id && around.some((id) => id !== previous.id && !state.characters[id]?.dead && (id === heir.id || (!!heir.factionId && state.characters[id]?.factionId === heir.factionId)));
     // 이어받는 사람이 그 자리에 있었으면 직접 본 일이다
     const witnessed = r.characterId === previous.id && (state.scene.present.includes(heir.id) || state.companions.includes(heir.id));
     // 공통 규칙 14: 그 자리에서 봤으면 직접, 같은 무리면 소식, 아니면 소문으로 (계승한 사람은 늘 듣는다)

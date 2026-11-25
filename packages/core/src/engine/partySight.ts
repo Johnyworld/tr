@@ -210,6 +210,8 @@ export function settleSighting(ctx: ToolContext, party: Party, roll: SightRoll, 
   const zone = state.playerZone;
   if (!zone) return [];
   store.append({ type: "party_sighted", key: sightKey(party, zone, at), player: roll.player, party: roll.party });
+  // 맞붙는 중인 무리는 새로 "본" 일이 아니다: 맞붙음이 끝날 때 한 줄로 남는다 (PT33 두 판: 쫓아온 정찰대가 구역마다 "지나가는 것을 봤다")
+  if (state.partyFights[party.id]) return [];
   const displays: ToolDisplayEvent[] = [];
   const me = state.characters[state.playerId];
   const ours = !!me?.factionId && me.factionId === party.faction;

@@ -6,10 +6,13 @@ import { createSeededRng } from "../rng.ts";
 import { loadRealContent } from "../testing.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
-import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
+import { advanceParties, arrivalOf, canSend, detourRoute, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
 import { warConfessions } from "../engine/partyTools.ts";
 import { executeTool } from "../engine/tools.ts";
 import { frontBusy } from "../engine/missionTools.ts";
+import { warCauses } from "../engine/warAftermath.ts";
+import { fearSourcePresent } from "../engine/fear.ts";
+import { baseOfNow } from "../rules/home.ts";
 import { pickDailyOffers, warMission } from "../game/missions.ts";
 import { placesIn } from "../rules/place.ts";
 import { endBattle, forceWords } from "../engine/battleTools.ts";
@@ -616,5 +619,89 @@ describe("PT32 정할 것: 달아나기 실패·전선이 바쁜 날", () => {
       expect(offers.templateIds.some((id) => warMission(content.missions[id]!)), `seed ${seed}`).toBe(true);
     }
     w.close();
+  });
+});
+
+describe("PT33 뒤 고친 것", () => {
+  const make = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt33-")), content, rngFactory: () => createSeededRng(9) }).create("mcp", "role_a_grunt");
+  type W = ReturnType<typeof make>;
+  const engaged = (w: W) => {
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
+    const s = w.state();
+    const t = s.time;
+    const p = party({ id: "pr", faction: "faction_c", kind: "scout", size: 4, goal: "a_east_post", legs: [{ zone: "c_base", from: t - 600, to: t - 300 }, { zone: "rail_embankment", from: t - 300, to: t - 10 }, { zone: "a_east_post", from: t - 10, to: t + 240 }], task: { kind: "watch" } });
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: [p], partiesUpTo: t, clashes: [], scheduled: [] });
+    w.ctx().store.append({ type: "party_sighted", key: sightKey(w.state().parties[0]!, "a_east_post", t), player: true, party: false });
+    expect(w.executeTool("engage_party", { party_id: "pr" }).ok).toBe(true);
+    return w.state().partyFights.pr!.members;
+  };
+  const flee = (w: W, roll: number, where: { move_to?: string; place_to?: string }) =>
+    executeTool("take_action", { intent: "달아난다", check: { move: "athletics", stat: "agility", difficulty: "normal", harm_on_failure: "none", harm_cause: "" }, activity: null, deed: null, target: null, narration_summary: null, ...where }, { ...w.ctx(), rng: () => roll });
+  const seenLines = (w: W) => (w.state().beliefs[w.state().playerId] ?? []).filter((b) => b.fact.includes("지나가는 것을 봤다") || b.fact.includes("자리를 잡는 것을 봤다"));
+
+  it("우리 거점으로 쫓겨 오면 적은 따라 들어오지 않고 물러간다", () => {
+    const w = make();
+    const members = engaged(w);
+    const base = baseOfNow(w.state(), content, "faction_a")!;
+    const r = flee(w, 0.01, { move_to: base });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().playerZone).toBe(base);
+    expect(r.ok && r.resultText).toContain("물러갔다");
+    for (const id of members) expect(w.state().scene.present).not.toContain(id);
+    expect(w.state().partyFights.pr).toBeUndefined();
+    w.close();
+  });
+
+  it("쫓아온 무리는 도착한 구역에서도 눈에 띈 무리로 남고, 맞붙는 동안 '지나가는 것을 봤다'를 쓰지 않으며, 공포가 가라앉지 않는다", () => {
+    const w = make();
+    engaged(w);
+    const before = seenLines(w).length;
+    expect(flee(w, 0.01, { move_to: "rail_embankment" }).ok).toBe(true);
+    const p = w.state().parties.find((x) => x.id === "pr")!;
+    expect(w.state().partySightings[sightKey(p, "rail_embankment", w.state().time)]?.player).toBe(true);
+    expect(seenPartiesLines(w.state(), content).join()).toContain("맞붙는 중");
+    expect(seenLines(w).length).toBe(before);
+    expect(fearSourcePresent(w.ctx())).toBe(true);
+    w.close();
+  });
+
+  it("맞붙음이 끝나면 한 줄로 남고, 우리 땅에서 맞붙은 일은 교전 기록이 된다", () => {
+    const w = make();
+    const members = engaged(w);
+    for (const id of members.slice(0, 2)) {
+      const c = w.state().characters[id]!;
+      w.ctx().store.append({ type: "condition_changed", targetId: id, track: content.scenario.harm_track, from: c.conditions[content.scenario.harm_track] ?? "none", to: "serious", fatal: false, by: w.state().playerId, cause: "test", day: 1, harmTrack: true });
+    }
+    w.runCheat("~time +1h");
+    expect(w.state().partyFights.pr).toBeUndefined();
+    expect((w.state().beliefs[w.state().playerId] ?? []).some((b) => b.fact.includes("맞붙었다") && b.fact.includes("무너져 달아났다"))).toBe(true);
+    expect(w.state().recentClashes.some((r) => r.clash.kind === "skirmish" && r.clash.zone === "a_east_post" && r.clash.attacker === "faction_c" && r.clash.defender === "faction_a")).toBe(true);
+    expect(warCauses(w.state(), content, "faction_a").traces).toBe("a_east_post");
+    w.close();
+  });
+
+  it("빈 땅을 차지한 일은 싸움터 수습하기·전선이 바쁜 날의 교전이 아니다", () => {
+    const w = make();
+    const s = w.state();
+    const occupy = { kind: "occupy" as const, attacker: "faction_a", defender: null, zone: "rail_embankment", success: true, attackerLosses: 0, defenderLosses: 0 };
+    const st = { ...s, recentClashes: [{ clash: occupy, at: s.time - 60 }], clocks: {}, parties: [] };
+    expect(warCauses(st, content, "faction_a").traces).toBeUndefined();
+    expect(frontBusy(st, content, "faction_a")).toBe(false);
+    w.close();
+  });
+
+  it("부대의 나가는 길은 가장 싼 길보다 한 칸 안쪽으로 긴 갈래 길 가운데서 고른다", () => {
+    const w = fresh();
+    const best = partyRoute(content, w, "faction_c", "c_base", "a_base")!;
+    const paths = new Set<string>();
+    for (let seed = 1; seed <= 30; seed++) {
+      const r = detourRoute(content, w, "faction_c", "c_base", "a_base", createSeededRng(seed))!;
+      expect(r[0]).toBe("c_base");
+      expect(r.at(-1)).toBe("a_base");
+      expect(new Set(r).size).toBe(r.length);
+      paths.add(r.join(">"));
+    }
+    expect(paths.size).toBeGreaterThan(1);
+    expect(paths.has(best.join(">"))).toBe(true);
   });
 });

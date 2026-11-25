@@ -96,6 +96,8 @@ export function frighten(ctx: ToolContext, base: number, cause: string, tags: re
 export function fearSourcePresent(ctx: ToolContext, state: GameState = ctx.store.getState()): boolean {
   if (state.battle) return true;
   if (state.activeStorylet && (storyletOf(state, ctx.content, state.activeStorylet.id)?.fright ?? 0) > 0) return true;
+  // 맞붙은 무리가 곁에 있으면 숨을 고를 틈이 없다 (PT33 분대장: 쫓아온 정찰대가 도착한 결과에서 "위협에서 벗어나 숨을 골랐다")
+  if (Object.values(state.partyFights).some((f) => f.members.some((id) => state.scene.present.includes(id) && !state.characters[id]?.dead))) return true;
   return state.scene.present.some((id) => fearsomeOf(ctx, state, id) > 0);
 }
 

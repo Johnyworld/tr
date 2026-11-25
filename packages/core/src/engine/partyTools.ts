@@ -1,13 +1,14 @@
 import { sightKey } from "./partySight.ts";
 import { z } from "zod";
-import type { BattleState, GameState, Party } from "../game/state.ts";
+import type { BattleState, Clash, GameState, Party } from "../game/state.ts";
 import { heldOf } from "../rules/held.ts";
 import { ownedBy } from "../rules/home.ts";
+import { hearNews } from "../rules/news.ts";
 import { companyHere } from "../rules/company.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { battleConfig } from "../sim/battle.ts";
 import { chaseInto, partyLabel, partyZoneAt, recordDefeat, routParty } from "../sim/parties.ts";
-import { DEFENSE_COMMIT, frontierTarget, type WarWorld } from "../sim/war.ts";
+import { DEFENSE_COMMIT, frontierTarget, neighbors, type WarWorld } from "../sim/war.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import { josa } from "../text.ts";
@@ -41,8 +42,8 @@ function worldOf(state: GameState): WarWorld {
   return { factions: structuredClone(state.factions), zones: structuredClone(state.zones), clocks: structuredClone(state.clocks), parties: structuredClone(state.parties), nextPartyNo: state.nextPartyNo, partiesUpTo: state.partiesUpTo };
 }
 
-/** 부대·세력이 바뀐 것을 남긴다 (parties_advanced: 닿을 때 계산과 같은 이벤트) */
-function saveWorld(ctx: ToolContext, world: WarWorld) {
+/** 부대·세력이 바뀐 것을 남긴다 (parties_advanced: 닿을 때 계산과 같은 이벤트). clashes는 구역의 교전 기록으로 남는다 */
+function saveWorld(ctx: ToolContext, world: WarWorld, clashes: Clash[] = []) {
   const state = ctx.store.getState();
   ctx.store.append({
     type: "parties_advanced",
@@ -51,7 +52,7 @@ function saveWorld(ctx: ToolContext, world: WarWorld) {
     clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
     parties: world.parties ?? [],
     partiesUpTo: Math.max(state.partiesUpTo, world.partiesUpTo ?? 0),
-    clashes: [],
+    clashes,
     scheduled: [],
   });
 }
@@ -179,7 +180,12 @@ export function chaseParties(ctx: ToolContext, from: string, to: string, chasing
   const world = worldOf(state);
   for (const [partyId] of fights) chaseInto(world, ctx.content, ctx.rng, partyId, to, state.time, 60);
   saveWorld(ctx, world);
-  for (const [partyId, f] of fights) ctx.store.append({ type: "party_engaged", partyId, members: [...f.members], zone: to });
+  for (const [partyId, f] of fights) {
+    ctx.store.append({ type: "party_engaged", partyId, members: [...f.members], zone: to });
+    // 쫓아온 무리는 도착한 구역에서도 "눈에 띈 무리"다 (PT33 분대장: 거점까지 쫓겨 오자 무리 줄이 사라졌다)
+    const party = ctx.store.getState().parties.find((x) => x.id === partyId);
+    if (party) ctx.store.append({ type: "party_sighted", key: sightKey(party, to, state.time), player: true, party: true });
+  }
 }
 
 export const PARTY_TOOLS = [engageParty] as const;
@@ -219,9 +225,21 @@ export function runPartyFights(ctx: ToolContext): ToolDisplayEvent[] {
       recordDefeat(world, p.faction, state.time);
       if (leaderDown) leaderLost(ctx, world, p.faction);
     }
-    saveWorld(ctx, world);
+    // 우리 땅이나 맞닿은 곳에서 우리 무리 주인공과 맞붙은 일은 그 구역의 교전으로 남는다 (PT33 사용자 결정: 전선이 바쁜 날·싸움터 수습하기·흔적의 계기)
+    const mine = me?.factionId ?? null;
+    const near = !!mine && (ownedBy(state, fight.zone, mine) || neighbors(content, fight.zone).some((n) => ownedBy(state, n, mine)));
+    const meDown = !me || me.dead || !!incapacitatingSymptom(content.scenario, me) || harmIncapacitates(content.scenario, me);
+    const clash: Clash[] = near && mine && mine !== p.faction ? [{ kind: "skirmish", attacker: p.faction, defender: mine, zone: fight.zone, success: !rout, attackerLosses: downed.length, defenderLosses: meDown ? 1 : 0 }] : [];
+    saveWorld(ctx, world, clash);
     store.append({ type: "party_fight_ended", partyId });
     const label = partyLabel(content, party);
+    // 맞붙은 일은 한 줄로 남는다 (본 것). 정신을 잃은 사이 끝났으면 깨어나 알게 된다 (PT33 분대장: 의식을 잃은 사이 떠났는데 아무 기록이 없었다)
+    if (me && !me.dead) {
+      const where = content.locations[fight.zone]?.name ?? fight.zone;
+      const topic = josa(label, "은/는");
+      const end = rout ? `${topic} 무너져 달아났다` : meDown ? `${topic} 정신을 잃은 사이 물러갔다` : state.playerZone === fight.zone ? `${topic} 더 엮이지 않고 갈 길을 갔다` : "쫓아오는 것을 떨쳐 냈다";
+      hearNews(ctx, { fact: `${where}에서 ${josa(label, "과/와")} 맞붙었다. ${end}.`, factions: [p.faction], seen: true, topic: "war", once: true });
+    }
     // 쓰러지지 않은 사람은 장면을 떠난다
     for (const id of fight.members) if (!downed.includes(id) && store.getState().scene.present.includes(id)) store.append({ type: "npc_left", npcId: id });
     if (rout) {

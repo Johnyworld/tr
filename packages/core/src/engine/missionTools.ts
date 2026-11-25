@@ -691,7 +691,7 @@ export function frontBusy(state: GameState, content: Content, factionId: string 
   if (!factionId) return false;
   const planKind = (id: string) => content.factions[factionId]?.plans.find((p) => p.id === id)?.kind;
   if (Object.entries(state.clocks).some(([id, c]) => c.factionId === factionId && planKind(id) !== "shift" && c.filled * 2 >= c.max)) return true;
-  if (state.recentClashes.some((r) => state.time - r.at <= MINUTES_PER_DAY && (r.clash.attacker === factionId || r.clash.defender === factionId))) return true;
+  if (state.recentClashes.some((r) => state.time - r.at <= MINUTES_PER_DAY && r.clash.kind !== "occupy" && !!r.clash.defender && (r.clash.attacker === factionId || r.clash.defender === factionId))) return true;
   return state.parties.some((p) => p.size > 0 && hostileFaction(state, content, p.faction) && ownedBy(state, partyZoneAt(p, state.time), factionId));
 }
 

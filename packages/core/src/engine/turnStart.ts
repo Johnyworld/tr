@@ -1,4 +1,5 @@
 import { runPartySightings } from "./partySight.ts";
+import { runPartiesNow } from "./warTools.ts";
 import { onReturnedHome } from "../rules/consequence.ts";
 import { issueSpare } from "./armory.ts";
 import { disasterWeather } from "./disasters.ts";
@@ -78,6 +79,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   spreadRumors(ctx);
   // 세력 단위 전쟁 (하루 단위). 자기 무리가 낀 교전 소식은 화면에 보인다
   const war = runWarDays(ctx);
+  // 움직이는 부대: 지금까지 닿은 부대의 할 일 (닿을 때 계산)
+  war.push(...runPartiesNow(ctx));
   // 예정 시각이 된 교전: 그 자리에 있으면 전투 장면이 열린다
   const battles = runPendingClashes(ctx);
   // 지금 구역에 든 부대 (공통 규칙 23 마주침): 아직 서로 알아채기를 굴리지 않았으면

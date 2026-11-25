@@ -9,7 +9,7 @@ import { WorldManager } from "../world/manager.ts";
 import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, returnOf, spawnParty } from "./parties.ts";
 import { initialWarWorld, simulateWarDay, type WarWorld } from "./war.ts";
 import type { Party } from "../game/state.ts";
-import { createPartyCheck, PARTY_INTERRUPT, rollPartySight, seenPartiesLines } from "../engine/partySight.ts";
+import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting } from "../engine/partySight.ts";
 
 const content = loadRealContent();
 const cfg = partiesConfig(content)!;
@@ -237,6 +237,61 @@ describe("주인공과 부대 (공통 규칙 23, 9-1·9-2)", () => {
     expect(lines[0]).toContain("열 명 남짓");
     expect(lines[0]).not.toContain("습격");
     expect(seenPartiesLines({ ...state, partySightings: {} }, content)).toEqual([]);
+    w.close();
+  });
+});
+
+describe("③-1 닿을 때 계산·장소 거리·믿음", () => {
+  const make = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-lazy-")), content, rngFactory: () => createSeededRng(5) }).create("mcp", "role_a_grunt");
+  const put = (w: ReturnType<typeof make>, parties: Party[]) => {
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties, partiesUpTo: s.time, clashes: [], scheduled: [] });
+  };
+  const raidFromEmbankment = (t: number) =>
+    party({ id: "pr", faction: "faction_c", kind: "raid", size: 8, goal: "a_east_post", legs: [{ zone: "c_base", from: t - 600, to: t - 300 }, { zone: "rail_embankment", from: t - 300, to: t }, { zone: "a_east_post", from: t, to: t + 60 }], task: { kind: "clash", clash: "raid", defender: "faction_a" } });
+
+  it("부대는 닿은 뒤에야 싸운다: 시간이 흘러 닿는 시각을 넘기면 그때 교전이 일어난다", () => {
+    const w = make();
+    const t = w.state().time + 180;
+    put(w, [raidFromEmbankment(t + 60)]);
+    expect(w.state().parties[0]!.done).toBe(false);
+    w.runCheat("~time +5h");
+    const s = w.state();
+    expect(s.recentClashes.some((r) => r.party && r.clash.kind === "raid" && r.clash.zone === "a_east_post")).toBe(true);
+    expect(s.parties.find((p) => p.id === "pr")?.done ?? true).toBe(true);
+    w.close();
+  });
+
+  it("장소 사이는 멀다: 두 칸 떨어지면 못 보고, 한 칸 옆이나 망루(두 칸)에서는 본다 (파트 12)", () => {
+    const w = make();
+    const t = w.state().time + 30;
+    const p = raidFromEmbankment(t + 60);
+    const at = (place: string) => ({ ...w.state(), playerZone: "a_east_post", playerPlace: place, parties: [p] });
+    // 들어오는 길은 철길 둑 쪽 비탈
+    expect(partyPlacePath(at("trench"), content, p, "a_east_post", t + 60).enter).toBe("to_warehouse");
+    const sure = () => 0.99;
+    expect(rollPartySight(at("to_base"), content, sure, p, t + 60).player).toBe(false);
+    expect(rollPartySight(at("trench"), content, sure, p, t + 60).player).toBe(true);
+    expect(rollPartySight(at("watchtower"), content, sure, p, t + 60).player).toBe(true);
+    w.close();
+  });
+
+  it("본 부대는 믿음으로 남는다: 언제·어디서·대략 몇 명·어느 길로, 목적은 없이 (8-1)", () => {
+    const w = make();
+    const t = w.state().time;
+    const p = raidFromEmbankment(t);
+    put(w, [p]);
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
+    const before = (w.state().beliefs[w.state().playerId] ?? []).length;
+    settleSighting(w.ctx(), w.state().parties[0]!, { player: true, party: false, attacks: false }, w.state().time);
+    const beliefs = w.state().beliefs[w.state().playerId] ?? [];
+    expect(beliefs.length).toBe(before + 1);
+    const b = beliefs.at(-1)!;
+    expect(b).toMatchObject({ source: "seen", topic: "war" });
+    expect(b.fact).toContain("동쪽 초소");
+    expect(b.fact).toContain("열 명 남짓");
+    expect(b.fact).toContain("철길 둑 가는 비탈");
+    expect(b.fact).not.toContain("습격");
     w.close();
   });
 });

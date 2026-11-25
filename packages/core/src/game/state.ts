@@ -46,7 +46,8 @@ import { startingSkills } from "./creation.ts";
 // 111: 길목 더 늘리기와 길목·구역 합치기 (12-313). 구역 32곳, 맞닿음이 바뀌어 이전 세이브는 보관함으로
 // 112: 움직이는 부대 ① (docs/war-parties-plan.md). 상태 parties·nextPartyNo, war_day_simulated.parties
 // 113: 움직이는 부대 ② (12-315). 부대 met·routedAt, 세력 seen, partiesUpTo·partySightings, 이벤트 party_sighted
-export const SAVE_SCHEMA_VERSION = 113;
+// 114: 움직이는 부대 ③-1 (12-316). 닿을 때 계산(이벤트 parties_advanced), recentClashes.party
+export const SAVE_SCHEMA_VERSION = 114;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -747,7 +748,8 @@ export function createGameSchemas(s: Scenario) {
     /** 내일의 날씨 (E2: 하루 전에 정해 낌새로 알린다) */
     forecast: z.strictObject({ day: z.number().int(), id: z.string() }).nullable().default(null),
     /** 최근 교전 (오래된 것부터, 최대 RECENT_CLASHES). 계승한 캐릭터가 직전 전황을 듣는 데 쓴다 */
-    recentClashes: z.array(z.strictObject({ clash: clashSchema, at: z.number().int() })).default([]),
+    /** party: 움직이는 부대가 닿아 시간이 흐르는 사이에 일어난 교전 (다음 날 감염체 압력에 센다) */
+    recentClashes: z.array(z.strictObject({ clash: clashSchema, at: z.number().int(), party: z.boolean().optional() })).default([]),
     /** 죽은 캐릭터들의 기록 (오래된 것부터) */
     chronicle: z.array(runRecordSchema).default([]),
     /** 유해와 무덤 (12-130) */
@@ -1096,6 +1098,17 @@ export function createGameSchemas(s: Scenario) {
       parties: z.array(partySchema).optional(),
       nextPartyNo: z.number().int().min(0).optional(),
       partiesUpTo: z.number().int().optional(),
+    }),
+    /** 움직이는 부대가 시간이 흐르는 사이에 닿고 마주치고 돌아왔다 (닿을 때 계산). 세력·구역·클락·부대의 새 값과 일어난 교전 */
+    z.strictObject({
+      type: z.literal("parties_advanced"),
+      factions: z.record(z.string(), factionStateSchema),
+      zones: z.record(z.string(), zoneStateSchema),
+      clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
+      parties: z.array(partySchema),
+      partiesUpTo: z.number().int(),
+      clashes: z.array(clashSchema),
+      scheduled: z.array(pendingClashSchema).default([]),
     }),
     /** 주인공이 부대와 마주쳤다 (공통 규칙 23). player: 주인공이 봤다, party: 부대가 주인공을 봤다 */
     z.strictObject({ type: z.literal("party_sighted"), key: z.string(), player: z.boolean(), party: z.boolean() }),
@@ -1547,8 +1560,8 @@ function swapGround(next: GameState, from: string | null, to: string) {
   next.groundItems = ground;
 }
 
-function rememberClashes(next: GameState, clashes: readonly Clash[], at: number) {
-  next.recentClashes.push(...clashes.map((clash) => ({ clash: structuredClone(clash), at })));
+function rememberClashes(next: GameState, clashes: readonly Clash[], at: number, party = false) {
+  next.recentClashes.push(...clashes.map((clash) => ({ clash: structuredClone(clash), at, ...(party ? { party } : {}) })));
   next.recentClashes = next.recentClashes.slice(-RECENT_CLASHES);
 }
 
@@ -2505,6 +2518,19 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         for (const key of Object.keys(next.partySightings)) if (!alive.has(key.split("@")[0]!)) delete next.partySightings[key];
       }
       break;
+    case "parties_advanced": {
+      next.factions = structuredClone(event.factions);
+      next.zones = structuredClone(event.zones);
+      for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
+      next.parties = structuredClone(event.parties);
+      next.partiesUpTo = event.partiesUpTo;
+      next.pendingClashes.push(...structuredClone(event.scheduled));
+      next.nextBattleNo += event.scheduled.length;
+      rememberClashes(next, event.clashes, state.time, true);
+      const alive = new Set(event.parties.map((p) => p.id));
+      for (const key of Object.keys(next.partySightings)) if (!alive.has(key.split("@")[0]!)) delete next.partySightings[key];
+      break;
+    }
     case "party_sighted":
       next.partySightings[event.key] = { at: state.time, player: event.player, party: event.party };
       break;

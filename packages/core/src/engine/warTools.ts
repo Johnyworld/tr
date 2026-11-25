@@ -17,7 +17,9 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf } from "../rules/time.ts";
-import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay } from "../sim/war.ts";
+import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, rationLevel, simulateWarDay, type WarWorld } from "../sim/war.ts";
+import { advanceParties, partiesConfig } from "../sim/parties.ts";
+import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
 import { runDailyBody, runDailyNpcBody, runNpcRecovery } from "./body.ts";
 import { seasonAt, seasonLabel, seasonOfDay } from "../sim/season.ts";
@@ -70,12 +72,14 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     const state = store.getState();
     // 오늘 새벽 교전 중 플레이어가 그 자리에 있는 것은 계산하지 않고 예정해 둔다 (전투 장면, 기획서 9.5)
     const at = scheduleTime(day, ctx.rng);
-    // 움직이는 부대면 부대가 닿는 시각에 (그 시각이 아직 오지 않았을 때만)
-    const canDefer = (when: number) => day === today && when > state.time;
+    const canDefer = day === today && at > state.time;
+    // 움직이는 부대는 닿을 때 계산한다: 이날의 부대를 내고 지금(또는 그날 끝)까지 닿은 몫만 푼다. 나머지는 시간이 흐르며 runPartiesNow가.
+    // 지금 닿는 교전에 플레이어가 끼면 그 시각의 예정된 교전으로 (전투 장면)
+    const upTo = Math.min(day * MINUTES_PER_DAY - 1, state.time);
     const result = simulateWarDay({ factions: state.factions, zones: state.zones, clocks: state.clocks, parties: state.parties, nextPartyNo: state.nextPartyNo, partiesUpTo: state.partiesUpTo }, content, ctx.rng, {
-      defer: (spec, arrival) => canDefer(arrival ?? at) && playerInvolvement(state, content, spec) !== null,
-      // 돌아오는 부대는 지금까지만 거둔다: 그 뒤로는 아직 길 위에 있다 (주인공이 마주칠 수 있게)
-      endUpTo: state.time,
+      defer: (spec, arrival) => (arrival === undefined ? canDefer : day === today) && playerInvolvement(state, content, spec) !== null,
+      resolveUpTo: upTo,
+      endUpTo: upTo,
       season: seasonOfDay(content.scenario, day),
       infested: state.infested,
       day,
@@ -91,21 +95,14 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       scheduled,
       ...(result.parties ? { parties: result.parties, nextPartyNo: result.nextPartyNo ?? state.nextPartyNo, partiesUpTo: result.partiesUpTo ?? state.partiesUpTo } : {}),
     });
-    // 감염체 압력: 전날의 소음, 오늘 새벽 교전의 시체 (12-112)
-    for (const change of infestationDay(content, store.getState(), day, result.clashes, ctx.rng)) store.append({ type: "infestation_changed", ...change });
-    displays.push(...deliverNews(ctx, result.clashes));
-    // 사상자 가운데 이름 있는 대원 (세계가 움직인 느낌, 12-242)
-    displays.push(...casualtiesToPeople(ctx, result.clashes));
+    // 감염체 압력: 전날의 소음, 오늘 새벽 교전의 시체 (12-112). 어제 부대가 닿아 벌어진 교전의 시체도 (닿을 때 계산)
+    const yesterday = store.getState().recentClashes.filter((r) => r.party && r.at >= (day - 2) * MINUTES_PER_DAY && r.at < (day - 1) * MINUTES_PER_DAY).map((r) => r.clash);
+    for (const change of infestationDay(content, store.getState(), day, [...result.clashes, ...yesterday], ctx.rng)) store.append({ type: "infestation_changed", ...change });
+    displays.push(...afterClashes(ctx, result.clashes, { facilities: false }));
     // 다른 무리의 형편이 소문으로 (12-105)
     displays.push(...spreadTroubleRumors(ctx));
-    // 무리 사이 싸움의 포로, 포로를 먹이고 부리기 (12-55)
-    displays.push(...warCaptures(ctx, result.clashes));
-    // 시설이 싸움통에 부서진다 (12-167). 내 거처·우리 거점이면 소식이 온다
-    {
-      const now = store.getState();
-      const mine = new Set([now.homes[now.playerId], ...Object.entries(now.zones).filter(([, z]) => z.owner === now.characters[now.playerId]?.factionId).map(([id]) => id)]);
-      for (const b of breakFacilities(ctx, result.clashes)) if (mine.has(b.zone)) displays.push({ type: "belief", fact: b.line, sourceLabel: "소식" });
-    }
+    // 무리 사이 싸움의 포로, 시설이 부서짐 (12-55, 12-167)
+    displays.push(...afterClashes(ctx, result.clashes, { news: false }));
     // 텃밭이 자란다 (12-167)
     runFacilitiesDaily(ctx, day);
     // 인물의 자기 일 (12-168)
@@ -132,6 +129,50 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     for (const line of runPromisesDaily(ctx)) displays.push({ type: "belief", fact: line, sourceLabel: "약속", note: line });
   }
   return displays;
+}
+
+/**
+ * 교전 뒤의 일 (하루 틱과 닿을 때 계산이 함께 쓴다): 소식, 사상자 가운데 이름 있는 대원 (12-242), 포로 (12-55), 시설이 부서짐 (12-167, 내 거처·우리 거점이면 소식)
+ */
+export function afterClashes(ctx: ToolContext, clashes: readonly Clash[], only: { news?: boolean; facilities?: boolean } = {}): ToolDisplayEvent[] {
+  const { store } = ctx;
+  if (!clashes.length) return [];
+  const displays: ToolDisplayEvent[] = [];
+  if (only.news !== false) {
+    displays.push(...deliverNews(ctx, clashes));
+    displays.push(...casualtiesToPeople(ctx, clashes));
+  }
+  if (only.facilities !== false) {
+    displays.push(...warCaptures(ctx, clashes));
+    const now = store.getState();
+    const mine = new Set([now.homes[now.playerId], ...Object.entries(now.zones).filter(([, z]) => z.owner === now.characters[now.playerId]?.factionId).map(([id]) => id)]);
+    for (const b of breakFacilities(ctx, clashes)) if (mine.has(b.zone)) displays.push({ type: "belief", fact: b.line, sourceLabel: "소식" });
+  }
+  return displays;
+}
+
+/**
+ * 움직이는 부대를 지금까지 움직인다 (닿을 때 계산, docs/war-parties-plan.md ③): 닿은 부대의 할 일, 부대끼리의 마주침, 돌아온 부대.
+ * 하루 틱 사이, 시간이 흐를 때마다 부른다. 플레이어가 낄 교전은 그 시각의 예정된 교전으로 (전투 장면)
+ */
+export function runPartiesNow(ctx: ToolContext): ToolDisplayEvent[] {
+  const { content, store } = ctx;
+  const state = store.getState();
+  if (!partiesConfig(content) || !state.parties.length || state.partiesUpTo >= state.time) return [];
+  const world: WarWorld = { factions: structuredClone(state.factions), zones: structuredClone(state.zones), clocks: structuredClone(state.clocks), parties: structuredClone(state.parties), nextPartyNo: state.nextPartyNo, partiesUpTo: state.partiesUpTo };
+  const r = advanceParties(world, content, ctx.rng, state.time, { defer: (spec) => playerInvolvement(state, content, spec) !== null, endUpTo: state.time });
+  const scheduled = r.deferred.map(({ at, ...spec }, i) => ({ ...spec, id: `battle_${state.nextBattleNo + i}`, at }));
+  store.append({
+    type: "parties_advanced",
+    factions: world.factions,
+    zones: world.zones,
+    clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
+    parties: world.parties ?? [],
+    partiesUpTo: world.partiesUpTo ?? state.time,
+    clashes: r.clashes,
+    scheduled,
+  });
+  return afterClashes(ctx, r.clashes);
 }
 
 /** 플레이어가 있는 구역을 정한다: 역할의 시작 장소, 없으면 소속 세력의 거점 (9-1 이전 세이브 포함) */

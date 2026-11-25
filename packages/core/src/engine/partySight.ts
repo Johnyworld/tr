@@ -3,12 +3,13 @@ import type { GameState, Party } from "../game/state.ts";
 import { canAmbush, isNight, partyChoice, partyNoticeBonus, personNoticeBonus, sightings, type Concealment } from "../rules/encounter.ts";
 import { hostileFaction, ownedBy } from "../rules/home.ts";
 import { companyHere } from "../rules/company.ts";
-import { currentPlace, guardedHere, kindsOf } from "../rules/place.ts";
+import { currentPlace, directionTo, guardedHere, kindsOf, neighborsOf, placesIn, roadsIn, stepsBetween } from "../rules/place.ts";
+import { formatTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
-import { hidingAt, partyLabel, partyZoneAt } from "../sim/parties.ts";
+import { arrivalOf, hidingAt, partyLabel, partyZoneAt } from "../sim/parties.ts";
 import { josa } from "../text.ts";
-import { forceWords } from "./battleTools.ts";
+import { forceWords, playerInvolvement } from "./battleTools.ts";
 import { campWatched } from "./camp.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 
@@ -36,12 +37,80 @@ function outdoorsHere(state: GameState, content: Content): boolean {
   return !place || !place.indoor || kindsOf(place).includes("watch");
 }
 
+/** 부대가 이 구역에서 머무는 칸과 그 앞뒤 구역 */
+function legAround(party: Party, zone: string, t: number) {
+  const legs = [...party.legs, ...party.back];
+  let i = legs.findIndex((l) => l.zone === zone && t >= l.from && t <= l.to);
+  if (i < 0) i = legs.findIndex((l) => l.zone === zone && l.to >= t);
+  if (i < 0) return null;
+  return { prev: i > 0 ? legs[i - 1]!.zone : null, next: i < legs.length - 1 ? legs[i + 1]!.zone : null };
+}
+
+/**
+ * 부대의 장소 길 (docs/war-parties-plan.md 파트 12, 계산으로만): 떠나온 구역 쪽 길로 들어와 가장 짧은 바깥 장소 길로 다음 구역 쪽 길로 나간다.
+ * 담 안(실내·담 문·가두는 곳)은 지나지 않는다. 이 구역에서 머무는 부대(목표)는 망루·거리·마당 하나에 머문다
+ */
+export function partyPlacePath(state: GameState, content: Content, party: Party, zone: string, t: number = state.time): { enter: string | null; places: string[] } {
+  const around = legAround(party, zone, t);
+  const roads = roadsIn(state, content, zone);
+  if (!around || !roads.length) return { enter: null, places: [] };
+  const open = new Set(placesIn(state, content, zone).filter((p) => p.road || (!p.indoor && !p.jail && !kindsOf(p).includes("gate"))).map((p) => p.id));
+  const enter = (around.prev && roads.find((r) => r.to.includes(around.prev!))) || roads[0]!;
+  const exit = around.next ? roads.find((r) => r.to.includes(around.next!)) : undefined;
+  const stay = exit
+    ? null
+    : placesIn(state, content, zone)
+        .filter((p) => open.has(p.id) && !p.road && kindsOf(p).some((k) => k === "watch" || k === "street" || k === "yard"))
+        .map((p) => p.id)
+        .sort()[0];
+  const goal = exit?.id ?? stay ?? enter.id;
+  // 바깥 장소만 따라 가장 짧은 길
+  const prev = new Map<string, string>();
+  const seen = new Set([enter.id]);
+  const queue = [enter.id];
+  while (queue.length) {
+    const here = queue.shift()!;
+    if (here === goal) break;
+    for (const n of neighborsOf(state, content, here, zone)) {
+      if (!open.has(n) || seen.has(n)) continue;
+      seen.add(n);
+      prev.set(n, here);
+      queue.push(n);
+    }
+  }
+  const path = [goal];
+  while (path[0] !== enter.id && prev.has(path[0]!)) path.unshift(prev.get(path[0]!)!);
+  if (path[0] !== enter.id) path.unshift(enter.id);
+  return { enter: enter.id, places: path };
+}
+
+/**
+ * 알아채기 거리 (파트 12): 부대의 장소 길에서 주인공 자리와 가장 가까운 칸 수. 같은 장소 +2, 한 칸 옆 0, 망루에서는 두 칸까지 0, 더 멀면 굴리지 않는다(null).
+ * 장소가 없는 구역(다른 월드 팩)이면 0
+ */
+function distanceBonus(state: GameState, content: Content, party: Party, zone: string, t: number): { mine: number; theirs: number } | null {
+  const here = currentPlace(state, content);
+  if (!here) return { mine: 0, theirs: 0 };
+  const { places } = partyPlacePath(state, content, party, zone, t);
+  if (!places.length) return { mine: 0, theirs: 0 };
+  const d = Math.min(...places.map((p) => stepsBetween(state, content, here.id, p, zone)));
+  const watch = kindsOf(here).includes("watch");
+  // 저쪽에서 망루 위는 잘 보이지 않는다
+  const theirs = watch ? -2 : 0;
+  if (d === 0) return { mine: 2, theirs: theirs + 2 };
+  if (d === 1 || (watch && d === 2)) return { mine: 0, theirs };
+  return null;
+}
+
 export type SightRoll = { player: boolean; party: boolean; attacks: boolean };
 
 /** 한 번 서로 알아채기를 굴린다 (공통 규칙 23). asleep이면 불침번이 있을 때만 주인공 쪽이 본다 */
 export function rollPartySight(state: GameState, content: Content, rng: Rng, party: Party, at: number, opts: { asleep?: boolean; watched?: boolean } = {}): SightRoll {
   const zone = state.playerZone!;
   if (!outdoorsHere(state, content)) return { player: false, party: false, attacks: false };
+  // 장소 사이는 멀다: 같은 장소·한 칸 옆(망루면 두 칸)만 서로 볼 수 있다 (파트 12)
+  const dist = distanceBonus(state, content, party, zone, at);
+  if (!dist) return { player: false, party: false, attacks: false };
   const me = state.characters[state.playerId]!;
   const cover = content.locations[zone]?.cover ?? 0;
   const night = isNight(at);
@@ -49,7 +118,7 @@ export function rollPartySight(state: GameState, content: Content, rng: Rng, par
   const meHidden: Concealment = { hiding: !!state.ambush, night, cover };
   // 잠든 사람은 보지 못한다. 불침번은 그 사람의 눈으로 본다 (보정 없음)
   const myBonus = opts.asleep ? (opts.watched ? 0 : null) : personNoticeBonus(content, me);
-  const seen = sightings(rng, { bonus: myBonus ?? -99, hidden: meHidden }, { bonus: partyNoticeBonus(party.kind), hidden: partyHidden });
+  const seen = sightings(rng, { bonus: (myBonus ?? -99) + dist.mine, hidden: meHidden }, { bonus: partyNoticeBonus(party.kind) + dist.theirs, hidden: partyHidden });
   const player = myBonus !== null && seen.aSees;
   const partySaw = seen.bSees;
   // 주인공을 본 부대가 덤비는가: 적대하는 무리이고, 주인공 쪽보다 넉넉히 많을 때 (4-2)
@@ -78,6 +147,14 @@ export function createPartyCheck(content: Content, activity: string): InterruptC
     if (state.battle || !state.playerZone || !state.parties.length || guardedHere(content, state)) return null;
     const me = state.characters[state.playerId];
     if (!me || me.dead) return null;
+    // 플레이어가 낄 교전에 부대가 닿는 시각에 멈춘다 (닿을 때 계산: 그때 예정된 교전이 되어 전투 장면이 열린다)
+    for (const party of state.parties) {
+      if (party.done || party.task.kind !== "clash") continue;
+      const at = arrivalOf(party);
+      if (at <= from || at > to) continue;
+      const spec = { kind: party.task.clash, attacker: party.faction, defender: party.task.defender, zone: party.goal };
+      if (playerInvolvement(state, content, spec)) return { kind: "battle", detail: "교전", at };
+    }
     const asleep = activity === "sleep";
     const watched = asleep && campWatched(content, state, activity);
     for (const { party, at } of arrivingParties(state, from, to)) {
@@ -95,13 +172,14 @@ export function createPartyCheck(content: Content, activity: string): InterruptC
 /** 부대를 본 글 (대략의 규모·온 쪽·무리 표식은 아는 무리일 때만, 목적은 쓰지 않는다. 원칙 4) */
 function sightLine(state: GameState, content: Content, party: Party, at: number): string {
   const zone = state.playerZone!;
-  const legs = [...party.legs, ...party.back];
-  const i = legs.findIndex((l) => l.zone === zone && l.to >= at && l.from <= at);
-  const cameFrom = i > 0 ? legs[i - 1]!.zone : null;
   const me = state.characters[state.playerId];
   const ours = !!me?.factionId && me.factionId === party.faction;
   const who = ours ? `우리 무리의 ${partyLabel(content, party)}` : `${content.factions[party.faction]?.name ?? "낯선"} 쪽 사람들`;
-  const from = cameFrom && content.locations[cameFrom] ? `${content.locations[cameFrom]!.name} 쪽에서 ` : "";
+  // 장소와 방향으로 (12-304): "북쪽, 철길 둑 가는 비탈로"
+  const { enter } = partyPlacePath(state, content, party, zone, at);
+  const road = enter ? placesIn(state, content, zone).find((p) => p.id === enter) : undefined;
+  const dir = road ? directionTo(state, content, currentPlace(state, content)?.id ?? null, road.id, zone) : null;
+  const from = road ? `${dir ? `${dir}, ` : ""}${josa(road.name, "으로/로")} ` : "";
   return `${from}${forceWords(party.size)}의 ${josa(who, "이/가")} 이 구역에 들어섰다`;
 }
 
@@ -115,6 +193,12 @@ export function settleSighting(ctx: ToolContext, party: Party, roll: SightRoll, 
   const displays: ToolDisplayEvent[] = [];
   if (roll.player) {
     const line = sightLine(state, content, party, at);
+    // 본 부대는 믿음으로 남는다 (8-1): 본 때·구역·대략의 규모·온 길. 목적은 넣지 않는다
+    store.append({
+      type: "belief_added",
+      characterId: state.playerId,
+      belief: { id: `b_${state.nextBeliefNo}`, fact: `${formatTime(at)}께 ${content.locations[zone]?.name ?? zone}에서 ${line.replace(/ 이 구역에 들어섰다$/, " 지나가는 것을 봤다")}`, source: "seen", accuracy: "approximate", learnedAt: state.time, topic: "war" },
+    });
     displays.push({ type: "belief", fact: line, sourceLabel: "본 것", note: `${line}. 몇 명인지는 대략으로만, 무엇을 하러 왔는지는 지어내지 않는다. 숨기·피하기·지켜보기·맞서기는 플레이어가 고른다.` });
   }
   if (roll.attacks) {

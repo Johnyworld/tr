@@ -2,6 +2,7 @@ import { sightKey } from "./partySight.ts";
 import { z } from "zod";
 import type { BattleState, Clash, GameState, Party } from "../game/state.ts";
 import { heldOf } from "../rules/held.ts";
+import { peopleHere } from "../rules/place.ts";
 import { baseOfNow, hostileFaction, ownedBy } from "../rules/home.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { stakesOf } from "../rules/stakes.ts";
@@ -196,6 +197,16 @@ export function chaseParties(ctx: ToolContext, from: string, to: string, chasing
   }
 }
 
+/**
+ * 알린 무리 때문에 더 지킬 우리 구역 (12-327): 노린 곳이 우리 땅이면 그곳, 공세를 앞둔 정찰이면 그 공세의 목표, 아니면 살핀 곳과 맞닿은 우리 땅. 없으면 null
+ */
+function defendZone(state: GameState, content: Content, intel: GameState["partyIntel"][string], mine: string): string | null {
+  if (ownedBy(state, intel.goal, mine)) return intel.goal;
+  const target = intel.plan ? state.clocks[intel.plan]?.target : undefined;
+  if (target && ownedBy(state, target, mine)) return target;
+  return neighbors(content, intel.goal).filter((z) => ownedBy(state, z, mine) && content.locations[z]?.kind !== "base").sort()[0] ?? null;
+}
+
 /** 무리의 계급 높이 */
 const rankLevel = (content: Content, rank: string | undefined) => content.scenario.rank_ladder.find((r) => r.id === rank)?.level ?? 0;
 
@@ -218,9 +229,9 @@ function superiorHere(state: GameState, content: Content): string | null {
 export const alertParty = defineTool({
   name: "alert_party",
   description:
-    "주인공이 본 다른 무리의 무리(상태의 '본 무리'·'눈에 띈 무리' id)를 우리 무리에 알린다 (움직이는 부대 5-3). 우리 거점에 있거나 윗사람(상관·더 높은 계급)이 장면에 있을 때. " +
-    "알리면 무리가 그 무리가 노리는 우리 구역을 더 지킨다. persuade: true면 맞받아치자고 설득한다 (윗사람이 장면에 있어야, approach는 교섭·전략 스킬): 받아들여지면 무리가 가로막을 부대를 낸다. " +
-    "결과는 코드가 정한다. 같은 무리는 한 번만 알린다.",
+    "주인공이 본(또는 보고받은) 다른 무리의 무리를 우리 무리에 알린다 (움직이는 부대 5-3, 12-327). 상태의 '알릴 수 있는 것' id, 본 지 하루 안. " +
+    "우리 땅에서 우리 무리 사람 앞(초소를 지키는 사람도), 우리 거점, 윗사람 앞이면 된다. 알리면 무리가 그 무리가 살피거나 노린 우리 구역을 하루 동안 더 지킨다(정찰은 공세의 예고). " +
+    "persuade: true면 맞받아치자고 설득한다 (윗사람이 장면에 있고 그 무리가 아직 나가 있을 때, approach는 교섭·전략): 받아들여지면 무리가 가로막을 부대를 낸다. 알린 뒤에도 설득은 한 번. 결과는 코드가 정한다.",
   schema: z.strictObject({
     party_id: z.string().describe("본 무리의 id"),
     persuade: z.boolean().default(false).describe("맞받아치자고 설득하면 true"),
@@ -234,25 +245,29 @@ export const alertParty = defineTool({
     const me = state.characters[state.playerId];
     if (!me || me.dead) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
     if (!me.factionId) return { ok: false, error: "알릴 무리가 없다 (무소속)." };
-    const party = state.parties.find((p) => p.id === input.party_id);
-    if (!party && state.partiesSeen[input.party_id] !== undefined) return { ok: false, error: "이미 물러갔거나 싸움이 끝난 무리다. 알려도 무리가 할 일이 없다." };
-    if (!party || state.partiesSeen[party.id] === undefined) return { ok: false, error: `본 적도 보고받은 적도 없는 무리다: ${input.party_id} (상태의 '알릴 수 있는 것'을 본다)` };
-    if (!hostileFaction(state, content, party.faction)) return { ok: false, error: "우리를 적대하는 무리만 알린다." };
-    if (party.size <= 0 || party.done) return { ok: false, error: "이미 물러간 무리다. 알려도 무리가 할 일이 없다." };
-    // 알린 무리도 맞받아치자는 설득은 한 번 더 할 수 있다 (PT35 분대장: 거점에서 먼저 알리고 윗사람 앞에서 설득하려 했더니 막혔다)
-    const prior = state.partyAlerts.find((a) => a.partyId === party.id);
+    const intel = state.partyIntel[input.party_id];
+    if (!intel) return { ok: false, error: `본 적도 보고받은 적도 없는 무리다: ${input.party_id} (상태의 '알릴 수 있는 것'을 본다)` };
+    if (state.time - intel.at > MINUTES_PER_DAY) return { ok: false, error: "본 지 하루가 넘은 무리다. 이제 알려도 무리가 할 일이 없다." };
+    if (!hostileFaction(state, content, intel.faction)) return { ok: false, error: "우리를 적대하는 무리만 알린다." };
+    const live = state.parties.find((p) => p.id === input.party_id && p.size > 0 && !p.done);
+    // 알린 무리도 맞받아치자는 설득은 한 번 더 할 수 있다 (PT35 분대장)
+    const prior = state.partyAlerts.find((a) => a.partyId === input.party_id);
     if (prior && (!input.persuade || prior.persuaded !== "none")) return { ok: false, error: prior.persuaded !== "none" ? "이미 알리고 설득까지 한 무리다. 같은 무리로 다시 조르지 못한다." : "이미 알린 무리다. 맞받아치자고 설득하려면 윗사람 앞에서 persuade: true로 다시 부른다." };
     const base = baseOfNow(state, content, me.factionId);
     const boss = superiorHere(state, content);
-    if (!boss && state.playerZone !== base) return { ok: false, error: "알릴 사람이 없다. 우리 거점으로 가거나 상관·윗사람을 장면에 들인다." };
+    // 우리 땅의 우리 사람 앞이면 그 사람이 거점에 전한다 (12-327: 초소에서 거점까지 걷는 동안 공세가 끝났다)
+    const comrade = ownedBy(state, state.playerZone, me.factionId) && [...state.scene.present, ...peopleHere(state, content)].some((id) => id !== state.playerId && state.characters[id]?.factionId === me.factionId && !state.characters[id]!.dead && !heldOf(state.characters[id]!));
+    if (!boss && !comrade && state.playerZone !== base) return { ok: false, error: "알릴 사람이 없다. 우리 땅의 우리 무리 사람(초소를 지키는 사람 등)이나 윗사람 앞, 또는 우리 거점에서 알린다." };
     if (input.persuade && !boss) return { ok: false, error: "맞받아치자고 말할 윗사람이 장면에 없다. 상관이나 더 높은 사람을 npc_presence로 들인다." };
-    const label = partyLabel(content, party);
-    const zone = party.goal;
-    const ours = ownedBy(state, zone, me.factionId);
-    const zoneName = content.locations[zone]?.name ?? zone;
+    if (input.persuade && !live) return { ok: false, error: "그 무리는 이미 물러갔다. 맞받아칠 상대가 없다 (알리기만 할 수 있다)." };
+    const label = partyLabel(content, { faction: intel.faction, kind: intel.kind } as Party);
+    const zone = defendZone(state, content, intel, me.factionId);
+    const zoneName = zone ? (content.locations[zone]?.name ?? zone) : "";
+    const until = state.time + MINUTES_PER_DAY;
+    const relay = !boss && state.playerZone !== base ? " (곁의 우리 사람이 거점에 전한다)" : "";
     const lines = prior
       ? [`이미 알린 ${josa(label, "을/를")} 두고 맞받아치자고 말한다.`]
-      : [`${josa(label, "을/를")} 무리에 알렸다.${ours ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 더 지킨다.` : " 노리는 곳이 우리 땅이 아니라 지킬 곳을 늘리지는 않는다."} 알린 무리가 와서 막히면 공이 된다.`];
+      : [`${josa(label, "을/를")} 무리에 알렸다${relay}.${zone ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 하루 동안(${formatTime(until)}까지) 더 지킨다. 그 사이 그곳을 친 무리가 막히면 공이 된다.` : " 우리 땅을 노린 것이 아니라 더 지킬 곳은 없다."}`];
     let persuaded: "none" | "success" | "partial" | "miss" = "none";
     let display: ToolDisplayEvent = { type: "belief", fact: `${label}을 무리에 알렸다`, sourceLabel: "한 일" };
     if (input.persuade) {
@@ -273,18 +288,19 @@ export const alertParty = defineTool({
       const cfg = partiesConfig(content);
       if (persuaded === "miss") lines.push(`${josa(bossName, "은/는")} 맞받아치자는 말을 받아들이지 않았다. 지키기만 한다.`);
       else {
+        const party = live!;
         const world = worldOf(store.getState());
         const size = persuaded === "success" ? party.size : Math.max(1, Math.ceil(party.size / 2));
         const enemyAt = arrivalOf(party);
-        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal: zone, size, at: store.getState().time, until: Math.max(enemyAt, store.getState().time) + 120, by: state.playerId }) : null;
+        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal: party.goal, size, at: store.getState().time, until: Math.max(enemyAt, store.getState().time) + 120, by: state.playerId }) : null;
         if (!sent) lines.push(`${josa(bossName, "은/는")} 맞받아칠 뜻은 있지만 지금 내보낼 사람이 없다고 한다. 지키기만 한다.`);
         else {
           saveWorld(ctx, world);
-          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(zoneName, "으로/로")} 내보내 숨어 기다리게 한다 (${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
+          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(content.locations[party.goal]?.name ?? party.goal, "으로/로")} 내보내 숨어 기다리게 한다 (${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
         }
       }
     }
-    store.append({ type: "party_alerted", partyId: party.id, faction: me.factionId, zone, persuaded });
+    store.append({ type: "party_alerted", partyId: input.party_id, faction: me.factionId, zone: zone ?? "", persuaded, ...(prior ? {} : { until }) });
     lines.push("알리는 장면을 서술한다. 무리가 무엇을 할지는 이 결과대로만.");
     void rng;
     return { ok: true, resultText: lines.join("\n"), display };
@@ -330,16 +346,20 @@ export function settlePartyAlerts(ctx: ToolContext, clashes: readonly Clash[]): 
   // 끝난 알림은 다시 보지 않는다 (PT35 분대장: 닷새 동안 120번 쌓였다)
   for (const alert of store.getState().partyAlerts.filter((a) => !a.credited && !a.closed)) {
     const state = store.getState();
-    const blocked = clashes.find((c) => c.zone === alert.zone && c.defender === alert.faction && c.kind !== "occupy" && !c.success && state.parties.find((p) => p.id === alert.partyId)?.faction === c.attacker);
-    const party = state.parties.find((p) => p.id === alert.partyId);
+    const enemy = state.partyIntel[alert.partyId]?.faction ?? state.parties.find((p) => p.id === alert.partyId)?.faction;
+    const blocked = !!alert.zone && clashes.find((c) => c.zone === alert.zone && c.defender === alert.faction && c.kind !== "occupy" && !c.success && c.attacker === enemy);
     if (blocked) {
       store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: true, clear: true });
       if (state.characters[state.playerId]?.factionId === alert.faction) {
-        store.append({ type: "merit_awarded", characterId: state.playerId, delta: 1, reason: "알린 무리를 막아 냈다" });
-        out.push(...hearNews(ctx, { fact: `당신이 알린 덕에 ${content.locations[alert.zone]?.name ?? alert.zone}에서 ${partyLabel(content, party ?? { faction: blocked.attacker, kind: "raid" } as Party)}을 막아 냈다고 한다 (공적 +1).`, factions: [alert.faction] }));
+        store.append({ type: "merit_awarded", characterId: state.playerId, delta: 1, reason: "알린 덕에 막아 냈다" });
+        out.push(...hearNews(ctx, { fact: `당신이 알린 덕에 ${content.locations[alert.zone]?.name ?? alert.zone}에서 ${content.factions[blocked.attacker]?.name ?? "적"} 쪽을 막아 냈다고 한다 (공적 +1).`, factions: [alert.faction] }));
       }
-    } else if (!party || party.done || party.size <= 0) {
-      store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: false, clear: state.zones[alert.zone]?.alerted === alert.faction });
+      continue;
+    }
+    // 하루가 지나면 더 지키던 것을 거둔다 (12-327). 지킬 곳이 없던 알림은 바로 닫는다
+    if (!alert.zone || (alert.until > 0 && state.time > alert.until)) {
+      const other = state.partyAlerts.some((a) => a !== alert && !a.closed && !a.credited && a.zone === alert.zone && a.until >= state.time);
+      store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: false, clear: !!alert.zone && !other && state.zones[alert.zone]?.alerted === alert.faction });
     }
   }
   return out;
@@ -374,7 +394,7 @@ export function runGarrisonWatch(ctx: ToolContext): ToolDisplayEvent[] {
   for (const [zone, z] of Object.entries(now.zones)) {
     if (z.alerted !== mine) continue;
     const enemyHere = now.parties.some((p) => p.size > 0 && partyZoneAt(p, now.time) === zone && hostileFaction(now, content, p.faction));
-    const pending = now.partyAlerts.some((a) => !a.credited && a.zone === zone && now.parties.some((p) => p.id === a.partyId && p.size > 0 && !p.done));
+    const pending = now.partyAlerts.some((a) => !a.credited && !a.closed && a.zone === zone && a.until >= now.time);
     if (!enemyHere && !pending) store.append({ type: "party_alert_settled", partyId: "garrison", zone, credited: false, clear: true });
   }
   return out;

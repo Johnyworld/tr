@@ -5,7 +5,7 @@ import { canAmbush, isNight, partyChoice, partyNoticeBonus, personNoticeBonus, s
 import { hostileFaction, ownedBy } from "../rules/home.ts";
 import { companyHere } from "../rules/company.ts";
 import { currentPlace, directionTo, guardedHere, kindsOf, neighborsOf, placesIn, roadsIn, stepsBetween } from "../rules/place.ts";
-import { formatTime } from "../rules/time.ts";
+import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
 import type { InterruptCheck } from "../sim/fastForward.ts";
 import { arrivalOf, hidingAt, partyLabel, partyZoneAt, visitStart } from "../sim/parties.ts";
@@ -283,9 +283,14 @@ export function runPartySightings(ctx: ToolContext): ToolDisplayEvent[] {
 /** 본 무리 가운데 아직 알리지 않은, 나가는 길의 적대 무리 (알리기 5-3). 무리에 속한 주인공만 */
 export function alertablePartiesLines(state: GameState, content: Content): string[] {
   if (!state.characters[state.playerId]?.factionId) return [];
-  return state.parties
-    .filter((p) => p.size > 0 && !p.done && state.partiesSeen[p.id] !== undefined && !state.partyAlerts.some((a) => a.partyId === p.id) && hostileFaction(state, content, p.faction))
-    .map((p) => `- ${p.id}: ${partyLabel(content, p)} ${forceWords(p.size)} (${formatTime(state.partiesSeen[p.id]!)}께 봤다)`);
+  // 본 지 하루 안의 적대 무리 (12-327: 물러간 정찰도 공세의 예고라 알릴 수 있다)
+  return Object.entries(state.partyIntel)
+    .filter(([id, i]) => state.time - i.at <= MINUTES_PER_DAY && !state.partyAlerts.some((a) => a.partyId === id) && hostileFaction(state, content, i.faction))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, i]) => {
+      const live = state.parties.some((p) => p.id === id && p.size > 0 && !p.done);
+      return `- ${id}: ${partyLabel(content, { faction: i.faction, kind: i.kind } as Party)} ${forceWords(i.size)} (${formatTime(i.at)}께 봤거나 들었다${live ? "" : ", 이미 물러감: 알리기만"})`;
+    });
 }
 
 export function seenPartiesLines(state: GameState, content: Content): string[] {

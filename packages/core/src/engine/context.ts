@@ -811,6 +811,6 @@ function describeSeenParties(state: GameState, content: Content): string | null 
   const lines = seenPartiesLines(state, content);
   const here = lines.length ? `눈에 띈 무리 (본 것만, 몇 명인지는 대략. 무엇을 하러 왔는지는 지어내지 않는다. 숨기·피하기·지켜보기는 take_action, 덤비면 engage_party):\n${lines.join("\n")}` : null;
   const told = alertablePartiesLines(state, content);
-  const alert = told.length ? `본 무리 가운데 우리 무리에 알릴 수 있는 것 (우리 거점이나 윗사람 앞에서 alert_party, 맞받아치자고 설득하려면 persuade):\n${told.join("\n")}` : null;
+  const alert = told.length ? `알릴 수 있는 무리 (본 지 하루 안. 우리 땅의 우리 사람·윗사람 앞이나 우리 거점에서 alert_party. 맞받아치자고 설득하려면 윗사람 앞에서 persuade):\n${told.join("\n")}` : null;
   return [here, alert].filter(Boolean).join("\n") || null;
 }

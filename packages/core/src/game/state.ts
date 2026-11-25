@@ -54,7 +54,8 @@ import { startingSkills } from "./creation.ts";
 // 119: 움직이는 부대 ④ (12-324). 부대 할 일 intercept, 구역 alerted, partiesSeen·partyAlerts, 이벤트 party_alerted·party_alert_settled, Clash.squad
 // 120: PT34 고침 (12-325). garrisonSeen, 이벤트 party_reported
 // 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
-export const SAVE_SCHEMA_VERSION = 121;
+// 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
+export const SAVE_SCHEMA_VERSION = 122;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -700,10 +701,12 @@ export function createGameSchemas(s: Scenario) {
     partySightings: z.record(z.string(), z.strictObject({ at: z.number().int(), player: z.boolean(), party: z.boolean() })).default({}),
     /** 주인공이 본 부대와 마지막으로 본 때 (구역을 떠나도 남는다: 알리기 5-3) */
     partiesSeen: z.record(z.string(), z.number().int()).default({}),
+    /** 본·전해 안 부대의 기록 (알리기, 12-327): 그 부대가 돌아가 사라져도 하루 동안 알릴 수 있게 무리·종류·목표·계획을 남긴다 */
+    partyIntel: z.record(z.string(), z.strictObject({ faction: z.string(), kind: z.string(), goal: z.string(), plan: z.string().nullable(), size: z.number().int(), at: z.number().int() })).default({}),
     /** 우리 땅을 지키는 사람이 이미 알아챈 적 부대 (PT34 사용자 결정, 한 부대에 한 번) */
     garrisonSeen: z.array(z.string()).default([]),
     /** 주인공이 무리에 알린 부대 (5-3): 같은 부대로 다시 조르지 못하고, 그 부대가 막히면 공적 */
-    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false), closed: z.boolean().default(false) })).default([]),
+    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false), closed: z.boolean().default(false), /** 더 지키는 때 (12-327: 하루) */ until: z.number().int().default(0) })).default([]),
     /** 주인공이 맞붙은 부대 (움직이는 부대 ③): 부대 id → 장면에 들인 부대원(엑스트라·우두머리)과 구역 */
     partyFights: z.record(z.string(), z.strictObject({ members: z.array(z.string()), zone: z.string(), at: z.number().int() })).default({}),
     /** 구역 소유 */
@@ -983,7 +986,7 @@ export function createGameSchemas(s: Scenario) {
      */
     z.strictObject({ type: z.literal("party_reported"), partyId: z.string(), via: z.enum(["squad", "garrison"]), zone: z.string(), faction: z.string().optional(), /** 이미 왔다 간 뒤에 알게 됐다: 알릴 무리도 더 지킬 곳도 아니다 */ gone: z.boolean().optional() }),
     /** 본 부대를 무리에 알렸다 (5-3): 그 부대가 노리는 구역을 더 지킨다. persuaded: 맞받아치자고 설득한 결과 */
-    z.strictObject({ type: z.literal("party_alerted"), partyId: z.string(), faction: z.string(), zone: z.string(), persuaded: z.enum(["none", "success", "partial", "miss"]) }),
+    z.strictObject({ type: z.literal("party_alerted"), partyId: z.string(), faction: z.string(), zone: z.string(), persuaded: z.enum(["none", "success", "partial", "miss"]), until: z.number().int().optional() }),
     /** 알린 부대의 끝 (5-3): credited 막아 내 공적을 받았다, clear 더 지키던 것을 거둔다 */
     z.strictObject({ type: z.literal("party_alert_settled"), partyId: z.string(), zone: z.string(), credited: z.boolean(), clear: z.boolean() }),
     /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
@@ -1561,6 +1564,7 @@ export const EMPTY_STATE: GameState = {
   partiesUpTo: 0,
   partySightings: {},
   partiesSeen: {},
+  partyIntel: {},
   garrisonSeen: [],
   partyAlerts: [],
   partyFights: {},
@@ -1638,6 +1642,14 @@ function swapGround(next: GameState, from: string | null, to: string) {
   next.scene = { ...next.scene, items };
   delete ground[to];
   next.groundItems = ground;
+}
+
+/** 본·전해 안 부대를 기록한다 (알리기, 12-327) */
+function rememberParty(next: GameState, id: string, at: number) {
+  const p = next.parties.find((x) => x.id === id);
+  if (!p) return;
+  const plan = p.task.kind === "clash" || p.task.kind === "occupy" || p.task.kind === "watch" ? (p.task.plan ?? null) : null;
+  next.partyIntel = { ...next.partyIntel, [id]: { faction: p.faction, kind: p.kind, goal: p.goal, plan, size: p.size, at } };
 }
 
 /** 주인공이 있는 구역의 주인이 그 자리에서 바뀌었으면 본 대로 안다 (PT32 졸병: 붉은 다리를 차지하는 것을 봤는데 떠난 뒤 지도는 "주인 없음") */
@@ -2662,9 +2674,15 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "party_sighted":
       next.partySightings[event.key] = { at: state.time, player: event.player, party: event.party };
-      if (event.player) next.partiesSeen = { ...next.partiesSeen, [event.key.split("@")[0]!]: state.time };
+      if (event.player) {
+        const id = event.key.split("@")[0]!;
+        next.partiesSeen = { ...next.partiesSeen, [id]: state.time };
+        rememberParty(next, id, state.time);
+      }
       break;
     case "party_reported": {
+      // 왔다 간 뒤에 안 무리도 하루 동안은 알릴 수 있다 (12-327: 정찰은 공세의 예고)
+      rememberParty(next, event.partyId, state.time);
       if (event.gone) {
         next.garrisonSeen = [...next.garrisonSeen, event.partyId];
         break;
@@ -2683,7 +2701,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         next.partyAlerts = next.partyAlerts.map((a) => (a.partyId === event.partyId ? { ...a, persuaded: event.persuaded } : a));
         break;
       }
-      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false, closed: false }];
+      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false, closed: false, until: event.until ?? 0 }];
       const z = next.zones[event.zone];
       if (z && z.owner === event.faction) z.alerted = event.faction;
       break;

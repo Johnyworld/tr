@@ -1600,15 +1600,16 @@ function rollCallAt(ctx: ToolContext, from: number): number | null {
 }
 
 /** 점호를 자면서 넘겼는가 (G2, 무리 문화 roll_call). 넘겼으면 상관에게 알려지는 작은 불복종 행적 */
-function missedRollCall(ctx: ToolContext, from: number, to: number) {
+function missedRollCall(ctx: ToolContext, from: number, to: number, wokeNow: boolean) {
   const segments = rollCallSegments(ctx);
   if (!segments.length || to <= from) return;
   // 쓰러져 있던 사람은 점호에 못 나온 것을 탓하지 않는다 (공통 규칙 2, 12-269 우회 점검: 의식을 잃은 채 sleep으로 시간을 흘려도 불복종이 남았다)
   const me = ctx.store.getState().characters[ctx.store.getState().playerId];
   if (!me || incapacitatingSymptom(ctx.content.scenario, me) || isIncapacitated(ctx.content, me)) return;
   // 점호 시각에 딱 깨면 나간 것으로 친다 (플레이 테스트 12: 04:00에 깼는데 놓친 것으로 셌다).
-  // 점호에 깨워졌는데 그 자리에서 다시 자면 빠진 것이다 (12-251)
-  const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to || nextSegmentStart(from - 1, seg) === from);
+  // 점호에 깨워졌는데 그 자리에서 다시 자면 빠진 것이다 (12-251). 바로 앞이 잠이었을 때만: 깨어 있던 활동이 점호 시각에 끝난 뒤 자는 것은 나간 것이다
+  // (12-312, 받아들임 판: 막사에서 "저녁까지 쉬기"가 17:00에 끝나고 잠들자 점호에 빠진 것으로 셌다)
+  const missed = segments.filter((seg) => nextSegmentStart(from, seg) < to || (wokeNow && nextSegmentStart(from - 1, seg) === from));
   if (!missed.length) return;
   const commander = commanderIdOf(ctx.store.getState(), ctx.content);
   recordDeed(
@@ -1902,7 +1903,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       if (!healed.length) sleepNote = [sleepNote, sleepHealBlocker(ctx, nightFrom, to)].filter(Boolean).join("\n") || null;
     }
     // 점호 (G2): 무리의 점호 시각을 자면서 넘기면 작은 불복종 행적이 남는다 (한 번 잠에 한 번)
-    if (activity === "sleep") missedRollCall(ctx, from, to);
+    if (activity === "sleep") missedRollCall(ctx, from, to, state.lastWokeAt === from);
     // 긴 잠 뒤에 흩어지는 사람은 시간대가 바뀔 때 장면을 비우는 규칙이 맡는다 (B④, 공통 규칙 15 sceneLeavesAt)
   } else {
     // 이동은 길마다 정해진 시간, 짐이 무거우면 15분 더 (12-239)

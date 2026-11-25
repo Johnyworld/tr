@@ -429,8 +429,8 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     age: player.age,
     roleLabel:
       content.roles[state.roleId]?.rank === player.rank
-        ? (content.roles[state.roleId]?.label ?? rankName(content, player.factionId, player.rank))
-        : rankName(content, player.factionId, player.rank),
+        ? (content.roles[state.roleId]?.label ?? rankName(content, player.factionId, player.rank, player.occupation?.id))
+        : rankName(content, player.factionId, player.rank, player.occupation?.id),
     occupationLabel: occupationTitle(content, player),
     motive: player.motive ? { label: player.motive.label, summary: player.motive.summary } : null,
     scenario: ((s) => (s ? { title: s.title, pitch: s.pitch } : null))(content.roles[state.roleId]?.scenario),
@@ -508,7 +508,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         id,
         name: headingAs(state, content, player.id, id),
         // 동물은 계급이 없다 (호칭에 이미 "동물"). 연고(가족·길동무)도 계급 대신 이름 옆의 부르는 말로 (떠돌이 계급 "혼자"를 붙이지 않는다)
-        rankLabel: isCreature(content, npc) || bondOf(state, content, id)?.kind === "kin" ? "" : rankName(content, npc.factionId, npc.rank),
+        rankLabel: isCreature(content, npc) || bondOf(state, content, id)?.kind === "kin" ? "" : rankName(content, npc.factionId, npc.rank, npc.occupation?.id),
         look: content.npcs[id]?.look ?? npc.extra?.look ?? "",
         conditionLabel: npc.dead && knowsDeath(state, content, npc.id) ? "사망" : npc.away ? "떠남" : heldOf(npc) ? (state.playerZone === heldOf(npc)!.zone ? "붙잡혀 있음" : heldSeenZone(state, npc.id) ? `${content.locations[heldSeenZone(state, npc.id)!]?.name}에 붙잡혀 있음` : "행방 모름") : changed(npc) ? changedConditions(npc) : null,
         states: npc.dead ? [] : symptomViews(scenario, npc),
@@ -523,7 +523,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       // 동행이 먼저, 죽은 사람은 맨 아래
       .sort((a, b) => deadLast(a, b) || Number(b.bond !== null) - Number(a.bond !== null)),
     service: {
-      rankLabel: rankName(content, player.factionId, player.rank),
+      rankLabel: rankName(content, player.factionId, player.rank, player.occupation?.id),
       merit: player.merit,
       disobedience: player.disobedience,
       daysServed: daysServed(state.time, serviceStart(state)),
@@ -580,7 +580,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
         if (!mine) return null;
         const row = (id: string, doing: string) => ({ id, name: playerCalls(state, content, id), doing, report: null, states: symptomViews(scenario, state.characters[id]!) });
         const where = (id: string) => (state.scene.present.includes(id) ? "곁에 있음" : "");
-        return [...(mine.leader ? [row(mine.leader, rankName(content, state.characters[mine.leader]!.factionId, state.characters[mine.leader]!.rank))] : []), ...mine.mates.map((id) => row(id, where(id)))];
+        return [...(mine.leader ? [row(mine.leader, rankName(content, state.characters[mine.leader]!.factionId, state.characters[mine.leader]!.rank, state.characters[mine.leader]!.occupation?.id))] : []), ...mine.mates.map((id) => row(id, where(id)))];
       }
       return members.map((id) => {
         const o = state.squadOrders[id];

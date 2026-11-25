@@ -35,7 +35,7 @@ export function aliasOf(state: GameState, content: Content, id: string): string 
   const npc = content.npcs[id];
   if (npc) return npc.alias;
   const faction = c.factionId ? content.factions[c.factionId]?.name : undefined;
-  return [faction, rankName(content, c.factionId, c.rank)].filter(Boolean).join(" ");
+  return [faction, rankName(content, c.factionId, c.rank, c.occupation?.id)].filter(Boolean).join(" ");
 }
 
 /** viewer가 target을 부르는 말: 이름을 알면 이름, 모르면 호칭 */

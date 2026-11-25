@@ -41,7 +41,7 @@ export function personProfile(state: GameState, content: Content, id: string): P
   const shown = traitLabels(content, c, { visibleOnly: true });
   return {
     heading: headingAs(state, content, state.playerId, id),
-    rankLabel: rankName(content, c.factionId, c.rank),
+    rankLabel: rankName(content, c.factionId, c.rank, c.occupation?.id),
     age: named ? c.age : null,
     look: npc?.look ?? c.extra?.look ?? null,
     // 평판은 그 인물을 아는 사람이 아는 모습이다: 이름만 막 들은 사이면 아직 모른다 (PT14)

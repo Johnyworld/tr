@@ -51,7 +51,7 @@ type RawState = {
   scenarioRole?: string;
   chronicle?: unknown[];
   cheated?: boolean;
-  characters?: Record<string, { name?: string; age?: number; gender?: string | null; portrait?: string | null; rank?: string; factionId?: string; level?: number; dead?: boolean; conditions?: Record<string, string> }>;
+  characters?: Record<string, { name?: string; age?: number; gender?: string | null; portrait?: string | null; rank?: string; factionId?: string; occupation?: { id: string } | null; level?: number; dead?: boolean; conditions?: Record<string, string> }>;
 };
 
 export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): SaveSlot {
@@ -64,7 +64,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
         age: player.age ?? null,
         genderLabel: s.creation?.genders.find((g) => g.id === player.gender)?.label ?? null,
         portrait: player.portrait ?? null,
-        rankLabel: player.rank ? rankName(content, player.factionId, player.rank) : "?",
+        rankLabel: player.rank ? rankName(content, player.factionId, player.rank, player.occupation?.id) : "?",
         factionName: (player.factionId && content.factions[player.factionId]?.name) || "",
         level: player.level ?? 1,
         conditions: s.condition_tracks

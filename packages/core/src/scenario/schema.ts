@@ -1829,6 +1829,8 @@ export const scenarioFileSchema = z
             ranks: z.record(id, id),
             other_rank: id,
             chief_rank: id,
+            /** 분대에 들지 않는 자리가 같은 계급 시나리오의 일감 중 받는 것: 요건에 이 활동이 있는 일감만 (12-312, 수비대원에게 약탈·정찰 일감이 섞였다). 없는 자리는 직분 일감만 */
+            borrows: z.record(id, z.array(id)).default({}),
             /** 분대 없는 자리의 상관이 거점 밖에 살면 이 시각 [시작, 끝) 사이 하루 한 번 우리 거점에 들러 일감을 준다 (12-311) */
             visit_hours: z.tuple([z.number().int().min(0).max(23), z.number().int().min(1).max(24)]).optional(),
           })

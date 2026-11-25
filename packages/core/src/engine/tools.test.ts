@@ -77,7 +77,7 @@ describe("npc_presence", () => {
     expect(store.getState().known.player).not.toContain("npc_stranger");
     expect(store.getState().known.npc_stranger ?? []).not.toContain("player");
     // 처음 만난 이름 모르는 사람은 기억에 남는다
-    expect((store.getState().beliefs.player ?? []).map((b) => b.fact)).toContain("망토 두른 상인과 마주쳤다. 이름은 모른다. 겉모습: 망토를 두른 상인");
+    expect((store.getState().beliefs.player ?? []).map((b) => b.fact)).toContain("망토 두른 상인과 마주쳤다. 겉모습: 망토를 두른 상인");
     expect(executeTool("npc_presence", { npc_id: "npc_stranger", action: "leave" }, ctx).ok).toBe(true);
     expect(store.getState().scene.present).toEqual([]);
   });

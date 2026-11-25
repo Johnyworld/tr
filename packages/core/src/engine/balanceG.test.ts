@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { idleDays } from "../game/missions.ts";
+import { nextSegmentStart } from "../rules/time.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
@@ -33,4 +34,16 @@ describe("균형 G", () => {
     const deeds = Object.values(w.state().deeds).slice(before);
     expect(deeds.some((d) => d.summary.includes("점호"))).toBe(true);
   });
+
+  it("붉은연합: 깨어 있던 활동이 점호 시각에 끝난 뒤 자는 것은 점호에 나간 것이다 (12-312)", () => {
+    const w = open("role_c_raider");
+    const before = Object.values(w.state().deeds).length;
+    // 깨어 기다리다 저녁 점호 시각이 된다 (막사에서 "저녁까지 쉬기"가 17:00에 끝난 것과 같다)
+    const call = nextSegmentStart(w.state().time, "evening");
+    expect(w.runCheat("~time evening").ok).toBe(true);
+    expect(w.state().time).toBe(call);
+    w.executeTool("take_action", { intent: "잔다", activity: { kind: "sleep", hours: 2 }, ignore_story: true });
+    expect(Object.values(w.state().deeds).slice(before).some((d) => d.summary.includes("점호"))).toBe(false);
+  });
 });
+

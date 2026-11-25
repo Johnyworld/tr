@@ -45,7 +45,7 @@ describe("엑스트라", () => {
     expect(prompt).toContain("폭탄 든 보초 (이름 모름) (ex_1)");
     expect(prompt).not.toContain(ex.name);
     expect(prompt).toContain("이 인물은 당신의 이름을 모른다");
-    expect((s.beliefs.player ?? []).map((b) => b.fact)).toContain(`폭탄 든 보초와 마주쳤다. 이름은 모른다. 겉모습: ${ex.extra!.look}`);
+    expect((s.beliefs.player ?? []).map((b) => b.fact)).toContain(`폭탄 든 보초와 마주쳤다. 겉모습: ${ex.extra!.look}`);
   });
 
   it("learn_name: 정해 둔 이름을 주인공이 알게 되고, 호칭과 이름을 잇는 기억이 남는다", () => {

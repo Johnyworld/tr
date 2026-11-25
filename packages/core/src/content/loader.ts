@@ -297,6 +297,11 @@ function checkReferences(content: Content): string[] {
     postOk(posts.default, "default");
     for (const o of [...posts.ask, ...posts.squad, ...Object.keys(posts.ranks)]) postOk(o, "ask/squad/ranks");
     for (const r of [...Object.values(posts.ranks), posts.other_rank, posts.chief_rank]) if (!rankIds.has(r)) problems.push(`${at}: 알 수 없는 계급 ${r}`);
+    const used = new Set(Object.values(content.missions).flatMap((m) => m.requirements.flatMap((r) => ("activity" in r ? [r.activity] : []))));
+    for (const [o, acts] of Object.entries(posts.borrows)) {
+      postOk(o, `borrows.${o}`);
+      for (const a of acts) if (!used.has(a as never)) problems.push(`${at}.borrows.${o}: 일감 요건에 쓰이지 않는 활동 ${a}`);
+    }
   }
   for (const st of Object.values(content.storylets)) {
     for (const c of st.choices) {

@@ -17,6 +17,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
+import { admissionOf } from "../rules/admission.ts";
 import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS, missionStatusLabel, serviceStart } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
@@ -72,7 +73,7 @@ function playerOf(ctx: CommandContext) {
 function roleLabelOf(ctx: CommandContext) {
   const player = playerOf(ctx);
   const role = ctx.content.roles[ctx.state.roleId];
-  return role?.rank === player.rank ? role.label : rankName(ctx.content, player.factionId, player.rank);
+  return role?.rank === player.rank ? role.label : rankName(ctx.content, player.factionId, player.rank, player.occupation?.id);
 }
 
 function clockLine(state: GameState) {
@@ -126,7 +127,13 @@ const status: CommandDef = {
     lines.push("");
     const commanderId = commanderOf(state, content);
     const commander = commanderId ? state.characters[commanderId] : undefined;
-    lines.push(`소속  ${player.factionId ? roleLabelOf(ctx) : `무소속 · ${roleLabelOf(ctx)}`}${commander ? ` (상관 ${commander.name})` : ""}`);
+    // 손님이면 손님으로 든 무리를 (12-312, 받아들임 두 판: 손님인데 "무소속"으로만 나왔다). 들어간 뒤에는 계급도 (맡은 일과 다르면)
+    const guestAt = admissionOf(ctx.state);
+    const rankLabel = player.factionId ? rankName(ctx.content, player.factionId, player.rank, player.occupation?.id) : "";
+    const label = player.factionId ? roleLabelOf(ctx) : "";
+    lines.push(
+      `소속  ${player.factionId ? `${label}${rankLabel && !label.includes(rankLabel) ? ` · ${rankLabel}` : ""}` : guestAt ? `${ctx.content.factions[guestAt.factionId]?.name ?? guestAt.factionId}의 손님 (아직 식구가 아니다)` : `무소속 · ${roleLabelOf(ctx)}`}${commander ? ` (상관 ${commander.name})` : ""}`,
+    );
     // 갇혀 있으면 그렇다고 (플레이 테스트 13: ?상태에 갇힌 것이 나오지 않았다)
     if (heldOf(player)) lines.push(`갇힘  ${ctx.content.factions[heldOf(player)!.by]?.name ?? heldOf(player)!.by} · ${ctx.content.locations[heldOf(player)!.zone]?.name ?? heldOf(player)!.zone}`);
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
@@ -277,7 +284,7 @@ const people: CommandDef = {
           const shown = present.get(id);
           const here = state.scene.present.includes(id) ? ` · 함께 있음${shown?.conditionLabel ? ` (${shown.conditionLabel})` : ""}` : "";
           const attitude = state.perceived[id] ? `신뢰 ${relationLabel(r.trust)} · 호감 ${relationLabel(r.affection)} · 존중 ${relationLabel(r.respect)}` : "아직 만나 보지 않음";
-          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone && heldSeenZone(state, id) === state.playerZone ? " · 여기 붙잡혀 있음" : heldSeenZone(state, id) ? ` · ${content.locations[heldSeenZone(state, id)!]?.name}에 붙잡혀 있는 것을 봤음` : " · 행방 모름") : ""}${here}  (${attitude})`;
+          return `${headingAs(state, content, state.playerId, id)}  ${rankName(content, c.factionId, c.rank, c.occupation?.id)}${c.dead && knowsDeath(state, content, id) ? " · 사망" : c.away ? " · 떠남" : heldOf(c) ? (state.playerZone === heldOf(c)!.zone && heldSeenZone(state, id) === state.playerZone ? " · 여기 붙잡혀 있음" : heldSeenZone(state, id) ? ` · ${content.locations[heldSeenZone(state, id)!]?.name}에 붙잡혀 있는 것을 봤음` : " · 행방 모름") : ""}${here}  (${attitude})`;
         }),
         "",
         `자세히: ${ctx.prefix ?? "!"}인물 이름`,

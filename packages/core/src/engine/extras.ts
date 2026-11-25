@@ -129,7 +129,7 @@ const spawnExtra = defineTool({
     return {
       ok: true,
       resultText:
-        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}${templateKind(template) === "person" ? `, ${rankName(content, character.factionId, character.rank)}${character.gender ? ` · ${content.scenario.creation?.genders.find((g) => g.id === character.gender)?.label ?? character.gender}` : ""} · ${character.age}세` : ""}). 겉모습: ${character.extra!.look}. ` +
+        `${josa(input.label, "이/가")} 장면에 들어왔다 (id: ${id}${templateKind(template) === "person" ? `, ${rankName(content, character.factionId, character.rank, character.occupation?.id)}${character.gender ? ` · ${content.scenario.creation?.genders.find((g) => g.id === character.gender)?.label ?? character.gender}` : ""} · ${character.age}세` : ""}). 겉모습: ${character.extra!.look}. ` +
         (template.kind === "infected"
           ? `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 감염체다: 판정의 상대(target·opponent)가 되고, 말이 통하지 않으며 행적을 보지 않는다. 이것에게 다칠 위험에는 감염 위험이 저절로 붙는다.`
           : `지닌 것: ${items.join(", ") || "눈에 띄는 것 없음"}. 이 인물은 이제 판정 대상(target)이 되고 행적을 본다.${templateKind(template) === "person" ? " 이름은 아직 모른다." : ""}`),
@@ -197,7 +197,7 @@ export function enterScene(ctx: ToolContext, id: string): void {
 }
 
 /**
- * 이름을 모르는 인물을 처음 만나면 기억에 남긴다: "엽총 든 보초 — 이름은 모른다".
+ * 이름을 모르는 인물을 처음 만나면 기억에 남긴다: "엽총 든 보초와 마주쳤다. 겉모습: …".
  * 나중에 이름을 알게 되면 learn_name이 "엽총 든 보초의 이름은 김철수"를 남긴다. 두 기억이 호칭과 이름을 잇는다 (기획서 6.3)
  */
 function noteFirstMeeting(ctx: ToolContext, id: string): void {
@@ -206,7 +206,8 @@ function noteFirstMeeting(ctx: ToolContext, id: string): void {
   const alias = aliasOf(state, ctx.content, id);
   const look = state.characters[id]?.extra?.look ?? ctx.content.npcs[id]?.look ?? "";
   // 동물·감염체는 이름이 없다 (12-111)
-  const opening = isCreature(ctx.content, state.characters[id]) ? `${josa(alias, "과/와")} 마주쳤다.` : `${josa(alias, "과/와")} 마주쳤다. 이름은 모른다.`;
+  // 믿음은 있었던 일만 적는다 (12-312): "이름은 모른다"는 지금 처지라 이름을 알게 된 뒤에도 남았다. 이름을 모르는 것은 호칭과 "(이름 모름)" 표시가 알린다
+  const opening = `${josa(alias, "과/와")} 마주쳤다.`;
   if ((state.beliefs[state.playerId] ?? []).some((b) => b.fact.startsWith(opening))) return;
   const fact = `${opening}${look ? ` 겉모습: ${look}` : ""}`;
   addBeliefTo(ctx, state.playerId, fact, "seen");

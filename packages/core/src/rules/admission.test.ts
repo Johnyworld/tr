@@ -9,6 +9,7 @@ import { WorldManager } from "../world/manager.ts";
 import { admissionOf, chiefVisits, guestOf, intoOfferHours, offerDue, offeredPost, postFor } from "./admission.ts";
 import { joinRole } from "../game/customStart.ts";
 import { daysServed, serviceStart } from "../game/missions.ts";
+import { rankName } from "../game/ranks.ts";
 import { hostileLand } from "./home.ts";
 import { welcomedAsGuest } from "./place.ts";
 import { minuteOfDay } from "./time.ts";
@@ -252,6 +253,20 @@ describe("받아들임: 들어갈 자리", () => {
     expect(r.ok && r.resultText).toContain("건너와 거점에 들렀다");
     // 오늘은 다시 들르지 않는다
     expect(chiefVisits(w.state(), content, chief)).toBe(false);
+  });
+
+  it("분대에 들지 않는 자리는 무리의 계급 이름표(약탈조원)를 쓰지 않고, 수비대원은 보초·경비 일감만 빌린다 (12-312)", () => {
+    expect(rankName(content, "faction_c", "grunt", "scavenger")).toBe("약탈조원");
+    expect(rankName(content, "faction_c", "grunt", "guard")).toBe(content.scenario.rank_ladder.find((r) => r.id === "grunt")!.label);
+    const guard = joinRole(content, "faction_c", "grunt", { age: 30, occupation: "guard" });
+    expect(guard.missions.length).toBeGreaterThan(0);
+    for (const id of guard.missions) expect(content.missions[id]!.requirements.some((r) => "activity" in r && r.activity === "guard_duty")).toBe(true);
+    expect(guard.missions).not.toContain("c_east_probe");
+  });
+
+  it("손님일 때 ?상태 소속 줄은 손님으로 든 무리를 말한다", async () => {
+    const w = admitted("nurse");
+    expect(await w.runCommand("?상태")).toContain("청솔형제단의 손님");
   });
 });
 

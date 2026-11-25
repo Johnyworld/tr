@@ -208,7 +208,10 @@ export function joinRole(
   delete out.squad;
   if (chief) out.commander = chief.id;
   else delete out.commander;
-  out.missions = same?.missions ?? [];
+  // 같은 직분의 시나리오가 아니면 그 자리의 일(posts.borrows의 활동)이 든 일감만 빌린다 (수비대원에게 약탈·정찰 일감이 섞였다)
+  const borrows = posts.borrows[occ.id] ?? [];
+  const fits = (id: string) => (content.missions[id]?.requirements ?? []).some((r) => "activity" in r && borrows.includes(r.activity));
+  out.missions = same?.occupation === occ.id ? (same.missions ?? []) : (same?.missions ?? []).filter(fits);
   out.storylet_tags = same?.storylet_tags ?? [];
   // 시작 지식도 같은 직분·같은 계급의 시나리오 것만 (다른 상관 밑의 사정을 받지 않는다)
   if (same?.beliefs_preset && same.rank === chosen && same.occupation === occ.id) out.beliefs_preset = same.beliefs_preset;

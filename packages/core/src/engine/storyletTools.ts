@@ -708,7 +708,7 @@ export function applyEffect(
     const to = effect.player_rank.rank;
     if (!player.factionId || player.rank === to) return {};
     store.append({ type: "promoted", characterId: playerId, from: player.rank, to });
-    const fromLabel = rankName(content, player.factionId, player.rank);
+    const fromLabel = rankName(content, player.factionId, player.rank, player.occupation?.id);
     const toLabel = rankName(content, player.factionId, to);
     // 분대를 맡는 계급이 됐으면 분대를 꾸린다 (12-190)
     const squad = formSquad(ctx);
@@ -718,7 +718,7 @@ export function applyEffect(
     const player = state.characters[playerId]!;
     if (!player.factionId) return {};
     const from = content.factions[player.factionId]?.name ?? player.factionId;
-    const fromLabel = rankName(content, player.factionId, player.rank);
+    const fromLabel = rankName(content, player.factionId, player.rank, player.occupation?.id);
     const rank = content.scenario.custom_start?.free_rank ?? content.scenario.rank_ladder[0]!.id;
     const role = joinRole(content, "", rank, { age: player.age, title: "떠돌이", occupation: player.occupation?.id ?? null });
     // 쫓겨난 무리의 임무는 거기서 끝난다 (플레이 테스트 14)

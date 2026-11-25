@@ -188,7 +188,7 @@ function heirCandidates(state: GameState, content: Content): SuccessionOption[] 
   const top = content.scenario.rank_ladder.reduce((a, b) => (b.level > a.level ? b : a)).id;
   const met = encountered(state);
   const free = (c: GameState["characters"][string]) => !c.dead && !c.away && !heldOf(c) && c.rank !== top && met.has(c.id);
-  const who = (c: GameState["characters"][string]) => `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
+  const who = (c: GameState["characters"][string]) => `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank, c.occupation?.id)}`;
   for (const npc of Object.values(content.npcs)) {
     const c = state.characters[npc.id];
     if (!c || !npc.playable || !free(c)) continue;

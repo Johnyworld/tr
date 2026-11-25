@@ -1427,6 +1427,8 @@ admission:
     ranks: { scavenger: grunt, guard: grunt, medic: grunt }
     other_rank: resident
     chief_rank: officer
+    # 분대에 들지 않는 자리가 무리 시나리오에서 받는 일감: 요건에 이 활동이 있는 것만 (수비대원은 보초·경비만, 12-312)
+    borrows: { guard: [guard_duty] }
     # 상관이 거점 밖에 살면 (거점에 간부가 없는 무리) 아침 7~10시에 하루 한 번 거점에 들러 일감을 준다 (12-311, 사용자 결정)
     visit_hours: [7, 10]
 

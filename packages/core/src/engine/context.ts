@@ -177,7 +177,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
       ...((state.bounties ?? []).length
         ? [`현상금: ${josa(state.bounties.map((f) => content.factions[f]?.name ?? f).join(", "), "이/가")} 당신 머리에 값을 걸었다 (소문으로 안다). 그 무리의 땅과 말이 모이는 곳에서는 알아보는 눈이 있다. 값은 시스템이 정한다 (지어내지 않는다)`]
         : []),
-      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankName(content, player.factionId, player.rank)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
+      `캐릭터: ${player.name} (id: ${player.id}) · ${content.roles[state.roleId]?.rank === player.rank ? content.roles[state.roleId]!.label : rankName(content, player.factionId, player.rank, player.occupation?.id)}${genderOf(scenario, player.gender)}${player.age ? ` · ${player.age}세` : ""}`,
       ...(occupationOf(content, player)
         ? [`직분: ${occupationTitle(content, player)} (${occupationOf(content, player)!.summary}). 이 일로 평판을 쌓으면 직분 안에서 오른다 (이야기·일감의 결과로만)`]
         : []),
@@ -325,7 +325,7 @@ function rumorLines(state: GameState, content: Content, id: string): string[] {
  */
 function rankTitleNote(content: Content, npc: NpcContent, player: Character): string[] {
   const text = [npc.voice.style, ...npc.voice.samples].join(" ");
-  const mine = rankName(content, player.factionId, player.rank);
+  const mine = rankName(content, player.factionId, player.rank, player.occupation?.id);
   const titled = [...new Set(content.scenario.rank_ladder.map((r) => r.label).filter((l) => l !== mine && text.includes(`${l}님`)))];
   return titled.length ? [`  (예시 대사의 "${titled.map((t) => `${t}님`).join("·")}"은 그 자리의 사람에게 하는 말이다. 주인공은 ${mine}이라 그렇게 부르지 않는다)`] : [];
 }
@@ -380,7 +380,7 @@ function describeNpcCard(
   })();
 
   return [
-    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank)}${shownOccupationTitle(state, content, character) ? ` · ${shownOccupationTitle(state, content, character)}` : ""}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
+    `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank, character.occupation?.id)}${shownOccupationTitle(state, content, character) ? ` · ${shownOccupationTitle(state, content, character)}` : ""}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
     `외모: ${npc.look}${matureCard(state, content, npc.id)?.look ? ` ${matureCard(state, content, npc.id)!.look}` : ""}`,
     `상태: ${describeConditions(content.scenario, character)} / ${carriedLabel(state, player, character.id)}: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
@@ -505,7 +505,7 @@ function describeKnownPeople(state: GameState, content: Content): string {
       const character = state.characters[id]!;
       const npc = content.npcs[id];
       const gender = genderOf(content.scenario, character.gender ?? npc?.gender ?? null);
-      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${state.family?.includes(id) ? kinTitle(state, content, id) : rankName(content, character.factionId, character.rank)}${gender}${statusNote(content, character, state)}`;
+      return `- ${headingAs(state, content, viewer, id)} (${id}) · ${state.family?.includes(id) ? kinTitle(state, content, id) : rankName(content, character.factionId, character.rank, character.occupation?.id)}${gender}${statusNote(content, character, state)}`;
     };
     const lines: string[] = [];
     const rest: string[] = [];
@@ -558,7 +558,7 @@ function kinTitle(state: GameState, content: Content, id: string): string {
   // (가족은 처음부터 아는 사이라 만남 기록으로는 못 가른다: 다시 만나 장면에 들었다 나간 적이 있는지로 본다)
   const found = state.scene.present.includes(id) || state.companions.includes(id) || (c.extra?.lastSeenAt ?? 0) > state.runStartedAt;
   if (state.family?.includes(id) && !found) return "행방 모름";
-  return `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank)}`;
+  return `${c.factionId ? (content.factions[c.factionId]?.name ?? c.factionId) + " " : ""}${rankName(content, c.factionId, c.rank, c.occupation?.id)}`;
 }
 
 /** 이 구역의 장소 (공통 규칙 15): 지금 있는 곳과 옮겨 갈 수 있는 곳, 그곳에 있을 아는 사람.

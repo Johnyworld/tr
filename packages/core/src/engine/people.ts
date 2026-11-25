@@ -372,7 +372,7 @@ export function describeProfileLines(state: GameState, content: Content, c: Char
         : null;
   return [
     // 사투리를 쓰는 사람이면 말투에 말씨를 얹는다 (PT14: 경상도 사투리를 쓰던 사람이 자라자 표준어 존댓말로 바뀐 줄 알았다)
-    `말투: ${p.voice.style}${c.origin?.dialect ? " (말씨 줄의 사투리를 그대로 얹는다)" : ""} / 예시 대사: ${p.voice.samples.map((x) => `"${x}"`).join(" / ")}`,
+    `말투: ${p.voice.style}${c.origin?.dialect ? " (말씨 줄의 억양을 얹는다)" : ""} / 예시 대사: ${p.voice.samples.map((x) => `"${x}"`).join(" / ")}`,
     `평판: ${p.reputation}`,
     `[GM 전용: 연기에만 쓰고 서술로 직접 드러내지 않는다] 원하는 것: ${maskUnknownNames(state, content, p.want)} / 두려워하는 것: ${maskUnknownNames(state, content, p.fear)}`,
     ...(p.rules.length ? [`행동 규칙: ${p.rules.map((r) => maskUnknownNames(state, content, r)).join(" / ")}`] : []),

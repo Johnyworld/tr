@@ -14,13 +14,13 @@
   cast:
     daniel: { ids: [fr_daniel] }
   setup: '막사 앞 모닥불. {daniel:이/가} 꼬깃꼬깃한 공책 한 장을 내민다. "니 글씨 좋제? 여기 내 딸 이름 좀 적어 도. 영어로, 또박또박. 내가 쓰면 공장 장부 같아 보여서."'
-  ai_direction: 다니엘은 라고스의 딸에게 보낼 편지를 몇 달째 쓰고 있다. 부칠 곳은 없다. 무전기로 바깥에 닿을 날을 위해 모아 둔다. 딸 이름은 아데바요 오코로. 경상도 사투리로 농담을 하다가도 딸 이야기에서는 목소리가 낮아진다.
+  ai_direction: 다니엘은 라고스의 딸에게 보낼 편지를 몇 달째 쓰고 있다. 부칠 곳은 없다. 무전기로 바깥에 닿을 날을 위해 모아 둔다. 딸 이름은 치오마 오코로. 경상도 억양으로 농담을 하다가도 딸 이야기에서는 목소리가 낮아진다.
   choices:
     - id: write
       label: 받아 들고 또박또박 적어 준다
       effects:
         - relation: { who: daniel, axis: affection, delta: 2 }
-        - belief: { fact: "다니엘 오코로의 딸 이름은 아데바요다. 부칠 곳 없는 편지를 몇 달째 쓰고 있다", source: report }
+        - belief: { fact: "다니엘 오코로의 딸 이름은 치오마다. 부칠 곳 없는 편지를 몇 달째 쓰고 있다", source: report }
     - id: radio
       label: 무전기로 바깥에 닿을 방법을 같이 찾아보자고 한다
       check: persuade

@@ -111,7 +111,7 @@ describe("3. 자란 인물은 원래 성격·말씨를 이어받는다", () => {
     env.store.append({ type: "extra_spawned", character: c, unseen: true });
     promoteExtra(env.ctx, id);
     const lines = describeProfileLines(env.state(), content, env.state().characters[id]!);
-    expect(lines[0]).toContain("말씨 줄의 사투리를 그대로 얹는다");
+    expect(lines[0]).toContain("말씨 줄의 억양을 얹는다");
   });
 
   it("사투리 말투는 표준어를 쓰는 사람에게 고르지 않는다", () => {

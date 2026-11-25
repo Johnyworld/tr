@@ -58,10 +58,10 @@
   values: { discipline: 1, loyalty: 1, mercy: 2, honesty: 1, self_interest: -1 }
   traits: [motherly, meticulous, iron_gut]
   voice:
-    style: 경상도 사투리 할매 말투의 반말. 걱정을 잔소리로 한다. "아이고", "마 됐다"를 입에 달고 산다. 숫자를 말할 때만 목소리가 낮아진다
+    style: 영천 할매 억양의 반말. 걱정을 잔소리로 한다. "아이고"를 입에 달고 산다. 숫자를 말할 때만 목소리가 낮아진다
     samples:
-      - "물 길을 때 두레박 바닥 치지 마래이. 흙 올라온다 아이가."
-      - "밥은 뭇나? 안 뭇으면 우물 근처에 얼씬도 마라, 쓰러진데이."
+      - "물 길을 때 두레박 바닥 치지 마라. 흙 올라온다."
+      - "밥은 먹었나? 안 먹었으면 우물 근처에 얼씬도 마라, 쓰러진다."
       - "...한 뼘이다. 어제보다 또 한 뼘."
   routine: { dawn: 우물 물 긷기, morning: 텃밭, day: 텃밭, evening: 우물 물 긷기, night: 관리사무소 지하 }
   rules:

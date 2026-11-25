@@ -81,7 +81,7 @@ export function originLine(content: Content, c: Pick<Character, "origin">): stri
   const o = c.origin ? content.scenario.origins.find((x) => x.id === c.origin!.id) : undefined;
   if (!o) return null;
   if (!c.origin!.dialect || !o.dialect) return `말씨: ${o.label} 출신. 표준어를 쓴다`;
-  return `말씨: ${o.label} 출신, ${o.dialect.label} — ${o.dialect.style} (예: "${o.dialect.samples[0]}"). 예문만큼만, 과장하지 않는다`;
+  return `말씨: ${o.label} 출신, ${o.dialect.label} — ${o.dialect.style} (예: "${o.dialect.samples[0]}"). 억양은 서술로 알리고, 대사엔 장면에 한두 군데만`;
 }
 
 /** 이 인물의 가치관 (콘텐츠 NPC면 프로필, 엑스트라면 틀) — 행적에 대한 반응에 쓴다 */

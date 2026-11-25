@@ -541,7 +541,9 @@
     zones: [a_east_post]
     indoor: false
     segments: [morning, day]
-  setup: 고가도로 위로 붉은 완장을 찬 순찰조가 지나간다. 이쪽은 아직 보지 못했다.
+    # 실제 붉은연합 부대가 근처에 있을 때만 (PT31: 부대가 하나도 없는데 클락을 바꿨다)
+    party_near: { faction: faction_c }
+  setup: 철길 둑 위로 붉은 완장을 찬 순찰조가 지나간다. 이쪽은 아직 보지 못했다.
   ai_direction: 서너 명이다. 무언가를 재고 있는 것처럼 초소 쪽을 자주 본다.
   choices:
     - id: watch

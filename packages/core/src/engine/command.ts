@@ -1,3 +1,7 @@
+import { partyZoneAt } from "../sim/parties.ts";
+import { hostileFaction, hostileLand } from "../rules/home.ts";
+import { forceWords } from "./battleTools.ts";
+import { neighbors } from "../sim/war.ts";
 import { stakesOf } from "../rules/stakes.ts";
 import { foundCount } from "./scavenge.ts";
 import { heldOf } from "../rules/held.ts";
@@ -228,6 +232,20 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
 
     const lines: string[] = [];
     const gmNotes: string[] = [];
+    // 정찰하는 일 (PT31): 그 구역에 적이 있는지는 실제 부대와 땅 주인으로 (적 없는 곳에서 "들켰다, 총소리"가 나지 않게)
+    const enemyHere = task.scouts && (hostileLand(state, content, order.zone) || state.parties.some((p) => p.size > 0 && partyZoneAt(p, state.time) === order.zone && hostileFaction(state, content, p.faction)));
+    if (task.scouts && outcome !== "miss") {
+      const near = new Set(outcome === "success" ? [order.zone, ...neighbors(content, order.zone)] : [order.zone]);
+      const seen = state.parties.filter((p) => { const z = partyZoneAt(p, state.time); return p.size > 0 && !!z && near.has(z) && hostileFaction(state, content, p.faction); });
+      for (const p of seen) {
+        const z = partyZoneAt(p, state.time)!;
+        const fact = `${name}의 정찰 보고: ${content.locations[z]?.name ?? z}에 ${content.factions[p.faction]?.name ?? "낯선"} 쪽 사람들 ${forceWords(p.size)}`;
+        const now = store.getState();
+        store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: now.time, topic: "war" } });
+        lines.push(fact);
+      }
+      if (!seen.length) lines.push("적의 무리는 보이지 않았다고 한다");
+    }
     if (outcome !== "miss") {
       const half = outcome === "partial";
       for (const [r, amount] of Object.entries(task.rewards.resources)) {
@@ -271,7 +289,8 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       }
     } else {
       // 운으로 빗나간 것은 탓하지 않는다: 위험한 데 보내 다쳤을 때만 믿음이 준다 (설계 목록 7-4, PT20 긴 판: 운으로 -1씩 쌓여 7일 동안 따라나서기를 거부)
-      if (task.dangerous) {
+      // 정찰하는 일이 적 없는 곳에서 빗나가면 다치지 않는다 (PT31)
+      if (task.dangerous && (!task.scouts || enemyHere)) {
         changeCondition(ctx, id, s.harm_track, 1, "분대 명령", `${task.label} 중 다침`);
         changeRelation(ctx, { from: id, to: state.playerId, delta: { trust: -1, affection: 0, respect: 0 }, reason: "위험한 일에 보내 다쳤다", kind: "squad_risky" });
         lines.push("다쳐서 돌아와 분대장을 믿는 마음이 조금 줄었다");
@@ -281,7 +300,7 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
     const after = store.getState().characters[id]!;
     const report = after.dead
       ? `${josa(name, "이/가")} ${zone}에서 ${task.label} 중에 돌아오지 않았다.`
-      : [fill(task.report[outcome]), ...lines].join(" · ");
+      : [fill(outcome === "miss" && task.scouts && !enemyHere && task.report.miss_quiet ? task.report.miss_quiet : task.report[outcome]), ...lines].join(" · ");
     store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome: after.dead ? null : outcome, report });
     displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: after.dead ? "돌아오지 않음" : CHECK_OUTCOME_LABELS[outcome] });
     for (const note of gmNotes) displays.push({ type: "belief", fact: "", sourceLabel: "", note });

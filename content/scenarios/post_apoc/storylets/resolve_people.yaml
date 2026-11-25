@@ -26,6 +26,8 @@
         success:
           - reveal_name: { who: foe }
           - resolve_step: { text: "그 이름과 있는 곳을 들었다" }
+          # 있는 곳도 믿음으로 (PT31 졸병: "있는 곳을 들었다"인데 있는 곳 믿음이 없었다)
+          - locate: { who: foe, source: rumor }
         partial:
           - resolve_step: { text: "{foe}의 소문을 들었다" }
         miss:
@@ -37,6 +39,8 @@
         success:
           - reveal_name: { who: foe }
           - resolve_step: { text: "그 이름과 있는 곳을 들었다" }
+          # 있는 곳도 믿음으로 (PT31 졸병: "있는 곳을 들었다"인데 있는 곳 믿음이 없었다)
+          - locate: { who: foe, source: rumor }
         partial:
           - belief: { fact: "{foe:이/가} 아직 살아 있다는 말이 돈다", source: rumor }
         miss: []
@@ -47,7 +51,8 @@
   repeatable: true
   cooldown_days: 4
   when:
-    resolve: { kinds: [revenge], stage: 1 }
+    # 그 사람이 실제로 이 구역이나 맞닿은 구역에 있을 때만 (PT31 졸병: 거점에 있는 원수가 초소 앞을 지나갔다)
+    resolve: { kinds: [revenge], stage: 1, near_target: true }
     segments: [morning, day, evening]
     indoor: false
   cast:

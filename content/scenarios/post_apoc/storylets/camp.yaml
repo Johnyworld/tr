@@ -230,7 +230,7 @@
     - id: fire_up
       label: 땔감을 던져 넣어 불을 키운다
       effects:
-        - take_item: { item: firewood }
+        - light_fire: { item: firewood }
         - zone_noise: 1
         - belief: { fact: "{zone}에서 야영하던 밤 들개 떼가 왔다. 불을 키워 쫓았다", source: seen }
     - id: shout

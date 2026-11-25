@@ -1,3 +1,4 @@
+import { lightFire } from "./climate.ts";
 import { isCreature } from "../game/kinds.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { confineByOwn } from "./care/quarantine.ts";
@@ -369,6 +370,10 @@ export const resolveStorylet = defineTool({
     const player = state.characters[state.playerId]!;
     // 값으로 내놓는 물건(판정 없는 선택지)만 막는다. 판정 결과로 빼앗기는 것은 가진 만큼만 (B7)
     for (const e of choice.outcomes && outcome !== "success" ? [] : effects) {
+      if ("light_fire" in e && (player.inventory[e.light_fire.item] ?? 0) < 1) {
+        const name = ctx.content.items[e.light_fire.item]?.name ?? e.light_fire.item;
+        return { ok: false, error: `${josa(name, "이/가")} 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
+      }
       if ("take_item" in e && carriedCount(state, e.take_item.item) < e.take_item.quantity) {
         const name = ctx.content.items[e.take_item.item]?.name ?? e.take_item.item;
         return { ok: false, error: `${josa(`${name} ×${e.take_item.quantity}`, "이/가")} 없어 이 선택지를 고를 수 없다. 다른 선택지를 고르거나 그대로 둔다.` };
@@ -943,6 +948,10 @@ export function applyEffect(
     if (!weapon) return {};
     const broke = wearItem(ctx, playerId, weapon, effect.wear_weapon.amount);
     return { line: broke ?? `${josa(content.items[weapon]?.name ?? weapon, "이/가")} 상했다 (내구도가 줄었다).` };
+  }
+  if ("light_fire" in effect) {
+    const lit = lightFire(ctx, effect.light_fire.item);
+    return lit?.ok ? { line: lit.lines.join(" ") } : lit ? { line: lit.error } : {};
   }
   if ("take_item" in effect) {
     const { item } = effect.take_item;

@@ -761,6 +761,8 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ lose_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
     /** 플레이어가 내놓는다 (거래). 가진 것이 없으면 이 선택지를 고를 수 없다 */
     z.strictObject({ take_item: z.strictObject({ item: contentIdSchema, quantity: z.number().int().positive().default(1) }) }),
+    /** 모닥불을 피우거나 키운다 (그 땔감 하나를 써서 불이 실제로 탄다, PT31: "불을 키운다"가 땔감만 가져갔다) */
+    z.strictObject({ light_fire: z.strictObject({ item: contentIdSchema }) }),
     /** 주인공이 손에 든 무기를 닳게 한다 (플레이 테스트 12: "걸린 탄이 빠지지 않는다"인데 총은 멀쩡했다) */
     z.strictObject({ wear_weapon: z.strictObject({ amount: z.number().int().min(1).max(10).default(1) }) }),
     /** 세력 클락을 당기거나 늦춘다 (플레이어 행동이 전황에 닿는 길) */

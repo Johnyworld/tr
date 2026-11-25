@@ -82,6 +82,8 @@ export const engageParty = defineTool({
     const party = state.parties.find((p) => p.id === input.party_id);
     if (!party || !seenHere(state, party)) return { ok: false, error: `지금 이 구역에서 본 무리가 아니다: ${input.party_id} (상태의 '눈에 띈 무리'를 본다)` };
     if (state.partyFights[party.id]) return { ok: false, error: "이미 맞붙은 무리다. take_action으로 싸운다." };
+    // 우리 무리 부대에는 덤비지 않는다 (PT31 분대장: 우리 순찰대가 맞서는 엑스트라로 들어왔다). 무리를 배신하려면 이야기·행동으로
+    if (me.factionId && party.faction === me.factionId) return { ok: false, error: "우리 무리 사람들이다. engage_party는 다른 무리의 무리에만 쓴다." };
     const zone = state.playerZone!;
     const label = partyLabel(content, party);
     const world = worldOf(state);

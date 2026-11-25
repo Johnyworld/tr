@@ -439,6 +439,8 @@
   repeatable: true
   cooldown_days: 6
   when:
+    # 실제 붉은연합 부대가 근처에 있을 때만 (PT31 분대장: 우리 땅 사이 길에서 부대 없이 매복이 열렸다)
+    party_near: { faction: faction_c }
     # 글에 맞춘 자리 (12-262, content:check story_lint)
     indoor: false
     road_danger_gte: 2

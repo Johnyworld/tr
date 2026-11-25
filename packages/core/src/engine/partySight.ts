@@ -102,15 +102,16 @@ function distanceBonus(state: GameState, content: Content, party: Party, zone: s
   return null;
 }
 
-export type SightRoll = { player: boolean; party: boolean; attacks: boolean };
+/** rolled: 실제로 굴렸는가 (실내이거나 멀어서 굴리지 않았으면 false: 기록하지 않고 나중에 다시 굴린다, PT31) */
+export type SightRoll = { player: boolean; party: boolean; attacks: boolean; rolled?: boolean };
 
 /** 한 번 서로 알아채기를 굴린다 (공통 규칙 23). asleep이면 불침번이 있을 때만 주인공 쪽이 본다 */
 export function rollPartySight(state: GameState, content: Content, rng: Rng, party: Party, at: number, opts: { asleep?: boolean; watched?: boolean } = {}): SightRoll {
   const zone = state.playerZone!;
-  if (!outdoorsHere(state, content)) return { player: false, party: false, attacks: false };
+  if (!outdoorsHere(state, content)) return { player: false, party: false, attacks: false, rolled: false };
   // 장소 사이는 멀다: 같은 장소·한 칸 옆(망루면 두 칸)만 서로 볼 수 있다 (파트 12)
   const dist = distanceBonus(state, content, party, zone, at);
-  if (!dist) return { player: false, party: false, attacks: false };
+  if (!dist) return { player: false, party: false, attacks: false, rolled: false };
   const me = state.characters[state.playerId]!;
   const cover = content.locations[zone]?.cover ?? 0;
   const night = isNight(at);
@@ -124,7 +125,7 @@ export function rollPartySight(state: GameState, content: Content, rng: Rng, par
   // 주인공을 본 부대가 덤비는가: 적대하는 무리이고, 주인공 쪽보다 넉넉히 많을 때 (4-2)
   const onOwnLand = ownedBy(state, zone, party.faction);
   const attacks = partySaw && hostileFaction(state, content, party.faction) && partyChoice({ kind: party.kind, size: party.size, onOwnLand }, { size: groupSize(state, content) }) === "fight";
-  return { player, party: partySaw, attacks };
+  return { player, party: partySaw, attacks, rolled: true };
 }
 
 /** 이 구간에 주인공 구역에 드는 부대 (아직 굴리지 않은 것). 처음 드는 시각과 함께 */
@@ -175,9 +176,11 @@ function sightLine(state: GameState, content: Content, party: Party, at: number)
   const me = state.characters[state.playerId];
   const ours = !!me?.factionId && me.factionId === party.faction;
   const who = ours ? `우리 무리의 ${partyLabel(content, party)}` : `${content.factions[party.faction]?.name ?? "낯선"} 쪽 사람들`;
-  // 장소와 방향으로 (12-304): "북쪽, 철길 둑 가는 비탈로"
-  const { enter } = partyPlacePath(state, content, party, zone, at);
-  const road = enter ? placesIn(state, content, zone).find((p) => p.id === enter) : undefined;
+  // 장소와 방향으로 (12-304): "북쪽, 철길 둑 가는 비탈로". 들어선 길이 아니라 부대가 지나는 길에서 주인공 자리와 가장 가까운 곳 (PT31 약탈자: 네 칸 떨어진 곳에서 본 것처럼 읽혔다)
+  const { places } = partyPlacePath(state, content, party, zone, at);
+  const here = currentPlace(state, content)?.id ?? null;
+  const nearest = here && places.length ? [...places].sort((a, b) => stepsBetween(state, content, here, a, zone) - stepsBetween(state, content, here, b, zone))[0] : places[0];
+  const road = nearest ? placesIn(state, content, zone).find((p) => p.id === nearest) : undefined;
   const dir = road ? directionTo(state, content, currentPlace(state, content)?.id ?? null, road.id, zone) : null;
   const from = road ? `${dir ? `${dir}, ` : ""}${josa(road.name, "으로/로")} ` : "";
   return `${from}${forceWords(party.size)}의 ${josa(who, "이/가")} 이 구역에 들어섰다`;
@@ -191,7 +194,12 @@ export function settleSighting(ctx: ToolContext, party: Party, roll: SightRoll, 
   if (!zone) return [];
   store.append({ type: "party_sighted", key: sightKey(party, zone), player: roll.player, party: roll.party });
   const displays: ToolDisplayEvent[] = [];
-  if (roll.player) {
+  const me = state.characters[state.playerId];
+  const ours = !!me?.factionId && me.factionId === party.faction;
+  if (roll.player && ours) {
+    // 우리 무리 부대는 적이 아니다: 믿음으로 남기지 않고 고를 일도 없다 (PT31: 우리 순찰대에도 "숨기·맞서기"가 붙었다)
+    displays.push({ type: "belief", fact: sightLine(state, content, party, at), sourceLabel: "본 것", note: "우리 무리 사람들이 지나간다. 배경으로만 서술한다." });
+  } else if (roll.player) {
     const line = sightLine(state, content, party, at);
     // 본 부대는 믿음으로 남는다 (8-1): 본 때·구역·대략의 규모·온 길. 목적은 넣지 않는다
     store.append({
@@ -232,6 +240,8 @@ export function runPartySightings(ctx: ToolContext): ToolDisplayEvent[] {
   for (const party of [...state.parties].sort((a, b) => a.id.localeCompare(b.id))) {
     if (party.size <= 0 || partyZoneAt(party, state.time) !== zone || store.getState().partySightings[sightKey(party, zone)]) continue;
     const roll = rollPartySight(store.getState(), content, rng, party, state.time);
+    // 굴리지 않았으면(실내·멀다) 기록하지 않는다: 밖으로 나오거나 가까워지면 그때 굴린다 (PT31 떠돌이: 초소 안에서 한 번 넘긴 순찰대를 참호에서 다시 못 봤다)
+    if (!roll.rolled) continue;
     displays.push(...settleSighting(ctx, party, roll, state.time));
   }
   return displays;

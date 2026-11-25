@@ -286,11 +286,14 @@ command:
       stat: agility
       needs_zone: true
       dangerous: true
+      # 실제 부대와 묶는다 (PT31 분대장: 적이 없는 철길 둑에서 "들켰다, 총소리"로 다쳐 왔고 성공해도 아무것도 몰랐다)
+      scouts: true
       rewards: { merit: 1 }
       report:
         success: "{member}: {zone:을/를} 들키지 않고 돌아봤다. 본 것을 차례로 보고한다"
         partial: "{member}: {zone} 가장자리까지만 갔다. 더 들어가면 들킬 것 같았다고 한다"
         miss: "{member}: {zone}에서 들켰다. 총소리를 뒤로 하고 겨우 빠져나왔다"
+        miss_quiet: "{member}: {zone:을/를} 돌아봤지만 길을 헤매다 제대로 살피지 못하고 돌아왔다"
     - id: escort
       label: 물자 호위
       kind: work
@@ -1939,7 +1942,9 @@ war:
     slow_size: 10
     slow_factor: 1.5
     far_hops: 3
-    patrol_chance: 0.3
+    # PT31: 나흘에 부대 셋~넷이라 적을 만날 일이 없었다 → 싸우지 않는 정찰·순찰을 늘린다 (공격 빈도는 그대로)
+    patrol_chance: 0.6
+    scout_chance: 0.6
     trade_every_days: 3
     # 사람이 부대를 알아채는 판정 (공통 규칙 23 마주침)
     notice_move: sense_danger

@@ -18,7 +18,8 @@
     - 머리카락이 반쯤 빠진 감염체. 손톱이 검게 갈라졌고, 숨을 쉴 때마다 목에서 젖은 소리가 난다
     - 등산 조끼를 입은 감염체. 주머니가 아직 불룩하다. 눈이 허옇게 흐려졌는데도 냄새를 맡듯 코를 쳐든다
   stats: { strength: [1, 1], agility: [-1, 0], vitality: [1, 2], senses: [1, 1] }
-  skills: { fight: 1, sense_danger: 1 }
+  # PT31: 하나에 분대가 곁에 있어도 크게 다쳤다 (backlog PT21 다시 나옴) → 근접전 한 단계 낮춤 (사용자 결정)
+  skills: { fight: 0, sense_danger: 1 }
   inventory:
     - { item: cloth, chance: 0.3 }
     - { item: cigarettes, chance: 0.15 }
@@ -57,7 +58,8 @@
     - 아직 얼굴빛이 남은 감염체. 옷도 멀쩡하다. 사람처럼 보이다가, 고개를 꺾으며 달려든다
     - 팔에 감은 붕대가 피로 젖은 감염체. 며칠 전까지 사람이었을 것이다. 움직임이 빠르고 거칠다
   stats: { strength: [1, 2], agility: [1, 1], vitality: [1, 1], senses: [1, 1] }
-  skills: { fight: 2, sense_danger: 1 }
+  # PT31: 근접전 한 단계 낮춤 (사용자 결정)
+  skills: { fight: 1, sense_danger: 1 }
   inventory:
     - { item: water_bottle, chance: 0.2 }
     - { item: dry_ration, chance: 0.2 }

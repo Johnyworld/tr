@@ -253,6 +253,8 @@
     zones: [a_east_post]
     segments: [night]
     indoor: false
+    # 실제 붉은연합 부대가 근처에 있을 때만 (PT31)
+    party_near: { faction: faction_c }
   setup: 초소 아래 어둠 속에서 쇠붙이를 끄는 소리가 났다가 멎는다. 감염체 걸음은 아니다.
   # 되풀이될 때 차례로 쓰는 다른 상황 문장 (12-139)
   variants:

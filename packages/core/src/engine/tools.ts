@@ -1,3 +1,5 @@
+import { itemResource } from "./market.ts";
+import { isRequirementMet } from "../game/missions.ts";
 import { isCreature } from "../game/kinds.ts";
 import { cargoOf } from "../rules/entrusted.ts";
 import { activeMissionOf } from "../game/missions.ts";
@@ -165,6 +167,25 @@ const transferItem = defineTool({
       const after = carriedWeight(content, me) + (item.weight ?? DEFAULT_WEIGHT) * input.quantity;
       if (after > carryCapacity(content, me, state) * content.scenario.gear.carry.hard_limit) {
         return { ok: false, error: `${item.name}까지 들면 너무 무겁다 (${after.toFixed(1)}kg). 먼저 무언가를 내려놓는다.` };
+      }
+    }
+    // 구해 와 건네기 임무의 물건을 임무를 준 상관에게 먼저 건네면 임무로 건넨 것이다 (PT31 약탈자: 먼저 건넨 연료를 보고에서 세지 않고 돌려받지도 못했다).
+    // 보고 때 건네는 것과 같이 무리 창고 몫으로 쓰고 그 요건을 채운다
+    if (input.from === state.playerId && input.to !== SCENE_HOLDER && !input.deposit && !input.repay) {
+      const mission = activeMissionOf(state.missions, state.playerId);
+      const index = mission && mission.giverId === input.to ? mission.requirements.findIndex((r, i) => "bring" in r && !isRequirementMet(r, mission.progress[i] ?? 0) && itemResource(content, item.id) === r.bring) : -1;
+      const req = mission && index >= 0 ? mission.requirements[index] : undefined;
+      if (mission && req && "bring" in req) {
+        if (input.quantity < req.quantity) return { ok: false, error: `임무로 건넬 ${josa(item.name, "이/가")} 모자라다 (${req.quantity}개). 다 구한 뒤 report_mission 때 함께 건넨다.` };
+        store.append({ type: "item_consumed", holder: state.playerId, itemId: item.id, quantity: req.quantity });
+        store.append({ type: "mission_requirement_met", missionId: mission.id, index });
+        const rest = input.quantity - req.quantity;
+        if (rest > 0) store.append({ type: "item_transferred", from: input.from, to: input.to, itemId: item.id, quantity: rest });
+        return {
+          ok: true,
+          resultText: `${item.name} ${req.quantity}개를 임무 '${mission.title}'로 상관에게 건넸다 (무리 창고 몫, 보고 때 채운 것으로 센다).${rest > 0 ? ` 남은 ${rest}개는 그냥 건넸다.` : ""}`,
+          display: { type: "item", fromName: holderName(state, content, input.from), toName: holderName(state, content, input.to), itemName: item.name, quantity: input.quantity },
+        };
       }
     }
     store.append({
@@ -681,5 +702,10 @@ export type { GameEvent };
 function choiceUsesItem(choice: { when?: { has_items?: string[]; has_items_any?: string[] }; effects?: unknown[]; outcomes?: Record<string, unknown[] | undefined> }, item: string): boolean {
   if (choice.when?.has_items?.includes(item) || choice.when?.has_items_any?.includes(item)) return true;
   const effects = [...(choice.effects ?? []), ...Object.values(choice.outcomes ?? {}).flatMap((e) => e ?? [])];
-  return effects.some((e) => typeof e === "object" && e !== null && "take_item" in e && (e as { take_item: { item: string } }).take_item.item === item);
+  return effects.some(
+    (e) =>
+      typeof e === "object" &&
+      e !== null &&
+      (("take_item" in e && (e as { take_item: { item: string } }).take_item.item === item) || ("light_fire" in e && (e as { light_fire: { item: string } }).light_fire.item === item)),
+  );
 }

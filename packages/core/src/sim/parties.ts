@@ -40,13 +40,17 @@ export function maxParties(cfg: PartiesConfig, combatants: number): number {
   return cfg.max.find((row) => combatants >= row.combatants)?.count ?? 0;
 }
 
-/** 이만한 부대를 낼 수 있는가: 칸이 남고, 내보낸 뒤에도 지키는 병력(전투원의 DEFENSE_COMMIT)이 남는다 */
-export function canSend(world: WarWorld, cfg: PartiesConfig, factionId: string, size: number): boolean {
+/** 싸우러 나가는 부대 (칸을 센다). 정찰·순찰·짐 행렬은 칸을 세지 않는다 (PT31: 칸을 차지해 습격이 못 나갔다) */
+const FIGHTING: readonly string[] = ["raid", "assault"];
+
+/** 이만한 부대를 낼 수 있는가: (싸우러 나가는 부대면) 칸이 남고, 내보낸 뒤에도 지키는 병력(전투원의 DEFENSE_COMMIT)이 남는다 */
+export function canSend(world: WarWorld, cfg: PartiesConfig, factionId: string, size: number, kind: string = "raid"): boolean {
   const f = world.factions[factionId];
   if (!f || size <= 0) return false;
   const out = outOf(world, factionId);
   const total = f.combatants + out.size;
-  if (out.count >= maxParties(cfg, total)) return false;
+  const fighting = (world.parties ?? []).filter((p) => p.faction === factionId && FIGHTING.includes(p.kind)).length;
+  if (FIGHTING.includes(kind) && fighting >= maxParties(cfg, total)) return false;
   return f.combatants - size >= Math.ceil(total * DEFENSE_COMMIT);
 }
 
@@ -165,7 +169,7 @@ export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: Sp
   if (!home || home === args.goal) return null;
   const route = partyRoute(content, world, args.faction, home, args.goal);
   if (!route || route.length < 2) return null;
-  if (!canSend(world, cfg, args.faction, args.size)) return null;
+  if (!canSend(world, cfg, args.faction, args.size, args.kind)) return null;
   const start = args.dayStart + pickHours(rng, k.depart);
   const depart = start + k.gather_hours * 60;
   const legs = planLegs(content, cfg, args.kind, route, start, depart, args.size, rng, { strike: args.task.kind === "clash" });

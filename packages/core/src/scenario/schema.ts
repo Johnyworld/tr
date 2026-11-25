@@ -557,8 +557,10 @@ export const scenarioFileSchema = z
                   population: z.number().int().min(0).max(5).default(0),
                 })
                 .default({ resources: {}, loot: false, merit: 0, population: 0 }),
-              /** 보고 문구. {member} {zone} */
-              report: z.strictObject({ success: z.string().min(1), partial: z.string().min(1), miss: z.string().min(1) }),
+              /** 정찰하는 일 (움직이는 부대, PT31): 해내면 그 구역(성공이면 맞닿은 구역까지)의 적대 부대를 본 것으로 알리고, 적이 없는 곳에서는 빗나가도 다치지 않는다 */
+              scouts: z.boolean().default(false),
+              /** 보고 문구. {member} {zone}. miss_quiet: 정찰하는 일이 적 없는 곳에서 빗나갔을 때 */
+              report: z.strictObject({ success: z.string().min(1), partial: z.string().min(1), miss: z.string().min(1), miss_quiet: z.string().min(1).optional() }),
             }),
           )
           .default([]),
@@ -723,6 +725,8 @@ export const scenarioFileSchema = z
             far_hops: z.number().int().positive().default(3),
             /** 할 일 없는 날 자기 땅 가장자리를 도는 순찰을 낼 확률 */
             patrol_chance: z.number().min(0).max(1).default(0),
+            /** 싸움을 거는 무리(공격 성향 1 이상)가 하루에 적 쪽 가장자리로 정찰(살피고 돌아옴)을 낼 확률 (PT31: 부대가 드물어 적을 만날 일이 없었다) */
+            scout_chance: z.number().min(0).max(1).default(0),
             /** 습격·공세 부대를 이끄는 이름 있는 인물의 계급 (1-3). 비어 있으면 이름 없는 조장만 */
             leader_ranks: z.array(id).default([]),
             /** 사람이 부대를 알아채는 판정 (공통 규칙 23 마주침). 그 판정의 가장 나은 능력 + 스킬이 보는 보정이다 */

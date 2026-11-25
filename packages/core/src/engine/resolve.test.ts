@@ -1,3 +1,4 @@
+import { whereIs } from "../rules/place.ts";
 import { arrivalPlace } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -143,7 +144,9 @@ describe("다짐의 단계 (12-164)", () => {
     expect(out.line).toContain("한 걸음");
     expect(currentResolve(w.state())).toMatchObject({ stage: 1, step: "염철구가 어디 있는지 말을 들었다" });
     expect(conditionsMet(w.state(), full, rumor, w.state().time)).toBe(false); // 0단계 이야기는 닫힌다
-    expect(conditionsMet(w.state(), full, glimpse, w.state().time)).toBe(true);
+    // 먼발치는 그 사람이 실제로 이 구역이나 맞닿은 구역에 있을 때만 (PT31)
+    const foeZone = whereIs(w.state(), full, "c_cheolgu")!.zone!;
+    expect(conditionsMet({ ...w.state(), playerZone: foeZone, playerPlace: arrivalPlace(w.state(), full, foeZone) }, full, glimpse, w.state().time)).toBe(true);
     expect(buildPlayerView(w.state(), full).resolve).toBe("염철구에게 갚는다 — 염철구가 어디 있는지 말을 들었다");
     const role = { resolve_target: true } as Parameters<typeof castCandidates>[2];
     expect(castCandidates(w.state(), full, role)).toEqual(["c_cheolgu"]);

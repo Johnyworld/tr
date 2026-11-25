@@ -32,7 +32,9 @@ describe("관계·마음·소문 (12-278)", () => {
   });
 
   it("위험한 일에 보내 다치면 믿음이 준다, 해내면 오른다 (7-4)", () => {
-    expect(order(make(0), "scout", "old_town")).toBe(-1);
+    expect(order(make(0), "scout", "c_warehouse")).toBe(-1);
+    // 적이 없는 곳의 정찰은 빗나가도 다치지 않는다 (PT31)
+    expect(order(make(0), "scout", "old_town")).toBe(0);
     expect(order(make(0.99), "scout", "old_town")).toBeGreaterThanOrEqual(1);
   });
 });

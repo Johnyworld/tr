@@ -430,7 +430,9 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (w.resolve.stage_lte !== undefined && stage > w.resolve.stage_lte) return false;
     if (w.resolve.near_target !== undefined) {
       const here = state.playerZone;
-      const near = !!here && !!r.target && (here === r.target || (content.locations[here]?.adjacent ?? []).includes(r.target) || (content.locations[r.target]?.adjacent ?? []).includes(here));
+      // 대상이 사람이면 그 사람이 지금 있는 구역으로 (PT31 졸병: "먼발치"에서 거점에 있는 원수가 초소 앞을 지나갔다)
+      const targetZone = r.target && state.characters[r.target] ? (whereIs(state, content, r.target, at)?.zone ?? null) : r.target;
+      const near = !!here && !!targetZone && (here === targetZone || neighbors(content, here).includes(targetZone));
       if (near !== w.resolve.near_target) return false;
     }
   }
@@ -544,6 +546,8 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   const effects = choice.outcomes ? choice.outcomes.success : choice.effects;
   const need: Record<string, number> = {};
   for (const e of effects) if ("take_item" in e) need[e.take_item.item] = Math.max(need[e.take_item.item] ?? 0, e.take_item.quantity);
+  // 불을 피우는 땔감은 주인공이 지닌 것으로 (lightFire와 같다)
+  if (effects.some((e) => "light_fire" in e && (player.inventory[e.light_fire.item] ?? 0) < 1)) return false;
   // 곁의 사람 동행이 가진 것까지 (플레이 테스트 13: 분대원이 가진 비상식량으로 "먹이 주기"가 열리지 않았다)
   return Object.entries(need).every(([item, n]) => carriedCount(state, item) >= n);
 }

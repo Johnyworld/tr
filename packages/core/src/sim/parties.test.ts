@@ -8,7 +8,8 @@ import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
 import { warConfessions } from "../engine/partyTools.ts";
-import { endBattle } from "../engine/battleTools.ts";
+import { endBattle, forceWords } from "../engine/battleTools.ts";
+import { applyEffect } from "../engine/storyletTools.ts";
 import { initialWarWorld, simulateWarDay, type WarWorld } from "./war.ts";
 import type { Party } from "../game/state.ts";
 import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting } from "../engine/partySight.ts";
@@ -236,7 +237,7 @@ describe("주인공과 부대 (공통 규칙 23, 9-1·9-2)", () => {
     const state = { ...s, playerZone: "a_east_post", playerPlace: "watchtower", parties: [p], partySightings: { "pr@a_east_post": { at: s.time, player: true, party: false } } };
     const lines = seenPartiesLines(state, content);
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain("열 명 남짓");
+    expect(lines[0]).toContain("예닐곱 명");
     expect(lines[0]).not.toContain("습격");
     expect(seenPartiesLines({ ...state, partySightings: {} }, content)).toEqual([]);
     w.close();
@@ -291,7 +292,7 @@ describe("③-1 닿을 때 계산·장소 거리·믿음", () => {
     const b = beliefs.at(-1)!;
     expect(b).toMatchObject({ source: "seen", topic: "war" });
     expect(b.fact).toContain("동쪽 초소");
-    expect(b.fact).toContain("열 명 남짓");
+    expect(b.fact).toContain("예닐곱 명");
     expect(b.fact).toContain("철길 둑 가는 비탈");
     expect(b.fact).not.toContain("습격");
     w.close();
@@ -418,5 +419,54 @@ describe("③-2 부대와 맞붙기·우두머리·지렛대", () => {
     advanceParties(w, content, rng, returnOf(back)!);
     expect(w.clocks.a_counteroffensive!.target).not.toBe("");
     expect(w.clocks.a_counteroffensive!.target).not.toBe("c_warehouse");
+  });
+});
+
+describe("PT31 뒤 고친 것", () => {
+  const make = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-pt31-")), content, rngFactory: () => createSeededRng(11) }).create("mcp", "role_a_grunt");
+  type W = ReturnType<typeof make>;
+  const put = (w: W, parties: Party[]) => {
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties, partiesUpTo: s.time, clashes: [], scheduled: [] });
+  };
+  const at = (w: W, place: string) => w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place });
+  const band = (faction: string, size: number, t: number) =>
+    party({ id: "pp", faction, kind: "patrol", size, goal: "a_east_post", legs: [{ zone: "rail_embankment", from: t - 300, to: t - 10 }, { zone: "a_east_post", from: t - 10, to: t + 240 }], task: { kind: "watch" } });
+
+  it("실내에서 굴리지 않은 마주침은 기록하지 않고, 밖으로 나오면 그때 굴린다", () => {
+    const w = make();
+    at(w, "bunker");
+    put(w, [band("faction_c", 4, w.state().time)]);
+    w.runCheat("~time +1h");
+    expect(w.state().partySightings["pp@a_east_post"]).toBeUndefined();
+    w.ctx().store.append({ type: "place_moved", from: "bunker", to: "trench" });
+    w.runCheat("~time +1h");
+    expect(w.state().partySightings["pp@a_east_post"]).toBeDefined();
+    w.close();
+  });
+
+  it("우리 무리 부대는 믿음으로 남기지 않고 engage_party로 덤빌 수 없다", () => {
+    const w = make();
+    at(w, "trench");
+    put(w, [band("faction_a", 4, w.state().time)]);
+    const before = (w.state().beliefs[w.state().playerId] ?? []).length;
+    settleSighting(w.ctx(), w.state().parties[0]!, { player: true, party: false, attacks: false, rolled: true }, w.state().time);
+    expect((w.state().beliefs[w.state().playerId] ?? []).length).toBe(before);
+    expect(w.executeTool("engage_party", { party_id: "pp" }).ok).toBe(false);
+    w.close();
+  });
+
+  it("규모 말은 4명과 7명을 가른다", () => {
+    expect(forceWords(4)).toBe("네댓 명");
+    expect(forceWords(7)).toBe("예닐곱 명");
+    expect(forceWords(3)).toBe("몇 명");
+  });
+
+  it("이야기의 light_fire는 땔감을 써서 불을 실제로 피운다", () => {
+    const w = make();
+    w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "firewood", quantity: 1 });
+    applyEffect(w.ctx(), { light_fire: { item: "firewood" } } as never, {}, {}, "테스트");
+    expect(Object.values(w.state().fires).some((until) => until > w.state().time)).toBe(true);
+    w.close();
   });
 });

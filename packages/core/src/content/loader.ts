@@ -629,6 +629,7 @@ function checkReferences(content: Content): string[] {
     const nm = content.scenario.war?.parties?.notice_move;
     if (nm && !content.scenario.moves.some((m) => m.id === nm)) problems.push(`scenario.war.parties.notice_move: 알 수 없는 판정 ${nm}`);
   }
+  problems.push(...checkPartyStories(content));
   for (const f of Object.values(content.factions)) {
     if (f.party_extra && !content.extras[f.party_extra]) problems.push(`factions.${f.id}.party_extra: 알 수 없는 엑스트라 틀 ${f.party_extra}`);
     for (const p of f.plans) {
@@ -1085,6 +1086,7 @@ export function checkStorylets(content: Content): string[] {
           if (e.give_item.from && e.give_item.from !== "commander" && !castKeys.has(e.give_item.from)) problems.push(`${at}: 알 수 없는 배역 ${e.give_item.from}`);
         }
         if ("take_item" in e && !content.items[e.take_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.take_item.item}`);
+        if ("light_fire" in e && !content.items[e.light_fire.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.light_fire.item}`);
         if ("lose_item" in e && !content.items[e.lose_item.item]) problems.push(`${at}: 알 수 없는 아이템 ${e.lose_item.item}`);
         if ("capture_player" in e && !isFactionAlias(e.capture_player.by) && !content.factions[e.capture_player.by]) problems.push(`${at}: 알 수 없는 세력 ${e.capture_player.by}`);
         if ("train" in e && !content.scenario.moves.some((m) => m.id === e.train.skill)) problems.push(`${at}: 알 수 없는 스킬 ${e.train.skill}`);
@@ -1229,6 +1231,23 @@ export function checkMatureLines(content: Content): string[] {
   for (const s of Object.values(content.storylets)) {
     const lined = (!!tag && s.tags.includes(tag)) || s.tags.includes(TRAFFICKING_TAG);
     if (lined && !(s.ai_direction ?? "").includes(LINE_MARK)) problems.push(`storylets.${s.id}.ai_direction: 성인·인신매매 이야기는 "${LINE_MARK} — 행위는 그리지 않는다…"를 적는다`);
+  }
+  return problems;
+}
+
+/** 길 위의 일·야영 이야기가 다른 무리의 부대원(party_extra)을 배역으로 들이면 근처에 실제 그 무리 부대가 있어야 한다 (PT31: 부대가 하나도 없는데 매복·통행세가 열렸다) */
+export function checkPartyStories(content: Content): string[] {
+  const problems: string[] = [];
+  if (!content.scenario.war?.parties) return problems;
+  const partyExtra = new Map(Object.values(content.factions).flatMap((f) => (f.party_extra ? [[f.party_extra, f.id] as const] : [])));
+  for (const st of Object.values(content.storylets)) {
+    if (!st.tags.some((t) => t === "road" || t === "camp")) continue;
+    const only = st.when.factions;
+    for (const [key, role] of Object.entries(st.cast)) {
+      const f = role.extra ? partyExtra.get(role.extra) : undefined;
+      if (!f || (only && only.every((x) => x === f))) continue;
+      if (st.when.party_near?.faction !== f) problems.push(`storylets.${st.id}.cast.${key}: ${content.factions[f]?.name ?? f}의 부대원이 나오는 길 위·야영 이야기는 when.party_near { faction: ${f} } (근처에 실제 그 무리 부대)`);
+    }
   }
   return problems;
 }

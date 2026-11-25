@@ -272,8 +272,10 @@ export function battleTitle(content: Content, b: BattleState): string {
 
 /** 대략적인 병력 ("열 명 남짓") */
 export function forceWords(n: number): string {
+  // PT31: 4~7명이 모두 "대여섯 명"이라 4명 순찰대가 믿음에 "대여섯 명"으로 남고, 큰 부대(7명)와 구별되지 않았다
   if (n <= 3) return "몇 명";
-  if (n <= 7) return "대여섯 명";
+  if (n <= 5) return "네댓 명";
+  if (n <= 8) return "예닐곱 명";
   if (n <= 14) return "열 명 남짓";
   if (n <= 25) return "스무 명 안팎";
   return "수십 명";

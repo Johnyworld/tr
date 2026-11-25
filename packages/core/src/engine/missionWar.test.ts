@@ -90,3 +90,14 @@ describe("길 위 이야기를 실제 부대에 묶기 (5-2)", () => {
     w.close();
   });
 });
+
+describe("content:check 부대 이야기 (PT31)", () => {
+  it("다른 무리의 부대원이 나오는 길 위·야영 이야기에 party_near가 없으면 잡는다", async () => {
+    const { checkPartyStories } = await import("../content/loader.ts");
+    const real = loadRealContent();
+    expect(checkPartyStories(real)).toEqual([]);
+    const broken = structuredClone(real);
+    delete (broken.storylets.rd_ambush!.when as { party_near?: unknown }).party_near;
+    expect(checkPartyStories(broken).join()).toContain("storylets.rd_ambush");
+  });
+});

@@ -86,7 +86,8 @@ export function factionTroubles(state: GameState, content: Content): string[] {
   if (!content.scenario.war || !player || !state.factions[player.factionId]) return [];
   const out = troublesOf(state, content, player.factionId).map((t) => t.text);
   // 주인공이 들은 최근 전황 (믿음이라 주인공이 아는 것뿐)
-  const news = (state.beliefs[player.id] ?? []).filter((b) => b.topic === WAR_TOPIC && state.time - b.learnedAt <= NEWS_HOURS * 60).slice(-2);
+  // 무리 사이에 도는 말은 들은 소식만 (PT31: 주인공이 혼자 본 부대가 "…봤다" 1인칭 그대로 무리 소문·동료 카드에 올랐다)
+  const news = (state.beliefs[player.id] ?? []).filter((b) => b.topic === WAR_TOPIC && b.source !== "seen" && state.time - b.learnedAt <= NEWS_HOURS * 60).slice(-2);
   for (const b of news) out.push(`전황: ${b.fact}`);
   return out;
 }

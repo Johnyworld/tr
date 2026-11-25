@@ -568,8 +568,18 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     }
   }
 
-  // 4-1. 움직이는 부대: 할 일 없는 날 자기 땅 가장자리를 도는 순찰, 그리고 오늘(또는 resolveUpTo까지) 닿은 부대의 할 일
+  // 4-1. 움직이는 부대: 싸움을 거는 무리의 정찰, 할 일 없는 날 자기 땅 가장자리를 도는 순찰, 그리고 오늘(또는 resolveUpTo까지) 닿은 부대의 할 일
   if (cfg) {
+    // 정찰: 적대하는 무리의 맞닿은 땅(없으면 그 쪽으로 난 빈 땅)을 살피고 돌아온다. 싸우지 않고, 본 것은 빈틈 노리기(7-2)로
+    for (const id of alive) {
+      if ((content.factions[id]?.aggression ?? 0) <= 0 || rng() >= cfg.scout_chance) continue;
+      const mine = Object.keys(next.zones).filter((z) => next.zones[z]!.owner === id);
+      const front = [...new Set(mine.flatMap((z) => neighbors(content, z)))].filter((z) => next.zones[z]?.owner !== id && content.locations[z]?.kind !== "base").sort();
+      const hostileOwned = front.filter((z) => { const o = next.zones[z]?.owner; return !!o && disposition(content, id, o, next) <= HOSTILE; });
+      const pool = hostileOwned.length ? hostileOwned : front;
+      if (!pool.length) continue;
+      spawnParty(next, content, rng, { faction: id, kind: "scout", goal: pool[Math.floor(rng() * pool.length)]!, size: sizeOf("scout"), dayStart, task: { kind: "watch" } });
+    }
     for (const id of alive) {
       if (rng() >= cfg.patrol_chance) continue;
       const border = borderZones(content, next, id);

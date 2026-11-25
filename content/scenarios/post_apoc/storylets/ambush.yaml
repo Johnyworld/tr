@@ -85,6 +85,8 @@
   repeatable: true
   cooldown_days: 10
   when:
+    # 실제 붉은연합 부대가 근처에 있을 때만 (PT31 분대장: 우리 땅 사이 길에서 부대 없이 매복이 열렸다)
+    party_near: { faction: faction_c }
     # 지붕 아래·바깥 (12-244, 공통 규칙 15)
     indoor: false
     camp_danger_gte: 2

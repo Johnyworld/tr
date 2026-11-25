@@ -54,6 +54,8 @@
     segments: [day, evening]
     indoor: false
     day_gte: 3
+    # 실제 붉은연합 습격대·순찰이 근처에 있을 때만 (PT31 떠돌이: 붉은연합 부대가 하나도 없는데 약탈조 넷이 길을 막았다)
+    party_near: { faction: faction_c, kinds: [raid, patrol] }
   cast:
     boss: { afar: true, ids: [c_cheolgu] }
   setup: '{zone}의 길목에서 붉은 완장 넷이 길을 막는다. {boss:이/가} 쇠지렛대로 손바닥을 툭툭 친다. "여긴 우리 길이야. 지나가려면 내놔. 아니면 우리 조에 들어오든가. 할당량 채울 손은 늘 모자라니까."'

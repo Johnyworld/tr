@@ -246,7 +246,7 @@
       label: 땔감을 아끼지 않고 태운다
       effects:
         - set_flag: lt_deep_winter_done
-        - take_item: { item: firewood }
+        - light_fire: { item: firewood }
         - body: { track: cold, delta: -1 }
 
 - id: lt_known_name

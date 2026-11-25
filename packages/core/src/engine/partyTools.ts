@@ -8,7 +8,7 @@ import { stakesOf } from "../rules/stakes.ts";
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { disciplineOf } from "../game/culture.ts";
-import { formatTime } from "../rules/time.ts";
+import { formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
 import { hearNews } from "../rules/news.ts";
 import { companyHere } from "../rules/company.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
@@ -58,6 +58,8 @@ function saveWorld(ctx: ToolContext, world: WarWorld, clashes: Clash[] = []) {
     clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
     parties: world.parties ?? [],
     partiesUpTo: Math.max(state.partiesUpTo, world.partiesUpTo ?? 0),
+    // 새로 낸 부대(가로막기)의 번호를 남긴다 (PT35 분대장: 번호가 남지 않아 다음 공세 부대가 같은 id를 받고 함께 지워졌다)
+    nextPartyNo: Math.max(state.nextPartyNo, world.nextPartyNo ?? 0),
     clashes,
     scheduled: [],
   });
@@ -233,11 +235,13 @@ export const alertParty = defineTool({
     if (!me || me.dead) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
     if (!me.factionId) return { ok: false, error: "알릴 무리가 없다 (무소속)." };
     const party = state.parties.find((p) => p.id === input.party_id);
-    if (!party && state.partiesSeen[input.party_id] !== undefined) return { ok: false, error: "이미 물러간 무리다. 알려도 무리가 할 일이 없다." };
+    if (!party && state.partiesSeen[input.party_id] !== undefined) return { ok: false, error: "이미 물러갔거나 싸움이 끝난 무리다. 알려도 무리가 할 일이 없다." };
     if (!party || state.partiesSeen[party.id] === undefined) return { ok: false, error: `본 적도 보고받은 적도 없는 무리다: ${input.party_id} (상태의 '알릴 수 있는 것'을 본다)` };
     if (!hostileFaction(state, content, party.faction)) return { ok: false, error: "우리를 적대하는 무리만 알린다." };
     if (party.size <= 0 || party.done) return { ok: false, error: "이미 물러간 무리다. 알려도 무리가 할 일이 없다." };
-    if (state.partyAlerts.some((a) => a.partyId === party.id)) return { ok: false, error: "이미 알린 무리다. 같은 무리로 다시 조르지 못한다." };
+    // 알린 무리도 맞받아치자는 설득은 한 번 더 할 수 있다 (PT35 분대장: 거점에서 먼저 알리고 윗사람 앞에서 설득하려 했더니 막혔다)
+    const prior = state.partyAlerts.find((a) => a.partyId === party.id);
+    if (prior && (!input.persuade || prior.persuaded !== "none")) return { ok: false, error: prior.persuaded !== "none" ? "이미 알리고 설득까지 한 무리다. 같은 무리로 다시 조르지 못한다." : "이미 알린 무리다. 맞받아치자고 설득하려면 윗사람 앞에서 persuade: true로 다시 부른다." };
     const base = baseOfNow(state, content, me.factionId);
     const boss = superiorHere(state, content);
     if (!boss && state.playerZone !== base) return { ok: false, error: "알릴 사람이 없다. 우리 거점으로 가거나 상관·윗사람을 장면에 들인다." };
@@ -246,7 +250,9 @@ export const alertParty = defineTool({
     const zone = party.goal;
     const ours = ownedBy(state, zone, me.factionId);
     const zoneName = content.locations[zone]?.name ?? zone;
-    const lines = [`${josa(label, "을/를")} 무리에 알렸다.${ours ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 더 지킨다.` : " 노리는 곳이 우리 땅이 아니라 지킬 곳을 늘리지는 않는다."} 알린 무리가 와서 막히면 공이 된다.`];
+    const lines = prior
+      ? [`이미 알린 ${josa(label, "을/를")} 두고 맞받아치자고 말한다.`]
+      : [`${josa(label, "을/를")} 무리에 알렸다.${ours ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 더 지킨다.` : " 노리는 곳이 우리 땅이 아니라 지킬 곳을 늘리지는 않는다."} 알린 무리가 와서 막히면 공이 된다.`];
     let persuaded: "none" | "success" | "partial" | "miss" = "none";
     let display: ToolDisplayEvent = { type: "belief", fact: `${label}을 무리에 알렸다`, sourceLabel: "한 일" };
     if (input.persuade) {
@@ -321,7 +327,8 @@ export function collectSquadIntercept(ctx: ToolContext, memberId: string): { par
 export function settlePartyAlerts(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEvent[] {
   const { store, content } = ctx;
   const out: ToolDisplayEvent[] = [];
-  for (const alert of store.getState().partyAlerts.filter((a) => !a.credited)) {
+  // 끝난 알림은 다시 보지 않는다 (PT35 분대장: 닷새 동안 120번 쌓였다)
+  for (const alert of store.getState().partyAlerts.filter((a) => !a.credited && !a.closed)) {
     const state = store.getState();
     const blocked = clashes.find((c) => c.zone === alert.zone && c.defender === alert.faction && c.kind !== "occupy" && !c.success && state.parties.find((p) => p.id === alert.partyId)?.faction === c.attacker);
     const party = state.parties.find((p) => p.id === alert.partyId);
@@ -349,8 +356,16 @@ export function runGarrisonWatch(ctx: ToolContext): ToolDisplayEvent[] {
   const mine = state.characters[state.playerId]?.factionId;
   if (!mine) return out;
   for (const party of state.parties) {
+    if (party.size <= 0 || state.garrisonSeen.includes(party.id) || !hostileFaction(state, content, party.faction)) continue;
     const zone = partyZoneAt(party, state.time);
-    if (party.size <= 0 || !zone || state.garrisonSeen.includes(party.id) || !ownedBy(state, zone, mine) || !hostileFaction(state, content, party.faction)) continue;
+    if (!zone || !ownedBy(state, zone, mine)) {
+      // 주인공이 길게 자거나 일하는 사이 우리 땅을 왔다 간 무리 (PT35 졸병: 떠나고 두 시간 반 뒤에 "와 있다"로 왔다): 왔다 갔다는 말만
+      const passed = [...party.legs, ...party.back].find((l) => l.to <= state.time && l.to >= state.time - MINUTES_PER_DAY && ownedBy(state, l.zone, mine));
+      if (!passed) continue;
+      store.append({ type: "party_reported", partyId: party.id, via: "garrison", zone: passed.zone, faction: mine, gone: true });
+      out.push(...hearNews(ctx, { fact: `${formatTime(passed.from)}께 ${content.locations[passed.zone]?.name ?? passed.zone}에 ${content.factions[party.faction]?.name ?? "낯선"} 쪽 사람들 ${forceWords(party.size)}이 왔다 갔다고 지키는 사람들이 알려 왔다`, factions: [mine], topic: "war", showOursOnly: true }));
+      continue;
+    }
     store.append({ type: "party_reported", partyId: party.id, via: "garrison", zone, faction: mine });
     out.push(...hearNews(ctx, { fact: `${content.locations[zone]?.name ?? zone}에 ${content.factions[party.faction]?.name ?? "낯선"} 쪽 사람들 ${forceWords(party.size)}이 와 있다고 지키는 사람들이 알려 왔다. 그곳을 더 지킨다고 한다`, factions: [mine], topic: "war", showOursOnly: true }));
   }

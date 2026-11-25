@@ -128,7 +128,11 @@ export function applyTreatment(
   if (!healer) return { ok: false, error: "치료해 줄 사람이 장면에 없다." };
   const needed = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && shownIndex(ctx, state, player.id, t) > 0);
   // 증상은 있는데 치료사가 손쓸 것이 아니면 (감염의 열 등): 살펴보고 돌려보낸다. "다친 데가 없다"로 원인이 새지 않게 (B3)
-  if (!needed) return { ok: true, lines: [`${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
+  if (!needed) {
+    // 감염이면 그것을 다시 알린다 (PT35 분대장: 한 번 알아봤던 감염을 다음엔 "손쓸 데 없다"로 돌려보냈다)
+    const known = infectionNotice(ctx, healer, patient);
+    return { ok: true, lines: [known ?? `${josa(playerCalls(state, ctx.content, healer), "이/가")} 살펴봤지만 지금 손쓸 데는 없다고 한다. 잘 먹고 따뜻하게 쉬라고 한다.`], displays: [] };
+  }
   const name = playerCalls(state, ctx.content, healer);
   const paid = payHealer(ctx, healer, pay);
   if (!paid.ok) return paid;
@@ -156,7 +160,12 @@ export function applyTreatment(
       displays.push(...r.displays);
       continue;
     }
-    const c = changeCondition(ctx, player.id, t, -steps, "healer", "치료");
+    // 치료로 내린 병이 숨은 단계(잠복)에 머물면 밤마다 다시 드러난다 (PT35 졸병: 네 번 치료해도 몸살이 되돌아왔다): 숨은 단계는 건너뛴다. 감염은 치료로 떼지 못한다
+    const track = trackOf(ctx.content.scenario, t);
+    const at = Math.max(0, track.levels.findIndex((l) => l.id === ctx.store.getState().characters[player.id]?.conditions[t]));
+    let n = steps;
+    if (t !== ctx.content.scenario.body?.infection?.track) while (at - n > 0 && track.levels[at - n]?.hidden) n++;
+    const c = changeCondition(ctx, player.id, t, -n, "healer", "치료");
     if (c?.line) lines.push(c.line);
     if (c?.display) displays.push(c.display);
   }
@@ -166,8 +175,26 @@ export function applyTreatment(
   // 감염은 상처 치료로 낫지 않는다: 치료사가 알아본 것을 알린다 (PT23 튜토리얼·하얀매: 감염 때문에 받은 치료인데 결과에 감염 이야기가 없었다)
   const infection = ctx.content.scenario.body?.infection;
   const sick = infection ? ctx.store.getState().characters[patient]?.conditions[infection.track] : undefined;
-  if (infection && sick && sick !== trackOf(ctx.content.scenario, infection.track).levels[0]!.id) lines.push(`${josa(name, "은/는")} 감염 기운을 알아봤다: 상처 치료로는 낫지 않는다 (${infection.cure.map((i) => ctx.content.items[i]?.name ?? i).join("·")}이 든다).`);
+  if (infection && sick && sick !== trackOf(ctx.content.scenario, infection.track).levels[0]!.id) {
+    const notice = infectionNotice(ctx, healer, patient);
+    if (notice) lines.push(notice);
+  }
   return { ok: true, lines, displays };
+}
+
+/** 치료사가 알아본 감염: 알릴 줄을 돌려주고, 주인공이면 믿음으로 남긴다 (PT35 분대장: 알아봤는데 믿음에 남지 않았다). 감염이 아니면 null */
+function infectionNotice(ctx: ToolContext, healer: string, patient: string): string | null {
+  const infection = ctx.content.scenario.body?.infection;
+  const state = ctx.store.getState();
+  const sick = infection ? state.characters[patient]?.conditions[infection.track] : undefined;
+  if (!infection || !sick || sick === trackOf(ctx.content.scenario, infection.track).levels[0]!.id) return null;
+  const name = playerCalls(state, ctx.content, healer);
+  const cure = infection.cure.map((i) => ctx.content.items[i]?.name ?? i).join("·");
+  if (patient === state.playerId) {
+    const fact = `${josa(name, "이/가")} 감염 기운을 알아봤다. 상처 치료로는 낫지 않고 ${josa(cure, "이/가")} 든다`;
+    if (!(state.beliefs[patient] ?? []).some((b) => b.fact === fact)) ctx.store.append({ type: "belief_added", characterId: patient, belief: { id: `b_${state.nextBeliefNo}`, fact, source: "report", accuracy: "approximate", learnedAt: state.time } });
+  }
+  return `${josa(name, "은/는")} 감염 기운을 알아봤다: 상처 치료로는 낫지 않는다 (${cure}이 든다).`;
 }
 
 /** 응급처치에 쓰는 물건: 피를 멎게 하는 소모품 (구급상자·붕대) */

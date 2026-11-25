@@ -53,7 +53,8 @@ import { startingSkills } from "./creation.ts";
 // 118: 파트 13·14 (12-322). 이벤트 zone_heard, 부서진 시설(wrecked), 의무실 부상자(wounded)
 // 119: 움직이는 부대 ④ (12-324). 부대 할 일 intercept, 구역 alerted, partiesSeen·partyAlerts, 이벤트 party_alerted·party_alert_settled, Clash.squad
 // 120: PT34 고침 (12-325). garrisonSeen, 이벤트 party_reported
-export const SAVE_SCHEMA_VERSION = 120;
+// 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
+export const SAVE_SCHEMA_VERSION = 121;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -217,7 +218,7 @@ export const partyTaskSchema = z.discriminatedUnion("kind", [
     /** 정찰로 적 배치를 알고 치는 기습 (파트 11): 첫 교환 화력 배수 */
     surprise: z.boolean().optional(),
   }),
-  z.strictObject({ kind: z.literal("occupy"), plan: z.string().optional() }),
+  z.strictObject({ kind: z.literal("occupy"), plan: z.string().optional(), credits: z.array(z.strictObject({ by: z.string(), mission: z.string() })).optional() }),
   z.strictObject({ kind: z.literal("trade"), partner: z.string(), give: z.record(z.string(), z.number().int().min(0)), get: z.record(z.string(), z.number().int().min(0)) }),
   /** 정찰·순찰: 가서 보고 돌아온다. plan이 있으면 그 공세를 앞두고 나간 정찰 */
   z.strictObject({ kind: z.literal("watch"), plan: z.string().optional() }),
@@ -702,7 +703,7 @@ export function createGameSchemas(s: Scenario) {
     /** 우리 땅을 지키는 사람이 이미 알아챈 적 부대 (PT34 사용자 결정, 한 부대에 한 번) */
     garrisonSeen: z.array(z.string()).default([]),
     /** 주인공이 무리에 알린 부대 (5-3): 같은 부대로 다시 조르지 못하고, 그 부대가 막히면 공적 */
-    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false) })).default([]),
+    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false), closed: z.boolean().default(false) })).default([]),
     /** 주인공이 맞붙은 부대 (움직이는 부대 ③): 부대 id → 장면에 들인 부대원(엑스트라·우두머리)과 구역 */
     partyFights: z.record(z.string(), z.strictObject({ members: z.array(z.string()), zone: z.string(), at: z.number().int() })).default({}),
     /** 구역 소유 */
@@ -980,7 +981,7 @@ export function createGameSchemas(s: Scenario) {
      * 본 것이 아니라 전해 안 부대 (PT34): 분대 정찰 보고(squad), 우리 땅을 지키는 사람이 알아챔(garrison: 그 구역을 더 지키고 무리에 소식).
      * 알릴 수 있는 무리가 된다
      */
-    z.strictObject({ type: z.literal("party_reported"), partyId: z.string(), via: z.enum(["squad", "garrison"]), zone: z.string(), faction: z.string().optional() }),
+    z.strictObject({ type: z.literal("party_reported"), partyId: z.string(), via: z.enum(["squad", "garrison"]), zone: z.string(), faction: z.string().optional(), /** 이미 왔다 간 뒤에 알게 됐다: 알릴 무리도 더 지킬 곳도 아니다 */ gone: z.boolean().optional() }),
     /** 본 부대를 무리에 알렸다 (5-3): 그 부대가 노리는 구역을 더 지킨다. persuaded: 맞받아치자고 설득한 결과 */
     z.strictObject({ type: z.literal("party_alerted"), partyId: z.string(), faction: z.string(), zone: z.string(), persuaded: z.enum(["none", "success", "partial", "miss"]) }),
     /** 알린 부대의 끝 (5-3): credited 막아 내 공적을 받았다, clear 더 지키던 것을 거둔다 */
@@ -1155,7 +1156,8 @@ export function createGameSchemas(s: Scenario) {
       day: z.number().int(),
       factions: z.record(z.string(), factionStateSchema),
       zones: z.record(z.string(), zoneStateSchema),
-      clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
+      /** target: 바뀐 목표 (빼앗아 우리 땅이 된 목표를 다시 고른 것, 정찰 보고로 바꾼 것) */
+      clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0), target: z.string().optional() })),
       clashes: z.array(clashSchema),
       /** 플레이어가 낄 수 있어 미뤄 둔 교전 */
       scheduled: z.array(pendingClashSchema).default([]),
@@ -2616,6 +2618,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         // 다 차서 다시 시작한 계획은 기여 기록을 비운다 (그 공세에 실려 나갔다)
         if (clock.filled < c.filled) delete c.credits;
         c.filled = clock.filled;
+        if (clock.target !== undefined) c.target = clock.target;
       }
       next.lastWarDay = event.day;
       next.pendingClashes.push(...structuredClone(event.scheduled));
@@ -2662,6 +2665,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.player) next.partiesSeen = { ...next.partiesSeen, [event.key.split("@")[0]!]: state.time };
       break;
     case "party_reported": {
+      if (event.gone) {
+        next.garrisonSeen = [...next.garrisonSeen, event.partyId];
+        break;
+      }
       next.partiesSeen = { ...next.partiesSeen, [event.partyId]: state.time };
       if (event.via === "garrison") {
         next.garrisonSeen = [...next.garrisonSeen, event.partyId];
@@ -2671,13 +2678,18 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     }
     case "party_alerted": {
-      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false }];
+      // 알린 무리를 다시 부르면(설득) 설득 결과만 고친다
+      if (next.partyAlerts.some((a) => a.partyId === event.partyId)) {
+        next.partyAlerts = next.partyAlerts.map((a) => (a.partyId === event.partyId ? { ...a, persuaded: event.persuaded } : a));
+        break;
+      }
+      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false, closed: false }];
       const z = next.zones[event.zone];
       if (z && z.owner === event.faction) z.alerted = event.faction;
       break;
     }
     case "party_alert_settled": {
-      next.partyAlerts = next.partyAlerts.map((a) => (a.partyId === event.partyId ? { ...a, credited: a.credited || event.credited } : a));
+      next.partyAlerts = next.partyAlerts.map((a) => (a.partyId === event.partyId ? { ...a, credited: a.credited || event.credited, closed: true } : a));
       const z = next.zones[event.zone];
       if (z && event.clear) delete z.alerted;
       break;

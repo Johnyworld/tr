@@ -68,12 +68,17 @@ describe("파트 13 직분별 전쟁 임무", () => {
     const [a, b] = w.state().wounded.map((x) => x.id);
     const before = { ...w.state().factions.faction_a! };
     changeCondition(w.ctx(), a!, content.scenario.harm_track, -1, "care", "test");
+    // 돌봄 없이 아문 것은 이틀이 지나야 돌아간다 (PT35)
+    runInfirmary(w.ctx());
+    expect(w.state().wounded.map((x) => x.id)).toEqual([a, b]);
+    const t0 = w.state().time;
+    w.ctx().store.append({ type: "time_advanced", activity: "brief", from: t0, to: t0 + 2 * MINUTES_PER_DAY });
     runInfirmary(w.ctx());
     expect(w.state().wounded.map((x) => x.id)).toEqual([b]);
     expect(w.state().factions.faction_a!.combatants).toBe(before.combatants + 1);
     expect(w.state().factions.faction_a!.population).toBe(before.population + 1);
     const now = w.state().time;
-    w.ctx().store.append({ type: "time_advanced", activity: "brief", from: now, to: now + WOUNDED_DAYS * MINUTES_PER_DAY });
+    w.ctx().store.append({ type: "time_advanced", activity: "brief", from: now, to: now + (WOUNDED_DAYS - 2) * MINUTES_PER_DAY });
     runInfirmary({ ...w.ctx(), rng: () => 0.1 });
     expect(w.state().wounded).toEqual([]);
     expect(w.state().characters[b!]!.dead).toBe(true);
@@ -104,5 +109,31 @@ describe("파트 13 직분별 전쟁 임무", () => {
       const off = pickDailyOffers(content, "role_a_grunt", MINUTES_PER_DAY * 3, null, createSeededRng(seed), extra, false, undefined, "grunt", undefined, [], false, undefined, false, new Set())!;
       expect(off.templateIds).not.toContain("occ_scavenger_war_traces");
     }
+  });
+});
+
+describe("PT35 치료사·흔적", () => {
+  it("치료사가 드러난 병을 고치면 잠복에 머물지 않고 낫는다, 감염은 알아본 것을 믿음으로 남긴다", () => {
+    const w = make();
+    const me = w.state().playerId;
+    const healer = Object.values(content.npcs).find((n) => n.healer && n.faction === "faction_a")!.id;
+    w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: baseOfNow(w.state(), content, "faction_a")!, place: null });
+    w.executeTool("npc_presence", { npc_id: healer, action: "enter" });
+    w.ctx().store.append({ type: "condition_changed", targetId: me, track: "disease", from: "healthy", to: "chill", fatal: false, by: "test", cause: "test", day: 1, harmTrack: false } as never);
+    const r = w.executeTool("take_action", { intent: "치료받는다", check: null, activity: null, deed: null, target: null, narration_summary: null, treatment: { item: null, target: null } } as never);
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().characters[me]!.conditions.disease).toBe("healthy");
+    w.close();
+  });
+
+  it("교전의 흔적은 언제인지를 붙이고, 빈 땅 차지에는 옛 무리의 짐이 없다", async () => {
+    const { tracesHere } = await import("./felt.ts");
+    const w = make();
+    const s = w.state();
+    const at = { ...s, playerZone: "rail_embankment", recentClashes: [{ clash: { kind: "occupy" as const, attacker: "faction_a", defender: null, zone: "rail_embankment", success: true, attackerLosses: 0, defenderLosses: 0 }, at: s.time - 60 }] };
+    const line = tracesHere(at, content)!;
+    expect(line).toContain("몇 시간 전");
+    expect(line).not.toContain("옛 무리");
+    w.close();
   });
 });

@@ -21,7 +21,7 @@ import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.t
 import { partyZoneAt } from "../sim/parties.ts";
 import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
-import { disposition } from "../sim/war.ts";
+import { disposition, HOSTILE as HOSTILE_AT } from "../sim/war.ts";
 import { isCreature } from "../game/kinds.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { routeMinutes } from "./time.ts";
@@ -448,6 +448,13 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   if (routineAway(state, content, id, time)) return { zone: null, place: null };
   // 일과로 장소가 정해지지 않으면(떠도는 사람 등) 그 구역의 길
   const zone = npcZoneAt(npc, time) ?? null;
+  // 일과 자리를 적대하는 무리가 빼앗았으면 그 사람은 자기 무리 거점으로 물러나 있다 (PT35 약탈조원: 빼앗은 동쪽 초소 망루에 청솔 대원이 일과대로 남았다)
+  const mine = c.factionId;
+  const taker = zone ? state.zones[zone]?.owner : null;
+  if (zone && mine && taker && !ownedBy(state, zone, mine) && disposition(content, mine, taker, state) <= HOSTILE_AT) {
+    const base = baseOfNow(state, content, mine);
+    if (base && base !== zone) return { zone: base, place: arrivalPlace(state, content, base) };
+  }
   return { zone, place: npcPlaceAt(state, content, id, time) ?? (zone ? arrivalPlace(state, content, zone) : null) };
 }
 

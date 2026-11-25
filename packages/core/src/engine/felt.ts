@@ -26,7 +26,10 @@ export function tracesHere(state: GameState, content: Content): string | null {
   if (!f || !state.playerZone) return null;
   const recent = state.recentClashes.filter((r) => r.clash.zone === state.playerZone && state.time - r.at <= f.trace_days * MINUTES_PER_DAY).at(-1);
   const text = recent ? f.traces[recent.clash.kind] : undefined;
-  return text ? `교전의 흔적: ${text}. 본 대로 서술한다 (누가 이겼는지는 주인공이 아는 만큼만).` : null;
+  if (!text || !recent) return null;
+  const hours = (state.time - recent.at) / 60;
+  const when = hours < 12 ? "몇 시간 전" : hours < 36 ? "어제" : "이틀쯤 전";
+  return `교전의 흔적: ${when} ${text}. 본 대로 서술한다 (누가 이겼는지는 주인공이 아는 만큼만).`;
 }
 
 /** 2. 교전의 사상자 가운데 이름 있는 대원에게 내려온다. 알릴 것 */

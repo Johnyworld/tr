@@ -121,7 +121,7 @@ function distanceBonus(state: GameState, content: Content, party: Party, zone: s
 export type SightRoll = { player: boolean; party: boolean; attacks: boolean; rolled?: boolean };
 
 /** 한 번 서로 알아채기를 굴린다 (공통 규칙 23). asleep이면 불침번이 있을 때만 주인공 쪽이 본다 */
-export function rollPartySight(state: GameState, content: Content, rng: Rng, party: Party, at: number, opts: { asleep?: boolean; watched?: boolean } = {}): SightRoll {
+export function rollPartySight(state: GameState, content: Content, rng: Rng, party: Party, at: number, opts: { asleep?: boolean; watched?: boolean; guarding?: boolean } = {}): SightRoll {
   const zone = state.playerZone!;
   if (!outdoorsHere(state, content)) return { player: false, party: false, attacks: false, rolled: false };
   // 장소 사이는 멀다: 같은 장소·한 칸 옆(망루면 두 칸)만 서로 볼 수 있다 (파트 12)
@@ -135,7 +135,8 @@ export function rollPartySight(state: GameState, content: Content, rng: Rng, par
   // 잠든 사람은 보지 못한다. 불침번은 그 사람의 눈으로 본다 (보정 없음)
   const myBonus = opts.asleep ? (opts.watched ? 0 : null) : personNoticeBonus(content, me);
   const seen = sightings(rng, { bonus: (myBonus ?? -99) + dist.mine, hidden: meHidden }, { bonus: partyNoticeBonus(party.kind) + dist.theirs, hidden: partyHidden });
-  const player = myBonus !== null && seen.aSees;
+  // 보초를 서는 사람은 보이는 거리에 든 무리를 놓치지 않는다 (PT35 졸병·PT34 분대장: 보초 중 공세 부대가 들어서도 끝날 때야 알았다)
+  const player = myBonus !== null && (seen.aSees || !!opts.guarding);
   const partySaw = seen.bSees;
   // 주인공을 본 부대가 덤비는가: 적대하는 무리이고, 주인공 쪽보다 넉넉히 많을 때 (4-2)
   const onOwnLand = ownedBy(state, zone, party.faction);
@@ -175,12 +176,13 @@ export function createPartyCheck(content: Content, activity: string): InterruptC
     }
     const asleep = activity === "sleep";
     const watched = asleep && campWatched(content, state, activity);
+    const guarding = activity === "guard_duty";
     for (const { party, at } of arrivingParties(state, from, to)) {
       if (!hostileFaction(state, content, party.faction)) continue;
       const key = sightKey(party, state.playerZone, at);
       if (rolled.has(key)) continue;
       rolled.add(key);
-      const r = rollPartySight(state, content, rng, party, at, { asleep, watched });
+      const r = rollPartySight(state, content, rng, party, at, { asleep, watched, guarding });
       if (r.player || r.attacks) return { kind: "disturbance", detail: `${PARTY_INTERRUPT}:${party.id}:${r.player ? 1 : 0}${r.party ? 1 : 0}${r.attacks ? 1 : 0}`, at };
     }
     return null;

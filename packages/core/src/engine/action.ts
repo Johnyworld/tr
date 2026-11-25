@@ -998,6 +998,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       for (const d of runAlarm(ctx, exposed ? scenario.alarm!.moves[0]! : input.check.move)) {
         displays.push(d);
         if (d.type === "storylet" && d.event === "started") lines.push(`들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+        // 경보 이야기 없이 들킨 일도 결과 줄로 (PT35 졸병: 화면 표시에만 있어 결과 글엔 "실패한다"뿐이었다)
+        else if (d.type === "belief" && d.fact) lines.push(`${d.fact}.${d.note ? ` ${d.note}` : ""}`);
       }
     }
     lines.push(...roll.ambushNotes);
@@ -1465,6 +1467,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (alarmOnArrival) for (const d of runAlarm(ctx, alarmOnArrival)) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`들어서다 들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+      else if (d.type === "belief" && d.fact) lines.push(`들어서다 ${d.fact}.`);
     }
     const arrival = runInfestedArrival(ctx, input.move_to);
     for (const d of arrival) {

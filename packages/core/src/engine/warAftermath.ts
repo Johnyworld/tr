@@ -26,6 +26,8 @@ export type WarCause = "repair" | "wounded" | "traces" | "threat";
 
 /** 의무실 부상자가 홀로 버티는 날 수 */
 export const WOUNDED_DAYS = 3;
+/** 돌봄 없이 나은 부상자가 제자리로 돌아가기까지 */
+export const RECOVER_DAYS = 2;
 /** 교전 하나에서 의무실에 드는 부상자 수의 상한 */
 const WOUNDED_MAX = 3;
 
@@ -104,7 +106,8 @@ export function runInfirmary(ctx: ToolContext): ToolDisplayEvent[] {
       ctx.store.append({ type: "wounded_settled", id: w.id, outcome: "died" });
       continue;
     }
-    if (light >= 0 && at <= light) {
+    // 돌봄(의무병 임무) 없이 저절로 아문 것은 이틀이 지나야 돌아간다 (PT35 두 판: 중상이 하룻밤 만에 "털고 일어났다")
+    if (light >= 0 && at <= light && state.time - w.at >= RECOVER_DAYS * MINUTES_PER_DAY) {
       ctx.store.append({ type: "wounded_settled", id: w.id, outcome: "recovered" });
       if (mine) out.push(...hearNews(ctx, { fact: "의무실에 누워 있던 부상자 하나가 털고 일어나 제자리로 돌아갔다고 한다.", factions: [w.faction], showOursOnly: true }));
       continue;
@@ -136,7 +139,13 @@ export function settleWarCause(ctx: ToolContext, mission: MissionInstance, cause
     const track = harmTrack(content.scenario);
     const hurt = store.getState().wounded.filter((w) => w.zone === zone && !store.getState().characters[w.id]?.dead);
     const tended = outcome === "success" ? hurt : hurt.slice(0, 1);
-    for (const w of tended) changeCondition(ctx, w.id, track.id, -1, "care", `의무실 돌봄: ${mission.title}`);
+    const light = track.levels.findIndex((l) => l.id === "light");
+    for (const w of tended) {
+      changeCondition(ctx, w.id, track.id, -1, "care", `의무실 돌봄: ${mission.title}`);
+      // 돌봐서 경상 이하가 되면 곧 제자리로
+      const now = ctx.store.getState().characters[w.id];
+      if (now && track.levels.findIndex((l) => l.id === now.conditions[track.id]) <= light) store.append({ type: "wounded_settled", id: w.id, outcome: "recovered" });
+    }
     return tended.length ? [`의무실 부상자 ${tended.length}명을 돌봤다 (나으면 제자리로 돌아간다).`] : [];
   }
   return [];

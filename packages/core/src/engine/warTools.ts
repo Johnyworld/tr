@@ -16,7 +16,7 @@ import { runCaptivity, warCaptures } from "./captivity.ts";
 import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
-import { dayOf } from "../rules/time.ts";
+import { dayOf, formatTime } from "../rules/time.ts";
 import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, prefillClocks, rationLevel, simulateWarDay, spawnWatchParties, type WarWorld } from "../sim/war.ts";
 import { advanceParties, partiesConfig } from "../sim/parties.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
@@ -107,7 +107,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       day,
       factions: result.factions,
       zones: result.zones,
-      clocks: Object.fromEntries(Object.entries(result.clocks).map(([id, c]) => [id, { filled: c.filled }])),
+      clocks: Object.fromEntries(Object.entries(result.clocks).map(([id, c]) => [id, { filled: c.filled, ...(c.target !== state.clocks[id]?.target ? { target: c.target } : {}) }])),
       clashes: result.clashes,
       scheduled,
       ...(result.parties ? { parties: result.parties, nextPartyNo: result.nextPartyNo ?? state.nextPartyNo, partiesUpTo: result.partiesUpTo ?? state.partiesUpTo } : {}),
@@ -116,6 +116,18 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
     const yesterday = store.getState().recentClashes.filter((r) => r.party && r.at >= (day - 2) * MINUTES_PER_DAY && r.at < (day - 1) * MINUTES_PER_DAY).map((r) => r.clash);
     for (const change of infestationDay(content, store.getState(), day, [...result.clashes, ...yesterday], ctx.rng)) store.append({ type: "infestation_changed", ...change });
     displays.push(...afterClashes(ctx, result.clashes, { facilities: false }));
+    // 우리 무리의 계획이 터져 부대가 모였다 (PT35 두 판: 공세가 나선 것이 GM에게 안 보였다)
+    {
+      const now = store.getState();
+      const mine = now.characters[now.playerId]?.factionId;
+      for (const p of now.parties) {
+        if (!mine || p.faction !== mine || state.parties.some((x) => x.id === p.id)) continue;
+        const plan = p.task.kind === "clash" || p.task.kind === "occupy" ? p.task.plan : undefined;
+        const label = plan ? now.clocks[plan]?.label : undefined;
+        if (!label) continue;
+        displays.push(...hearNews(ctx, { fact: `${label}이 끝나 부대가 거점에 모였다고 한다. ${formatTime(p.legs[0]!.to)}께 ${josa(content.locations[p.goal]?.name ?? p.goal, "으로/로")} 나선다`, factions: [mine], topic: WAR_TOPIC, showOursOnly: true }));
+      }
+    }
     // 다른 무리의 형편이 소문으로 (12-105)
     displays.push(...spreadTroubleRumors(ctx));
     // 무리 사이 싸움의 포로, 시설이 부서짐 (12-55, 12-167)
@@ -301,10 +313,21 @@ export function factionOutlook(state: GameState, content: Content): FactionOutlo
           stock: content.scenario.resources
             .filter((r) => (war.upkeep[r.id] ?? 0) > 0)
             .map((r) => ({ label: r.label, level: label(war.stock_labels, daysOfStock(content, ownState, r.id)) })),
-          plans: Object.values(state.clocks)
-            .filter((c) => c.factionId === ownContent.id)
-            .map((c, _i, _all) => {
+          plans: Object.entries(state.clocks)
+            .filter(([, c]) => c.factionId === ownContent.id)
+            .map(([clockId, c]) => {
               const ratio = c.filled / c.max;
+              // 계획이 터져 공세 부대가 나가 있으면 그것을 말한다 (PT35 두 판: 시계가 터지자 곧바로 "말만 돈다"라 스무 명이 움직이는 하루가 안 보였다)
+              const out = state.parties.find((p) => p.faction === ownContent.id && !p.done && p.size > 0 && (p.task.kind === "clash" || p.task.kind === "occupy") && p.task.plan === clockId);
+              if (out) {
+                const leaves = out.legs[0]!.to;
+                return {
+                  label: c.label,
+                  stage: leaves > state.time ? `부대가 거점에 모였다는 말 (${formatTime(leaves)}께 떠난다)` : "부대가 나섰다는 말",
+                  imminent: false,
+                  targetName: content.locations[out.goal]?.name ?? out.goal,
+                };
+              }
               const plan = ownContent.plans.find((p) => p.label === c.label);
               const shift = plan?.kind === "shift";
               // 태도가 바뀌는 계획(shift)에는 칠 구역이 없다. 이미 일어났으면 그렇다고만
@@ -398,8 +421,8 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
     `세력 관계: ${o.others.map((f) => `${f.name} ${f.stance}`).join(", ")}`,
     ...o.own.plans.map(
       (p) =>
-        `우리 무리의 계획: ${p.label} — ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}` +
-        (p.imminent ? ". 그 구역과 맞닿은 우리 구역에 있으면 새벽에 함께 나설 수 있다" : ""),
+        // 함께 나서는 길은 아직 없다 (12-324 남긴 것): "새벽에 함께 나설 수 있다"는 실제와 달라 뺐다 (PT35 두 판)
+        `우리 무리의 계획: ${p.label} — ${p.stage}${p.targetName ? ` (목표는 ${josa(p.targetName, "이라는/라는")} 말)` : ""}`,
     ),
     ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : []),
     "전황은 캐릭터가 들은 보고·소문(믿음)으로만 안다. 교전 결과·사상자·점령을 지어내지 않는다.",
@@ -421,7 +444,9 @@ function creditNews(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEve
     if (!mine.length) continue;
     const zone = ctx.content.locations[c.zone]?.name ?? c.zone;
     const what = [...new Set(mine.map((x) => `'${x.mission}'`))].join("·");
-    const fact = `당신이 해낸 ${what} 덕분에 우리 쪽이 ${josa(zone, "을/를")} 미리 알고 들이쳤다고 한다. ${c.success ? "이겼다" : "그래도 막혔다"}`;
+    const fact = c.kind === "occupy"
+      ? `당신이 해낸 ${what} 덕분에 우리 쪽이 앞당겨 ${josa(zone, "을/를")} 차지했다고 한다`
+      : `당신이 해낸 ${what} 덕분에 우리 쪽이 ${josa(zone, "을/를")} 미리 알고 들이쳤다고 한다. ${c.success ? "이겼다" : "그래도 막혔다"}`;
     out.push(...hearNews(ctx, { fact, factions: [c.attacker, c.defender ?? c.attacker], topic: WAR_TOPIC }));
   }
   return out;

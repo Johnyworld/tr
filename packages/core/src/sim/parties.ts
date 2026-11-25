@@ -231,6 +231,8 @@ export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: Sp
   f.combatants -= args.size;
   const leader = args.kind === "raid" || args.kind === "assault" ? pickLeader(world, content, rng, args.faction, args.leaderOk) : null;
   for (const [r, n] of Object.entries(args.carry ?? {})) f.resources[r] = Math.max(0, (f.resources[r] ?? 0) - n);
+  // 이미 쓰는 번호는 건너뛴다 (부대 id는 늘 서로 다르다)
+  while ((world.parties ?? []).some((p) => p.id === `party_${world.nextPartyNo ?? 0}`)) world.nextPartyNo = (world.nextPartyNo ?? 0) + 1;
   const party: Party = {
     id: `party_${world.nextPartyNo ?? 0}`,
     faction: args.faction,
@@ -378,6 +380,7 @@ export function spawnIntercept(
     legs.push({ zone: route[i]!, from: t, to: arrive });
     t = arrive;
   }
+  while ((world.parties ?? []).some((p) => p.id === `party_${world.nextPartyNo ?? 0}`)) world.nextPartyNo = (world.nextPartyNo ?? 0) + 1;
   const party: Party = {
     id: `party_${world.nextPartyNo ?? 0}`,
     faction: args.faction,
@@ -583,7 +586,11 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
     // 가로막는 부대는 정한 때까지 숨어 기다린다
     stay = Math.max(0, task.until - at);
   } else if (task.kind === "occupy") {
-    if ((world.zones[party.goal]?.owner ?? null) === null) out.clashes.push(occupyZone(world, party.faction, party.goal, task.plan));
+    if ((world.zones[party.goal]?.owner ?? null) === null) {
+      const clash = occupyZone(world, party.faction, party.goal, task.plan);
+      if (task.credits?.length) clash.credits = task.credits;
+      out.clashes.push(clash);
+    }
     stay = pickHours(rng, cfg.kinds[party.kind]!.stay);
   } else if (task.kind === "trade") {
     const partner = world.factions[task.partner];

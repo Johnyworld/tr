@@ -404,7 +404,9 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     if (!cfg) return void clashes.push(occupy(next, attacker, zone, plan));
     // 땅 차지는 순찰대가 닿아야 이뤄진다 (2-2)
     const size = Math.max(sizeOf("patrol"), Math.round(next.factions[attacker]!.combatants * COMMIT.occupy));
-    spawnParty(next, content, rng, { faction: attacker, kind: "patrol", goal: zone, size, dayStart, task: { kind: "occupy", ...(plan ? { plan } : {}) } });
+    // 계획의 공세가 빈 땅 차지로 터져도 앞당긴 일이 실린다 (PT35 졸병: 두 번 앞당긴 공세가 버스 차고지 차지로 터졌는데 "덕분에"가 없었다)
+    const credits = plan ? (next.clocks[plan]?.credits ?? []) : [];
+    spawnParty(next, content, rng, { faction: attacker, kind: "patrol", goal: zone, size, dayStart, task: { kind: "occupy", ...(plan ? { plan } : {}), ...(credits.length ? { credits: credits.map(({ by, mission }) => ({ by, mission })) } : {}) } });
   };
 
   const alive = Object.keys(next.factions)
@@ -515,6 +517,8 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   for (const [clockId, clock] of Object.entries(next.clocks).sort(([a], [b]) => a.localeCompare(b))) {
     if (!alive.includes(clock.factionId)) continue;
     const plan = planOf(content, clockId);
+    // 목표가 이미 우리 땅이면 다른 목표를 고른다 (PT35 약탈조원: 빼앗은 동쪽 초소가 다음 공세의 목표로 남았다)
+    if (plan?.kind !== "shift" && clock.target && next.zones[clock.target]?.owner === clock.factionId) clock.target = frontierTarget(next, content, clock.factionId) ?? "";
     if (plan?.kind === "shift") {
       // 태도가 바뀌는 계획은 한 번 일어나고 끝난다 (찬 채로 둔다)
       if (clock.filled >= clock.max) continue;

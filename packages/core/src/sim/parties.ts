@@ -263,6 +263,8 @@ export type AdvanceResult = { clashes: Clash[]; deferred: (ClashSpec & { at: num
 
 /** 이 부대가 이 시각에 그 구역에서 숨어 기다리는 중인가 (습격대가 목표 바로 앞에서) */
 export function hidingAt(party: Party, t: number): boolean {
+  // 가로막는 부대는 목표 구역에서 숨어 기다린다 (5-3·5-4)
+  if (party.task.kind === "intercept") return partyZoneAt(party, t) === party.goal && t <= party.task.until;
   if (party.done || party.task.kind !== "clash" || party.legs.length < 3) return false;
   const leg = party.legs[party.legs.length - 2]!;
   return t >= leg.from && t <= leg.to;
@@ -304,7 +306,8 @@ export function advanceParties(world: WarWorld, content: Content, rng: Rng, upTo
   const limit = (p: Party) => (p.done ? endUpTo : upTo);
   let cursor = world.partiesUpTo ?? 0;
   for (;;) {
-    const ms = (world.parties ?? []).filter((p) => due(p) <= limit(p)).sort((a, b) => due(a) - due(b) || a.id.localeCompare(b.id))[0];
+    // 돌아온 분대 가로막기는 보고할 때까지 남은 기록일 뿐이다
+    const ms = (world.parties ?? []).filter((p) => !(p.done && p.size <= 0 && p.task.kind === "intercept" && p.task.squad.length > 0) && due(p) <= limit(p)).sort((a, b) => due(a) - due(b) || a.id.localeCompare(b.id))[0];
     const enc = nextEncounter(content, world, cursor, Math.min(upTo, ms ? due(ms) : upTo));
     if (enc && (!ms || enc.at <= due(ms))) {
       cursor = enc.at;
@@ -341,7 +344,53 @@ function endParty(world: WarWorld, content: Content, party: Party) {
     f.combatants += party.size;
     for (const [r, n] of Object.entries(party.carry)) f.resources[r] = (f.resources[r] ?? 0) + n;
   }
+  // 분대 가로막기는 보고할 때까지 기록으로 남긴다 (인원은 이미 돌려줬다)
+  if (party.task.kind === "intercept" && party.task.squad.length > 0) {
+    party.size = 0;
+    return;
+  }
   removeParty(world, party.id);
+}
+
+/**
+ * 가로막을 부대를 낸다 (5-3 설득, 5-4 분대): from에서 goal로 머무르지 않고 곧장 가서 until까지 숨어 기다린다.
+ * 부대 칸·지키는 병력은 부르는 쪽이 본다. 낼 수 없으면(길이 없음) null
+ */
+export function spawnIntercept(
+  world: WarWorld,
+  content: Content,
+  args: { faction: string; from: string; goal: string; size: number; at: number; until: number; squad?: string[]; by?: string | null; leader?: string | null },
+): Party | null {
+  const route = partyRoute(content, world, args.faction, args.from, args.goal);
+  const f = world.factions[args.faction];
+  if (!route || !f || args.size <= 0) return null;
+  const legs: PartyLeg[] = [{ zone: route[0]!, from: args.at, to: args.at }];
+  let t = args.at;
+  for (let i = 1; i < route.length; i++) {
+    const arrive = t + round15(routeMinutes(route[i - 1]!, route[i]!, content));
+    legs.push({ zone: route[i]!, from: t, to: arrive });
+    t = arrive;
+  }
+  const party: Party = {
+    id: `party_${world.nextPartyNo ?? 0}`,
+    faction: args.faction,
+    kind: "patrol",
+    size: args.size,
+    leader: args.leader ?? null,
+    home: homeBase(content, world, args.faction) ?? args.from,
+    goal: args.goal,
+    legs,
+    task: { kind: "intercept", until: Math.max(t, args.until), squad: args.squad ?? [], by: args.by ?? null },
+    done: false,
+    back: [],
+    carry: {},
+    met: [],
+    routedAt: null,
+  };
+  world.nextPartyNo = (world.nextPartyNo ?? 0) + 1;
+  f.combatants = Math.max(0, f.combatants - args.size);
+  world.parties = [...(world.parties ?? []), party];
+  return party;
 }
 
 /** 정찰로 적 배치를 알고 치는 기습의 화력 배수 (파트 11, *임시*) */
@@ -416,7 +465,7 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
   b.met.push(a.id);
   const cover = content.locations[zone]?.cover ?? 0;
   const night = isNight(at);
-  const seen = sightings(rng, { bonus: partyNoticeBonus(a.kind), hidden: { hiding: hidingAt(a, at), night, cover } }, { bonus: partyNoticeBonus(b.kind), hidden: { hiding: hidingAt(b, at), night, cover } });
+  const seen = sightings(rng, { bonus: partyNoticeBonus(a.kind, a.task.kind === "intercept"), hidden: { hiding: hidingAt(a, at), night, cover } }, { bonus: partyNoticeBonus(b.kind, b.task.kind === "intercept"), hidden: { hiding: hidingAt(b, at), night, cover } });
   const knows = (who: Party, other: Party) => {
     const f = world.factions[who.faction];
     if (f) f.seen = { ...(f.seen ?? {}), [other.faction]: at + MINUTES_PER_DAY };
@@ -424,13 +473,14 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
   if (seen.aSees) knows(a, b);
   if (seen.bSees) knows(b, a);
   const own = (p: Party) => world.zones[zone]?.owner === p.faction;
-  const wants = (p: Party, other: Party, sees: boolean) => sees && partyChoice({ kind: p.kind, size: p.size, onOwnLand: own(p) }, { size: other.size }) === "fight";
+  const intercepting = (p: Party) => p.task.kind === "intercept";
+  const wants = (p: Party, other: Party, sees: boolean) => sees && partyChoice({ kind: p.kind, size: p.size, onOwnLand: own(p), intercept: intercepting(p) }, { size: other.size }) === "fight";
   const aFights = wants(a, b, seen.aSees);
   const bFights = wants(b, a, seen.bSees);
   if (!aFights && !bFights) return;
   // 먼저 본 쪽이 혼자 덤비면 자기 땅에서는 매복이다 (4-3)
   const [attacker, defender] = aFights ? [a, b] : [b, a];
-  const ambush = (attacker === a ? !seen.bSees : !seen.aSees) && canAmbush(own(attacker));
+  const ambush = (attacker === a ? !seen.bSees : !seen.aSees) && canAmbush(own(attacker), intercepting(attacker));
   const fa = world.factions[attacker.faction]!;
   const fd = world.factions[defender.faction]!;
   const power = (p: Party, f: typeof fa, bonus: number) => p.size * (1 + 0.1 * f.morale) * bonus;
@@ -440,13 +490,20 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
   const [winner, loser] = success ? [attacker, defender] : [defender, attacker];
   const loserLosses = Math.min(loser.size, 1 + Math.floor(rng() * Math.max(1, Math.round(loser.size * 0.2))));
   const winnerLosses = Math.min(winner.size, rng() < 0.5 ? 0 : 1);
+  // 분대 가로막기의 쓰러진 사람은 이름 있는 분대원이라 인원이 아니라 다침으로 (보고할 때)
+  const squad = (p: Party) => p.task.kind === "intercept" && p.task.squad.length > 0;
   const take = (p: Party, n: number) => {
     p.size -= n;
     const f = world.factions[p.faction];
-    if (f) f.population = Math.max(0, f.population - n);
+    if (f && !squad(p)) f.population = Math.max(0, f.population - n);
   };
+  const sizes = { a: a.size, b: b.size };
   take(loser, loserLosses);
   take(winner, winnerLosses);
+  // 가로막은 결과를 그 부대에 남긴다 (보고·소식)
+  for (const [p, other, otherSize] of [[a, b, sizes.b], [b, a, sizes.a]] as const) {
+    if (p.task.kind === "intercept" && !p.task.result) p.task.result = { enemy: other.id, faction: other.faction, size: otherSize, won: winner === p, losses: winner === p ? winnerLosses : loserLosses };
+  }
   out.clashes.push({
     kind: "skirmish",
     attacker: attacker.faction,
@@ -455,6 +512,7 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
     success,
     attackerLosses: attacker === winner ? winnerLosses : loserLosses,
     defenderLosses: defender === winner ? winnerLosses : loserLosses,
+    ...(squad(a) || squad(b) ? { squad: true } : {}),
   });
   recordDefeat(world, loser.faction, at);
   // 진 쪽은 달아난다: 짐 절반을 버리고 거점으로. 같은 날 두 번째로 지면 남은 사람이 붙잡힌다 (4-4)
@@ -513,6 +571,9 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
       party.size = survivors;
       out.clashes.push(clash);
     }
+  } else if (task.kind === "intercept") {
+    // 가로막는 부대는 정한 때까지 숨어 기다린다
+    stay = Math.max(0, task.until - at);
   } else if (task.kind === "occupy") {
     if ((world.zones[party.goal]?.owner ?? null) === null) out.clashes.push(occupyZone(world, party.faction, party.goal, task.plan));
     stay = pickHours(rng, cfg.kinds[party.kind]!.stay);

@@ -20,7 +20,7 @@ import type { Rng } from "../rng.ts";
  *    사기가 시작값 쪽으로 돌아오고, 남은 사람 중에서 전투원을 키우고, 가끔 피란민이 합류한다 (끝없는 세계)
  */
 
-export type ZoneState = { owner: string | null; fort?: number; boost?: Record<string, number>; stalledUntil?: number };
+export type ZoneState = { owner: string | null; fort?: number; boost?: Record<string, number>; stalledUntil?: number; alerted?: string };
 
 export type WarWorld = {
   factions: Record<string, FactionState>;
@@ -73,6 +73,9 @@ const PLAN_COMMIT = 0.5;
 const ALLY_AT = 2;
 const ALLY_COMMIT = 0.1;
 export const DEFENSE_COMMIT = 0.2;
+/** 다가오는 부대를 알렸으면 그 구역을 지키는 몫 (움직이는 부대 5-3, *임시*) */
+export const ALERT_COMMIT = 0.3;
+const commitAt = (world: WarWorld, zone: string, defender: string) => (world.zones[zone]?.alerted === defender ? ALERT_COMMIT : DEFENSE_COMMIT);
 /** 방침이 아무리 지키자고 해도 전투원의 이 비율까지만 지킨다 */
 const DEFENSE_COMMIT_MAX = 0.4;
 const BASE_DEFENSE_BONUS = 1.5;
@@ -665,7 +668,7 @@ export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content)
   return {
     attackers: Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
     // 보강된 구역(담·망루)은 지키는 쪽이 더 버틴다 (12-48)
-    defenders: Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0)))),
+    defenders: Math.max(1, Math.round(d.combatants * commitAt(world, spec.zone, spec.defender) * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0)))),
   };
 }
 
@@ -744,7 +747,9 @@ function fight(
   const d = world.factions[defenderId]!;
   // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139, 12-144: 자기 땅에 감염체가 몰리면 더 준다)
   const committed = force ?? Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
-  const own = Math.max(1, Math.round(d.combatants * DEFENSE_COMMIT * defenseOf(content, d)));
+  const own = Math.max(1, Math.round(d.combatants * commitAt(world, zone, defenderId) * defenseOf(content, d)));
+  // 알려서 더 지키던 것은 이 교전으로 쓴다
+  if (world.zones[zone]?.alerted === defenderId) delete world.zones[zone]!.alerted;
   // 지원 방어 (12-140): 지키는 쪽을 우호(ALLY_AT 이상)로 보고 치는 쪽과는 우호가 아닌 무리가 전투원 일부를 보탠다
   const allies = Object.entries(world.factions)
     .filter(([id, f]) => id !== attackerId && id !== defenderId && f.population > 0 && f.combatants > 0)

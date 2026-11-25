@@ -51,7 +51,8 @@ import { startingSkills } from "./creation.ts";
 // 116: 움직이는 부대 ③-3 (12-318). 클락 credits, 교전·부대 할 일 credits·surprise, 이벤트 clock_credited
 // 117: PT32 고침 (12-320). 마주침 기록 열쇠에 방문, parties_advanced.nextPartyNo
 // 118: 파트 13·14 (12-322). 이벤트 zone_heard, 부서진 시설(wrecked), 의무실 부상자(wounded)
-export const SAVE_SCHEMA_VERSION = 118;
+// 119: 움직이는 부대 ④ (12-324). 부대 할 일 intercept, 구역 alerted, partiesSeen·partyAlerts, 이벤트 party_alerted·party_alert_settled, Clash.squad
+export const SAVE_SCHEMA_VERSION = 119;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -194,6 +195,8 @@ export const clashSchema = z.strictObject({
   loot: z.record(z.string(), z.number().int().min(0)).optional(),
   /** 이 공세를 앞당긴 일 (파트 11): 누가·어떤 임무로 */
   credits: z.array(z.strictObject({ by: z.string(), mission: z.string() })).optional(),
+  /** 분대 가로막기의 맞붙음 (5-4): 우리 쪽 손실은 분대원의 다침이라 의무실 부상자로 셈하지 않는다 */
+  squad: z.boolean().optional(),
 });
 export type Clash = z.infer<typeof clashSchema>;
 
@@ -217,6 +220,17 @@ export const partyTaskSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("trade"), partner: z.string(), give: z.record(z.string(), z.number().int().min(0)), get: z.record(z.string(), z.number().int().min(0)) }),
   /** 정찰·순찰: 가서 보고 돌아온다. plan이 있으면 그 공세를 앞두고 나간 정찰 */
   z.strictObject({ kind: z.literal("watch"), plan: z.string().optional() }),
+  /**
+   * 가로막기 (5-3·5-4): 목표 구역에 숨어 until까지 기다리다 지나가는 적대 부대를 친다 (남의 땅에서도 매복).
+   * squad: 분대 가로막기면 그 분대원(이름 있는 사람, 쓰러지면 인원이 아니라 다침으로), by: 이 부대를 내게 한 주인공, result: 맞붙은 결과
+   */
+  z.strictObject({
+    kind: z.literal("intercept"),
+    until: z.number().int(),
+    squad: z.array(z.string()).default([]),
+    by: z.string().nullable().default(null),
+    result: z.strictObject({ enemy: z.string(), faction: z.string(), size: z.number().int(), won: z.boolean(), losses: z.number().int().min(0) }).optional(),
+  }),
 ]);
 export const partySchema = z.strictObject({
   id: z.string(),
@@ -348,6 +362,8 @@ const zoneStateSchema = z.strictObject({
   boost: z.record(z.string(), z.number().int()).optional(),
   /** 큰 재난으로 이날까지 산출이 멈춘다 (12-169) */
   stalledUntil: z.number().int().optional(),
+  /** 다가오는 부대를 알려 이 무리가 지키는 병력을 늘렸다 (움직이는 부대 5-3). 그 구역에서 교전이 나거나 그 부대가 물러가면 지운다 */
+  alerted: z.string().optional(),
 });
 
 export function createGameSchemas(s: Scenario) {
@@ -680,6 +696,10 @@ export function createGameSchemas(s: Scenario) {
     partiesUpTo: z.number().int().default(0),
     /** 주인공이 부대와 마주친 기록 (공통 규칙 23): "부대id@구역" → 누가 봤는지. 한 구역에서 한 번 굴린다 */
     partySightings: z.record(z.string(), z.strictObject({ at: z.number().int(), player: z.boolean(), party: z.boolean() })).default({}),
+    /** 주인공이 본 부대와 마지막으로 본 때 (구역을 떠나도 남는다: 알리기 5-3) */
+    partiesSeen: z.record(z.string(), z.number().int()).default({}),
+    /** 주인공이 무리에 알린 부대 (5-3): 같은 부대로 다시 조르지 못하고, 그 부대가 막히면 공적 */
+    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false) })).default([]),
     /** 주인공이 맞붙은 부대 (움직이는 부대 ③): 부대 id → 장면에 들인 부대원(엑스트라·우두머리)과 구역 */
     partyFights: z.record(z.string(), z.strictObject({ members: z.array(z.string()), zone: z.string(), at: z.number().int() })).default({}),
     /** 구역 소유 */
@@ -953,6 +973,10 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("zone_fortified"), zone: z.string(), delta: z.number().int() }),
     /** 땅 주인이 바뀐 소식을 들었다 (파트 14-3): 지도에 들은 대로 */
     z.strictObject({ type: z.literal("zone_heard"), zone: z.string(), owner: z.string().nullable() }),
+    /** 본 부대를 무리에 알렸다 (5-3): 그 부대가 노리는 구역을 더 지킨다. persuaded: 맞받아치자고 설득한 결과 */
+    z.strictObject({ type: z.literal("party_alerted"), partyId: z.string(), faction: z.string(), zone: z.string(), persuaded: z.enum(["none", "success", "partial", "miss"]) }),
+    /** 알린 부대의 끝 (5-3): credited 막아 내 공적을 받았다, clear 더 지키던 것을 거둔다 */
+    z.strictObject({ type: z.literal("party_alert_settled"), partyId: z.string(), zone: z.string(), credited: z.boolean(), clear: z.boolean() }),
     /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
     z.strictObject({ type: z.literal("background_set"), entries: z.array(z.strictObject({ part: historyPartSchema(), characterId: z.string().optional() })) }),
     /** 직분의 평판 ± (기획서 12.6) */
@@ -1526,6 +1550,8 @@ export const EMPTY_STATE: GameState = {
   nextPartyNo: 0,
   partiesUpTo: 0,
   partySightings: {},
+  partiesSeen: {},
+  partyAlerts: [],
   partyFights: {},
   zones: {},
   clocks: {},
@@ -2624,7 +2650,20 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "party_sighted":
       next.partySightings[event.key] = { at: state.time, player: event.player, party: event.party };
+      if (event.player) next.partiesSeen = { ...next.partiesSeen, [event.key.split("@")[0]!]: state.time };
       break;
+    case "party_alerted": {
+      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false }];
+      const z = next.zones[event.zone];
+      if (z) z.alerted = event.faction;
+      break;
+    }
+    case "party_alert_settled": {
+      next.partyAlerts = next.partyAlerts.map((a) => (a.partyId === event.partyId ? { ...a, credited: a.credited || event.credited } : a));
+      const z = next.zones[event.zone];
+      if (z && event.clear) delete z.alerted;
+      break;
+    }
 
     case "weather_set":
       next.weather = { day: event.day, id: event.weatherId };

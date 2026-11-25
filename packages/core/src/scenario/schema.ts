@@ -559,6 +559,8 @@ export const scenarioFileSchema = z
                 .default({ resources: {}, loot: false, merit: 0, population: 0 }),
               /** 정찰하는 일 (움직이는 부대, PT31): 해내면 그 구역(성공이면 맞닿은 구역까지)의 적대 부대를 본 것으로 알리고, 적이 없는 곳에서는 빗나가도 다치지 않는다 */
               scouts: z.boolean().default(false),
+              /** 가로막기 (움직이는 부대 5-4): 나선 분대원들이 실제 부대가 되어 그 구역에 숨어 기다린다. 결과는 판정이 아니라 지나간 부대와의 맞붙음 */
+              intercepts: z.boolean().default(false),
               /** 보고 문구. {member} {zone}. miss_quiet: 정찰하는 일이 적 없는 곳에서 빗나갔을 때 */
               report: z.strictObject({ success: z.string().min(1), partial: z.string().min(1), miss: z.string().min(1), miss_quiet: z.string().min(1).optional() }),
             }),

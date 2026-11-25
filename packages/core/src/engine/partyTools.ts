@@ -2,12 +2,18 @@ import { sightKey } from "./partySight.ts";
 import { z } from "zod";
 import type { BattleState, Clash, GameState, Party } from "../game/state.ts";
 import { heldOf } from "../rules/held.ts";
-import { ownedBy } from "../rules/home.ts";
+import { baseOfNow, hostileFaction, ownedBy } from "../rules/home.ts";
+import { rollPlayerCheck } from "./checks.ts";
+import { stakesOf } from "../rules/stakes.ts";
+import { NEUTRAL_RELATION } from "../game/reputation.ts";
+import { playerCalls } from "../game/acquaintance.ts";
+import { disciplineOf } from "../game/culture.ts";
+import { formatTime } from "../rules/time.ts";
 import { hearNews } from "../rules/news.ts";
 import { companyHere } from "../rules/company.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { battleConfig } from "../sim/battle.ts";
-import { chaseInto, partyLabel, partyZoneAt, recordDefeat, routParty } from "../sim/parties.ts";
+import { arrivalOf, canSend, chaseInto, partiesConfig, partyLabel, partyZoneAt, recordDefeat, routParty, spawnIntercept } from "../sim/parties.ts";
 import { DEFENSE_COMMIT, frontierTarget, neighbors, type WarWorld } from "../sim/war.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
@@ -188,7 +194,145 @@ export function chaseParties(ctx: ToolContext, from: string, to: string, chasing
   }
 }
 
-export const PARTY_TOOLS = [engageParty] as const;
+/** 무리의 계급 높이 */
+const rankLevel = (content: Content, rank: string | undefined) => content.scenario.rank_ladder.find((r) => r.id === rank)?.level ?? 0;
+
+/** 장면에 있는 우리 무리 윗사람 (상관이거나 계급이 더 높은 사람). 알리고 설득할 상대 */
+function superiorHere(state: GameState, content: Content): string | null {
+  const me = state.characters[state.playerId];
+  if (!me?.factionId) return null;
+  const mine = rankLevel(content, me.rank);
+  const commander = content.roles[state.roleId]?.commander;
+  return (
+    state.scene.present
+      .filter((id) => {
+        const c = state.characters[id];
+        return !!c && !c.dead && c.factionId === me.factionId && (id === commander || rankLevel(content, c.rank) > mine);
+      })
+      .sort((a, b) => rankLevel(content, state.characters[b]!.rank) - rankLevel(content, state.characters[a]!.rank) || a.localeCompare(b))[0] ?? null
+  );
+}
+
+export const alertParty = defineTool({
+  name: "alert_party",
+  description:
+    "주인공이 본 다른 무리의 무리(상태의 '본 무리'·'눈에 띈 무리' id)를 우리 무리에 알린다 (움직이는 부대 5-3). 우리 거점에 있거나 윗사람(상관·더 높은 계급)이 장면에 있을 때. " +
+    "알리면 무리가 그 무리가 노리는 우리 구역을 더 지킨다. persuade: true면 맞받아치자고 설득한다 (윗사람이 장면에 있어야, approach는 교섭·전략 스킬): 받아들여지면 무리가 가로막을 부대를 낸다. " +
+    "결과는 코드가 정한다. 같은 무리는 한 번만 알린다.",
+  schema: z.strictObject({
+    party_id: z.string().describe("본 무리의 id"),
+    persuade: z.boolean().default(false).describe("맞받아치자고 설득하면 true"),
+    approach: z.string().nullable().default(null).describe("설득에 쓰는 스킬 id (교섭·전략)"),
+    stat: z.string().nullable().default(null).describe("그 스킬에 쓰는 능력 id"),
+    intent: z.string().max(200).nullable().default(null).describe("무엇을 근거로 설득하는지 한 줄"),
+  }),
+  run(input, ctx) {
+    const { store, content, rng } = ctx;
+    const state = store.getState();
+    const me = state.characters[state.playerId];
+    if (!me || me.dead) return { ok: false, error: "플레이어 캐릭터가 없습니다." };
+    if (!me.factionId) return { ok: false, error: "알릴 무리가 없다 (무소속)." };
+    const party = state.parties.find((p) => p.id === input.party_id);
+    if (!party || state.partiesSeen[party.id] === undefined) return { ok: false, error: `본 적 있는 무리가 아니다: ${input.party_id}` };
+    if (!hostileFaction(state, content, party.faction)) return { ok: false, error: "우리를 적대하는 무리만 알린다." };
+    if (party.size <= 0 || party.done) return { ok: false, error: "이미 물러간 무리다. 알려도 무리가 할 일이 없다." };
+    if (state.partyAlerts.some((a) => a.partyId === party.id)) return { ok: false, error: "이미 알린 무리다. 같은 무리로 다시 조르지 못한다." };
+    const base = baseOfNow(state, content, me.factionId);
+    const boss = superiorHere(state, content);
+    if (!boss && state.playerZone !== base) return { ok: false, error: "알릴 사람이 없다. 우리 거점으로 가거나 상관·윗사람을 장면에 들인다." };
+    if (input.persuade && !boss) return { ok: false, error: "맞받아치자고 말할 윗사람이 장면에 없다. 상관이나 더 높은 사람을 npc_presence로 들인다." };
+    const label = partyLabel(content, party);
+    const zone = party.goal;
+    const ours = ownedBy(state, zone, me.factionId);
+    const zoneName = content.locations[zone]?.name ?? zone;
+    const lines = [`${josa(label, "을/를")} 무리에 알렸다.${ours ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 더 지킨다.` : " 노리는 곳이 우리 땅이 아니라 지킬 곳을 늘리지는 않는다."} 알린 무리가 와서 막히면 공이 된다.`];
+    let persuaded: "none" | "success" | "partial" | "miss" = "none";
+    let display: ToolDisplayEvent = { type: "belief", fact: `${label}을 무리에 알렸다`, sourceLabel: "한 일" };
+    if (input.persuade) {
+      const moves = content.scenario.command?.council_moves ?? [];
+      if (!input.approach || !moves.includes(input.approach)) return { ok: false, error: `설득에 쓰는 스킬이 아니다 (가능: ${moves.join(", ") || "없음"})` };
+      if (!input.stat) return { ok: false, error: "stat(능력 id)이 필요하다." };
+      // 윗사람이 나를 믿으면 쉽고 못 믿으면 어렵다(지도부 회의와 같은 셈의 ±2 문턱), 군율 무리에서 분대장 아래의 말은 한 단계 어렵다 (*임시*)
+      const trust = (state.relations[boss!]?.[state.playerId] ?? NEUTRAL_RELATION).trust;
+      const steps = ["very_easy", "easy", "normal", "hard", "very_hard"] as const;
+      let at = trust >= 2 ? 1 : trust <= -2 ? 3 : 2;
+      const lowRank = rankLevel(content, me.rank) < rankLevel(content, "squad_leader");
+      if (disciplineOf(content, me.factionId).id === "strict" && lowRank) at = Math.min(4, at + 1);
+      const check = rollPlayerCheck({ move: input.approach, stat: input.stat, difficulty: steps[at]!, intent: input.intent ?? `${label}을 가로막자고 말한다` }, ctx, { stakes: stakesOf({ activity: true }) });
+      if (!check.ok) return check;
+      persuaded = check.outcome === "success" ? "success" : check.outcome === "partial" ? "partial" : "miss";
+      display = check.display;
+      const bossName = playerCalls(store.getState(), content, boss!);
+      const cfg = partiesConfig(content);
+      if (persuaded === "miss") lines.push(`${josa(bossName, "은/는")} 맞받아치자는 말을 받아들이지 않았다. 지키기만 한다.`);
+      else {
+        const world = worldOf(store.getState());
+        const size = persuaded === "success" ? party.size : Math.max(1, Math.ceil(party.size / 2));
+        const enemyAt = arrivalOf(party);
+        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal: zone, size, at: store.getState().time, until: Math.max(enemyAt, store.getState().time) + 120, by: state.playerId }) : null;
+        if (!sent) lines.push(`${josa(bossName, "은/는")} 맞받아칠 뜻은 있지만 지금 내보낼 사람이 없다고 한다. 지키기만 한다.`);
+        else {
+          saveWorld(ctx, world);
+          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(zoneName, "으로/로")} 내보내 숨어 기다리게 한다 (${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
+        }
+      }
+    }
+    store.append({ type: "party_alerted", partyId: party.id, faction: me.factionId, zone, persuaded });
+    lines.push("알리는 장면을 서술한다. 무리가 무엇을 할지는 이 결과대로만.");
+    void rng;
+    return { ok: true, resultText: lines.join("\n"), display };
+  },
+});
+
+/** 분대 가로막기 (5-4): 나선 분대원들이 실제 부대가 되어 그 구역에 숨어 기다린다. 첫 사람이 이끈다. 낸 부대 id (못 내면 null) */
+export function sendSquadIntercept(ctx: ToolContext, members: readonly string[], zone: string, until: number): string | null {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me?.factionId || !members.length || !state.playerZone) return null;
+  const world = worldOf(state);
+  const party = spawnIntercept(world, ctx.content, { faction: me.factionId, from: state.playerZone, goal: zone, size: members.length, at: state.time, until, squad: [...members], by: state.playerId, leader: members[0]! });
+  if (!party) return null;
+  saveWorld(ctx, world);
+  return party.id;
+}
+
+/** 분대 가로막기의 결과를 거두고 기록을 지운다 (보고할 때). 아직 돌아오는 중이면 남은 사람은 전투원으로 */
+export function collectSquadIntercept(ctx: ToolContext, memberId: string): { party: Party; result: Extract<Party["task"], { kind: "intercept" }>["result"] } | null {
+  const state = ctx.store.getState();
+  const party = state.parties.find((p) => p.task.kind === "intercept" && p.task.squad.includes(memberId));
+  if (!party || party.task.kind !== "intercept") return null;
+  const world = worldOf(state);
+  const f = world.factions[party.faction];
+  if (f && party.size > 0) f.combatants += party.size;
+  world.parties = (world.parties ?? []).filter((p) => p.id !== party.id);
+  saveWorld(ctx, world);
+  return { party, result: party.task.result };
+}
+
+/**
+ * 알린 무리의 끝 (5-3): 그 무리가 노리던 우리 구역을 쳤다가 막히면 공적 +1과 소식, 그 무리가 물러가거나 사라지면 더 지키던 것을 거둔다
+ */
+export function settlePartyAlerts(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEvent[] {
+  const { store, content } = ctx;
+  const out: ToolDisplayEvent[] = [];
+  for (const alert of store.getState().partyAlerts.filter((a) => !a.credited)) {
+    const state = store.getState();
+    const blocked = clashes.find((c) => c.zone === alert.zone && c.defender === alert.faction && c.kind !== "occupy" && !c.success && state.parties.find((p) => p.id === alert.partyId)?.faction === c.attacker);
+    const party = state.parties.find((p) => p.id === alert.partyId);
+    if (blocked) {
+      store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: true, clear: true });
+      if (state.characters[state.playerId]?.factionId === alert.faction) {
+        store.append({ type: "merit_awarded", characterId: state.playerId, delta: 1, reason: "알린 무리를 막아 냈다" });
+        out.push(...hearNews(ctx, { fact: `당신이 알린 덕에 ${content.locations[alert.zone]?.name ?? alert.zone}에서 ${partyLabel(content, party ?? { faction: blocked.attacker, kind: "raid" } as Party)}을 막아 냈다고 한다 (공적 +1).`, factions: [alert.faction] }));
+      }
+    } else if (!party || party.done || party.size <= 0) {
+      store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: false, clear: state.zones[alert.zone]?.alerted === alert.faction });
+    }
+  }
+  return out;
+}
+
+export const PARTY_TOOLS = [engageParty, alertParty] as const;
 
 const downedNow = (ctx: ToolContext, id: string) => {
   const c = ctx.store.getState().characters[id];

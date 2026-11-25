@@ -31,6 +31,7 @@ import { endActiveStorylet } from "./storyletTools.ts";
 import { ownedBy } from "../rules/home.ts";
 import { casualtiesToPeople } from "./felt.ts";
 import { woundedToInfirmary } from "./warAftermath.ts";
+import { settlePartyAlerts } from "./partyTools.ts";
 import { recordDefeat, routParty } from "../sim/parties.ts";
 
 /** 지키는 전투에서 막아 주는 시설의 이름 (월드 팩의 holds 시설) */
@@ -92,6 +93,7 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
     displays.push(...reportClash(ctx, clash));
     displays.push(...casualtiesToPeople(ctx, [clash]));
     displays.push(...woundedToInfirmary(ctx, [clash]));
+    displays.push(...settlePartyAlerts(ctx, [clash]));
   }
 }
 

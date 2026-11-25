@@ -36,8 +36,9 @@ export function notices(rng: Rng, bonus: number, hidden: Concealment): boolean {
 }
 
 /** 부대의 보는 보정: 정찰대는 살피러 나온 사람들이다 */
-export function partyNoticeBonus(kind: string): number {
-  return kind === "scout" ? 2 : 0;
+export function partyNoticeBonus(kind: string, intercept = false): number {
+  // 가로막으러 숨어 기다리는 부대는 길을 지켜본다 (5-3·5-4): 정찰과 같은 눈
+  return kind === "scout" || intercept ? 2 : 0;
 }
 
 /** 주인공(사람)의 보는 보정: 시나리오의 알아채기 판정(war.parties.notice_move)의 가장 나은 능력 + 스킬, 상한 +4 */
@@ -61,15 +62,17 @@ export type PartyChoice = "fight" | "avoid";
  * 알아챈 부대가 무엇을 하는가 (4-2, 결정적): 정찰·짐 행렬은 피하고 세 배가 넘을 때만 싸운다.
  * 순찰은 자기 땅이면 싸우고 남의 땅이면 두 배가 넘을 때만. 습격·공세는 가는 길에 만난 상대를 피하고 두 배가 넘으면 싸운다
  */
-export function partyChoice(me: { kind: string; size: number; onOwnLand: boolean }, other: { size: number }): PartyChoice {
+export function partyChoice(me: { kind: string; size: number; onOwnLand: boolean; intercept?: boolean }, other: { size: number }): PartyChoice {
+  // 가로막으러 나간 부대는 보면 친다 (5-3·5-4)
+  if (me.intercept) return "fight";
   const ratio = me.size / Math.max(1, other.size);
   if (me.kind === "scout" || me.kind === "supply") return ratio > 3 ? "fight" : "avoid";
   if (me.kind === "patrol") return me.onOwnLand || ratio > 2 ? "fight" : "avoid";
   return ratio > 2 ? "fight" : "avoid";
 }
 
-/** 매복은 자기 땅에서만 (4-3, AI 부대). 매복한 쪽의 첫 교환 화력 배수 */
+/** 매복은 자기 땅에서만 (4-3, AI 부대). 가로막으러 나간 부대(주인공이 내게 한 부대·분대)는 남의 땅에서도. 매복한 쪽의 첫 교환 화력 배수 */
 export const AMBUSH_FACTOR = 1.5;
-export function canAmbush(onOwnLand: boolean): boolean {
-  return onOwnLand;
+export function canAmbush(onOwnLand: boolean, intercept = false): boolean {
+  return onOwnLand || intercept;
 }

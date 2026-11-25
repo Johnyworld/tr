@@ -1,6 +1,7 @@
 import { partyZoneAt } from "../sim/parties.ts";
 import { hostileFaction, hostileLand } from "../rules/home.ts";
 import { forceWords } from "./battleTools.ts";
+import { collectSquadIntercept, sendSquadIntercept } from "./partyTools.ts";
 import { neighbors } from "../sim/war.ts";
 import { stakesOf } from "../rules/stakes.ts";
 import { foundCount } from "./scavenge.ts";
@@ -153,6 +154,8 @@ export const squadOrder = defineTool({
 
     const lines: string[] = skipped.map((p) => `건너뜀: ${p}`);
     const displays: ToolDisplayEvent[] = [];
+    // 가로막기 (5-4): 나선 사람들이 한 부대로 함께 간다 (늑장 없이 같은 때까지)
+    const intercepting: string[] = [];
     for (const id of members) {
       const name = playerCalls(state, content, id);
       const respect = (state.relations[id]?.[state.playerId] ?? NEUTRAL_RELATION).respect;
@@ -168,14 +171,23 @@ export const squadOrder = defineTool({
         displays.push({ type: "presence", npcName: name, action: "enter" });
         continue;
       }
-      const slow = respect <= SLOW_AT ? 1.5 : 1;
+      const slow = respect <= SLOW_AT && !task.intercepts ? 1.5 : 1;
       const minutes = Math.round(task.hours * 60 * slow);
+      if (task.intercepts) intercepting.push(id);
       const until = state.time + minutes;
       store.append({ type: "squad_order_given", npcId: id, task: task.id, zone, until });
       lines.push(
         `${josa(name, "이/가")} ${task.needs_zone ? `${josa(zoneName(content, zone), "으로/로")} ` : ""}${task.label}에 나선다. ${formatTime(until)}쯤 끝난다${slow > 1 ? " (투덜대며 늑장을 부린다)" : ""}. 결과는 코드가 정하고, 끝나면 보고가 온다.`,
       );
       displays.push({ type: "presence", npcName: `${name} · ${task.label}`, action: "leave" });
+    }
+    if (intercepting.length) {
+      const sent = sendSquadIntercept(ctx, intercepting, zone, state.time + Math.round(task.hours * 60));
+      lines.push(
+        sent
+          ? `${intercepting.map((id) => playerCalls(state, content, id)).join(", ")}${intercepting.length > 1 ? `이 한 무리로(이끄는 사람 ${playerCalls(state, content, intercepting[0]!)})` : "이"} ${zoneName(content, zone)}에서 숨어 기다린다. 지나가는 무리가 있어야 결과가 나고, 아무도 오지 않으면 그대로 돌아온다.`
+          : `${josa(zoneName(content, zone), "으로/로")} 가는 길을 찾지 못해 가로막기는 그 자리에 숨어 기다리기만 한다.`,
+      );
     }
     const [first, ...rest] = displays;
     return { ok: true, resultText: lines.join("\n"), display: first!, extra: rest };
@@ -216,6 +228,38 @@ export function runSquadOrders(ctx: ToolContext): ToolDisplayEvent[] {
       // 쉬게 한 일도 보고로 알린다 (PT27 분대장: 상태의 분대 섹션에만 남았다)
       displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: "쉬고 돌아옴" });
       if (rested.note) displays.push({ type: "belief", fact: "", sourceLabel: "", note: rested.note });
+      continue;
+    }
+
+    // 가로막기 (5-4): 판정이 아니라 지나간 무리와 맞붙은 결과로. 이끄는 사람이 보고하고, 다친 사람은 쓰러진 수만큼
+    if (task.intercepts) {
+      const done = collectSquadIntercept(ctx, id);
+      if (!done) {
+        store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome: null, report: `${josa(name, "이/가")} 함께 돌아왔다.` });
+        continue;
+      }
+      const r = done.result;
+      const squad = done.party.task.kind === "intercept" ? done.party.task.squad : [id];
+      const lines: string[] = [];
+      let outcome: CheckOutcome | null = null;
+      if (!r) lines.push(fill(task.report.miss_quiet ?? "{member}: {zone}에서 기다렸지만 아무도 오지 않았다"));
+      else {
+        outcome = r.won ? "success" : "miss";
+        const enemy = `${content.factions[r.faction]?.name ?? "낯선"} 쪽 ${forceWords(r.size)}`;
+        lines.push(fill(r.won ? task.report.success : task.report.miss), r.won ? `${enemy}을 숨어 기다리다 쳐서 물리쳤다` : `${enemy}과 맞붙었다가 밀려 물러났다`);
+        // 쓰러진 수만큼 분대원이 크게 다친다
+        const hurt = [...squad].filter((m) => !store.getState().characters[m]?.dead).sort(() => rng() - 0.5).slice(0, r.losses);
+        for (const m of hurt) changeCondition(ctx, m, content.scenario.harm_track, 2, "harm", `${task.label} 중 다침`);
+        if (hurt.length) lines.push(`크게 다친 사람: ${hurt.map((m) => playerCalls(store.getState(), content, m)).join(", ")}`);
+        if (r.won && task.rewards.merit > 0) {
+          store.append({ type: "merit_awarded", characterId: state.playerId, delta: task.rewards.merit, reason: `분대: ${task.label}` });
+          lines.push(`분대가 해낸 일로 공적 +${task.rewards.merit}`);
+          const levelUp = gainMeritXp(ctx, state.playerId, task.rewards.merit);
+          if (levelUp) lines.push(levelUp);
+        }
+      }
+      store.append({ type: "squad_order_done", npcId: id, task: task.id, outcome, report: lines.join(" · ") });
+      displays.push({ type: "mission", event: "reported", title: `${SQUAD_REPORT_PREFIX}${name} · ${task.label}`, detail: !r ? "아무도 오지 않음" : r.won ? "물리침" : "밀림" });
       continue;
     }
 

@@ -6,8 +6,8 @@ import { createSeededRng } from "../rng.ts";
 import { loadRealContent } from "../testing.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
-import { advanceParties, arrivalOf, canSend, detourRoute, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
-import { warConfessions } from "../engine/partyTools.ts";
+import { advanceParties, arrivalOf, canSend, detourRoute, hidingAt, spawnIntercept, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
+import { settlePartyAlerts, warConfessions } from "../engine/partyTools.ts";
 import { executeTool } from "../engine/tools.ts";
 import { frontBusy } from "../engine/missionTools.ts";
 import { warCauses } from "../engine/warAftermath.ts";
@@ -17,7 +17,7 @@ import { pickDailyOffers, warMission } from "../game/missions.ts";
 import { placesIn } from "../rules/place.ts";
 import { endBattle, forceWords } from "../engine/battleTools.ts";
 import { applyEffect } from "../engine/storyletTools.ts";
-import { initialWarWorld, simulateWarDay, spawnWatchParties, type WarWorld } from "./war.ts";
+import { clashForces, initialWarWorld, simulateWarDay, spawnWatchParties, type WarWorld } from "./war.ts";
 import type { Party } from "../game/state.ts";
 import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting, sightKey } from "../engine/partySight.ts";
 
@@ -703,5 +703,105 @@ describe("PT33 뒤 고친 것", () => {
     }
     expect(paths.size).toBeGreaterThan(1);
     expect(paths.has(best.join(">"))).toBe(true);
+  });
+});
+
+describe("④ 알리기·맞받아치기·분대 가로막기 (5-3·5-4)", () => {
+  const make = (role = "role_a_grunt") => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-four-")), content, rngFactory: () => createSeededRng(9) }).create("mcp", role);
+  type W = ReturnType<typeof make>;
+  const raiders = (w: W) => {
+    const s = w.state();
+    const t = s.time;
+    const p = party({ id: "pr", faction: "faction_c", kind: "raid", size: 4, goal: "a_east_post", legs: [{ zone: "c_base", from: t - 60, to: t - 30 }, { zone: "rail_embankment", from: t - 30, to: t + 600 }, { zone: "a_east_post", from: t + 600, to: t + 660 }], task: { kind: "clash", clash: "raid", defender: "faction_a" } });
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: [p], partiesUpTo: t, clashes: [], scheduled: [] });
+    w.ctx().store.append({ type: "party_sighted", key: sightKey(w.state().parties[0]!, "rail_embankment", t), player: true, party: false });
+  };
+  const toBase = (w: W) => w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: baseOfNow(w.state(), content, "faction_a")!, place: null });
+
+  it("본 무리를 거점에서 알리면 그 무리가 노리는 우리 구역을 더 지키고, 같은 무리는 다시 알리지 못한다", () => {
+    const w = make();
+    raiders(w);
+    toBase(w);
+    expect(seenPartiesLines(w.state(), content)).toEqual([]);
+    const r = w.executeTool("alert_party", { party_id: "pr" });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().zones.a_east_post!.alerted).toBe("faction_a");
+    expect(w.state().partyAlerts).toHaveLength(1);
+    expect(w.executeTool("alert_party", { party_id: "pr" }).ok).toBe(false);
+    // 알린 구역은 지키는 몫이 20% → 30%
+    const world = { ...fresh(), zones: structuredClone(w.state().zones) };
+    const plain = { ...fresh() };
+    expect(clashForces(world, { kind: "raid", attacker: "faction_c", defender: "faction_a", zone: "a_east_post" }, content).defenders).toBeGreaterThan(clashForces(plain, { kind: "raid", attacker: "faction_c", defender: "faction_a", zone: "a_east_post" }, content).defenders);
+    w.close();
+  });
+
+  it("알린 무리가 와서 막히면 공적 +1과 소식", () => {
+    const w = make();
+    raiders(w);
+    toBase(w);
+    expect(w.executeTool("alert_party", { party_id: "pr" }).ok).toBe(true);
+    const merit = w.state().characters[w.state().playerId]!.merit;
+    settlePartyAlerts(w.ctx(), [{ kind: "raid", attacker: "faction_c", defender: "faction_a", zone: "a_east_post", success: false, attackerLosses: 2, defenderLosses: 0 }]);
+    expect(w.state().characters[w.state().playerId]!.merit).toBe(merit + 1);
+    expect(w.state().partyAlerts[0]!.credited).toBe(true);
+    expect(w.state().zones.a_east_post!.alerted).toBeUndefined();
+    w.close();
+  });
+
+  it("윗사람을 설득하면 무리가 가로막을 부대를 낸다", () => {
+    const w = make();
+    raiders(w);
+    toBase(w);
+    const boss = content.roles.role_a_grunt!.commander!;
+    w.executeTool("npc_presence", { npc_id: boss, action: "enter" });
+    const r = executeTool("alert_party", { party_id: "pr", persuade: true, approach: "persuade", stat: "charm", intent: "철길 둑에서 막자" }, { ...w.ctx(), rng: () => 0.99 });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    const sent = w.state().parties.find((p) => p.task.kind === "intercept");
+    expect(sent).toBeTruthy();
+    expect(sent).toMatchObject({ faction: "faction_a", goal: "a_east_post", size: 4 });
+    expect(w.state().partyAlerts[0]!.persuaded).toBe("success");
+    w.close();
+  });
+
+  it("가로막는 부대는 숨어 기다리다 지나가는 적대 무리를 보면 치고, 남의 땅에서도 매복한다", () => {
+    let fought = 0;
+    for (let seed = 1; seed <= 10; seed++) {
+    const w = fresh();
+    const t = 0;
+    const enemy = party({ id: "pe", faction: "faction_c", kind: "scout", size: 3, goal: "a_east_post", legs: [{ zone: "c_base", from: t, to: t }, { zone: "rail_embankment", from: t, to: t + 120 }, { zone: "a_east_post", from: t + 120, to: t + 180 }], task: { kind: "watch" } });
+    w.parties = [enemy];
+    const ours = spawnIntercept(w, content, { faction: "faction_a", from: "a_east_post", goal: "rail_embankment", size: 4, at: t - 120, until: t + 300, squad: ["a_dongwook", "a_byungchul", "a_yejin", "a_haneul"], by: "me", leader: "a_dongwook" })!;
+    expect(hidingAt(ours, ours.legs.at(-1)!.to)).toBe(true);
+    const r = advanceParties(w, content, createSeededRng(seed), t + 400);
+    const after = (w.parties ?? []).find((p) => p.id === ours.id)!;
+    expect(after.met).toContain("pe");
+    if (after.task.kind === "intercept" && after.task.result) {
+      fought++;
+      expect(after.task.result.enemy).toBe("pe");
+      expect(r.clashes.some((c) => c.squad)).toBe(true);
+      // 분대원이 쓰러져도 무리 인원은 줄지 않는다 (다침으로 보고)
+      expect(w.factions.faction_a!.population).toBe(fresh().factions.faction_a!.population);
+    }
+    }
+    expect(fought).toBeGreaterThan(5);
+  });
+
+  it("분대 가로막기: 나선 분대원이 한 무리가 되고, 아무도 안 오면 '아무도 오지 않았다'로 돌아온다", () => {
+    const w = make("role_a_squad_leader");
+    const squad = content.roles.role_a_squad_leader!.squad!.slice(0, 2);
+    for (const id of squad) w.executeTool("npc_presence", { npc_id: id, action: "enter" });
+    const r = w.executeTool("squad_order", { members: squad, task: "intercept", zone: "rail_embankment" });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    const sent = w.state().parties.find((p) => p.task.kind === "intercept")!;
+    expect(sent).toMatchObject({ faction: "faction_a", goal: "rail_embankment", size: 2, leader: squad[0] });
+    // 지나가는 무리를 모두 치운다
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: s.factions, zones: s.zones, clocks: Object.fromEntries(Object.entries(s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: [sent], partiesUpTo: s.time, clashes: [], scheduled: [] });
+    w.runCheat("~time +7h");
+    expect(w.state().parties.find((p) => p.id === sent.id)).toBeUndefined();
+    expect(Object.keys(w.state().squadOrders ?? {})).not.toContain(squad[0]);
+    const reports = JSON.stringify(w.state().squadReports ?? w.state());
+    expect(reports).toContain("아무도 오지 않았다");
+    w.close();
   });
 });

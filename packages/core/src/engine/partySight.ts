@@ -278,6 +278,14 @@ export function runPartySightings(ctx: ToolContext): ToolDisplayEvent[] {
 }
 
 /** GM 상태: 지금 구역에서 본 부대 (원칙 4: 본 것만, 대략으로) */
+/** 본 무리 가운데 아직 알리지 않은, 나가는 길의 적대 무리 (알리기 5-3). 무리에 속한 주인공만 */
+export function alertablePartiesLines(state: GameState, content: Content): string[] {
+  if (!state.characters[state.playerId]?.factionId) return [];
+  return state.parties
+    .filter((p) => p.size > 0 && !p.done && state.partiesSeen[p.id] !== undefined && !state.partyAlerts.some((a) => a.partyId === p.id) && hostileFaction(state, content, p.faction))
+    .map((p) => `- ${p.id}: ${partyLabel(content, p)} ${forceWords(p.size)} (${formatTime(state.partiesSeen[p.id]!)}께 봤다)`);
+}
+
 export function seenPartiesLines(state: GameState, content: Content): string[] {
   const zone = state.playerZone;
   if (!zone) return [];

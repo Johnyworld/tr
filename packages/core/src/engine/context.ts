@@ -75,7 +75,7 @@ import { ownedBy } from "../rules/home.ts";
 import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
-import { seenPartiesLines } from "./partySight.ts";
+import { alertablePartiesLines, seenPartiesLines } from "./partySight.ts";
 import { maskUnknownIds } from "../rules/knowledge.ts";
 import { currentPlace, depthAt, directionTo, doorLabel, homeHidden, knowsPlace, knowsWhoIsAt, knowsZone, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
@@ -809,5 +809,8 @@ function depositLines(state: GameState, content: Content): string[] {
 /** 이 구역에서 본 부대 (공통 규칙 23 마주침, 원칙 4: 본 것만, 규모는 대략, 목적은 짐작으로도 적지 않는다) */
 function describeSeenParties(state: GameState, content: Content): string | null {
   const lines = seenPartiesLines(state, content);
-  return lines.length ? `눈에 띈 무리 (본 것만, 몇 명인지는 대략. 무엇을 하러 왔는지는 지어내지 않는다. 숨기·피하기·지켜보기는 take_action, 덤비면 engage_party):\n${lines.join("\n")}` : null;
+  const here = lines.length ? `눈에 띈 무리 (본 것만, 몇 명인지는 대략. 무엇을 하러 왔는지는 지어내지 않는다. 숨기·피하기·지켜보기는 take_action, 덤비면 engage_party):\n${lines.join("\n")}` : null;
+  const told = alertablePartiesLines(state, content);
+  const alert = told.length ? `본 무리 가운데 우리 무리에 알릴 수 있는 것 (우리 거점이나 윗사람 앞에서 alert_party, 맞받아치자고 설득하려면 persuade):\n${told.join("\n")}` : null;
+  return [here, alert].filter(Boolean).join("\n") || null;
 }

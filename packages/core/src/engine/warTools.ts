@@ -30,6 +30,7 @@ import { onOwnLand } from "../rules/home.ts";
 import { casualtiesToPeople } from "./felt.ts";
 import { protectedFromWorld } from "../rules/company.ts";
 import { woundedToInfirmary } from "./warAftermath.ts";
+import { settlePartyAlerts } from "./partyTools.ts";
 import { hearNews } from "../rules/news.ts";
 
 /**
@@ -155,6 +156,7 @@ export function afterClashes(ctx: ToolContext, clashes: readonly Clash[], only: 
     displays.push(...deliverNews(ctx, clashes));
     displays.push(...casualtiesToPeople(ctx, clashes));
     displays.push(...woundedToInfirmary(ctx, clashes));
+    displays.push(...settlePartyAlerts(ctx, clashes));
     displays.push(...creditNews(ctx, clashes));
   }
   if (only.facilities !== false) {

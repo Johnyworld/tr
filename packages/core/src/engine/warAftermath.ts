@@ -59,7 +59,8 @@ export function woundedToInfirmary(ctx: ToolContext, clashes: readonly Clash[]):
     const state = ctx.store.getState();
     const mine = state.characters[state.playerId]?.factionId;
     if (!mine || state.characters[state.playerId]?.dead) return out;
-    const losses = clash.attacker === mine ? clash.attackerLosses : clash.defender === mine ? clash.defenderLosses : 0;
+    // 분대 가로막기의 손실은 분대원의 다침이다 (보고에서)
+    const losses = clash.squad ? 0 : clash.attacker === mine ? clash.attackerLosses : clash.defender === mine ? clash.defenderLosses : 0;
     if (losses <= 0) continue;
     const base = baseOfNow(state, content, mine);
     const templateId = content.factions[mine]?.party_extra ?? Object.values(content.extras).find((t) => t.faction === mine)?.id;

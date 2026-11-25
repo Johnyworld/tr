@@ -55,6 +55,8 @@ export type WarDayOptions = {
   resolveUpTo?: number;
   /** 움직이는 부대: 돌아온 부대를 이 시각까지만 거둔다 (게임은 지금, 그 뒤로는 아직 길 위다). 없으면 resolveUpTo */
   endUpTo?: number;
+  /** 움직이는 부대: 이 이름 있는 인물이 부대를 이끌 수 있는가 (게임: 세계가 건드리지 않는 사람·죽은 사람은 아니다) */
+  leaderOk?: (npcId: string) => boolean;
   /** 구역의 감염체 압력 (12-118). 기준값보다 높으면 산출이 준다. 없으면 기준값 */
   infested?: Record<string, number>;
   /** 오늘 (큰 재난으로 산출이 멈춘 구역을 가린다, 12-169) */
@@ -363,7 +365,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
       // 부대를 낸다: 습격·교전은 습격대, 총공격은 공세 부대 (교전 병력 비율 그대로)
       const share = warShareOf(content, next, spec.attacker, infestedToday);
       const size = Math.max(1, Math.round(next.factions[spec.attacker]!.combatants * share * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
-      spawnParty(next, content, rng, { faction: spec.attacker, kind: spec.kind === "assault" ? "assault" : "raid", goal: spec.zone, size, dayStart, task: { kind: "clash", clash: spec.kind, defender: spec.defender, ...(spec.plan ? { plan: spec.plan } : {}) } });
+      spawnParty(next, content, rng, { faction: spec.attacker, kind: spec.kind === "assault" ? "assault" : "raid", goal: spec.zone, size, dayStart, ...(options.leaderOk ? { leaderOk: options.leaderOk } : {}), task: { kind: "clash", clash: spec.kind, defender: spec.defender, ...(spec.plan ? { plan: spec.plan } : {}) } });
       return;
     }
     if (options.defer?.(spec)) deferred.push(spec);
@@ -512,6 +514,8 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
   }
   for (const { clockId, clock } of planned) {
     const zoneId = clock.target || frontierTarget(next, content, clock.factionId);
+    // 정찰 보고로 바꿔 둔 목표는 이번 한 번만 (6-4)
+    if (planOf(content, clockId)?.target_rule === "frontier") clock.target = "";
     if (!zoneId) continue; // 칠 곳이 없으면 다음을 기다린다
     const owner = next.zones[zoneId]?.owner ?? null;
     const target = content.locations[zoneId];
@@ -665,10 +669,10 @@ export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content)
  * 맞닿은 적대 세력의 구역 중 반격할 곳: 원래 우리 땅이던 곳 먼저, 그다음 산출이 많은 곳.
  * 빈 땅은 그냥 차지한다. 거점은 고르지 않는다
  */
-export function frontierTarget(world: WarWorld, content: Content, factionId: string): string | null {
+export function frontierTarget(world: WarWorld, content: Content, factionId: string, exclude?: string): string | null {
   const mine = Object.keys(world.zones).filter((z) => world.zones[z]!.owner === factionId);
   const candidates = [...new Set(mine.flatMap((z) => neighbors(content, z)))]
-    .filter((z) => content.locations[z]?.kind !== "base" && !content.locations[z]?.sanctuary)
+    .filter((z) => content.locations[z]?.kind !== "base" && !content.locations[z]?.sanctuary && z !== exclude)
     .filter((z) => {
       const owner = world.zones[z]?.owner ?? null;
       return owner === null || (owner !== factionId && disposition(content, factionId, owner, world) <= HOSTILE);

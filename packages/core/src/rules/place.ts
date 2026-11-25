@@ -18,6 +18,7 @@ import { segmentOf, TIME_SEGMENTS, type TimeSegment } from "./time.ts";
 import { josa } from "../text.ts";
 import { hasMet, knowsName } from "../game/acquaintance.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
+import { partyZoneAt } from "../sim/parties.ts";
 import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
 import { disposition } from "../sim/war.ts";
@@ -428,6 +429,12 @@ export function whereIs(state: GameState, content: Content, id: string, time: nu
   // (PT17: companions일 때만 봐서 돌지 않았다. companion_parted가 companions에서 뺀다)
   const apart = state.bonds[id]?.apart;
   if (apart) return { zone: apart.zone, place: apart.place ?? null };
+  // 부대를 이끌고 나간 사람은 부대가 있는 구역의 길에 (움직이는 부대 1-3: 나가 있는 동안 거점 장면에 나오지 않는다)
+  const led = (state.parties ?? []).find((p) => p.leader === id && p.size > 0);
+  if (led) {
+    const at = partyZoneAt(led, time);
+    if (at) return { zone: at, place: arrivalPlace(state, content, at) };
+  }
   // 분대 일을 나간 사람은 그 구역의 길에 (일과 자리에 두지 않는다, 장소 개편: "구역 어딘가"는 없다)
   const order = state.squadOrders?.[id];
   if (order) return { zone: order.zone, place: arrivalPlace(state, content, order.zone) };

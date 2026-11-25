@@ -23,6 +23,7 @@ import { playerCalls } from "../game/acquaintance.ts";
 import type { Content } from "../content/schemas.ts";
 import { isIncapacitated, runLateRation } from "./body.ts";
 import { enterScene, EXTRA_TOOLS } from "./extras.ts";
+import { PARTY_TOOLS } from "./partyTools.ts";
 import { z } from "zod";
 import {
   CHECK_OUTCOME_LABELS,
@@ -382,6 +383,7 @@ export function gmTools(s: Scenario): readonly AnyTool[] {
       ...STORYLET_TOOLS,
       ...SUCCESSION_TOOLS,
       ...EXTRA_TOOLS,
+      ...PARTY_TOOLS,
       ...CAPTIVITY_TOOLS,
       ...ROMANCE_TOOLS,
     ] as readonly AnyTool[];

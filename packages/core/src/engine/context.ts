@@ -809,5 +809,5 @@ function depositLines(state: GameState, content: Content): string[] {
 /** 이 구역에서 본 부대 (공통 규칙 23 마주침, 원칙 4: 본 것만, 규모는 대략, 목적은 짐작으로도 적지 않는다) */
 function describeSeenParties(state: GameState, content: Content): string | null {
   const lines = seenPartiesLines(state, content);
-  return lines.length ? `눈에 띈 무리 (본 것만, 몇 명인지는 대략. 무엇을 하러 왔는지는 지어내지 않는다):\n${lines.join("\n")}` : null;
+  return lines.length ? `눈에 띈 무리 (본 것만, 몇 명인지는 대략. 무엇을 하러 왔는지는 지어내지 않는다. 숨기·피하기·지켜보기는 take_action, 덤비면 engage_party):\n${lines.join("\n")}` : null;
 }

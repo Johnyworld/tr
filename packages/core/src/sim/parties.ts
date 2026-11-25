@@ -3,7 +3,7 @@ import type { Clash, Party, PartyLeg, PartyTask } from "../game/state.ts";
 import { MINUTES_PER_DAY, routeMinutes } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
 import { AMBUSH_FACTOR, canAmbush, isNight, partyChoice, partyNoticeBonus, sightings } from "../rules/encounter.ts";
-import { DEFENSE_COMMIT, disposition, fightClash, hopsFromBase, HOSTILE, neighbors, occupyZone, type ClashSpec, type WarWorld } from "./war.ts";
+import { DEFENSE_COMMIT, disposition, fightClash, frontierTarget, hopsFromBase, HOSTILE, neighbors, occupyZone, type ClashSpec, type WarWorld } from "./war.ts";
 
 /**
  * 움직이는 부대 (docs/war-parties-plan.md 파트 1~3·7).
@@ -142,7 +142,19 @@ export const arrivalOf = (party: Party) => party.legs[party.legs.length - 1]!.to
 /** 거점에 돌아오는 시각 (아직 돌아오는 길을 정하지 않았으면 null) */
 export const returnOf = (party: Party) => (party.back.length ? party.back[party.back.length - 1]!.to : null);
 
-export type SpawnArgs = { faction: string; kind: PartyKind; goal: string; task: PartyTask; size: number; dayStart: number; carry?: Record<string, number> };
+export type SpawnArgs = { faction: string; kind: PartyKind; goal: string; task: PartyTask; size: number; dayStart: number; carry?: Record<string, number>; leaderOk?: (npcId: string) => boolean };
+
+/** 습격·공세를 이끌 이름 있는 인물 (1-3): 그 무리의 leader_ranks 계급, 이미 다른 부대를 이끄는 사람은 빼고. leaderOk로 더 거른다(게임: 세계가 건드리지 않는 사람) */
+function pickLeader(world: WarWorld, content: Content, rng: Rng, factionId: string, ok?: (npcId: string) => boolean): string | null {
+  const ranks = partiesConfig(content)?.leader_ranks ?? [];
+  if (!ranks.length) return null;
+  const busy = new Set((world.parties ?? []).map((p) => p.leader).filter(Boolean));
+  const pool = Object.values(content.npcs)
+    .filter((n) => n.faction === factionId && ranks.includes(n.rank) && !busy.has(n.id) && (!ok || ok(n.id)))
+    .map((n) => n.id)
+    .sort();
+  return pool.length ? pool[Math.floor(rng() * pool.length)]! : null;
+}
 
 /** 부대를 낸다. 낼 수 없으면(거점·길·칸·지키는 병력) null */
 export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: SpawnArgs): Party | null {
@@ -159,13 +171,14 @@ export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: Sp
   const legs = planLegs(content, cfg, args.kind, route, start, depart, args.size, rng, { strike: args.task.kind === "clash" });
   const f = world.factions[args.faction]!;
   f.combatants -= args.size;
+  const leader = args.kind === "raid" || args.kind === "assault" ? pickLeader(world, content, rng, args.faction, args.leaderOk) : null;
   for (const [r, n] of Object.entries(args.carry ?? {})) f.resources[r] = Math.max(0, (f.resources[r] ?? 0) - n);
   const party: Party = {
     id: `party_${world.nextPartyNo ?? 0}`,
     faction: args.faction,
     kind: args.kind,
     size: args.size,
-    leader: null,
+    leader,
     home,
     goal: args.goal,
     legs,
@@ -242,7 +255,7 @@ export function advanceParties(world: WarWorld, content: Content, rng: Rng, upTo
     }
     if (!ms) break;
     cursor = Math.max(cursor, due(ms));
-    if (ms.done) endParty(world, ms);
+    if (ms.done) endParty(world, content, ms);
     else arrive(world, content, rng, cfg, ms, out, opts);
   }
   world.partiesUpTo = Math.max(world.partiesUpTo ?? 0, upTo);
@@ -254,13 +267,51 @@ function removeParty(world: WarWorld, id: string) {
 }
 
 /** 돌아왔다: 남은 사람은 전투원으로, 나르던 것은 창고로 */
-function endParty(world: WarWorld, party: Party) {
+function endParty(world: WarWorld, content: Content, party: Party) {
+  // 공세를 앞두고 나간 정찰대가 목표의 방비(보강한 담)를 보고 돌아오면, 맞닿은 다른 적 구역으로 목표를 바꾼다 (6-4, frontier 클락만)
+  const scoutPlan = party.kind === "scout" && party.task.kind === "watch" ? party.task.plan : undefined;
+  if (scoutPlan && party.size > 0) {
+    const clock = world.clocks[scoutPlan];
+    const plan = content.factions[party.faction]?.plans.find((p) => p.id === scoutPlan);
+    if (clock && plan?.target_rule === "frontier" && (world.zones[party.goal]?.fort ?? 0) > 0) {
+      const other = frontierTarget(world, content, party.faction, party.goal);
+      if (other) clock.target = other;
+    }
+  }
   const f = world.factions[party.faction];
   if (f) {
     f.combatants += party.size;
     for (const [r, n] of Object.entries(party.carry)) f.resources[r] = (f.resources[r] ?? 0) + n;
   }
   removeParty(world, party.id);
+}
+
+/** 기세 (6-3): 사흘 안에 두 번 진 무리는 사기 -1. 연승 보너스는 없다 */
+export const STREAK_DAYS = 3;
+export function recordDefeat(world: WarWorld, factionId: string | null | undefined, at: number): void {
+  const f = factionId ? world.factions[factionId] : undefined;
+  if (!f) return;
+  const recent = [...(f.defeats ?? []).filter((t) => t > at - STREAK_DAYS * MINUTES_PER_DAY), at];
+  if (recent.length >= 2) {
+    f.morale = Math.max(-3, f.morale - 1);
+    delete f.defeats;
+  } else f.defeats = recent;
+}
+
+/** 부대를 이 자리에서 돌려보낸다 (주인공에게 꺾였다, 우두머리를 잃었다 등). 다 쓰러졌으면 그 자리에서 끝난다 */
+export function routParty(world: WarWorld, content: Content, rng: Rng, partyId: string, at: number): void {
+  const cfg = partiesConfig(content);
+  const party = (world.parties ?? []).find((p) => p.id === partyId);
+  if (!cfg || !party) return;
+  const zone = partyZoneAt(party, at) ?? party.goal;
+  party.routedAt = at;
+  party.carry = Object.fromEntries(Object.entries(party.carry).map(([r, n]) => [r, Math.floor(n / 2)]));
+  if (party.size <= 0) {
+    party.done = true;
+    party.back = [];
+    return;
+  }
+  turnBack(world, content, rng, cfg, party, zone, at);
 }
 
 /** 길을 접고 지금 자리에서 거점으로 돌아간다 */
@@ -325,6 +376,7 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
     attackerLosses: attacker === winner ? winnerLosses : loserLosses,
     defenderLosses: defender === winner ? winnerLosses : loserLosses,
   });
+  recordDefeat(world, loser.faction, at);
   // 진 쪽은 달아난다: 짐 절반을 버리고 거점으로. 같은 날 두 번째로 지면 남은 사람이 붙잡힌다 (4-4)
   const twice = loser.routedAt !== null && Math.floor(loser.routedAt / MINUTES_PER_DAY) === Math.floor(at / MINUTES_PER_DAY);
   if (twice) {
@@ -373,6 +425,7 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
       if (far) f.morale -= 1;
       const clash = fightClash(world, content, rng, spec, party.size);
       if (far) f.morale = Math.min(3, f.morale + 1);
+      recordDefeat(world, clash.success ? task.defender : party.faction, at);
       const survivors = Math.max(0, Math.min(f.combatants, party.size - clash.attackerLosses));
       f.combatants -= survivors;
       party.size = survivors;

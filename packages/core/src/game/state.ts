@@ -47,7 +47,8 @@ import { startingSkills } from "./creation.ts";
 // 112: 움직이는 부대 ① (docs/war-parties-plan.md). 상태 parties·nextPartyNo, war_day_simulated.parties
 // 113: 움직이는 부대 ② (12-315). 부대 met·routedAt, 세력 seen, partiesUpTo·partySightings, 이벤트 party_sighted
 // 114: 움직이는 부대 ③-1 (12-316). 닿을 때 계산(이벤트 parties_advanced), recentClashes.party
-export const SAVE_SCHEMA_VERSION = 114;
+// 115: 움직이는 부대 ③-2 (12-317). partyFights, battle.party, 세력 defeats, 이벤트 party_engaged·party_fight_ended
+export const SAVE_SCHEMA_VERSION = 115;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -107,6 +108,8 @@ export const factionStateSchema = z.strictObject({
   truces: z.record(z.string(), z.strictObject({ days: z.number().int().min(0), restore: z.number().int().min(-3).max(3) })).optional(),
   /** 이 무리의 부대가 본 다른 무리의 빈틈 (7-2): 상대 무리 id → 이 시각까지 그 무리를 노린다 */
   seen: z.record(z.string(), z.number().int()).optional(),
+  /** 최근에 진 시각 (6-3 기세): 사흘 안에 두 번 지면 사기 -1 */
+  defeats: z.array(z.number().int()).optional(),
 });
 export type FactionState = z.infer<typeof factionStateSchema>;
 
@@ -312,6 +315,8 @@ export const battleStateSchema = z.strictObject({
   startedAt: z.number().int(),
   /** 바리케이드가 남은 막기 (12-176): 지키는 쪽이 배경 교전에서 밀릴 때 이만큼 막는다 */
   holds: z.number().int().min(0).default(0),
+  /** 길 위의 부대와 맞붙은 전투 (움직이는 부대 ③): 결과는 그 부대에 (무리 전투원이 아니라) */
+  party: z.string().optional(),
 });
 export type BattleState = z.infer<typeof battleStateSchema>;
 
@@ -655,6 +660,8 @@ export function createGameSchemas(s: Scenario) {
     partiesUpTo: z.number().int().default(0),
     /** 주인공이 부대와 마주친 기록 (공통 규칙 23): "부대id@구역" → 누가 봤는지. 한 구역에서 한 번 굴린다 */
     partySightings: z.record(z.string(), z.strictObject({ at: z.number().int(), player: z.boolean(), party: z.boolean() })).default({}),
+    /** 주인공이 맞붙은 부대 (움직이는 부대 ③): 부대 id → 장면에 들인 부대원(엑스트라·우두머리)과 구역 */
+    partyFights: z.record(z.string(), z.strictObject({ members: z.array(z.string()), zone: z.string(), at: z.number().int() })).default({}),
     /** 구역 소유 */
     zones: z.record(z.string(), zoneStateSchema).default({}),
     clocks: z.record(z.string(), clockStateSchema).default({}),
@@ -1110,6 +1117,9 @@ export function createGameSchemas(s: Scenario) {
       clashes: z.array(clashSchema),
       scheduled: z.array(pendingClashSchema).default([]),
     }),
+    /** 주인공이 길 위의 부대와 맞붙었다 (움직이는 부대 ③): 장면에 들인 부대원 */
+    z.strictObject({ type: z.literal("party_engaged"), partyId: z.string(), members: z.array(z.string()), zone: z.string() }),
+    z.strictObject({ type: z.literal("party_fight_ended"), partyId: z.string() }),
     /** 주인공이 부대와 마주쳤다 (공통 규칙 23). player: 주인공이 봤다, party: 부대가 주인공을 봤다 */
     z.strictObject({ type: z.literal("party_sighted"), key: z.string(), player: z.boolean(), party: z.boolean() }),
 
@@ -1484,6 +1494,7 @@ export const EMPTY_STATE: GameState = {
   nextPartyNo: 0,
   partiesUpTo: 0,
   partySightings: {},
+  partyFights: {},
   zones: {},
   clocks: {},
   lastWarDay: null,
@@ -2531,6 +2542,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const key of Object.keys(next.partySightings)) if (!alive.has(key.split("@")[0]!)) delete next.partySightings[key];
       break;
     }
+    case "party_engaged":
+      next.partyFights[event.partyId] = { members: [...event.members], zone: event.zone, at: state.time };
+      break;
+    case "party_fight_ended":
+      delete next.partyFights[event.partyId];
+      break;
     case "party_sighted":
       next.partySightings[event.key] = { at: state.time, player: event.player, party: event.party };
       break;

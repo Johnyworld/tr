@@ -6,7 +6,9 @@ import { createSeededRng } from "../rng.ts";
 import { loadRealContent } from "../testing.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
-import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, returnOf, spawnParty } from "./parties.ts";
+import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
+import { warConfessions } from "../engine/partyTools.ts";
+import { endBattle } from "../engine/battleTools.ts";
 import { initialWarWorld, simulateWarDay, type WarWorld } from "./war.ts";
 import type { Party } from "../game/state.ts";
 import { createPartyCheck, PARTY_INTERRUPT, partyPlacePath, rollPartySight, seenPartiesLines, settleSighting } from "../engine/partySight.ts";
@@ -293,5 +295,128 @@ describe("③-1 닿을 때 계산·장소 거리·믿음", () => {
     expect(b.fact).toContain("철길 둑 가는 비탈");
     expect(b.fact).not.toContain("습격");
     w.close();
+  });
+});
+
+describe("③-2 부대와 맞붙기·우두머리·지렛대", () => {
+  const make = (role = "role_a_grunt") => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-engage-")), content, rngFactory: () => createSeededRng(9) }).create("mcp", role);
+  type W = ReturnType<typeof make>;
+  const put = (w: W, parties: Party[], world?: Partial<WarWorld>) => {
+    const s = w.state();
+    w.ctx().store.append({ type: "parties_advanced", factions: world?.factions ?? s.factions, zones: world?.zones ?? s.zones, clocks: Object.fromEntries(Object.entries(world?.clocks ?? s.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties, partiesUpTo: s.time, clashes: [], scheduled: [] });
+  };
+  const atPost = (w: W) => w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
+  const raiders = (w: W, size: number, leader: string | null = null) => {
+    const t = w.state().time;
+    return party({ id: "pr", faction: "faction_c", kind: "raid", size, leader, goal: "a_east_post", legs: [{ zone: "c_base", from: t - 600, to: t - 300 }, { zone: "rail_embankment", from: t - 300, to: t - 10 }, { zone: "a_east_post", from: t - 10, to: t + 120 }], task: { kind: "clash", clash: "raid", defender: "faction_a" } });
+  };
+  const seen = (w: W) => w.ctx().store.append({ type: "party_sighted", key: "pr@a_east_post", player: true, party: false });
+  const harm = (w: W, id: string, to: string) => {
+    const c = w.state().characters[id]!;
+    w.ctx().store.append({ type: "condition_changed", targetId: id, track: content.scenario.harm_track, from: c.conditions[content.scenario.harm_track] ?? "none", to, fatal: false, by: w.state().playerId, cause: "test", day: 1, harmTrack: true });
+  };
+
+  it("작은 무리와 맞붙으면 부대원이 엑스트라로 들어오고, 절반이 쓰러지면 무리가 달아난다", () => {
+    const w = make();
+    atPost(w);
+    put(w, [raiders(w, 4)]);
+    seen(w);
+    expect(w.executeTool("engage_party", { party_id: "nope" }).ok).toBe(false);
+    const r = w.executeTool("engage_party", { party_id: "pr" });
+    expect(r.ok).toBe(true);
+    const members = w.state().partyFights.pr!.members;
+    expect(members).toHaveLength(4);
+    for (const id of members) expect(w.state().scene.present).toContain(id);
+    harm(w, members[0]!, "serious");
+    harm(w, members[1]!, "serious");
+    w.runCheat("~time +1h");
+    const p = w.state().parties.find((x) => x.id === "pr")!;
+    expect(w.state().partyFights.pr).toBeUndefined();
+    expect(p.size).toBe(2);
+    expect(p.done).toBe(true);
+    expect(p.back.at(-1)?.zone).toBe("c_base");
+    // 쓰러진 사람은 남고, 남은 사람은 떠났다
+    expect(w.state().scene.present).toContain(members[0]);
+    expect(w.state().scene.present).not.toContain(members[2]);
+    w.close();
+  });
+
+  it("우두머리가 쓰러지면 무리가 달아나고 그 무리의 공격 계획이 절반으로 물러난다 (6-1)", () => {
+    const w = make();
+    atPost(w);
+    const leader = Object.values(content.npcs).find((n) => n.faction === "faction_c" && cfg.leader_ranks.includes(n.rank))!.id;
+    const s = w.state();
+    const clocks = structuredClone(s.clocks);
+    clocks.c_east_offensive!.filled = 8;
+    put(w, [raiders(w, 5, leader)], { clocks });
+    seen(w);
+    // 이끄는 사람은 부대가 있는 구역에 있다 (1-3)
+    expect(w.executeTool("engage_party", { party_id: "pr" }).ok).toBe(true);
+    expect(w.state().partyFights.pr!.members).toContain(leader);
+    harm(w, leader, "serious");
+    w.runCheat("~time +1h");
+    expect(w.state().clocks.c_east_offensive!.filled).toBe(4);
+    expect(w.state().parties.find((x) => x.id === "pr")!.done).toBe(true);
+    w.close();
+  });
+
+  it("큰 무리와 무리에 속한 주인공은 전투 장면이 열리고, 결과는 그 부대에 간다", () => {
+    const w = make();
+    atPost(w);
+    put(w, [raiders(w, 10)]);
+    seen(w);
+    const combatants = w.state().factions.faction_c!.combatants;
+    expect(w.executeTool("engage_party", { party_id: "pr" }).ok).toBe(true);
+    expect(w.state().battle?.party).toBe("pr");
+    expect(w.state().battle?.theirs.committed).toBe(10);
+    endBattle(w.ctx(), true);
+    expect(w.state().battle).toBeNull();
+    const p = w.state().parties.find((x) => x.id === "pr")!;
+    expect(p.size).toBeLessThanOrEqual(10);
+    // 부대 쪽 사상자는 무리 전투원이 아니라 부대에서 빠진다
+    expect(w.state().factions.faction_c!.combatants).toBe(combatants);
+    w.close();
+  });
+
+  it("습격·공세 부대는 이름 있는 인물이 이끌고, 그 사람은 부대가 있는 구역에 있다 (1-3)", () => {
+    const w = fresh();
+    const p = spawnParty(w, content, createSeededRng(2), { faction: "faction_c", kind: "raid", goal: "a_east_post", size: 8, dayStart: 0, task: { kind: "clash", clash: "raid", defender: "faction_a" } })!;
+    expect(p.leader).toBeTruthy();
+    expect(cfg.leader_ranks).toContain(content.npcs[p.leader!]!.rank);
+    const scout = spawnParty(w, content, createSeededRng(2), { faction: "faction_c", kind: "scout", goal: "a_east_post", size: 3, dayStart: 0, task: { kind: "watch" } })!;
+    expect(scout.leader).toBeNull();
+  });
+
+  it("포로는 그 무리의 다음 공세 목표를 털어놓고, 대가 있는 성공이면 반은 틀린 말이다 (6-2)", () => {
+    const w = make();
+    const prisoner = Object.values(content.npcs).find((n) => n.faction === "faction_c" && n.rank === "grunt")!.id;
+    const truth = warConfessions(w.state(), content, () => 0.99, prisoner, "success");
+    expect(truth[0]!.fact).toContain(content.locations[w.state().clocks.c_east_offensive!.target]!.name);
+    expect(truth[0]!.accuracy).toBe("approximate");
+    const lie = warConfessions(w.state(), content, () => 0, prisoner, "partial");
+    expect(lie[0]!.accuracy).toBe("false");
+    w.close();
+  });
+
+  it("사흘 안에 두 번 진 무리는 사기가 떨어진다 (6-3)", () => {
+    const w = fresh();
+    const m = w.factions.faction_c!.morale;
+    recordDefeat(w, "faction_c", 100);
+    expect(w.factions.faction_c!.morale).toBe(m);
+    recordDefeat(w, "faction_c", 100 + 2 * MINUTES_PER_DAY);
+    expect(w.factions.faction_c!.morale).toBe(Math.max(-3, m - 1));
+  });
+
+  it("공세 정찰대가 방비를 보고 돌아오면 frontier 클락의 목표를 바꾼다 (6-4)", () => {
+    const w = fresh();
+    const rng = createSeededRng(4);
+    // 청솔의 반격(frontier) 정찰대가 물류창고로
+    w.zones.c_warehouse = { owner: "faction_c", fort: 1 };
+    const p = spawnParty(w, content, rng, { faction: "faction_a", kind: "scout", goal: "c_warehouse", size: 3, dayStart: 0, task: { kind: "watch", plan: "a_counteroffensive" } })!;
+    advanceParties(w, content, rng, arrivalOf(p));
+    const back = w.parties!.find((x) => x.id === p.id)!;
+    advanceParties(w, content, rng, returnOf(back)!);
+    expect(w.clocks.a_counteroffensive!.target).not.toBe("");
+    expect(w.clocks.a_counteroffensive!.target).not.toBe("c_warehouse");
   });
 });

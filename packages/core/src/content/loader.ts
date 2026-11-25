@@ -625,7 +625,12 @@ function checkReferences(content: Content): string[] {
       if (role.extra && !content.extras[role.extra]) problems.push(`storylets.${st.id}.cast.${key}: 알 수 없는 엑스트라 틀 ${role.extra}`);
     }
   }
+  {
+    const nm = content.scenario.war?.parties?.notice_move;
+    if (nm && !content.scenario.moves.some((m) => m.id === nm)) problems.push(`scenario.war.parties.notice_move: 알 수 없는 판정 ${nm}`);
+  }
   for (const f of Object.values(content.factions)) {
+    if (f.party_extra && !content.extras[f.party_extra]) problems.push(`factions.${f.id}.party_extra: 알 수 없는 엑스트라 틀 ${f.party_extra}`);
     for (const p of f.plans) {
       for (const sh of p.shift ?? []) {
         if (sh.to !== "strongest" && !content.factions[sh.to]) problems.push(`factions.${f.id}.plans.${p.id}: 알 수 없는 세력 ${sh.to}`);

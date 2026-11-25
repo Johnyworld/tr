@@ -200,7 +200,7 @@ export function enterScene(ctx: ToolContext, id: string): void {
  * 이름을 모르는 인물을 처음 만나면 기억에 남긴다: "엽총 든 보초와 마주쳤다. 겉모습: …".
  * 나중에 이름을 알게 되면 learn_name이 "엽총 든 보초의 이름은 김철수"를 남긴다. 두 기억이 호칭과 이름을 잇는다 (기획서 6.3)
  */
-function noteFirstMeeting(ctx: ToolContext, id: string): void {
+export function noteFirstMeeting(ctx: ToolContext, id: string): void {
   const state = ctx.store.getState();
   if (knowsName(state, state.playerId, id)) return;
   const alias = aliasOf(state, ctx.content, id);

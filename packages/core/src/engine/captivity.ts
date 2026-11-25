@@ -1,3 +1,4 @@
+import { warConfessions } from "./partyTools.ts";
 import { stakesOf } from "../rules/stakes.ts";
 import { formatDuration, routeMinutes } from "../rules/time.ts";
 import { onCaptured } from "../rules/consequence.ts";
@@ -433,6 +434,12 @@ const handlePrisoner = defineTool({
             belief: { id: `b_${store.getState().nextBeliefNo}`, fact: b.fact, source: "report", accuracy: b.accuracy, learnedAt: state.time, ...(b.topic ? { topic: b.topic } : {}) },
           });
           lines.push(`털어놓은 것: ${b.fact}`);
+        }
+        // 전쟁 이야기도 털어놓는다 (움직이는 부대 6-2): 나가 있는 부대의 목표, 다음 공세의 목표. 대가 있는 성공이면 반은 틀린 말
+        for (const w of warConfessions(store.getState(), content, ctx.rng, t.id, r.outcome === "success" ? "success" : "partial")) {
+          store.append({ type: "belief_added", characterId: me.id, belief: { id: `b_${store.getState().nextBeliefNo}`, fact: w.fact, source: "report", accuracy: w.accuracy, learnedAt: state.time, topic: "war" } });
+          lines.push(`털어놓은 것: ${w.fact}`);
+          take.push({ fact: w.fact, accuracy: w.accuracy, topic: "war" });
         }
         // 장소도 털어놓는다 (설계 목록 C-1 2단계)
         const places = placeConfessions(ctx, t, r.outcome === "success");

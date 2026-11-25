@@ -1,4 +1,5 @@
 import { runPartySightings } from "./partySight.ts";
+import { runPartyFights } from "./partyTools.ts";
 import { runPartiesNow } from "./warTools.ts";
 import { onReturnedHome } from "../rules/consequence.ts";
 import { issueSpare } from "./armory.ts";
@@ -85,6 +86,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   const battles = runPendingClashes(ctx);
   // 지금 구역에 든 부대 (공통 규칙 23 마주침): 아직 서로 알아채기를 굴리지 않았으면
   battles.push(...runPartySightings(ctx));
+  // 길 위의 부대와 맞붙은 싸움이 기울었는가 (움직이는 부대 ③-2)
+  battles.push(...runPartyFights(ctx));
   const missions = runMissionStartOfTurn(ctx);
   // 분대원에게 맡긴 일이 끝났으면 결과를 굴리고 보고를 받는다
   const squad = runSquadOrders(ctx);

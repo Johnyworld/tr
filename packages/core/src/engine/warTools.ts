@@ -28,6 +28,7 @@ import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import {ownedBy, hostileLand, baseOfNow } from "../rules/home.ts";
 import { onOwnLand } from "../rules/home.ts";
 import { casualtiesToPeople } from "./felt.ts";
+import { protectedFromWorld } from "../rules/company.ts";
 import { hearNews } from "../rules/news.ts";
 
 /**
@@ -80,6 +81,8 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
       defer: (spec, arrival) => (arrival === undefined ? canDefer : day === today) && playerInvolvement(state, content, spec) !== null,
       resolveUpTo: upTo,
       endUpTo: upTo,
+      // 부대를 이끄는 사람: 세계가 건드리지 않는 사람(주인공·동행·분대·배역·우두머리·갇힌 사람)은 아니다 (1-3)
+      leaderOk: (id) => !protectedFromWorld(state, content, id),
       season: seasonOfDay(content.scenario, day),
       infested: state.infested,
       day,

@@ -1943,6 +1943,8 @@ war:
     trade_every_days: 3
     # 사람이 부대를 알아채는 판정 (공통 규칙 23 마주침)
     notice_move: sense_danger
+    # 습격·공세 부대를 이끄는 이름 있는 인물의 계급 (정찰·짐 행렬·순찰은 이름 없는 조장)
+    leader_ranks: [squad_leader, officer]
     kinds:
       scout: { label: 정찰대, size: [3, 4], depart: [6, 14], stay: [4, 6] }
       raid: { label: 습격대, depart: [14, 20], stay: [0.5, 1], strike: [1, 4] }

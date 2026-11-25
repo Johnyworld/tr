@@ -30,6 +30,7 @@ import { describeClash, WAR_TOPIC } from "./warTools.ts";
 import { endActiveStorylet } from "./storyletTools.ts";
 import { ownedBy } from "../rules/home.ts";
 import { casualtiesToPeople } from "./felt.ts";
+import { recordDefeat, routParty } from "../sim/parties.ts";
 
 /** 지키는 전투에서 막아 주는 시설의 이름 (월드 팩의 holds 시설) */
 const barrierLabel = (content: Content) => content.scenario.facilities?.find((f) => f.effects.holds)?.label ?? "막아 둔 것";
@@ -185,8 +186,15 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
   const defenderLosses = battle.side === "attack" ? battle.theirs.losses : battle.ours.losses;
   const spec: ClashSpec = { kind: battle.kind, attacker: battle.attacker, defender: battle.defender, zone: battle.zone, ...(battle.plan ? { plan: battle.plan } : {}) };
   const { world, clash } = applyBattleOutcome(state, ctx.content, spec, { success: attackerWon, attackerLosses, defenderLosses });
+  // 길 위의 부대와 맞붙은 전투 (움직이는 부대 ③-2): 부대 쪽 사상자는 무리 전투원이 아니라 그 부대에서 빠진다
+  const party = battle.party ? state.parties.find((p) => p.id === battle.party) : undefined;
+  if (party) {
+    const f = world.factions[party.faction];
+    if (f) f.combatants += Math.min(attackerLosses, party.size);
+  }
   const merit = player.dead ? 0 : battleMerit(battle);
   ctx.store.append({ type: "battle_ended", won, withdrew, clash, factions: world.factions, zones: world.zones, merit });
+  if (party) settlePartyBattle(ctx, party.id, battle.theirs.losses, won);
 
   const lines = [
     `전투가 끝났다: ${won ? "우리 편이 이겼다" : "우리 편이 졌다"}${withdrew ? " (당신은 먼저 물러났다)" : down ? " (당신은 쓰러진 채였다)" : ""}. ` +
@@ -295,4 +303,27 @@ export function describeBattleForGm(state: GameState, content: Content): string 
     `  지금 쓸 수 있는 전투 효과 (take_action.battle.effect): ${usable.map((e) => `${e.id} ${e.label} [위험 ${e.min_harm} 이상] — ${e.description}`).join(" / ") || "없음"}`,
     "  전투 중 행동은 take_action 한 번이 한 라운드다. 판정을 반드시 넣고, 몸의 위험은 효과마다 적힌 수준 이상으로 선언한다. 승패·사상자는 시스템이 정한다.",
   ].join("\n");
+}
+
+/** 부대와 맞붙은 전투가 끝났다: 부대는 잃은 만큼 줄고, 졌으면 달아난다 (움직이는 부대 ③-2) */
+function settlePartyBattle(ctx: ToolContext, partyId: string, lost: number, playerWon: boolean) {
+  const state = ctx.store.getState();
+  const world = { factions: structuredClone(state.factions), zones: structuredClone(state.zones), clocks: structuredClone(state.clocks), parties: structuredClone(state.parties), nextPartyNo: state.nextPartyNo, partiesUpTo: state.partiesUpTo };
+  const p = world.parties.find((x) => x.id === partyId);
+  if (!p) return;
+  p.size = Math.max(0, p.size - lost);
+  if (playerWon) {
+    routParty(world, ctx.content, ctx.rng, partyId, state.time);
+    recordDefeat(world, p.faction, state.time);
+  }
+  ctx.store.append({
+    type: "parties_advanced",
+    factions: world.factions,
+    zones: world.zones,
+    clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
+    parties: world.parties,
+    partiesUpTo: state.partiesUpTo,
+    clashes: [],
+    scheduled: [],
+  });
 }

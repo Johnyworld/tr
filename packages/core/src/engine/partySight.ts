@@ -243,5 +243,5 @@ export function seenPartiesLines(state: GameState, content: Content): string[] {
   if (!zone) return [];
   return state.parties
     .filter((p) => p.size > 0 && partyZoneAt(p, state.time) === zone && state.partySightings[sightKey(p, zone)]?.player)
-    .map((p) => `- ${sightLine(state, content, p, state.time).replace(/ 이 구역에 들어섰다$/, " 이 구역에 있다")}`);
+    .map((p) => `- ${sightLine(state, content, p, state.time).replace(/ 이 구역에 들어섰다$/, " 이 구역에 있다")} (id: ${p.id}${state.partyFights[p.id] ? ", 맞붙는 중" : ""})`);
 }

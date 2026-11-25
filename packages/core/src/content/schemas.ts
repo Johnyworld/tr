@@ -498,6 +498,8 @@ export function createContentSchemas(s: Scenario) {
     war_share: z.number().gt(0).max(1).optional(),
     /** 다른 세력에 대한 태도 -3 ~ +3 (없으면 0). -2 이하면 적대 */
     disposition: z.record(contentIdSchema, z.number().int().min(-3).max(3)).default({}),
+    /** 이 무리 부대와 맞붙을 때 장면에 들이는 엑스트라 틀 (움직이는 부대 ③). 없으면 그 무리의 첫 엑스트라 틀 */
+    party_extra: contentIdSchema.optional(),
     /** 이 무리의 부대 이름 (움직이는 부대, 예: patrol → 순찰선). 없으면 시나리오의 war.parties 이름 */
     party_names: z.partialRecord(z.enum(["scout", "raid", "assault", "supply", "patrol"]), z.string().min(1)).default({}),
     /** 세력 클락: 하루에 한 칸씩 차고, 다 차면 목표 구역을 총공격한다. 그 세력 사람만 안다 */

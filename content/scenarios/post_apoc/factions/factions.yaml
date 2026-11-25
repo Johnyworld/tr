@@ -14,6 +14,7 @@
   morale: 1
   cohesion: 2
   aggression: 1
+  party_extra: a_scout
   disposition: { faction_b: 2, faction_c: -3 }
   # 포상 (12-171, *임시*): 같은 몫 원칙이라 큰 것은 없다. 분대장이 아껴 둔 작은 것
   rewards:
@@ -50,6 +51,7 @@
   morale: 0
   cohesion: 0
   aggression: 0
+  party_extra: b_guard
   party_names: { patrol: 텃밭 순찰 }
   disposition: { faction_a: 2, faction_c: -2 }
   # 포상 (12-171, *임시*): 이웃들이 모아 주는 먹을 것
@@ -99,6 +101,7 @@
   morale: 0
   cohesion: -1
   aggression: 2
+  party_extra: c_raider
   party_names: { raid: 약탈조 }
   # 이 전쟁에 돌리는 몫 (12-139, *임시*): 감염체와 바깥의 적도 막느라 청솔과의 전쟁에 총력을 다하지 못한다 (먼저 치는 확률·내보내는 병력)
   war_share: 0.6
@@ -140,6 +143,7 @@
   morale: 0
   cohesion: 2
   aggression: 0
+  party_extra: d_guard
   party_names: { supply: 왕진 일행, patrol: 왕진 일행 }
   # 포상 (12-171, *임시*): 약
   rewards:
@@ -182,6 +186,7 @@
   morale: 1
   cohesion: 1
   aggression: 0
+  party_extra: e_escort
   party_names: { supply: 짐마차 행렬 }
   # 포상 (12-171, *임시*): 흥정에 쓰는 물건
   rewards:
@@ -225,6 +230,7 @@
   morale: 2
   cohesion: 2
   aggression: 0
+  party_extra: y_watcher
   party_names: { patrol: 순찰선 }
   disposition: { faction_a: -1, faction_b: -1, faction_c: -1, faction_d: -1, faction_e: 0 }
   culture:

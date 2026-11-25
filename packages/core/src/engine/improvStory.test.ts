@@ -78,6 +78,8 @@ const check = (move: string) => act({ check: { move, stat: "sense", difficulty: 
 function toSlot(env: ReturnType<typeof setup>) {
   expect(env.store.getState().activeStorylet?.id).toBe("chatter");
   executeTool("resolve_storylet", { choice_id: "listen" }, env.ctx);
+  // 곁에 사람이 있어야 즉흥 자리가 열린다 (12-307)
+  executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, env.ctx);
   for (let i = 0; i < 6 && !env.store.getState().improvSlot; i++) {
     executeTool("take_action", act({ activity: { kind: "sleep", until: null } }), env.ctx);
     if (!env.store.getState().improvSlot) executeTool("take_action", act({ activity: { kind: "rest", until: null } }), env.ctx);
@@ -115,11 +117,14 @@ describe("즉흥 이야기 자리", () => {
       { ...chatter, id: "secret", choices: [{ id: "listen", label: "듣는다", effects: [{ set_flag: "heard_it" }] }] },
       { ...chatter, id: "vow", when: { resolve: { stage_gte: 0 } } },
     ]);
+    executeTool("npc_presence", { npc_id: "npc_leader", action: "enter" }, env.ctx);
     const s = env.store.getState();
     const c = env.content;
     const later = s.time + 60;
     s.storyletLog = { chatter: { fired: 1, lastFiredAt: s.time }, swarm: { fired: 1, lastFiredAt: s.time }, alarm: { fired: 1, lastFiredAt: s.time } };
     expect(shouldImprovise(s, c, c.storylets.chatter!, later)).toBe(true);
+    // 곁에 쓸 사람이 없으면 즉흥 자리 대신 쓰인 이야기 (12-307)
+    expect(shouldImprovise({ ...s, scene: { ...s.scene, present: [] }, companions: [] }, c, c.storylets.chatter!, later)).toBe(false);
     expect(shouldImprovise(s, c, c.storylets.swarm!, later)).toBe(false);
     expect(shouldImprovise(s, c, c.storylets.alarm!, later)).toBe(false);
     s.storyletLog.secret = s.storyletLog.vow = { fired: 1, lastFiredAt: s.time };

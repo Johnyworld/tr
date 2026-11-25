@@ -449,6 +449,8 @@
     - id: back_off
       label: 아무것도 못 본 척 걸음을 돌린다
       check: sense_danger
+      # 빗나가지 않으면 왔던 구역으로 되짚어 간다 (12-307, PT30 하얀매)
+      turns_back: true
       outcomes:
         success:
           - belief: { fact: "{from:과/와} {to} 사이 길목에 약탈조가 매복해 있다. 눈치채고 돌아왔다", source: seen }
@@ -463,6 +465,7 @@
     - id: warn_others
       label: 빠져나온 뒤 길가 벽에 매복 표시를 남긴다
       check: stealth
+      turns_back: true
       outcomes:
         success:
           - deed: { summary: 길목의 매복을 다른 사람들이 알게 벽에 표시해 두었다, tags: [mercy], severity: 1, privacy: private }

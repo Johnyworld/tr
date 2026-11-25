@@ -74,6 +74,16 @@ describe("의식불명 중 곁의 사람", () => {
     quiet.close();
   });
 
+  it("우리 무리 땅에 홀로 쓰러지면 확률 없이 무리 사람이 찾아와 피를 멎게 하고 돌본다 (12-307)", () => {
+    const w = setup("role_a_grunt", "a_base", []);
+    w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "to_riverside" });
+    run(w, 0.99);
+    expect(me(w).dead).toBe(false);
+    expect(me(w).conditions.harm).not.toBe("unconscious");
+    expect(w.state().helplessAt).not.toBeNull();
+    w.close();
+  });
+
   it("take_action으로 시간이 흐르면 결과가 GM에게 문장으로 간다", () => {
     const w = setup("role_b_guard", "subway_hub", ["b_myeongsuk"]);
     const r = w.executeTool("take_action", { intent: "의식이 없다", check: null, activity: { kind: "wait", until: null }, deed: null, target: null, narration_summary: null, for_mission: false });

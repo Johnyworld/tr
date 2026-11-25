@@ -73,10 +73,12 @@
     - { id: cellblock, name: "감방동", indoor: true, map: { x: 62, y: 28 }, description: "철창이 끝없이 이어진 감방동", aliases: ["감방"], jail: true }
     - { id: admin, name: "행정동", indoor: true, map: { x: 35, y: 32 }, kinds: [ruin], description: "행정동. 안쪽 무기고 철문은 굳게 닫혀 있다 (그 안은 뒤져야 찾는다)", aliases: ["행정동", "무기고 철문", "무기고"] }
     - { id: yard, name: "운동장·담", indoor: false, map: { x: 50, y: 55 }, kinds: [yard], description: "높은 담에 둘러싸인 운동장", aliases: ["운동장", "담"], near: [admin, cellblock, guard_quarters], gate: true }
-    - { id: to_power_plant, name: "발전소 가는 길", indoor: false, map: { x: 92, y: 62 }, description: "동쪽 발전소로 가는 길", near: [outer_gate], road: true, to: [power_plant] }
-    - { id: to_red_base, name: "붉은연합 거점 가는 길", indoor: false, map: { x: 50, y: 92 }, description: "남쪽 붉은연합 거점으로 가는 길", near: [outer_gate], road: true, to: [c_base] }
+    - { id: to_power_plant, name: "발전소 가는 길", indoor: false, map: { x: 92, y: 62 }, description: "동쪽 발전소로 가는 길", near: [outer_gate, wall_road], road: true, to: [power_plant] }
+    - { id: to_red_base, name: "붉은연합 거점 가는 길", indoor: false, map: { x: 50, y: 92 }, description: "남쪽 붉은연합 거점으로 가는 길", near: [outer_gate, wall_road], road: true, to: [c_base] }
     - { id: outer_gate, name: "바깥 정문·면회소", indoor: false, map: { x: 70, y: 78 }, kinds: [gate], description: "교도소 바깥 정문과 무너진 면회소. 철문이 반쯤 열렸다", near: [yard] }
     - { id: guard_quarters, name: "교도관 숙소", indoor: true, map: { x: 28, y: 62 }, kinds: [ruin], description: "운동장 한쪽 교도관 숙소. 철제 침대가 뒤엉키고 벽에 탈출 날짜를 센 금이 있다", aliases: ["교도관 숙소", "숙소동"], near: [yard] }
+    # 담 밖 둘레 (12-307, content:check: 길끼리는 바깥 정문을 지나지 않고 이어진다)
+    - { id: wall_road, name: "교도소 바깥 담 아래 길", indoor: false, map: { x: 82, y: 90 }, kinds: [street], description: "높은 담 그늘을 따라 도는 아스팔트 길. 감시탑 창이 모두 깨졌다", aliases: ["담 아래 길"], near: [to_red_base, to_power_plant] }
   cover: 6
   owner: null
   danger: 3

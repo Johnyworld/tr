@@ -83,12 +83,15 @@
     - { id: stockade, name: "수용소", indoor: true, map: { x: 62, y: 68 }, description: "화물 칸을 철망으로 막은 수용소. 노역에 끌려 나갈 때만 문이 열린다", aliases: ["수용소", "노역조"], jail: true }
     - { id: command, name: "지휘소·정비소", indoor: true, map: { x: 45, y: 24 }, kinds: [command, work], description: "유리창 깨진 사무실과 정비소. 무전기와 공구가 널려 있다", aliases: ["지휘소", "정비소", "치료실", "마경수 천막", "규율반 천막"] }
     - { id: wall, name: "감시탑·담", indoor: false, map: { x: 70, y: 32 }, kinds: [watch, gate], description: "컨테이너를 쌓은 담과 감시탑. 탐조등이 밤마다 돈다", aliases: ["감시탑", "담 보초", "경비 초소", "망루", "바깥문", "담 근처", "수용소 순찰", "물류창고 경비"], gate: true }
-    - { id: to_south, name: "철길 둑·강둑 가는 고가 밑 길", indoor: false, map: { x: 65, y: 96 }, description: "고가도로 밑을 지나 남쪽 철길 둑과 강둑으로 가는 길. 기둥 그늘이 길다", near: [checkpoint_3, overpass_shade], road: true, to: [rail_embankment, north_levee] }
-    - { id: to_west, name: "붉은연합 거점 가는 길", indoor: false, map: { x: 4, y: 52 }, description: "붉은연합 거점으로 가는 길. 트럭이 오가며 판 바퀴 자국", near: [checkpoint_3], road: true, to: [c_base] }
-    - { id: to_north, name: "발전소 가는 길", indoor: false, map: { x: 82, y: 4 }, description: "북쪽 발전소로 가는 길. 굴뚝이 길 끝에 섰다", near: [container_gap], road: true, to: [power_plant] }
+    - { id: to_south, name: "철길 둑·강둑 가는 고가 밑 길", indoor: false, map: { x: 65, y: 96 }, description: "고가도로 밑을 지나 남쪽 철길 둑과 강둑으로 가는 길. 기둥 그늘이 길다", near: [checkpoint_3, overpass_shade, rail_side], road: true, to: [rail_embankment, north_levee] }
+    - { id: to_west, name: "붉은연합 거점 가는 길", indoor: false, map: { x: 4, y: 52 }, description: "붉은연합 거점으로 가는 길. 트럭이 오가며 판 바퀴 자국", near: [checkpoint_3, rail_side], road: true, to: [c_base] }
+    - { id: to_north, name: "발전소 가는 길", indoor: false, map: { x: 82, y: 4 }, description: "북쪽 발전소로 가는 길. 굴뚝이 길 끝에 섰다", near: [container_gap, east_fence], road: true, to: [power_plant] }
     - { id: checkpoint_3, name: "3번 초소", indoor: false, map: { x: 35, y: 76 }, kinds: [gate], description: "정문 앞 검문소. 붉은 완장들이 드나드는 짐을 센다", aliases: ["3번 초소", "정문 검문"], near: [yard] }
     - { id: container_gap, name: "컨테이너 담 틈", indoor: false, map: { x: 82, y: 18 }, kinds: [gate], description: "쌓은 컨테이너 사이로 난 틈. 사람 하나가 겨우 빠진다", near: [wall] }
     - { id: overpass_shade, name: "고가도로 밑 기둥 그늘", indoor: false, map: { x: 85, y: 84 }, kinds: [street], description: "끊긴 고가도로 기둥이 줄지은 그늘. 버린 차와 깨진 콘크리트 사이로 길이 난다", aliases: ["고가도로 밑", "기둥 그늘"], near: [to_south] }
+    # 담 밖 둘레: 초소를 거치지 않고 길끼리 잇는다 (12-307, PT30 졸병: 길을 바꾸려면 3번 초소를 지나야 했다. content:check가 잡는다)
+    - { id: rail_side, name: "창고 서쪽 담 밖 철로변", indoor: false, map: { x: 14, y: 86 }, kinds: [street], description: "녹슨 철로가 담을 따라 휘어 나간다. 침목 사이로 잡풀이 솟았다", aliases: ["철로변"], near: [to_west, to_south] }
+    - { id: east_fence, name: "창고 동쪽 담 밖 둘레길", indoor: false, map: { x: 96, y: 44 }, kinds: [street], description: "컨테이너 담 바깥을 도는 좁은 흙길. 담 위 철조망이 바람에 운다", aliases: ["둘레길"], near: [to_north, overpass_shade] }
   cover: 5
   danger: 2
   # 끓이지 않은 물을 뜰 곳 (12-251)
@@ -252,13 +255,15 @@
     - { id: gate, name: "정문·경비실", indoor: false, map: { x: 50, y: 42 }, kinds: [gate], description: "단지 정문과 경비실, 쪽문. 드나드는 사람을 여기서 본다", aliases: ["정문", "경비실", "단지 순찰", "거점 순찰"], near: [office, blocks, yard], gate: true }
     - { id: yard, name: "단지 텃밭·우물", indoor: false, map: { x: 64, y: 66 }, kinds: [yard, field], description: "놀이터를 갈아엎은 텃밭과 두레박 우물", aliases: ["텃밭", "우물", "쪽문"], near: [blocks, commons], gate: true }
     - { id: lockup, name: "관리동 지하 가두는 방", indoor: true, map: { x: 14, y: 18 }, description: "관리동 지하 창고를 막은 방. 빛이 거의 들지 않는다", aliases: ["가두는 방", "지하 가두는 방"], jail: true }
-    - { id: to_north, name: "청솔·아파트 뒷길·성당 가는 길", indoor: false, map: { x: 52, y: 4 }, description: "단지 북쪽으로 나가는 길. 정문 망루에서 훤히 보인다", near: [gate_front], road: true, to: [a_base, apt_backroad, cathedral] }
-    - { id: to_east, name: "텃밭·마트 가는 길", indoor: false, map: { x: 96, y: 58 }, description: "동쪽 텃밭과 마트로 가는 길. 수레바퀴 자국이 났다", near: [gate_front, side_lane], road: true, to: [south_fields, mall_ruins] }
+    - { id: to_north, name: "청솔·아파트 뒷길·성당 가는 길", indoor: false, map: { x: 52, y: 4 }, description: "단지 북쪽으로 나가는 길. 정문 망루에서 훤히 보인다", near: [gate_front, north_alley], road: true, to: [a_base, apt_backroad, cathedral] }
+    - { id: to_east, name: "텃밭·마트 가는 길", indoor: false, map: { x: 96, y: 58 }, description: "동쪽 텃밭과 마트로 가는 길. 수레바퀴 자국이 났다", near: [gate_front, side_lane, north_alley], road: true, to: [south_fields, mall_ruins] }
     - { id: gate_front, name: "정문 앞 검문 줄", indoor: false, map: { x: 64, y: 24 }, kinds: [gate, street], description: "정문 앞에 줄을 세우는 자리. 경비가 짐과 얼굴을 본다", near: [gate] }
     - { id: side_lane, name: "쪽문 밖 골목", indoor: false, map: { x: 84, y: 80 }, kinds: [street], description: "단지 담과 상가 사이 좁은 골목. 쪽문이 텃밭으로 열린다", near: [yard] }
     - { id: commons, name: "노인정 공동 부엌", indoor: true, map: { x: 80, y: 44 }, kinds: [mess, hall], description: "옛 경로당을 튼 공동 부엌. 큰 솥과 밥상 여럿, 저녁이면 마을 사람이 모여 앉는다", aliases: ["노인정", "공동 부엌"], near: [yard] }
     - { id: garage, name: "지하 주차장 창고", indoor: true, map: { x: 40, y: 84 }, kinds: [store, work], description: "물을 퍼낸 지하 주차장. 나무 상자와 연장, 고쳐 쓰는 자전거가 줄지었다", aliases: ["지하 주차장", "주차장 창고"], near: [blocks] }
     - { id: herb_room, name: "1층 약초방", indoor: true, map: { x: 32, y: 10 }, kinds: [care], description: "볕 드는 1층 집을 비운 약초방. 말린 풀 냄새가 배고 침상 둘이 놓였다", aliases: ["약초방"], near: [office] }
+    # 담 밖 둘레 (12-307, content:check: 길끼리는 담 문·검문을 지나지 않고 이어진다)
+    - { id: north_alley, name: "단지 담 밖 북쪽 골목", indoor: false, map: { x: 84, y: 14 }, kinds: [street], description: "아파트 담 바깥으로 난 좁은 골목. 버려진 자전거가 녹슬어 쌓였다", aliases: ["담 밖 골목"], near: [to_north, to_east] }
   cover: 7
   danger: 0
   owner: faction_b

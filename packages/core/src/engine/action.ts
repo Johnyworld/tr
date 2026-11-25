@@ -768,8 +768,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const herePlace = currentPlace(start, content);
     if (hostileHere(ctx) && herePlace && stepsBetween(start, content, herePlace.id, to.id) > 1) {
       const doors = unknownDoors(start, content);
-      const via = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail).map((p) => (doors.some((d) => d.id === p.id) ? doorLabel(start, content, p) : `${p.id}(${p.name})`)).join(", ");
-      return { ok: false, error: `적 땅에서는 이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
+      // 거칠 칸은 그리로 가는 가장 짧은 길의 다음 칸만 (12-307, PT30 졸병: 이웃을 모두 늘어놓아 방금 떠난 칸까지 "거친다"로 나왔다)
+      const left = stepsBetween(start, content, herePlace.id, to.id);
+      const next = herePlace.near.map((id) => placeById(start, content, id)).filter((p): p is Place => !!p && !p.jail && stepsBetween(start, content, p.id, to.id) === left - 1);
+      // 같은 거리면 담 문·초소가 아닌 칸을 먼저 (담 밖 둘레)
+      const open = next.filter((p) => !p.gate && !p.kinds.includes("gate"));
+      const via = (open.length ? open : next).map((p) => (doors.some((d) => d.id === p.id) ? doorLabel(start, content, p) : `${p.id}(${p.name})`)).join(" 또는 ");
+      return { ok: false, error: `적 땅에서는 이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다${Number.isFinite(left) ? ` (${left}칸)` : ""}. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
@@ -1099,18 +1104,21 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 적 땅에서는 숨는 판정 하나로 찾는 양까지 정한다 (한 행동에 판정은 하나, 플레이 테스트 13: 수색을 굴리지 않았는데 물건이 나왔다)
     if (exposed && input.check) lines.push(`숨어서 뒤졌다: ${moveLabel(scenario, input.check.move)} 판정 결과로 찾는 양도 정했다.`);
     lines.push(...found.lines);
-    // 남의 무리 거점(적대하지 않는 곳)에서 뒤져 챙기면 도둑질이다: 그 무리 사람이 곁에 있거나 운이 나쁘면 행적이 남는다 (공통 규칙 3, 플레이 테스트 13: 장터 상인 앞에서 뒤져도 뒤끝이 없었다)
+    // 무리 거점(적대하지 않는 남의 거점, 그리고 우리 거점)에서 뒤져 챙기면 도둑질이다: 그 무리 사람이 곁에 있거나 운이 나쁘면 행적이 남는다
+    // (공통 규칙 3, 플레이 테스트 13: 장터 상인 앞에서 뒤져도 뒤끝이 없었다. 12-307 사용자 결정: 우리 땅도 거점이면 무리 몫이라 도둑질, 거점이 아닌 우리 땅은 아니다.
+    // PT25~30: 우리 막사를 뒤져 담요를 챙겨도 아무 일이 없었다). 임무로 뒤지는 것(창고 몫·구해 올 것)은 일이라 빼낸다
     {
       const s1 = store.getState();
       const zone = s1.playerZone;
       const owner = zone ? s1.zones[zone]?.owner : null;
       const mine = s1.characters[s1.playerId]?.factionId;
       const tookSomething = found.displays.length > 0;
-      if (!exposed && tookSomething && zone && content.locations[zone]?.kind === "base" && owner && owner !== mine) {
+      if (!exposed && !forMission && tookSomething && zone && content.locations[zone]?.kind === "base" && owner) {
         const watcher = s1.scene.present.some((id) => s1.characters[id]?.factionId === owner);
         if (watcher || ctx.rng() < THEFT_NOTICE_CHANCE) {
-          recordDeed(ctx, { summary: `${content.factions[owner]?.name ?? owner}의 거점에서 남의 것을 뒤져 챙겼다`, tags: ["theft"], severity: 1, privacy: "semi_private", noisy: false });
-          lines.push("남의 거점에서 뒤져 챙긴 것을 누군가 본 것 같다 (도둑질로 남았다).");
+          const ours = owner === mine;
+          recordDeed(ctx, { summary: ours ? "우리 거점에서 무리 몫을 뒤져 챙겼다" : `${content.factions[owner]?.name ?? owner}의 거점에서 남의 것을 뒤져 챙겼다`, tags: ["theft"], severity: 1, privacy: "semi_private", noisy: false });
+          lines.push(ours ? "거점에서 무리 몫을 뒤져 챙긴 것을 누군가 본 것 같다 (도둑질로 남았다)." : "남의 거점에서 뒤져 챙긴 것을 누군가 본 것 같다 (도둑질로 남았다).");
         }
       }
     }

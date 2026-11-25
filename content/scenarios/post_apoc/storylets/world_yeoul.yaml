@@ -6,7 +6,9 @@
   title: 바다 건너 낙원
   tags: [world]
   when:
-    indoor: "any"
+    # 떠도는 피난민이 "언 손을 비비며": 바깥, 거점이면 정문·마당 쪽까지 (12-307, PT30 세 판: 붉은연합 막사 깊은 곳·식당 천막·불 땐 치료실에서 열렸다)
+    indoor: false
+    place_kinds: [gate, yard, road, street, field, ruin]
     segments: [evening, night]
     day_gte: 2
     zone_owner: [none, own]

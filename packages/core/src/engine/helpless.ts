@@ -112,7 +112,9 @@ export function runHelpless(ctx: ToolContext, actionStartedAt?: number): ToolDis
   // 지금 주인만: 주인 없는 땅이면 아무도 찾지 않는다 (공통 규칙 11, 12-269)
   const owner = state.zones[zone]?.owner ?? null;
   const side = owner ? factionSide(ctx, owner) : null;
-  if (owner && side && ctx.rng() < rules.found_chance) {
+  // 우리 무리 땅이면 반드시 찾아와 피를 멎게 하고 돌본다 (12-307 사용자 결정, PT30 졸병: 거점 "강변 가는 길"에 쓰러져 아무도 오지 않아 1시간 만에 피를 흘려 죽었다)
+  const ownLand = !!owner && owner === me.factionId;
+  if (owner && side && (ownLand || ctx.rng() < rules.found_chance)) {
     return side === "ally" ? byFaction(ctx, owner) : byEnemies(ctx, [], owner);
   }
   // 홀로 쓰러져 있다: 감염체가 많은 곳일수록 먼저 찾는다 (12-112: 구역의 감염체 압력)

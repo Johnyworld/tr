@@ -14,6 +14,7 @@ export function itemSources(content: Content, itemId: string): string[] {
     const where = place(npc.zone) ?? place(npc.roams?.[0]);
     if (where) out.push(`${where}의 장사꾼`);
   }
-  for (const l of Object.values(content.locations)) if (l.loot?.items.some((i) => i.item === itemId)) out.push(`${l.name} 뒤지기`);
+  // 거점 뒤지기는 그 무리 몫을 훔치는 일이라 구할 곳으로 권하지 않는다 (12-307, PT29·30 튜토리얼: 의뢰의 구할 곳이 "청솔형제단 거점 뒤지기")
+  for (const l of Object.values(content.locations)) if (l.kind !== "base" && l.loot?.items.some((i) => i.item === itemId)) out.push(`${l.name} 뒤지기`);
   return [...new Set(out)];
 }

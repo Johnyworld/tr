@@ -25,7 +25,7 @@ import { barrierRise, baseInfestation, infestationOf } from "../game/infestation
 import { exposeToCold } from "./climate.ts";
 import { runAfterTimeAdvance } from "./turnStart.ts";
 import { TIE_LABELS, tieKnown, tiesOf } from "../game/ties.ts";
-import { dayOf, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
+import { dayOf, formatTime, MINUTES_PER_DAY, routeMinutes } from "../rules/time.ts";
 import { harmTrack} from "../scenario/scenario.ts";
 import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
@@ -398,6 +398,17 @@ export const resolveStorylet = defineTool({
       if (road && road !== from) {
         movePlayer(ctx, { zone: ctx.store.getState().playerZone!, place: road }, "escape");
         lines.push(`${josa(placeById(ctx.store.getState(), ctx.content, road)?.name ?? road, "으로/로")} 빠져나왔다. 쫓던 사람들은 뒤에 남았다.`);
+      }
+    }
+    // 되돌아가기 (12-307): 막 지나온 길을 되짚어 떠나온 구역으로. 배역은 그 자리에 남는다
+    if (choice.turns_back && outcome !== "miss") {
+      const now = ctx.store.getState();
+      const back = now.lastRoute && now.lastRoute.to === now.playerZone ? now.lastRoute.from : null;
+      if (back && ctx.content.locations[back]) {
+        const minutes = routeMinutes(now.playerZone!, back, ctx.content);
+        movePlayer(ctx, { zone: back }, "escape", { minutes });
+        for (const id of Object.values(a.cast)) if (ctx.store.getState().scene.present.includes(id)) ctx.store.append({ type: "npc_left", npcId: id });
+        lines.push(`왔던 길을 되짚어 ${josa(ctx.content.locations[back]!.name, "으로/로")} 돌아왔다 (${minutes}분). ${ctx.content.locations[now.playerZone!]?.name ?? ""} 쪽 사람들은 뒤에 남았다.`);
       }
     }
     const extra: ToolDisplayEvent[] = [];

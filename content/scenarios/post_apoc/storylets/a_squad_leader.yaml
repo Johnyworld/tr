@@ -10,10 +10,12 @@
 - id: a_sl_first_muster
   title: 앉아 있는 고참
   tags: [a_squad_leader]
+  # 분대를 넘겨받은 첫머리의 장면이라 꼭 연다: 간격에 막히지 않고, 실내에서도 (12-307, PT29·PT30 분대장: 실내 시작과 간격 탓에 사흘 안에 열리지 않았다)
+  essential: true
   when:
     zones: [a_base]
-    segments: [morning, day]
-    indoor: false
+    segments: [dawn, morning, day, evening]
+    indoor: "any"
     # 분대를 넘겨받은 첫머리의 장면 (플레이 테스트 11: 7일차에 열려 "첫 보초"가 어긋났다)
     day_lte: 3
     flags_none: [a_sl_mustered]

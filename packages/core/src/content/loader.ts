@@ -60,6 +60,15 @@ export function checkZonePlaces(content: Content, zoneId: string): string[] {
     const q2 = [...outside];
     while (q2.length) for (const n of byId.get(q2.shift()!)?.near ?? []) if (!outside.has(n) && !byId.get(n)?.gate) { outside.add(n); q2.push(n); }
     for (const p of l.places) if (p.indoor && !p.road && outside.has(p.id)) problems.push(`${where}.${p.id}: 담(gate)을 거치지 않고 닿는 실내 장소다 (담 구멍)`);
+    // 길끼리는 담 밖 칸으로 이어진다: 담 문·초소(gate 종류)를 지나지 않고 다른 길로 갈 수 있어야 한다
+    // (12-307, PT29 붉은연합 거점 [막힘]·PT30 물류창고: 길을 바꾸려면 적 초소를 지나야 했다)
+    const open = (id: string) => { const q = byId.get(id); return !!q && !q.gate && !kindsOf(q).includes("gate"); };
+    // 이웃은 양쪽으로 센다 (linkPlaces가 맞추기 전에도)
+    const nbr = (id: string) => [...(byId.get(id)?.near ?? []), ...l.places.filter((x) => x.near.includes(id)).map((x) => x.id)];
+    const reach = new Set([roads[0]!.id]);
+    const q3 = [roads[0]!.id];
+    while (q3.length) for (const n of nbr(q3.shift()!)) if (!reach.has(n) && open(n)) { reach.add(n); q3.push(n); }
+    for (const r of roads) if (!reach.has(r.id)) problems.push(`${where}.${r.id}: 다른 길(${roads[0]!.id})과 담 밖 칸으로 이어지지 않는다 (담 문·초소를 지나야 한다). 담 밖 둘레 칸으로 잇는다`);
   }
   return problems;
 }

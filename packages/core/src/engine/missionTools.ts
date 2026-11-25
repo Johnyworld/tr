@@ -220,11 +220,17 @@ const assignMission = defineTool({
     // 가는 길 (플레이 테스트 11: "남쪽 텃밭"이 어디로 이어지는지 몰라 반나절을 헤맸다)
     const route = mission.place?.zone && state.playerZone ? routeBetween(ctx.content, state.playerZone, mission.place.zone) : null;
     const routeLine = route && route.length > 1 ? `\n가는 길: ${route.map((z) => `${ctx.content.locations[z]?.name ?? z}(${z})`).join(" → ")}` : mission.place?.zone && route === null ? "\n가는 길: 지금 아는 길로는 닿지 않는다" : "";
+    // 결과 조건(goal)을 채우는 임무 이야기가 열리는 자리 (12-307, PT30 하얀매: 실내에서만 열리는데 단서가 없어 바깥 마당을 1시간 뒤졌다)
+    const goalStories = Object.values(ctx.content.storylets).filter((st) => st.when.mission?.includes(template.id));
+    const kindLabel = (k: string) => ctx.content.scenario.place_kinds.find((x) => x.id === k)?.label ?? k;
+    const spot = (st: (typeof goalStories)[number]) => [st.when.indoor === true ? "건물 안" : st.when.indoor === false ? "바깥" : "", ...(st.when.place_kinds ?? []).map(kindLabel)].filter(Boolean).join("·");
+    const spots = [...new Set(goalStories.map(spot))];
+    const goalLine = mission.requirements.some((r) => "goal" in r) && goalStories.length && spots.every(Boolean) ? `\n목표를 찾을 자리: 그곳의 ${spots.join(" 또는 ")} (그런 자리에 들어서면 일이 생긴다)` : "";
     return {
       ok: true,
       resultText:
         enteredLine(ctx).map((l) => `${l}\n`).join("") +
-        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${routeLine}${buddyLine}${cargoLine}\n` +
+        `임무 배정: ${describeMission(ctx.content.scenario, mission)}${routeLine}${goalLine}${buddyLine}${cargoLine}\n` +
         `상관(${playerCalls(state, ctx.content, commander.id)})이 임무를 지시하는 장면을 서술하라. 해야 할 일과 기한(대략적인 표현으로)을 상관의 말투로 전한다. 보고도 이 사람에게 한다.`,
       display: { type: "mission", event: "assigned", title: mission.title, detail: `기한 ${formatTime(mission.deadline)}` },
     };

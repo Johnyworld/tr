@@ -954,6 +954,8 @@ export function createContentSchemas(s: Scenario) {
       goes_to: contentIdSchema.optional(),
       /** 달아나기 (PT20 졸병·튜토리얼·분대장: 달아나기에 성공해도 그 자리에 쫓던 사람과 남았다): 판정이 빗나가지 않으면 가장 가까운 길로 빠져나가고 배역은 그 자리에 남는다 */
       escapes: z.boolean().optional(),
+      /** 되돌아가기 (12-307, PT30 하얀매: 매복 길목에서 "걸음을 돌린다"가 성공했는데 도착한 구역에 그대로 있었다): 길 위의 일에서 판정이 빗나가지 않으면 떠나온 구역으로 길을 되짚어 돌아가고, 배역은 그 자리에 남는다 */
+      turns_back: z.boolean().optional(),
       /** 이 선택지 뒤 장면을 떠나는 배역 (어디론가 들어갔다·떠났다, 12-262. PT17 섬: 저장고로 들어간 사람이 장면에 남아 짝이 됐다) */
       leaves: z.array(contentIdSchema).optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */

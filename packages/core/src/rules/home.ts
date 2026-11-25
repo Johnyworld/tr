@@ -9,7 +9,7 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { tiesOf } from "../game/ties.ts";
-import { guestOf } from "./admission.ts";
+import { admissionOf, guestOf } from "./admission.ts";
 
 type Zones = { zones: Record<string, { owner: string | null } | undefined> };
 
@@ -67,8 +67,19 @@ export function hostileLand(state: GameState, content: Content, zone: string | n
   const owner = zone ? state.zones[zone]?.owner : null;
   const mine = state.characters[state.playerId]?.factionId ?? null;
   if (!owner || owner === mine) return false;
-  if (mine) return (state.factions[owner]?.disposition?.[mine] ?? 0) < 0;
   // 손님으로 들인 무리의 땅은 적 땅이 아니다 (공통 규칙 22 받아들임: 약탈조를 따라간 떠돌이가 거점에서 경보를 울렸다)
-  if (guestOf(state) === owner) return false;
-  return !!content.scenario.helpless?.prey_on_strangers.includes(owner) || (state.bounties ?? []).includes(owner);
+  if (!mine && guestOf(state) === owner) return false;
+  return hostileFaction(state, content, owner);
+}
+
+/**
+ * 이 무리가 주인공을 적으로 보는가 (땅과 상관없이, 길 위의 부대 등. 공통 규칙 23 마주침): hostileLand와 같은 셈.
+ * 무소속이면 손님으로 든 무리는 적이 아니고, 낯선 사람을 잡아가는 무리·현상금을 건 무리는 적이다
+ */
+export function hostileFaction(state: GameState, content: Content, factionId: string | null | undefined): boolean {
+  const mine = state.characters[state.playerId]?.factionId ?? null;
+  if (!factionId || factionId === mine) return false;
+  if (mine) return (state.factions[factionId]?.disposition?.[mine] ?? 0) < 0;
+  if (admissionOf(state)?.factionId === factionId) return false;
+  return !!content.scenario.helpless?.prey_on_strangers.includes(factionId) || (state.bounties ?? []).includes(factionId);
 }

@@ -1941,12 +1941,14 @@ war:
     far_hops: 3
     patrol_chance: 0.3
     trade_every_days: 3
+    # 사람이 부대를 알아채는 판정 (공통 규칙 23 마주침)
+    notice_move: sense_danger
     kinds:
       scout: { label: 정찰대, size: [3, 4], depart: [6, 14], stay: [4, 6] }
       raid: { label: 습격대, depart: [14, 20], stay: [0.5, 1], strike: [1, 4] }
       assault: { label: 공세 부대, depart: [4, 6], stay: [0.5, 1], gather_hours: 24 }
       supply: { label: 짐 행렬, size: [3, 5], depart: [7, 10], stay: [1, 2] }
-      patrol: { label: 순찰대, size: [3, 5], depart: [7, 15], stay: [1, 2] }
+      patrol: { label: 순찰대, size: [3, 5], depart: [7, 15], stay: [3, 6] }
   # 배급: 무리의 식량이 며칠 치 남았는지로
   ration:
     resource: food

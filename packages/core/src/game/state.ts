@@ -45,7 +45,8 @@ import { startingSkills } from "./creation.ts";
 // 110: 받아들임·들어갈 자리 (12-308~311). 손님·자리·복무 시작 상태와 주민 계급 id(resident)가 바뀌어 이전 세이브는 보관함으로
 // 111: 길목 더 늘리기와 길목·구역 합치기 (12-313). 구역 32곳, 맞닿음이 바뀌어 이전 세이브는 보관함으로
 // 112: 움직이는 부대 ① (docs/war-parties-plan.md). 상태 parties·nextPartyNo, war_day_simulated.parties
-export const SAVE_SCHEMA_VERSION = 112;
+// 113: 움직이는 부대 ② (12-315). 부대 met·routedAt, 세력 seen, partiesUpTo·partySightings, 이벤트 party_sighted
+export const SAVE_SCHEMA_VERSION = 113;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -103,6 +104,8 @@ export const factionStateSchema = z.strictObject({
   policy: z.record(z.string(), z.string()).optional(),
   /** AI 무리끼리 맺은 휴전 (12-146): 상대 무리 id → 남은 날, 끝나면 돌릴 이 무리의 태도 */
   truces: z.record(z.string(), z.strictObject({ days: z.number().int().min(0), restore: z.number().int().min(-3).max(3) })).optional(),
+  /** 이 무리의 부대가 본 다른 무리의 빈틈 (7-2): 상대 무리 id → 이 시각까지 그 무리를 노린다 */
+  seen: z.record(z.string(), z.number().int()).optional(),
 });
 export type FactionState = z.infer<typeof factionStateSchema>;
 
@@ -213,6 +216,10 @@ export const partySchema = z.strictObject({
   back: z.array(partyLegSchema).default([]),
   /** 나르는 것 (교역 짐·약탈물) */
   carry: z.record(z.string(), z.number().int().min(0)).default({}),
+  /** 이미 마주친 부대 (한 짝은 한 번만 마주친다, 공통 규칙 23) */
+  met: z.array(z.string()).default([]),
+  /** 마주쳐 지고 달아난 시각. 같은 날 또 지면 남은 사람이 붙잡힌다 (4-4) */
+  routedAt: z.number().int().nullable().default(null),
 });
 export type PartyLeg = z.infer<typeof partyLegSchema>;
 export type PartyTask = z.infer<typeof partyTaskSchema>;
@@ -643,6 +650,10 @@ export function createGameSchemas(s: Scenario) {
     /** 움직이는 부대 (docs/war-parties-plan.md) */
     parties: z.array(partySchema).default([]),
     nextPartyNo: z.number().int().min(0).default(0),
+    /** 부대끼리의 마주침을 여기까지 셌다 (공통 규칙 23) */
+    partiesUpTo: z.number().int().default(0),
+    /** 주인공이 부대와 마주친 기록 (공통 규칙 23): "부대id@구역" → 누가 봤는지. 한 구역에서 한 번 굴린다 */
+    partySightings: z.record(z.string(), z.strictObject({ at: z.number().int(), player: z.boolean(), party: z.boolean() })).default({}),
     /** 구역 소유 */
     zones: z.record(z.string(), zoneStateSchema).default({}),
     clocks: z.record(z.string(), clockStateSchema).default({}),
@@ -1084,7 +1095,10 @@ export function createGameSchemas(s: Scenario) {
       /** 움직이는 부대의 새 목록 (없으면 그대로) */
       parties: z.array(partySchema).optional(),
       nextPartyNo: z.number().int().min(0).optional(),
+      partiesUpTo: z.number().int().optional(),
     }),
+    /** 주인공이 부대와 마주쳤다 (공통 규칙 23). player: 주인공이 봤다, party: 부대가 주인공을 봤다 */
+    z.strictObject({ type: z.literal("party_sighted"), key: z.string(), player: z.boolean(), party: z.boolean() }),
 
     z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional(), /** 도착하는 장소 (장소 개편: 길). 장소가 없는 구역이면 null */ place: z.string().nullable().optional() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
@@ -1455,6 +1469,8 @@ export const EMPTY_STATE: GameState = {
   factions: {},
   parties: [],
   nextPartyNo: 0,
+  partiesUpTo: 0,
+  partySightings: {},
   zones: {},
   clocks: {},
   lastWarDay: null,
@@ -2482,6 +2498,15 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.nextBattleNo += event.scheduled.length;
       if (event.parties) next.parties = structuredClone(event.parties);
       if (event.nextPartyNo !== undefined) next.nextPartyNo = event.nextPartyNo;
+      if (event.partiesUpTo !== undefined) next.partiesUpTo = event.partiesUpTo;
+      if (event.parties) {
+        // 사라진 부대의 마주침 기록은 지운다
+        const alive = new Set(event.parties.map((p) => p.id));
+        for (const key of Object.keys(next.partySightings)) if (!alive.has(key.split("@")[0]!)) delete next.partySightings[key];
+      }
+      break;
+    case "party_sighted":
+      next.partySightings[event.key] = { at: state.time, player: event.player, party: event.party };
       break;
 
     case "weather_set":

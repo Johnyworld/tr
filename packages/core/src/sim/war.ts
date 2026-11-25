@@ -29,6 +29,8 @@ export type WarWorld = {
   /** 움직이는 부대 (docs/war-parties-plan.md). 시나리오에 war.parties가 없으면 쓰지 않는다 */
   parties?: Party[];
   nextPartyNo?: number;
+  /** 부대끼리의 마주침을 여기까지 셌다 */
+  partiesUpTo?: number;
   /** 마지막으로 돈 날 (day를 넘기지 않고 돌릴 때 다음 날을 센다) */
   day?: number;
 };
@@ -51,6 +53,8 @@ export type WarDayOptions = {
   defer?: (spec: ClashSpec, at?: number) => boolean;
   /** 움직이는 부대: 이 시각까지 닿은 부대의 할 일을 한다. 없으면 그날 끝까지 */
   resolveUpTo?: number;
+  /** 움직이는 부대: 돌아온 부대를 이 시각까지만 거둔다 (게임은 지금, 그 뒤로는 아직 길 위다). 없으면 resolveUpTo */
+  endUpTo?: number;
   /** 구역의 감염체 압력 (12-118). 기준값보다 높으면 산출이 준다. 없으면 기준값 */
   infested?: Record<string, number>;
   /** 오늘 (큰 재난으로 산출이 멈춘 구역을 가린다, 12-169) */
@@ -95,6 +99,8 @@ const REFUGEE_SUSTAIN_DAYS = 60;
 export const WEAK_RAID_RATIO = 0.5;
 /** 공격 종류 가중치 */
 const KIND_WEIGHT: Record<Clash["kind"], number> = { occupy: 3, raid: 3, skirmish: 2, assault: 1 };
+/** 부대가 본 무리를 고르는 가중치 배수 (7-2, *임시*) */
+const GAP_WEIGHT = 3;
 
 export function initialWarWorld(content: Content): WarWorld {
   const factions: Record<string, FactionState> = {};
@@ -527,12 +533,25 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     const aggression = profile.aggression * policyEffects(content, next.factions[attacker]).aggression * warShareOf(content, next, attacker, infestedToday);
     if (rng() >= Math.min(0.9, aggression * war.attack_chance_per_aggression)) continue;
     const options = attackOptions(next, content, profile);
-    const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] })));
+    // 빈틈 노리기 (7-2): 이 무리의 부대가 하루 안에 본 무리는 더 노린다 (본 것만 안다)
+    const seenUntil = next.factions[attacker]!.seen ?? {};
+    const gap = (o: AttackOption) => (cfg && o.defender && (seenUntil[o.defender] ?? -1) >= dayStart ? GAP_WEIGHT : 1);
+    const choice = pickWeighted(rng, options.map((o) => ({ item: o, weight: KIND_WEIGHT[o.kind] * gap(o) })));
     if (!choice) continue;
     // 상대 전투원의 절반도 안 되면 먼저 치지 않는다 (12-138: 청솔이 세 배 강한 붉은연합을 120일에 스무 번 쳐서 무너졌다). 클락으로 준비한 공세는 그대로
     if (choice.kind !== "occupy" && choice.defender && next.factions[attacker]!.combatants < (next.factions[choice.defender]?.combatants ?? 0) * WEAK_RAID_RATIO) continue;
     if (choice.kind === "occupy") occupyOrSend(attacker, choice.zone);
     else fightOrDefer({ kind: choice.kind, attacker, defender: choice.defender!, zone: choice.zone });
+  }
+
+  // 지난 빈틈은 잊는다
+  for (const id of alive) {
+    const f = next.factions[id]!;
+    if (f.seen) {
+      const kept = Object.fromEntries(Object.entries(f.seen).filter(([, until]) => until >= dayStart));
+      if (Object.keys(kept).length) f.seen = kept;
+      else delete f.seen;
+    }
   }
 
   // 4-1. 움직이는 부대: 할 일 없는 날 자기 땅 가장자리를 도는 순찰, 그리고 오늘(또는 resolveUpTo까지) 닿은 부대의 할 일
@@ -541,9 +560,12 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
       if (rng() >= cfg.patrol_chance) continue;
       const border = borderZones(content, next, id);
       if (!border.length) continue;
-      spawnParty(next, content, rng, { faction: id, kind: "patrol", goal: border[Math.floor(rng() * border.length)]!, size: sizeOf("patrol"), dayStart, task: { kind: "watch" } });
+      // 적대하는 무리와 맞닿은 가장자리를 먼저 돈다 (*임시* 세 배)
+      const facing = (z: string) => neighbors(content, z).some((n) => { const o = next.zones[n]?.owner; return !!o && o !== id && disposition(content, id, o, next) <= HOSTILE; });
+      const goal = pickWeighted(rng, border.map((z) => ({ item: z, weight: facing(z) ? 3 : 1 })));
+      if (goal) spawnParty(next, content, rng, { faction: id, kind: "patrol", goal, size: sizeOf("patrol"), dayStart, task: { kind: "watch" } });
     }
-    const arrived = advanceParties(next, content, rng, options.resolveUpTo ?? dayStart + MINUTES_PER_DAY - 1, { defer: options.defer });
+    const arrived = advanceParties(next, content, rng, options.resolveUpTo ?? dayStart + MINUTES_PER_DAY - 1, { defer: options.defer, ...(options.endUpTo !== undefined ? { endUpTo: options.endUpTo } : {}) });
     clashes.push(...arrived.clashes);
     deferred.push(...arrived.deferred);
   }

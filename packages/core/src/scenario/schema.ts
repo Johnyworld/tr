@@ -723,6 +723,8 @@ export const scenarioFileSchema = z
             far_hops: z.number().int().positive().default(3),
             /** 할 일 없는 날 자기 땅 가장자리를 도는 순찰을 낼 확률 */
             patrol_chance: z.number().min(0).max(1).default(0),
+            /** 사람이 부대를 알아채는 판정 (공통 규칙 23 마주침). 그 판정의 가장 나은 능력 + 스킬이 보는 보정이다 */
+            notice_move: id.optional(),
             /** 교역 짐 행렬은 이 날수마다, 이 날수만큼의 몫을 싣는다 (2-3) */
             trade_every_days: z.number().int().positive().default(3),
             /**

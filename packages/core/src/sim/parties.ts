@@ -2,6 +2,7 @@ import type { Content } from "../content/schemas.ts";
 import type { Clash, Party, PartyLeg, PartyTask } from "../game/state.ts";
 import { MINUTES_PER_DAY, routeMinutes } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
+import { AMBUSH_FACTOR, canAmbush, isNight, partyChoice, partyNoticeBonus, sightings } from "../rules/encounter.ts";
 import { DEFENSE_COMMIT, disposition, fightClash, hopsFromBase, HOSTILE, neighbors, occupyZone, type ClashSpec, type WarWorld } from "./war.ts";
 
 /**
@@ -172,6 +173,8 @@ export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: Sp
     done: false,
     back: [],
     carry: { ...(args.carry ?? {}) },
+    met: [],
+    routedAt: null,
   };
   world.nextPartyNo = (world.nextPartyNo ?? 0) + 1;
   world.parties = [...(world.parties ?? []), party];
@@ -179,24 +182,71 @@ export function spawnParty(world: WarWorld, content: Content, rng: Rng, args: Sp
 }
 
 export type AdvanceOptions = {
-  /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 낄 때). 미룬 부대는 흩어져 전투원으로 돌아가고, 교전은 예정된 교전이 된다 */
+  /** true면 이 교전을 계산하지 않고 미룬다 (플레이어가 낄 때). 교전은 예정된 교전이 되고, 부대는 닿은 자리에서 흩어진다 */
   defer?: (spec: ClashSpec, at: number) => boolean;
+  /** 돌아온 부대를 이 시각까지만 거둔다 (게임: 지금. 그 뒤로는 아직 길 위에 있다). 없으면 upTo */
+  endUpTo?: number;
 };
 
 export type AdvanceResult = { clashes: Clash[]; deferred: (ClashSpec & { at: number })[] };
 
-/** 이 시각까지 닿은 부대의 할 일을 하고, 돌아온 부대를 거둔다 (시각 순서대로). world를 고친다 */
+/** 이 부대가 이 시각에 그 구역에서 숨어 기다리는 중인가 (습격대가 목표 바로 앞에서) */
+export function hidingAt(party: Party, t: number): boolean {
+  if (party.done || party.task.kind !== "clash" || party.legs.length < 3) return false;
+  const leg = party.legs[party.legs.length - 2]!;
+  return t >= leg.from && t <= leg.to;
+}
+
+const hostile = (content: Content, world: WarWorld, a: string, b: string) =>
+  a !== b && (disposition(content, a, b, world) <= HOSTILE || disposition(content, b, a, world) <= HOSTILE);
+
+/** 아직 마주치지 않은 적대 부대 짝 가운데 가장 이른 마주침 (같은 구역에 함께 있는 첫 시각) */
+function nextEncounter(content: Content, world: WarWorld, from: number, upTo: number): { a: Party; b: Party; zone: string; at: number } | null {
+  const parties = world.parties ?? [];
+  let best: { a: Party; b: Party; zone: string; at: number } | null = null;
+  for (let i = 0; i < parties.length; i++) {
+    for (let j = i + 1; j < parties.length; j++) {
+      const a = parties[i]!;
+      const b = parties[j]!;
+      if (a.size <= 0 || b.size <= 0 || a.met.includes(b.id) || !hostile(content, world, a.faction, b.faction)) continue;
+      for (const la of [...a.legs, ...a.back]) {
+        for (const lb of [...b.legs, ...b.back]) {
+          if (la.zone !== lb.zone) continue;
+          const s = Math.max(la.from, lb.from, from);
+          const e = Math.min(la.to, lb.to);
+          if (s > e || s > upTo) continue;
+          if (!best || s < best.at) best = { a, b, zone: la.zone, at: s };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/** 이 시각까지 닿은 부대의 할 일을 하고, 부대끼리의 마주침을 풀고, 돌아온 부대를 거둔다 (시각 순서대로). world를 고친다 */
 export function advanceParties(world: WarWorld, content: Content, rng: Rng, upTo: number, opts: AdvanceOptions = {}): AdvanceResult {
   const cfg = partiesConfig(content);
   const out: AdvanceResult = { clashes: [], deferred: [] };
   if (!cfg) return out;
+  const endUpTo = Math.min(upTo, opts.endUpTo ?? upTo);
   const due = (p: Party) => (p.done ? (returnOf(p) ?? arrivalOf(p)) : arrivalOf(p));
+  const limit = (p: Party) => (p.done ? endUpTo : upTo);
+  let cursor = world.partiesUpTo ?? 0;
   for (;;) {
-    const next = (world.parties ?? []).filter((p) => due(p) <= upTo).sort((a, b) => due(a) - due(b) || a.id.localeCompare(b.id))[0];
-    if (!next) return out;
-    if (next.done) endParty(world, next);
-    else arrive(world, content, rng, cfg, next, out, opts);
+    const ms = (world.parties ?? []).filter((p) => due(p) <= limit(p)).sort((a, b) => due(a) - due(b) || a.id.localeCompare(b.id))[0];
+    const enc = nextEncounter(content, world, cursor, Math.min(upTo, ms ? due(ms) : upTo));
+    if (enc && (!ms || enc.at <= due(ms))) {
+      cursor = enc.at;
+      meet(world, content, rng, cfg, enc, out);
+      continue;
+    }
+    if (!ms) break;
+    cursor = Math.max(cursor, due(ms));
+    if (ms.done) endParty(world, ms);
+    else arrive(world, content, rng, cfg, ms, out, opts);
   }
+  world.partiesUpTo = Math.max(world.partiesUpTo ?? 0, upTo);
+  return out;
 }
 
 function removeParty(world: WarWorld, id: string) {
@@ -213,10 +263,97 @@ function endParty(world: WarWorld, party: Party) {
   removeParty(world, party.id);
 }
 
+/** 길을 접고 지금 자리에서 거점으로 돌아간다 */
+function turnBack(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, party: Party, zone: string, at: number) {
+  const before = (legs: PartyLeg[]) => legs.filter((l) => l.from <= at).map((l) => (l.to > at ? { ...l, to: at } : l));
+  const walked = party.done ? before(party.back) : [];
+  if (!party.done) party.legs = before(party.legs);
+  if (!party.legs.length) party.legs = [{ zone, from: at, to: at }];
+  party.done = true;
+  const route = partyRoute(content, world, party.faction, zone, party.home);
+  // 거점에 이미 닿았으면(돌아오는 길의 끝) 그 자리에서 끝난다
+  party.back = [...walked, ...(route && route.length >= 2 ? planLegs(content, cfg, party.kind, route, at, at, party.size, rng).slice(1) : [{ zone, from: at, to: at }])];
+}
+
+/**
+ * 부대끼리 마주쳤다 (공통 규칙 23, 4-1~4-4). 서로 알아채고, 알아챈 쪽이 고르고, 싸우면 진 쪽이 달아난다.
+ * 같은 날 두 번 지면 남은 사람이 붙잡힌다. 본 쪽 무리는 하루 동안 그 무리의 빈틈을 안다 (7-2)
+ */
+function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, enc: { a: Party; b: Party; zone: string; at: number }, out: AdvanceResult) {
+  const { a, b, zone, at } = enc;
+  a.met.push(b.id);
+  b.met.push(a.id);
+  const cover = content.locations[zone]?.cover ?? 0;
+  const night = isNight(at);
+  const seen = sightings(rng, { bonus: partyNoticeBonus(a.kind), hidden: { hiding: hidingAt(a, at), night, cover } }, { bonus: partyNoticeBonus(b.kind), hidden: { hiding: hidingAt(b, at), night, cover } });
+  const knows = (who: Party, other: Party) => {
+    const f = world.factions[who.faction];
+    if (f) f.seen = { ...(f.seen ?? {}), [other.faction]: at + MINUTES_PER_DAY };
+  };
+  if (seen.aSees) knows(a, b);
+  if (seen.bSees) knows(b, a);
+  const own = (p: Party) => world.zones[zone]?.owner === p.faction;
+  const wants = (p: Party, other: Party, sees: boolean) => sees && partyChoice({ kind: p.kind, size: p.size, onOwnLand: own(p) }, { size: other.size }) === "fight";
+  const aFights = wants(a, b, seen.aSees);
+  const bFights = wants(b, a, seen.bSees);
+  if (!aFights && !bFights) return;
+  // 먼저 본 쪽이 혼자 덤비면 자기 땅에서는 매복이다 (4-3)
+  const [attacker, defender] = aFights ? [a, b] : [b, a];
+  const ambush = (attacker === a ? !seen.bSees : !seen.aSees) && canAmbush(own(attacker));
+  const fa = world.factions[attacker.faction]!;
+  const fd = world.factions[defender.faction]!;
+  const power = (p: Party, f: typeof fa, bonus: number) => p.size * (1 + 0.1 * f.morale) * bonus;
+  const pa = power(attacker, fa, ambush ? AMBUSH_FACTOR : 1);
+  const pd = power(defender, fd, 1);
+  const success = rng() < pa / (pa + pd);
+  const [winner, loser] = success ? [attacker, defender] : [defender, attacker];
+  const loserLosses = Math.min(loser.size, 1 + Math.floor(rng() * Math.max(1, Math.round(loser.size * 0.2))));
+  const winnerLosses = Math.min(winner.size, rng() < 0.5 ? 0 : 1);
+  const take = (p: Party, n: number) => {
+    p.size -= n;
+    const f = world.factions[p.faction];
+    if (f) f.population = Math.max(0, f.population - n);
+  };
+  take(loser, loserLosses);
+  take(winner, winnerLosses);
+  out.clashes.push({
+    kind: "skirmish",
+    attacker: attacker.faction,
+    defender: defender.faction,
+    zone,
+    success,
+    attackerLosses: attacker === winner ? winnerLosses : loserLosses,
+    defenderLosses: defender === winner ? winnerLosses : loserLosses,
+  });
+  // 진 쪽은 달아난다: 짐 절반을 버리고 거점으로. 같은 날 두 번째로 지면 남은 사람이 붙잡힌다 (4-4)
+  const twice = loser.routedAt !== null && Math.floor(loser.routedAt / MINUTES_PER_DAY) === Math.floor(at / MINUTES_PER_DAY);
+  if (twice) {
+    const f = world.factions[loser.faction];
+    if (f) f.population = Math.max(0, f.population - loser.size);
+    loser.size = 0;
+  }
+  loser.routedAt = at;
+  loser.carry = Object.fromEntries(Object.entries(loser.carry).map(([r, n]) => [r, Math.floor(n / 2)]));
+  // 공세를 앞두고 나간 정찰대가 쫓겨나면 공세가 하루 늦어진다 (2-1)
+  if (loser.task.kind === "watch" && loser.task.plan && !loser.done) {
+    const clock = world.clocks[loser.task.plan];
+    if (clock) clock.filled = Math.max(0, clock.filled - 1);
+  }
+  if (loser.size <= 0) {
+    loser.done = true;
+    loser.back = [];
+    loser.legs = loser.legs.filter((l) => l.from <= at).map((l) => (l.to > at ? { ...l, to: at } : l));
+    if (!loser.legs.length) loser.legs = [{ zone, from: at, to: at }];
+    return;
+  }
+  turnBack(world, content, rng, cfg, loser, zone, at);
+}
+
 function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, party: Party, out: AdvanceResult, opts: AdvanceOptions) {
   const at = arrivalOf(party);
   const f = world.factions[party.faction];
   if (!f) return removeParty(world, party.id);
+  if (party.size <= 0) return removeParty(world, party.id);
   const task = party.task;
   let stay = 0;
   if (task.kind === "clash") {
@@ -224,10 +361,11 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
     const defender = world.factions[task.defender];
     if (world.zones[party.goal]?.owner === task.defender && defender && defender.population > 0) {
       if (opts.defer?.(spec, at)) {
-        // 플레이어가 낄 교전: 부대는 흩어져 전투원으로 돌아가고, 교전은 그 시각의 예정된 교전이 된다 (전투 장면, 기획서 9.5)
+        // 플레이어가 낄 교전: 그 시각의 예정된 교전이 된다 (전투 장면, 기획서 9.5). 부대는 닿은 자리에서 흩어져, 다음에 거둘 때 전투원으로 돌아간다
         out.deferred.push({ ...spec, at });
-        f.combatants += party.size;
-        return removeParty(world, party.id);
+        party.done = true;
+        party.back = [];
+        return;
       }
       // 먼 길의 대가 (7-1): 거점에서 먼 곳을 치면 사기가 한 단계 낮은 채로 싸운다
       const far = hopsFromBase(content, world, party.faction, party.goal) > cfg.far_hops;
@@ -255,9 +393,13 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
   } else {
     stay = pickHours(rng, cfg.kinds[party.kind]!.stay);
   }
-  // 모두 쓰러졌으면 나르던 것도 잃는다
-  if (party.size <= 0) return removeParty(world, party.id);
   party.done = true;
+  // 모두 쓰러졌으면 나르던 것도 잃는다 (그 자리에서 끝난다)
+  if (party.size <= 0) {
+    party.back = [];
+    party.carry = {};
+    return;
+  }
   const route = partyRoute(content, world, party.faction, party.goal, party.home);
   party.back = route && route.length >= 2 ? planLegs(content, cfg, party.kind, route, at, at + stay, party.size, rng) : [];
 }

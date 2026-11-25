@@ -8,6 +8,8 @@ import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { advanceParties, arrivalOf, canSend, maxParties, partiesConfig, partyRoute, partyZoneAt, returnOf, spawnParty } from "./parties.ts";
 import { initialWarWorld, simulateWarDay, type WarWorld } from "./war.ts";
+import type { Party } from "../game/state.ts";
+import { createPartyCheck, PARTY_INTERRUPT, rollPartySight, seenPartiesLines } from "../engine/partySight.ts";
 
 const content = loadRealContent();
 const cfg = partiesConfig(content)!;
@@ -134,6 +136,107 @@ describe("움직이는 부대 (docs/war-parties-plan.md ①)", () => {
     for (let i = 0; i < 6; i++) w.runCheat("~time +24h");
     expect(w.state().nextPartyNo).toBeGreaterThan(0);
     for (const p of w.state().parties) expect(content.factions[p.faction]).toBeTruthy();
+    w.close();
+  });
+});
+
+/** 정해 둔 값을 차례로 내놓고, 다 쓰면 0.5 */
+const seq = (...xs: number[]) => {
+  let i = 0;
+  return () => (i < xs.length ? xs[i++]! : 0.5);
+};
+const party = (over: Partial<Party> & Pick<Party, "id" | "faction" | "kind" | "size" | "goal" | "legs" | "task">): Party => ({
+  leader: null,
+  home: over.faction === "faction_a" ? "a_base" : "c_base",
+  done: false,
+  back: [],
+  carry: {},
+  met: [],
+  routedAt: null,
+  ...over,
+});
+
+describe("마주침 (공통 규칙 23, ②)", () => {
+  it("부대끼리 같은 구역에 들면 알아채고, 자기 땅의 순찰은 덤비고, 진 정찰대는 달아나며 공세가 하루 늦어진다", () => {
+    const w = fresh();
+    const clock = w.clocks.c_east_offensive!;
+    clock.filled = clock.max - 1;
+    const t = 10 * 60;
+    w.parties = [
+      party({ id: "pa", faction: "faction_a", kind: "patrol", size: 6, goal: "a_east_post", legs: [{ zone: "a_base", from: t - 60, to: t - 60 }, { zone: "a_east_post", from: t - 60, to: t + 120 }], task: { kind: "watch" } }),
+      party({ id: "pc", faction: "faction_c", kind: "scout", size: 3, goal: "a_east_post", legs: [{ zone: "rail_embankment", from: t - 120, to: t }, { zone: "a_east_post", from: t, to: t + 60 }], task: { kind: "watch", plan: "c_east_offensive" } }),
+    ];
+    // 두 쪽 다 12를 굴려 본다, 순찰이 이긴다
+    const r = advanceParties(w, content, seq(0.99, 0.99, 0.99, 0.99, 0.01), t + 1);
+    expect(r.clashes[0]).toMatchObject({ kind: "skirmish", attacker: "faction_a", defender: "faction_c", zone: "a_east_post", success: true });
+    const scout = w.parties!.find((p) => p.id === "pc")!;
+    expect(scout.done).toBe(true);
+    expect(scout.back.at(-1)?.zone).toBe("c_base");
+    expect(clock.filled).toBe(clock.max - 2);
+    // 본 쪽 무리는 하루 동안 상대 무리의 빈틈을 안다 (7-2)
+    expect(w.factions.faction_a!.seen?.faction_c).toBe(t + MINUTES_PER_DAY);
+  });
+
+  it("둘 다 못 보면 스쳐 지나가고, 한 짝은 한 번만 마주친다", () => {
+    const w = fresh();
+    const t = 22 * 60;
+    w.parties = [
+      party({ id: "pa", faction: "faction_a", kind: "patrol", size: 6, goal: "a_east_post", legs: [{ zone: "a_base", from: t - 60, to: t - 60 }, { zone: "a_east_post", from: t - 60, to: t + 120 }], task: { kind: "watch" } }),
+      party({ id: "pc", faction: "faction_c", kind: "raid", size: 8, goal: "a_east_post", legs: [{ zone: "rail_embankment", from: t - 120, to: t }, { zone: "a_east_post", from: t, to: t + 60 }], task: { kind: "watch" } }),
+    ];
+    const r = advanceParties(w, content, seq(0, 0, 0, 0), t + 30);
+    expect(r.clashes).toEqual([]);
+    expect(w.parties!.find((p) => p.id === "pa")!.met).toEqual(["pc"]);
+  });
+
+  it("같은 날 두 번 지면 남은 사람이 붙잡힌다 (4-4)", () => {
+    const w = fresh();
+    const t = 10 * 60;
+    w.parties = [
+      party({ id: "pa", faction: "faction_a", kind: "patrol", size: 9, goal: "a_east_post", legs: [{ zone: "a_base", from: t - 60, to: t - 60 }, { zone: "a_east_post", from: t - 60, to: t + 120 }], task: { kind: "watch" } }),
+      party({ id: "pc", faction: "faction_c", kind: "scout", size: 3, goal: "a_east_post", routedAt: t - 120, legs: [{ zone: "rail_embankment", from: t - 120, to: t }, { zone: "a_east_post", from: t, to: t + 60 }], task: { kind: "watch" } }),
+    ];
+    const pop = w.factions.faction_c!.population;
+    advanceParties(w, content, seq(0.99, 0.99, 0.99, 0.99, 0.01, 0), t + 1);
+    expect(w.parties!.find((p) => p.id === "pc")?.size ?? 0).toBe(0);
+    expect(w.factions.faction_c!.population).toBe(pop - 3);
+  });
+});
+
+describe("주인공과 부대 (공통 규칙 23, 9-1·9-2)", () => {
+  const make = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-sight-")), content, rngFactory: () => createSeededRng(3) }).create("mcp", "role_a_grunt");
+  const raider = (zone: string, from: number) =>
+    party({ id: "pr", faction: "faction_c", kind: "raid", size: 8, goal: zone, legs: [{ zone: "c_base", from: from - 600, to: from - 600 }, { zone, from, to: from + 120 }], task: { kind: "clash", clash: "raid", defender: "faction_a" } });
+
+  it("바깥에 있으면 적대하는 부대를 보고 빨리감기가 멈춘다. 지켜 주는 거점에서는 멈추지 않는다", () => {
+    const w = make();
+    const base = w.state();
+    // 우리 거점: 굴리지 않는다
+    const atBase = { ...base, parties: [raider("a_base", base.time + 30)] };
+    expect(createPartyCheck(content, "wait")({ state: atBase, from: base.time, to: base.time + 60, rng: () => 0.99 })).toBeNull();
+    // 동쪽 초소의 망루(바깥): 12를 굴려 본다
+    const post = { ...base, playerZone: "a_east_post", playerPlace: "watchtower", parties: [raider("a_east_post", base.time + 30)] };
+    const hit = createPartyCheck(content, "wait")({ state: post, from: base.time, to: base.time + 60, rng: () => 0.99 });
+    expect(hit).toMatchObject({ kind: "disturbance", at: base.time + 30 });
+    expect(hit!.detail.startsWith(`${PARTY_INTERRUPT}:pr:1`)).toBe(true);
+    // 초소 안(실내): 보지 못한다
+    const inside = { ...post, playerPlace: "bunker" };
+    expect(createPartyCheck(content, "wait")({ state: inside, from: base.time, to: base.time + 60, rng: () => 0.99 })).toBeNull();
+    // 혼자 잠들었으면 주인공은 보지 못한다 (부대가 덤비지 않으면 멈추지 않는다)
+    expect(rollPartySight(post, content, () => 0.99, post.parties[0]!, base.time + 30, { asleep: true, watched: false }).player).toBe(false);
+    w.close();
+  });
+
+  it("본 부대는 GM 상태에 대략으로만 (원칙 4)", () => {
+    const w = make();
+    const s = w.state();
+    const p = raider("a_east_post", s.time - 10);
+    const state = { ...s, playerZone: "a_east_post", playerPlace: "watchtower", parties: [p], partySightings: { "pr@a_east_post": { at: s.time, player: true, party: false } } };
+    const lines = seenPartiesLines(state, content);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("열 명 남짓");
+    expect(lines[0]).not.toContain("습격");
+    expect(seenPartiesLines({ ...state, partySightings: {} }, content)).toEqual([]);
     w.close();
   });
 });

@@ -1,3 +1,4 @@
+import { createPartyCheck, PARTY_INTERRUPT, runPartyInterrupt, runPartySightings } from "./partySight.ts";
 import {heldOf, heldKind, welcomeRescued } from "../rules/held.ts";
 import { applyBuild, planBuild } from "./facilities.ts";
 import { applyTrain, planTrain } from "./training.ts";
@@ -1465,8 +1466,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`들어서자마자 일이 생겼다: "${d.title}". 도착한 자리의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
+    // 도착한 구역의 부대 (공통 규칙 23, 9-3): 길 위의 일보다 먼저. 마주쳤으면 그 길의 이야기는 열지 않는다
+    const metParty = arrival.length ? [] : runPartySightings(ctx);
+    displays.push(...metParty);
     // 길 위의 일 (12-53): 오는 길에 일이 생겼으면, 도착 직전 길 위의 장면으로 연출한다
-    if (!arrival.length) for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
+    if (!arrival.length && !metParty.length) for (const d of runRoadEvent(ctx, rideUsed?.roadRisk ?? 1)) {
       displays.push(d);
       if (d.type === "storylet" && d.event === "started") lines.push(`오는 길에 일이 생겼다: "${d.title}". 도착하기 전, 길 위의 장면으로 연출하라 (상태의 '진행 중인 이야기').`);
     }
@@ -1865,7 +1869,7 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
       const midnight = dayOf(cursor) * MINUTES_PER_DAY;
       const segmentEnd = Math.min(target, midnight);
       const stops = slotOpensBetween(store.getState(), content, cursor, segmentEnd);
-      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, stops, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createStoryletCheck(content, { asleep: activity === "sleep", activity })]) });
+      const result = fastForward({ state: store.getState(), start: cursor, until: segmentEnd, rng, stops, checks: createInterruptChecks(content.scenario, [createCampCheck(content, activity, deep), createPartyCheck(content, activity), createStoryletCheck(content, { asleep: activity === "sleep", activity })]) });
       store.append({
         type: "time_advanced",
         activity,
@@ -1940,7 +1944,12 @@ export function advanceTime(ctx: ToolContext, activity: Activity, until: TimeSeg
   }
   // 야영지에 다가온 것 (12-148): 끊긴 시각에 야영의 이야기를 연다
   const camp = interrupt?.detail === CAMP_INTERRUPT ? runCampEvent(ctx, activity, deep) : null;
-  if (camp?.line) {
+  // 부대가 들어섰다 (공통 규칙 23 마주침): 본 것을 알리고, 덤비면 매복당한 채로
+  const partyMet = interrupt?.detail.startsWith(`${PARTY_INTERRUPT}:`) ? runPartyInterrupt(ctx, interrupt.detail) : null;
+  if (partyMet) {
+    extra.push(...partyMet);
+    lines.push(`${josa(label, "이/가")} 끊겼다: 무리가 이 구역에 들어섰다.${activity === "sleep" ? " 곁에서 흔들어 깨웠다." : ""}`);
+  } else if (camp?.line) {
     lines.push(`${josa(label, "이/가")} 끊겼다. ${camp.line}`);
     extra.push(...camp.displays);
   } else if (interrupt?.kind === "storylet" && to >= plannedEnd && !deep) {

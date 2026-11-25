@@ -75,6 +75,7 @@ import { ownedBy } from "../rules/home.ts";
 import { pastGiven, shownSkill, unlearnedNote } from "../rules/skill.ts";
 import { personFactLines, personFacts } from "./personFacts.ts";
 import { tracesHere } from "./felt.ts";
+import { seenPartiesLines } from "./partySight.ts";
 import { maskUnknownIds } from "../rules/knowledge.ts";
 import { currentPlace, depthAt, directionTo, doorLabel, homeHidden, knowsPlace, knowsWhoIsAt, knowsZone, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
 import { inZone, nearby, whereIs } from "../rules/place.ts";
@@ -215,7 +216,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["present", describePresentNpcs(state, content, player)],
     ["known", describeKnownPeople(state, content)],
     ["facilities", describeFacilities(content, state).join("\n")],
-    ["zone_people", [describePlaces(state, content), tracesHere(state, content), describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
+    ["zone_people", [describePlaces(state, content), tracesHere(state, content), describeSeenParties(state, content), describeFort(state, content), describeInfestation(state, content), describeWater(state, content), describeTrap(state, content), describeZonePeople(state, content)].filter(Boolean).join("\n")],
     ["zone_extras", describeZoneExtras(state, content)],
     ["templates", describeExtraTemplates(state, content)],
     ["beliefs", describeBeliefs(state, content)],
@@ -803,4 +804,10 @@ function depositLines(state: GameState, content: Content): string[] {
   return [
     `맡긴 물건 (돌려받으면 transfer_item 맡은 사람 → 주인공, 판정 없이): ${mine.map((d) => `${content.items[d.itemId]?.name ?? d.itemId}${d.quantity > 1 ? ` ×${d.quantity}` : ""} → ${playerCalls(state, content, d.holder)} (${d.holder}), "${d.note}"`).join(" / ")}`,
   ];
+}
+
+/** 이 구역에서 본 부대 (공통 규칙 23 마주침, 원칙 4: 본 것만, 규모는 대략, 목적은 짐작으로도 적지 않는다) */
+function describeSeenParties(state: GameState, content: Content): string | null {
+  const lines = seenPartiesLines(state, content);
+  return lines.length ? `눈에 띈 무리 (본 것만, 몇 명인지는 대략. 무엇을 하러 왔는지는 지어내지 않는다):\n${lines.join("\n")}` : null;
 }

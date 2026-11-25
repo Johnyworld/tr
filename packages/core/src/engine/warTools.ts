@@ -144,6 +144,7 @@ export function afterClashes(ctx: ToolContext, clashes: readonly Clash[], only: 
   if (only.news !== false) {
     displays.push(...deliverNews(ctx, clashes));
     displays.push(...casualtiesToPeople(ctx, clashes));
+    displays.push(...creditNews(ctx, clashes));
   }
   if (only.facilities !== false) {
     displays.push(...warCaptures(ctx, clashes));
@@ -376,4 +377,25 @@ export function describeFactionsForGm(state: GameState, content: Content): strin
     ...(content.scenario.seasons ? [`계절: ${seasonLabel(seasonAt(content.scenario, state.time))}`] : []),
     "전황은 캐릭터가 들은 보고·소문(믿음)으로만 안다. 교전 결과·사상자·점령을 지어내지 않는다.",
   ].join("\n");
+}
+
+/**
+ * 주인공이 앞당긴 공세가 터졌다 (파트 11 기여 기록): 우리 무리의 그 공세 소식에 주인공의 일을 잇는다.
+ * 소식이 닿는 길은 공통 규칙 14 (갇혀 있으면 닿지 않는다)
+ */
+function creditNews(ctx: ToolContext, clashes: readonly Clash[]): ToolDisplayEvent[] {
+  const state = ctx.store.getState();
+  const me = state.characters[state.playerId];
+  if (!me || me.dead || !me.factionId) return [];
+  const out: ToolDisplayEvent[] = [];
+  for (const c of clashes) {
+    if (c.attacker !== me.factionId) continue;
+    const mine = (c.credits ?? []).filter((x) => x.by === state.playerId);
+    if (!mine.length) continue;
+    const zone = ctx.content.locations[c.zone]?.name ?? c.zone;
+    const what = [...new Set(mine.map((x) => `'${x.mission}'`))].join("·");
+    const fact = `당신이 해낸 ${what} 덕분에 우리 쪽이 ${josa(zone, "을/를")} 미리 알고 들이쳤다고 한다. ${c.success ? "이겼다" : "그래도 막혔다"}`;
+    out.push(...hearNews(ctx, { fact, factions: [c.attacker, c.defender ?? c.attacker], topic: WAR_TOPIC }));
+  }
+  return out;
 }

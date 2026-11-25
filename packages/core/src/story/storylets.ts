@@ -1,3 +1,6 @@
+import { neighbors } from "../sim/war.ts";
+import { hostileFaction } from "../rules/home.ts";
+import { partyZoneAt } from "../sim/parties.ts";
 import { situationOf, storyFits } from "../rules/situation.ts";
 import { ableNow } from "../rules/company.ts";
 import { preferRested, resting } from "../rules/rest.ts";
@@ -477,6 +480,23 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     // 탈영병이 달아날 때마다 새 탈영병으로 35분 간격 네 번). 외면해 흘려보낸 것(expired)은 다시 열린다
     const log = state.storyletLog[storylet.id];
     if (log && log.lastFiredAt >= m.assignedAt && log.lastEnd && log.lastEnd !== "expired") return false;
+  }
+  // 근처에 실제 부대가 있다 (움직이는 부대 5-2): 이 구역이나 맞닿은 구역
+  if (w.party_near) {
+    const here = state.playerZone;
+    const near = here ? new Set([here, ...neighbors(content, here)]) : new Set<string>();
+    const fits = (state.parties ?? []).some((p) => {
+      if (p.size <= 0 || (w.party_near!.faction && p.faction !== w.party_near!.faction) || (w.party_near!.kinds && !w.party_near!.kinds.includes(p.kind))) return false;
+      if (w.party_near!.hostile && !hostileFaction(state, content, p.faction)) return false;
+      const z = partyZoneAt(p, at);
+      return !!z && near.has(z);
+    });
+    if (!fits) return false;
+  }
+  // 이 구역에서 부대끼리 부딪친 흔적 (5-2): 닿을 때 계산으로 남은 교전
+  if (w.party_trace_hours !== undefined) {
+    const since = at - w.party_trace_hours * 60;
+    if (!(state.recentClashes ?? []).some((r) => r.party && r.clash.zone === state.playerZone && r.at >= since)) return false;
   }
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;

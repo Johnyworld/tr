@@ -286,6 +286,9 @@ function endParty(world: WarWorld, content: Content, party: Party) {
   removeParty(world, party.id);
 }
 
+/** 정찰로 적 배치를 알고 치는 기습의 화력 배수 (파트 11, *임시*) */
+export const SURPRISE_FACTOR = 1.3;
+
 /** 기세 (6-3): 사흘 안에 두 번 진 무리는 사기 -1. 연승 보너스는 없다 */
 export const STREAK_DAYS = 3;
 export function recordDefeat(world: WarWorld, factionId: string | null | undefined, at: number): void {
@@ -423,7 +426,9 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
       const far = hopsFromBase(content, world, party.faction, party.goal) > cfg.far_hops;
       f.combatants += party.size;
       if (far) f.morale -= 1;
-      const clash = fightClash(world, content, rng, spec, party.size);
+      // 정찰로 적 배치를 알고 치면 기습이다 (파트 11, *임시* 화력 ×1.3)
+      const clash = fightClash(world, content, rng, spec, task.surprise ? Math.round(party.size * SURPRISE_FACTOR) : party.size);
+      if (task.credits?.length) clash.credits = task.credits;
       if (far) f.morale = Math.min(3, f.morale + 1);
       recordDefeat(world, clash.success ? task.defender : party.faction, at);
       const survivors = Math.max(0, Math.min(f.combatants, party.size - clash.attackerLosses));

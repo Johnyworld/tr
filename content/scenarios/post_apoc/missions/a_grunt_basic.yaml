@@ -37,6 +37,8 @@
       min_outcome: partial
 - id: scout_north_overpass
   title: 북쪽 고가도로 정찰
+  # 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역의 적 부대를 보고, 앞당긴 공세가 기습이 된다
+  scouts: true
   where: overpass
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
@@ -99,6 +101,8 @@
       quantity: 1
 - id: front_recon
   title: 전선 정찰
+  # 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역의 적 부대를 보고, 앞당긴 공세가 기습이 된다
+  scouts: true
   where: enemy
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
@@ -115,6 +119,8 @@
   advances: { clock: a_counteroffensive, delta: 2 }
 - id: supply_raid
   title: 붉은연합 보급 털기
+  # 파괴공작 (파트 11): 우리 몫(supplies)과 따로 붉은연합 창고가 준다
+  sabotages: { faction: faction_c, take: { food: 15, ammo: 20 } }
   where: enemy
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true

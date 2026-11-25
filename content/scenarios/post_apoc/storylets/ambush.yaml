@@ -19,6 +19,8 @@
     own_territory: false
     # 매복자가 붉은연합 약탈조원이라 붉은연합 사람에게는 열지 않는다 (플레이 테스트 11: 같은 무리 조원이 신입을 털었다)
     factions: [none, faction_a, faction_b, faction_d, faction_e, faction_y]
+    # 근처에 실제 붉은연합 부대가 있을 때만 (움직이는 부대 5-2)
+    party_near: { faction: faction_c }
   cast:
     raider: { extra: c_raider, label: 매복한 약탈자, enter: true }
   setup: "{to:을/를} 앞두고 길이 좁아지는 곳, 무너진 담 위에서 무언가 떨어진다. 그물처럼 엮은 철사가 발목에 감기고, 담 뒤에서 쇠지렛대를 든 {raider:이/가} 뛰어내린다. \"짐 내려놓고 엎드려.\""

@@ -365,7 +365,17 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
       // 부대를 낸다: 습격·교전은 습격대, 총공격은 공세 부대 (교전 병력 비율 그대로)
       const share = warShareOf(content, next, spec.attacker, infestedToday);
       const size = Math.max(1, Math.round(next.factions[spec.attacker]!.combatants * share * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
-      spawnParty(next, content, rng, { faction: spec.attacker, kind: spec.kind === "assault" ? "assault" : "raid", goal: spec.zone, size, dayStart, ...(options.leaderOk ? { leaderOk: options.leaderOk } : {}), task: { kind: "clash", clash: spec.kind, defender: spec.defender, ...(spec.plan ? { plan: spec.plan } : {}) } });
+      // 계획을 앞당긴 일 (파트 11): 공세에 실려 나가고, 정찰이 있었으면 기습이다
+      const credits = spec.plan ? (next.clocks[spec.plan]?.credits ?? []) : [];
+      spawnParty(next, content, rng, {
+        faction: spec.attacker,
+        kind: spec.kind === "assault" ? "assault" : "raid",
+        goal: spec.zone,
+        size,
+        dayStart,
+        ...(options.leaderOk ? { leaderOk: options.leaderOk } : {}),
+        task: { kind: "clash", clash: spec.kind, defender: spec.defender, ...(spec.plan ? { plan: spec.plan } : {}), ...(credits.length ? { credits: credits.map(({ by, mission }) => ({ by, mission })), surprise: credits.some((c) => c.scout) } : {}) },
+      });
       return;
     }
     if (options.defer?.(spec)) deferred.push(spec);

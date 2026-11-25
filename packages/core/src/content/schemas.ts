@@ -439,6 +439,10 @@ export function createContentSchemas(s: Scenario) {
     repays_debt: z.number().int().min(1).optional(),
     /** 완수하면 임무를 준 무리의 거점을 보강한다 (담 메우기, 12-48). 일부 완수는 절반(내림) */
     fortifies: z.number().int().min(1).max(2).optional(),
+    /** 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역과 맞닿은 구역의 적 부대를 보고, 당긴 클락의 공세가 기습이 된다 */
+    scouts: z.boolean().optional(),
+    /** 파괴공작 (파트 11): 완수하면 그 무리 창고에서 이만큼 깎는다 (일부 완수는 절반). 우리 몫(supplies)과 따로 */
+    sabotages: z.strictObject({ faction: contentIdSchema, take: z.partialRecord(idEnum(s.resources.map((r) => r.id)), z.number().int().min(1)) }).optional(),
     /** 완수하면 이 세력 클락을 당긴다 (일부 완수는 절반). 전선 임무가 우리 무리의 계획을 앞당긴다 */
     advances: z.strictObject({ clock: contentIdSchema, delta: z.number().int().min(-5).max(5) }).optional(),
     /** 완수하면 임무를 준 무리의 창고에 이만큼 들어간다 (수색·채집으로 구해 온 몫). 일부 완수는 절반(내림). 플레이어 소지품과는 따로 */
@@ -1163,6 +1167,12 @@ export function createContentSchemas(s: Scenario) {
         mission: z.array(contentIdSchema).min(1).optional(),
         /** 최근 N시간 안에 전황 소식을 들었는지 */
         war_news_within_hours: z.number().positive().optional(),
+        /** 이 구역이나 맞닿은 구역에 실제 부대가 있다 (움직이는 부대 5-2): 그 무리, 주인공을 적대하는 무리만(hostile), 부대 종류 */
+        party_near: z
+          .strictObject({ faction: contentIdSchema.optional(), hostile: z.boolean().optional(), kinds: z.array(z.enum(["scout", "raid", "assault", "supply", "patrol"])).min(1).optional() })
+          .optional(),
+        /** 이 구역에서 N시간 안에 부대끼리 부딪친 일이 있었다 (흔적 이야기, 5-2) */
+        party_trace_hours: z.number().positive().optional(),
       })
       .default({}),
     cast: z.record(contentIdSchema, castRole).default({}),

@@ -91,6 +91,8 @@
       minutes: 90
 - id: b_joint_recon
   title: 연합 정찰 지원
+  # 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역의 적 부대를 보고, 앞당긴 공세가 기습이 된다
+  scouts: true
   where: enemy
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true

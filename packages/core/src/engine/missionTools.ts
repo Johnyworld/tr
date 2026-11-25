@@ -1,3 +1,6 @@
+import { partyZoneAt } from "../sim/parties.ts";
+import { hostileFaction } from "../rules/home.ts";
+import { forceWords } from "./battleTools.ts";
 import { activeCompanions } from "../game/companions.ts";
 import { storyletOf } from "../story/storylets.ts";
 import { restDays } from "../rules/rest.ts";
@@ -363,11 +366,39 @@ const reportMission = defineTool({
       ctx.store.append({ type: "debt_changed", characterId: mission.assigneeId, factionId: lender, delta: -repaid });
     }
     // 전선 임무는 우리 무리의 계획(세력 클락)을 앞당긴다. 일부 완수는 절반
-    const advances = ctx.content.missions[mission.templateId]?.advances;
+    const template = ctx.content.missions[mission.templateId];
+    const advances = template?.advances;
+    // 전쟁에 닿은 일을 결과에 한 줄로 (파트 11): 숫자 없이 말로. 우리 무리 계획만 이름으로 안다
+    const warLines: string[] = [];
     if (advances && ctx.store.getState().clocks[advances.clock] && result.outcome !== "failed") {
       const delta = result.outcome === "success" ? advances.delta : Math.trunc(advances.delta / 2);
-      if (delta !== 0) ctx.store.append({ type: "clock_adjusted", clockId: advances.clock, delta });
+      if (delta !== 0) {
+        ctx.store.append({ type: "clock_adjusted", clockId: advances.clock, delta });
+        const clock = ctx.store.getState().clocks[advances.clock]!;
+        const ours = clock.factionId === lender;
+        if (ours && delta > 0) {
+          // 기여 기록 (파트 11): 그 계획의 공세가 터지면 소식에 실린다. 정찰이었으면 기습이 된다
+          ctx.store.append({ type: "clock_credited", clockId: advances.clock, by: mission.assigneeId, mission: mission.title, scout: !!template?.scouts });
+        }
+        warLines.push(ours ? `${josa(clock.label, "이/가")} ${delta > 0 ? "앞당겨졌다" : "늦춰졌다"}.` : `${ctx.content.factions[clock.factionId]?.name ?? "적"} 쪽의 준비를 ${delta < 0 ? "늦췄을" : "도왔을"} 것이다.`);
+      }
     }
+    // 파괴공작 (파트 11): 그 무리 창고를 깎는다. 일부 완수는 절반
+    const sab = template?.sabotages;
+    if (sab && result.outcome !== "failed" && ctx.store.getState().factions[sab.faction]) {
+      let hit = false;
+      for (const [resource, amount] of Object.entries(sab.take)) {
+        const want = result.outcome === "success" ? amount! : Math.trunc(amount! / 2);
+        const have = ctx.store.getState().factions[sab.faction]!.resources[resource] ?? 0;
+        const delta = Math.min(want, have);
+        if (delta <= 0) continue;
+        ctx.store.append({ type: "faction_resource_changed", factionId: sab.faction, resource, delta: -delta });
+        hit = true;
+      }
+      if (hit) warLines.push(`${ctx.content.factions[sab.faction]?.name ?? "적"} 쪽 창고에 구멍을 냈다.`);
+    }
+    // 정찰 임무 (파트 11): 해내면 그 구역과 맞닿은 구역에 있는 적 부대를 본 것으로 안다
+    if (template?.scouts && result.outcome === "success") warLines.push(...scoutedParties(ctx, mission));
     // 담을 메우는 일감은 그 무리 거점을 보강한다 (12-48)
     const fortifies = ctx.content.missions[mission.templateId]?.fortifies;
     const base = baseOfNow(ctx.store.getState(), ctx.content, lender);
@@ -434,6 +465,7 @@ const reportMission = defineTool({
               : `이 일감의 몫으로 무리 창고의 ${josa(supplied.join("·"), "이/가")} 조금 늘었다 (같이 나선 사람들의 몫까지 장부에 셈한 것. 주인공이 찾은 물건은 소지품에 그대로 있고, 내놓을지는 플레이어가 정한다).`,
           ]
         : []),
+      ...warLines,
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...(putDown.length ? [`남아 있던 ${putDown.join(", ")}도 처리했다.`] : []),
       ...releaseBuddies(ctx, mission.id),
@@ -734,4 +766,22 @@ export function fieldLearns(ctx: ToolContext): string | null {
   if (!learns || (state.beliefs[state.playerId] ?? []).some((b) => b.fact === learns)) return null;
   ctx.store.append({ type: "belief_added", characterId: state.playerId, belief: { id: `b_${state.nextBeliefNo}`, fact: learns, source: "seen", accuracy: "exact", learnedAt: state.time } });
   return `알게 된 것 (임무 현장에서, 조건을 다 채웠다): ${learns}. 이것을 장면에 서술하라. 보고는 상관에게 report_mission.`;
+}
+
+/** 정찰 임무로 본 적 부대 (파트 11): 임무 장소(없으면 지금 구역)와 맞닿은 구역에 지금 있는 적대 부대를 믿음으로 */
+function scoutedParties(ctx: ToolContext, mission: MissionInstance): string[] {
+  const state = ctx.store.getState();
+  const center = mission.place?.zone ?? state.playerZone;
+  if (!center) return [];
+  const near = new Set([center, ...neighbors(ctx.content, center)]);
+  const lines: string[] = [];
+  for (const p of state.parties) {
+    const z = partyZoneAt(p, state.time);
+    if (p.size <= 0 || !z || !near.has(z) || !hostileFaction(state, ctx.content, p.faction)) continue;
+    const fact = `정찰로 봤다: ${ctx.content.locations[z]?.name ?? z}에 ${ctx.content.factions[p.faction]?.name ?? "낯선"} 쪽 사람들 ${forceWords(p.size)}`;
+    const now = ctx.store.getState();
+    ctx.store.append({ type: "belief_added", characterId: mission.assigneeId, belief: { id: `b_${now.nextBeliefNo}`, fact, source: "seen", accuracy: "approximate", learnedAt: now.time, topic: "war" } });
+    lines.push(fact);
+  }
+  return lines;
 }

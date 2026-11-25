@@ -278,6 +278,8 @@
     zone_owner: [none, other]
     dispositions:
       - { from: faction_c, to: own, lte: -1 }
+    # 근처에 실제 붉은연합 부대가 있을 때만 (움직이는 부대 5-2)
+    party_near: { faction: faction_c }
   cast:
     patrol: { extra: c_raider, label: 붉은연합 순찰조원 }
   setup: "{to:으로/로} 꺾어지는 모퉁이에서 붉은 완장 셋이 마주 온다. 앞장선 {patrol:이/가} 걸음을 멈추고 당신의 차림을 위아래로 훑는다. 뒤의 둘이 천천히 양옆으로 벌어진다. \"어디 소속이야.\""

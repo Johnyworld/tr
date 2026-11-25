@@ -48,7 +48,8 @@ import { startingSkills } from "./creation.ts";
 // 113: 움직이는 부대 ② (12-315). 부대 met·routedAt, 세력 seen, partiesUpTo·partySightings, 이벤트 party_sighted
 // 114: 움직이는 부대 ③-1 (12-316). 닿을 때 계산(이벤트 parties_advanced), recentClashes.party
 // 115: 움직이는 부대 ③-2 (12-317). partyFights, battle.party, 세력 defeats, 이벤트 party_engaged·party_fight_ended
-export const SAVE_SCHEMA_VERSION = 115;
+// 116: 움직이는 부대 ③-3 (12-318). 클락 credits, 교전·부대 할 일 credits·surprise, 이벤트 clock_credited
+export const SAVE_SCHEMA_VERSION = 116;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -170,6 +171,8 @@ export const clockStateSchema = z.strictObject({
   target: z.string(),
   filled: z.number().int().min(0),
   max: z.number().int().positive(),
+  /** 이 계획을 앞당긴 일 (움직이는 부대 파트 11): 누가·어떤 임무로·정찰이었는지. 공세가 터지면 소식에 실리고 비운다 */
+  credits: z.array(z.strictObject({ by: z.string(), mission: z.string(), scout: z.boolean() })).optional(),
 });
 export type ClockState = z.infer<typeof clockStateSchema>;
 
@@ -187,6 +190,8 @@ export const clashSchema = z.strictObject({
   plan: z.string().optional(),
   /** 습격으로 빼앗은 자원 */
   loot: z.record(z.string(), z.number().int().min(0)).optional(),
+  /** 이 공세를 앞당긴 일 (파트 11): 누가·어떤 임무로 */
+  credits: z.array(z.strictObject({ by: z.string(), mission: z.string() })).optional(),
 });
 export type Clash = z.infer<typeof clashSchema>;
 
@@ -196,7 +201,16 @@ export type Clash = z.infer<typeof clashSchema>;
  */
 export const partyLegSchema = z.strictObject({ zone: z.string(), from: z.number().int(), to: z.number().int() });
 export const partyTaskSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("clash"), clash: z.enum(["raid", "skirmish", "assault"]), defender: z.string(), plan: z.string().optional() }),
+  z.strictObject({
+    kind: z.literal("clash"),
+    clash: z.enum(["raid", "skirmish", "assault"]),
+    defender: z.string(),
+    plan: z.string().optional(),
+    /** 이 공세를 앞당긴 일 (파트 11) */
+    credits: z.array(z.strictObject({ by: z.string(), mission: z.string() })).optional(),
+    /** 정찰로 적 배치를 알고 치는 기습 (파트 11): 첫 교환 화력 배수 */
+    surprise: z.boolean().optional(),
+  }),
   z.strictObject({ kind: z.literal("occupy"), plan: z.string().optional() }),
   z.strictObject({ kind: z.literal("trade"), partner: z.string(), give: z.record(z.string(), z.number().int().min(0)), get: z.record(z.string(), z.number().int().min(0)) }),
   /** 정찰·순찰: 가서 보고 돌아온다. plan이 있으면 그 공세를 앞두고 나간 정찰 */
@@ -1117,6 +1131,8 @@ export function createGameSchemas(s: Scenario) {
       clashes: z.array(clashSchema),
       scheduled: z.array(pendingClashSchema).default([]),
     }),
+    /** 임무가 세력 클락을 앞당겼다 (파트 11 기여 기록) */
+    z.strictObject({ type: z.literal("clock_credited"), clockId: z.string(), by: z.string(), mission: z.string(), scout: z.boolean() }),
     /** 주인공이 길 위의 부대와 맞붙었다 (움직이는 부대 ③): 장면에 들인 부대원 */
     z.strictObject({ type: z.literal("party_engaged"), partyId: z.string(), members: z.array(z.string()), zone: z.string() }),
     z.strictObject({ type: z.literal("party_fight_ended"), partyId: z.string() }),
@@ -2515,7 +2531,12 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (state.lastWarDay !== null && event.day <= state.lastWarDay) throw new Error(`이미 지난 날: ${event.day}일차`);
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
-      for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
+      for (const [id, clock] of Object.entries(event.clocks)) {
+        const c = mustGet(next.clocks, id, "세력 클락");
+        // 다 차서 다시 시작한 계획은 기여 기록을 비운다 (그 공세에 실려 나갔다)
+        if (clock.filled < c.filled) delete c.credits;
+        c.filled = clock.filled;
+      }
       next.lastWarDay = event.day;
       next.pendingClashes.push(...structuredClone(event.scheduled));
       rememberClashes(next, event.clashes, state.time);
@@ -2540,6 +2561,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       rememberClashes(next, event.clashes, state.time, true);
       const alive = new Set(event.parties.map((p) => p.id));
       for (const key of Object.keys(next.partySightings)) if (!alive.has(key.split("@")[0]!)) delete next.partySightings[key];
+      break;
+    }
+    case "clock_credited": {
+      const clock = next.clocks[event.clockId];
+      if (clock) clock.credits = [...(clock.credits ?? []), { by: event.by, mission: event.mission, scout: event.scout }];
       break;
     }
     case "party_engaged":

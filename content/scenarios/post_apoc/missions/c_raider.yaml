@@ -61,6 +61,8 @@
 
 - id: c_field_raid
   title: 남쪽 텃밭 습격
+  # 파괴공작 (파트 11): 청솔형제단 창고가 준다
+  sabotages: { faction: faction_a, take: { food: 10 } }
   where: south_fields
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true
@@ -92,6 +94,8 @@
 
 - id: c_east_probe
   title: 동쪽 초소 경계 재기
+  # 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역의 적 부대를 보고, 앞당긴 공세가 기습이 된다
+  scouts: true
   where: c_warehouse
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true

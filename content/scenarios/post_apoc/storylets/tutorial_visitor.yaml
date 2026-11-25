@@ -177,14 +177,14 @@
         - set_flag: tv_settled
         - relation: { who: host, axis: affection, delta: 1 }
         - belief: { fact: "청솔형제단 거점의 규칙: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번 식당에서, 남의 몫에 손대지 않는다", source: seen }
-        - belief: { fact: "나는 아직 청솔형제단의 손님이다. 대표 최선희가 곧 직접 만나 보자고 할 것이라고 했다", source: seen }
+        - belief: { fact: "청솔형제단이 공용 숙소에 자리를 내주고 생활 규칙을 일러 주었다. 대표 최선희가 직접 만나 보자고 한다는 말을 들었다", source: seen }
     - id: ask_family
       label: 가족의 이름을 대며 본 적 있는지 묻는다
       effects:
         - set_flag: tv_settled
         - belief: { fact: "청솔형제단 거점에는 가족의 이름을 아는 사람이 없다. 정복자 할머니는 버들마을 사람들에게 물어보라고 했다", source: seen }
         - belief: { fact: "청솔형제단 거점의 규칙: 거점 안에서 총을 함부로 쏘지 않는다, 배급은 하루 한 번 식당에서, 남의 몫에 손대지 않는다", source: seen }
-        - belief: { fact: "나는 아직 청솔형제단의 손님이다. 대표 최선희가 곧 직접 만나 보자고 할 것이라고 했다", source: seen }
+        - belief: { fact: "청솔형제단이 공용 숙소에 자리를 내주고 생활 규칙을 일러 주었다. 대표 최선희가 직접 만나 보자고 한다는 말을 들었다", source: seen }
 
 # 버들마을 사람: 가족의 이름을 안다
 - id: tv_family_news

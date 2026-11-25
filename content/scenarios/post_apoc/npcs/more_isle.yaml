@@ -6,7 +6,7 @@
   name: 변나래
   alias: 소매를 걷어붙인 의회 부엌 아가씨
   faction: faction_y
-  rank: staff
+  rank: resident
   occupation: cook
   age: 24
   gender: female
@@ -170,7 +170,7 @@
   name: 빈철호
   alias: 약초 냄새 나는 늙은 약방 의사
   faction: faction_y
-  rank: staff
+  rank: resident
   occupation: doctor
   age: 68
   gender: male

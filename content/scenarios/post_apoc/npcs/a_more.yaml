@@ -20,7 +20,7 @@
       - "버리면 편하겠지요. 그 다음엔 누굴 버릴 겁니까."
   routine: { morning: 지도부 회의, day: 거점 순회, night: 교무실 }
   rules:
-    - 하급 대원과 직접 길게 이야기하지 않는다. 분대장을 거친다
+    - 평소 일은 하급 대원과 직접 길게 이야기하지 않고 상관을 거친다. 새 식구를 들일 때만은 직접 만나 본다
     - 배급을 줄이자는 말에는 끝까지 반대한다
   knows:
     - 연합의 탄약이 한 달 치도 안 남았다는 것
@@ -37,7 +37,7 @@
   name: 정복자
   alias: 국자 꽂은 취사 할머니
   faction: faction_a
-  rank: staff
+  rank: resident
   occupation: cook
   age: 61
   gender: female

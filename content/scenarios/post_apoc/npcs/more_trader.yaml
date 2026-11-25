@@ -6,7 +6,7 @@
   name: 변상철
   alias: 소금기 밴 비옷의 뱃사공
   faction: faction_e
-  rank: staff
+  rank: resident
   age: 55
   gender: male
   look: 소금기에 하얗게 바랜 비옷, 바다 쪽으로 늘 찡그린 눈. 왼손 새끼손가락이 없다. 품에 접힌 편지 뭉치를 넣고 다닌다.
@@ -88,7 +88,7 @@
   name: 감순덕
   alias: 돋보기를 목에 건 전당포 노파
   faction: faction_e
-  rank: staff
+  rank: resident
   occupation: trader
   age: 63
   gender: female

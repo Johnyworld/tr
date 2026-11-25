@@ -7,7 +7,7 @@
   name: 다니엘 오코로
   alias: 경상도 말을 쓰는 키 큰 흑인 사내
   faction: faction_a
-  rank: staff
+  rank: resident
   occupation: carpenter
   age: 38
   gender: male
@@ -46,7 +46,7 @@
   name: 라젠드라 타파
   alias: 밭고랑에서 콧노래를 부르는 네팔 사람
   faction: faction_a
-  rank: staff
+  rank: resident
   age: 33
   gender: male
   look: 작고 단단한 몸에 그을린 얼굴. 늘 챙 넓은 밀짚모자를 쓰고, 목에 빛바랜 붉은 실 팔찌를 감았다. 흙 묻은 손으로 씨앗 봉투를 소중하게 쥔다.
@@ -90,7 +90,7 @@
   name: 응우옌 마이
   alias: 부엌 솥 앞의 베트남 여자
   faction: faction_b
-  rank: staff
+  rank: resident
   occupation: cook
   age: 31
   gender: female

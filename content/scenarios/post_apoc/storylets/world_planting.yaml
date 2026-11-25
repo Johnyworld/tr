@@ -13,7 +13,7 @@
     seasons: [spring, summer, autumn]
     has_items: [seed_packet]
   cast:
-    hand: { faction: own, ranks: [grunt, staff], known: true, optional: true }
+    hand: { faction: own, ranks: [grunt, resident], known: true, optional: true }
   setup: 주머니 속 씨앗 봉투가 바스락거린다. {zone}의 담 안쪽, 해가 드는 자리에 아직 갈지 않은 땅이 한 뼘 남아 있다.
   ai_direction: 씨앗은 심고 물을 대야 산다. 심은 것이 바로 먹을 것이 되지는 않는다 (산출은 날마다 조금씩, 코드가 셈한다). 땅을 빼앗기면 밭도 사라진다. 혼자 심을 수도, 무리 사람에게 맡길 수도 있다. 숫자는 지어내지 않는다.
   choices:

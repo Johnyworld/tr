@@ -199,6 +199,11 @@ export function activeMissionOf(missions: Record<string, MissionInstance>, chara
   return Object.values(missions).find((m) => m.assigneeId === characterId && m.status === "active");
 }
 
+/** 복무를 시작한 때: 판 중간에 무리에 들었으면 든 때, 아니면 판을 시작한 때 (12-310) */
+export function serviceStart(state: { runStartedAt: GameTime; serviceSince?: GameTime | null }): GameTime {
+  return state.serviceSince ?? state.runStartedAt;
+}
+
 /** 다 채운 복무 날 수: 날짜로 센다 (12-292, PT22~24 섬·튜토리얼: 머리 줄은 "복무 4일째", 진급 줄은 "복무 3일째") */
 export function daysServed(now: GameTime, runStartedAt: GameTime): number {
   return Math.max(0, Math.floor(now / MINUTES_PER_DAY) - Math.floor(runStartedAt / MINUTES_PER_DAY));
@@ -341,10 +346,10 @@ export function commanderOf(
 }
 
 /** 임무를 하나도 끝내지 않은 날 수 (G1): 마지막으로 끝낸(완수·일부 완수) 임무를 받은 때, 없으면 이야기를 시작한 때부터 */
-export function idleDays(state: { time: GameTime; runStartedAt: GameTime; missions: Record<string, MissionInstance> }, characterId: string): number {
+export function idleDays(state: { time: GameTime; runStartedAt: GameTime; serviceSince?: GameTime | null; missions: Record<string, MissionInstance> }, characterId: string): number {
   const last = Object.values(state.missions)
     .filter((m) => m.assigneeId === characterId && (m.status === "completed" || m.status === "partial"))
-    .reduce((t, m) => Math.max(t, m.assignedAt), state.runStartedAt);
+    .reduce((t, m) => Math.max(t, m.assignedAt), serviceStart(state));
   return Math.floor((state.time - last) / MINUTES_PER_DAY);
 }
 

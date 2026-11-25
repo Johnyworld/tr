@@ -479,7 +479,7 @@
     resolve: { kinds: [recognition], stage: 1 }
     own_territory: true
   cast:
-    junior: { faction: own, here: true, ranks: [grunt, staff] }
+    junior: { faction: own, here: true, ranks: [grunt, resident] }
   setup: "{junior:이/가} 쭈뼛거리며 다가온다. 당신 하는 걸 봤다고, 자기한테도 가르쳐 줄 수 있느냐고."
   ai_direction: "누군가 배우러 온다는 것은 이미 인정의 시작이다. 가르치는 일은 직분의 결로 그린다. {junior:은/는} 서툴다. 직분 평판은 standing으로만."
   choices:

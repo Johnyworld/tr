@@ -92,7 +92,7 @@
   name: 임소리
   alias: 단발머리 수습 간호사
   faction: faction_d
-  rank: staff
+  rank: resident
   occupation: nurse
   age: 19
   gender: female
@@ -168,7 +168,7 @@
   name: 문기순
   alias: 돋보기 목에 건 늙은 약사
   faction: faction_d
-  rank: staff
+  rank: resident
   occupation: nurse
   age: 67
   gender: female

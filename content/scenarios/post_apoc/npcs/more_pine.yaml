@@ -48,7 +48,7 @@
   name: 허세린
   alias: 소매에 피 얼룩이 진 앳된 의무실 보조
   faction: faction_a
-  rank: staff
+  rank: resident
   occupation: medic
   age: 19
   gender: female
@@ -167,7 +167,7 @@
   name: 차연희
   alias: 열쇠 꾸러미를 목에 건 창고지기
   faction: faction_a
-  rank: staff
+  rank: resident
   age: 37
   gender: female
   look: 짧게 친 머리에 보급 창고 열쇠 꾸러미를 끈에 꿰어 목에 걸었다. 앞니 사이가 조금 벌어져 웃으면 휘파람 같은 소리가 난다.

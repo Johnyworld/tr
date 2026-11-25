@@ -339,7 +339,17 @@ export function createGameSchemas(s: Scenario) {
      * offerAt 뒤 그 거점에서 대표가 면담해 권하면 그때 들어간다. rank·title·graceDays는 들일 때 이야기가 정한 자리
      */
     admission: z
-      .strictObject({ factionId: z.string(), rank: z.string().optional(), title: z.string().optional(), graceDays: z.number().int().optional(), since: z.number().int(), offerAt: z.number().int(), offers: z.number().int().min(0) })
+      .strictObject({
+        factionId: z.string(),
+        rank: z.string().optional(),
+        title: z.string().optional(),
+        /** 대표가 권할 자리 (직분, 12-309). 이야기가 정한 것이면 rank·title이 그 자리의 것 */
+        post: z.string().optional(),
+        graceDays: z.number().int().optional(),
+        since: z.number().int(),
+        offerAt: z.number().int(),
+        offers: z.number().int().min(0),
+      })
       .nullable()
       .default(null),
     /** 세계의 일이 죽게 할 뻔했으나 한 번 봐준 공들인 관계 (12-242). 두 번째는 죽을 수 있다 */
@@ -565,8 +575,12 @@ export function createGameSchemas(s: Scenario) {
     /** 오늘 상관이 내놓은 임무 후보 */
     offers: z.strictObject({ day: z.number().int(), templateIds: z.array(z.string()) }).nullable(),
     nextMissionNo: z.number().int().positive(),
-    /** 지금 캐릭터의 런이 시작된 시각 (복무 기간 계산) */
+    /** 지금 캐릭터의 런이 시작된 시각 (복무 기간은 serviceSince가 없을 때 이것부터) */
     runStartedAt: z.number().int(),
+    /** 지금 무리에 든 시각 (12-310, PT 받아들임: 3일차에 들었는데 "복무 3일째"). null이면 판을 시작할 때부터 그 무리 사람이다. game/missions.ts serviceStart로 읽는다 */
+    serviceSince: z.number().int().nullable().default(null),
+    /** 거점 밖에 사는 상관이 마지막으로 들른 날 (12-311, rules/admission.ts chiefVisits만 읽는다) */
+    chiefVisitDay: z.number().int().nullable().default(null),
     /** 지금 캐릭터가 시작한 구역 (시작 장면 대기는 이 구역에서만, 공통 규칙 17, 12-254) */
     runStartZone: z.string().nullable().default(null),
     /** 주인공 이름과 겹쳐 이 세계에서만 바꾼 월드 인물의 이름 (인물 id → 원래·바꾼 이름, 12-260). 콘텐츠의 글에도 반영한다 */
@@ -963,9 +977,11 @@ export function createGameSchemas(s: Scenario) {
      */
     z.strictObject({ type: z.literal("player_joined_faction"), factionId: z.string(), rank: z.string(), role: customRoleSchema, beliefs: z.array(beliefSchema).default([]), graceUntil: z.number().int().optional() }),
     /** 무소속 주인공을 손님으로 들였다 (공통 규칙 22): 대표의 면담은 offerAt 뒤. rank·title·graceDays는 받아들일 때 쓴다 */
-    z.strictObject({ type: z.literal("player_admitted"), factionId: z.string(), rank: z.string().optional(), title: z.string().optional(), graceDays: z.number().int().optional(), offerAt: z.number().int() }),
+    z.strictObject({ type: z.literal("player_admitted"), factionId: z.string(), rank: z.string().optional(), title: z.string().optional(), post: z.string().optional(), graceDays: z.number().int().optional(), offerAt: z.number().int() }),
     /** 대표의 권유를 사양했다: 손님으로 남고 offerAt에 다시 권한다 (공통 규칙 22) */
     z.strictObject({ type: z.literal("admission_deferred"), offerAt: z.number().int() }),
+    /** 거점 밖에 사는 상관이 우리 거점에 들렀다 (12-311) */
+    z.strictObject({ type: z.literal("chief_visited"), day: z.number().int() }),
     z.strictObject({ type: z.literal("npc_left"), npcId: z.string() }),
     z.strictObject({ type: z.literal("belief_added"), characterId: z.string(), belief: beliefSchema }),
     /** 낡은 믿음을 지운다 (PT15 튜토리얼: 가족을 다시 만났는데 "어디 있는지 모른다"가 남았다) */
@@ -1381,6 +1397,8 @@ export const EMPTY_STATE: GameState = {
   offers: null,
   nextMissionNo: 1,
   runStartedAt: START_TIME,
+  serviceSince: null,
+  chiefVisitDay: null,
   runStartZone: null,
   nameSwaps: {},
   deeds: {},
@@ -1533,7 +1551,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     }
     case "player_admitted":
-      next.admission = { factionId: event.factionId, ...(event.rank ? { rank: event.rank } : {}), ...(event.title ? { title: event.title } : {}), ...(event.graceDays ? { graceDays: event.graceDays } : {}), since: state.time, offerAt: event.offerAt, offers: 0 };
+      next.admission = { factionId: event.factionId, ...(event.rank ? { rank: event.rank } : {}), ...(event.title ? { title: event.title } : {}), ...(event.post ? { post: event.post } : {}), ...(event.graceDays ? { graceDays: event.graceDays } : {}), since: state.time, offerAt: event.offerAt, offers: 0 };
+      return next;
+    case "chief_visited":
+      next.chiefVisitDay = event.day;
       return next;
     case "admission_deferred":
       if (next.admission) next.admission = { ...next.admission, offerAt: event.offerAt, offers: next.admission.offers + 1 };
@@ -1543,7 +1564,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (player.factionId === event.factionId) throw new Error("이미 그 무리에 속해 있습니다.");
       player.factionId = event.factionId;
       player.rank = event.rank;
+      // 들어간 자리의 직분 (12-309): 직분이 바뀌면 평판은 새로 쌓는다
+      if (event.role.occupation && player.occupation?.id !== event.role.occupation) player.occupation = { id: event.role.occupation, standing: 0 };
       next.missionGraceUntil = event.graceUntil ?? null;
+      next.serviceSince = state.time;
       next.admission = null;
       next.roleId = event.role.id;
       next.customRole = structuredClone(event.role);
@@ -2606,6 +2630,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (successor.dead) throw new Error(`사망한 인물: ${successor.id}`);
       next.playerId = successor.id;
       next.runStartedAt = state.time;
+      next.serviceSince = null;
       next.runStartZone = next.playerZone;
       next.admission = null;
       // 앞 주인공이 잃은 상관의 믿음은 물려받지 않는다 (플레이 테스트 12: 계승한 주인공의 진급이 막혔다)

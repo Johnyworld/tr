@@ -552,7 +552,7 @@
     own_policy: { ration: [cut] }
   cast:
     boss: { commander: true }
-    asker: { faction: own, known: true, ranks: [squad_leader, staff] }
+    asker: { faction: own, known: true, ranks: [squad_leader, resident] }
   setup: '배급을 줄인 지 며칠째다. 회의가 끝날 무렵 {asker:이/가} 문 앞에서 기다리고 있다. "앓아누운 사람들이 줄인 몫을 못 버팁니다. 열이 있는 사람한테 반 국자는 반 국자가 아니에요." {boss:이/가} 장부를 덮지 않은 채 당신에게 고개를 돌린다. {scarce:이/가} 가장 모자란 때다.'
   ai_direction: 배급을 줄인 방침은 코드가 정한 것이다. 앓는 사람 몫을 따로 떼면 성한 사람 몫이 더 줄고, 떼지 않으면 앓는 사람이 더디게 낫는다. 상관은 간부의 안을 듣고 정한다. 양은 코드가 정했다. 며칠 치인지 지어내지 않는다.
   choices:

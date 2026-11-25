@@ -1,7 +1,7 @@
 import { knownOwner } from "../rules/knowledge.ts";
 import { heldOf, pausedWhileHeld } from "../rules/held.ts";
 import { tiesOf } from "../game/ties.ts";
-import { checkPromotion, commanderOf, recentSetback } from "../game/missions.ts";
+import { checkPromotion, commanderOf, recentSetback, serviceStart } from "../game/missions.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { josa } from "../text.ts";
 import { fill } from "../text.ts";
@@ -348,7 +348,7 @@ export function resolveProgress(state: GameState, content: Content, r = currentR
     if (!promotion || me.rank !== promotion.from) return null;
     const commanderId = commanderOf(state, content);
     const trust = commanderId ? (state.relations[commanderId]?.[me.id]?.trust ?? 0) : null;
-    const missing = checkPromotion(me, promotion, state.time, state.runStartedAt, trust, disciplineOf(content, me.factionId).maxDisobedience, recentSetback(state, me.id, commanderId)).missing;
+    const missing = checkPromotion(me, promotion, state.time, serviceStart(state), trust, disciplineOf(content, me.factionId).maxDisobedience, recentSetback(state, me.id, commanderId)).missing;
     return missing.length ? `진급까지 남은 것: ${missing.join(", ")}` : "진급 조건을 다 채웠다";
   }
   return null;

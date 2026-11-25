@@ -26,7 +26,7 @@ import { activeMissionOf, atMissionPlace, commanderOf, idleDays } from "../game/
 import { NEUTRAL_RELATION } from "../game/reputation.ts";
 import { dayOf, MINUTES_PER_DAY, segmentOf, type GameTime } from "../rules/time.ts";
 import type { Rng } from "../rng.ts";
-import { offerDue } from "../rules/admission.ts";
+import { offerDue, offeredPost } from "../rules/admission.ts";
 import { harmTrack } from "../scenario/scenario.ts";
 import { daysOfStock } from "../sim/war.ts";
 import { fill, josa, type JosaPair } from "../text.ts";
@@ -518,6 +518,8 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;
   if (choice.when?.factions && !choice.when.factions.includes(state.characters[state.playerId]?.factionId || "none")) return false;
   if (choice.when?.in_faction !== undefined && !!state.characters[state.playerId]?.factionId !== choice.when.in_faction) return false;
+  // 면담에서 다른 자리 청하기: 대표가 권한 자리와 같으면 빠진다 (12-309)
+  if (choice.when?.post_not && offeredPost(state) === choice.when.post_not) return false;
   const player = state.characters[state.playerId];
   if (!player) return false;
   const effects = choice.outcomes ? choice.outcomes.success : choice.effects;

@@ -500,7 +500,7 @@ export const scenarioFileSchema = z
     extra_marks: z.array(z.string().min(1)).default([]),
     /** routine_away: 일과 한 칸이 구역 밖에 나간 시간이라는 말 (B①: 일과 검사는 그 구역 장소로 정해지거나 이 말이 있어야 한다) */
     /** segments: 시간대 → 그 시간대를 말하는 낱말 (설계 목록 6-5: 글이 그 시간대를 말하면 when.segments가 그 시간대 안이어야 한다) */
-    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]), knows_endings: z.array(z.string().min(1)).default([]), routine_away: z.array(z.string().min(1)).default([]), segments: z.partialRecord(z.enum(TIME_SEGMENTS), z.array(z.string().min(1))).default({}) }).optional(),
+    story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]), knows_endings: z.array(z.string().min(1)).default([]), routine_away: z.array(z.string().min(1)).default([]), status_beliefs: z.array(z.string().min(1)).default([]), segments: z.partialRecord(z.enum(TIME_SEGMENTS), z.array(z.string().min(1))).default({}) }).optional(),
     /** notice_minutes: 짓이 상관 귀에 닿는 시간. 그 사이 한 짓은 한 회의에서 함께 다룬다 (12-261, PT16 졸병: 20분 만에 같은 회의가 또 열렸다) */
     offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1), notice_minutes: z.number().int().min(0).default(60) }).optional(),
     discipline: z
@@ -1815,6 +1815,24 @@ export const scenarioFileSchema = z
         offer_after_hours: z.tuple([z.number().min(0), z.number().min(0)]),
         offer_hours: z.tuple([z.number().int().min(0).max(23), z.number().int().min(1).max(24)]),
         reoffer_days: z.number().int().min(1),
+        /**
+         * 들어갈 자리 (12-309, 사용자 결정): 대표가 권하는 직분은 이야기가 정한 것(join_faction.occupation), 없으면 붕괴 전 직업(by_past), 없으면 default.
+         * 면담에서 ask의 자리를 대신 청할 수 있다. squad의 자리만 분대에 들고, 나머지는 같은 일을 하는 윗사람(없으면 chief_rank)이 상관이다.
+         * 계급은 ranks(직분 → 계급), 없으면 other_rank
+         */
+        posts: z
+          .strictObject({
+            by_past: z.record(id, id),
+            default: id,
+            ask: z.array(id),
+            squad: z.array(id),
+            ranks: z.record(id, id),
+            other_rank: id,
+            chief_rank: id,
+            /** 분대 없는 자리의 상관이 거점 밖에 살면 이 시각 [시작, 끝) 사이 하루 한 번 우리 거점에 들러 일감을 준다 (12-311) */
+            visit_hours: z.tuple([z.number().int().min(0).max(23), z.number().int().min(1).max(24)]).optional(),
+          })
+          .optional(),
       })
       .optional(),
     storylet_pacing: z

@@ -4,7 +4,7 @@ import type { Content } from "../content/schemas.ts";
 import { knowsName, playerCalls } from "../game/acquaintance.ts";
 import { disciplineOf } from "../game/culture.ts";
 import { templateKind } from "../game/kinds.ts";
-import { checkPromotion, commanderOf, recentSetback } from "../game/missions.ts";
+import { checkPromotion, commanderOf, recentSetback, serviceStart } from "../game/missions.ts";
 import { rankName } from "../game/ranks.ts";
 import { roleOf, type GameState } from "../game/state.ts";
 import { josa } from "../text.ts";
@@ -128,7 +128,7 @@ export function offerPromotion(ctx: ToolContext, commanderTrust: number | null):
   const promotion = content.scenario.promotion;
   if (state.promotionOffer || me.rank !== promotion.from) return null;
   const setback = recentSetback(state, me.id, commanderOf(state, content));
-  if (!checkPromotion(me, promotion, state.time, state.runStartedAt, commanderTrust, disciplineOf(content, me.factionId).maxDisobedience, setback).eligible) return null;
+  if (!checkPromotion(me, promotion, state.time, serviceStart(state), commanderTrust, disciplineOf(content, me.factionId).maxDisobedience, setback).eligible) return null;
   store.append({ type: "promotion_offered", to: promotion.to });
   const to = rankName(content, me.factionId, promotion.to);
   return `진급 제안: 상관이 ${josa(to, "을/를")} 맡으라고 한다. 강제가 아니다. 플레이어가 답하면 promotion accept 또는 decline (거절해도 나중에 상관에게 맡겠다고 하면 다시 받을 수 있다).`;
@@ -156,7 +156,7 @@ const promotionTool = defineTool({
       return { ok: true, resultText: `${josa(boss, "은/는")} 제안을 거두지 않는다. 마음이 바뀌면 말하라고 한다. 이 결과대로 서술하라.`, display: quiet };
     }
     const trust = state.relations[commander]?.[me.id]?.trust ?? 0;
-    const check = checkPromotion(me, promotion, state.time, state.runStartedAt, trust, disciplineOf(content, me.factionId).maxDisobedience, recentSetback(state, me.id, commander));
+    const check = checkPromotion(me, promotion, state.time, serviceStart(state), trust, disciplineOf(content, me.factionId).maxDisobedience, recentSetback(state, me.id, commander));
     if (!check.eligible) {
       return { ok: true, resultText: `${josa(boss, "이/가")} 고개를 젓는다: 지금은 맡길 수 없다 (${check.missing.join(", ")}). 이 결과대로 서술하라.`, display: quiet };
     }

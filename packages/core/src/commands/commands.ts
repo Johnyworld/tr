@@ -17,7 +17,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
-import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS, missionStatusLabel } from "../game/missions.ts";
+import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS, missionStatusLabel, serviceStart } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
@@ -79,7 +79,7 @@ function clockLine(state: GameState) {
   const m = minuteOfDay(state.time);
   const hhmm = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   // 날짜로 센다 (PT22·PT23 섬: 4일차 새벽에 "복무 3일째"였다)
-  const days = dayOf(state.time) - dayOf(state.runStartedAt) + 1;
+  const days = dayOf(state.time) - dayOf(state.characters[state.playerId]?.factionId ? serviceStart(state) : state.runStartedAt) + 1;
   const free = !state.characters[state.playerId]?.factionId;
   return `${dayOf(state.time)}일차 · ${hhmm} · ${SEGMENT_LABELS[segmentOf(state.time)]} · ${free ? "" : "복무 "}${days}일째`;
 }

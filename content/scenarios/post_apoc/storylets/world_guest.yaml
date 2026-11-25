@@ -113,7 +113,7 @@
     segments: [day, evening]
     day_gte: 3
   cast:
-    recruiter: { faction: zone_owner, here: true, ranks: [squad_leader, officer, staff, leader] }
+    recruiter: { faction: zone_owner, here: true, ranks: [squad_leader, officer, resident, leader] }
   setup: "{recruiter:이/가} 당신이 일하는 걸 한참 지켜보다가 다가온다. \"떠돌기엔 손이 아깝네. 겨울엔 혼자 못 버텨. 우리 쪽에 들어오면 배급표 하나는 내가 만들어 주지.\""
   ai_direction: 진심으로 하는 제안이다. 무리에 들어오는 길은 이 이야기가 아니라 그 무리의 정식 절차(사람을 만나고, 일을 맡고, 받아들여지는 것)로 이어진다. 이 장면은 그 문이 열려 있다는 것을 알리는 데까지다. 거절해도 무례로 여기지 않는다.
   choices:

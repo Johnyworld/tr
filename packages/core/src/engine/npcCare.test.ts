@@ -42,7 +42,7 @@ describe("NPC의 회복", () => {
 });
 
 describe("주인공이 남을 치료한다", () => {
-  const medic = { faction: "faction_a", rank: "staff", occupation: "medic", title: "의무병", location: "a_base", kit: "trader", skills: {}, age: 30, opening: "x", background: [] };
+  const medic = { faction: "faction_a", rank: "resident", occupation: "medic", title: "의무병", location: "a_base", kit: "trader", skills: {}, age: 30, opening: "x", background: [] };
   it("응급처치: 의무병은 아이템 없이, 아니면 아이템이 있어야 상처를 돌본다. 판정 성공이면 한 단계, 하루 한 번", () => {
     const six = () => () => 0.99;
     const mk = () => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-care-")), content, rngFactory: six });

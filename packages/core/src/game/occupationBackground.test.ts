@@ -62,7 +62,7 @@ describe("직분", () => {
   it("계급이 곧 사다리다 (12-82): 이야기 조건의 칸은 분대원·주민 0, 분대장 1, 간부 2", () => {
     const scout = (rank: string) => ({ rank, occupation: { id: "scavenger", standing: 99 } });
     expect([careerStep(content, scout("grunt")), careerStep(content, scout("squad_leader")), careerStep(content, scout("officer"))]).toEqual([0, 1, 2]);
-    expect(careerStep(content, { rank: "staff", occupation: { id: "cook", standing: 99 } })).toBe(0);
+    expect(careerStep(content, { rank: "resident", occupation: { id: "cook", standing: 99 } })).toBe(0);
     expect(occupationTitle(content, scout("officer"))).toBe("수색대원");
   });
 
@@ -71,7 +71,7 @@ describe("직분", () => {
     const w = open(cook);
     const c = w.state().characters;
     expect(c.a_bokja!.occupation?.id).toBe("cook");
-    expect(c.a_chaewon).toMatchObject({ rank: "staff", occupation: { id: "nurse" } });
+    expect(c.a_chaewon).toMatchObject({ rank: "resident", occupation: { id: "nurse" } });
     expect(occupationTitle(w.content, c.d_eunyoung)).toBe("의사");
     const role = { commander: false, known: false, enter: true, optional: false, here: false, faction: "own", occupations: ["same"] } as never;
     expect(castCandidates(w.state(), w.content, role)).toEqual(["a_bokja"]);

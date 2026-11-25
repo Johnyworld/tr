@@ -189,7 +189,7 @@
     indoor: "any"
     own_policy: { ration: [cut] }
   cast:
-    grumbler: { faction: own, ranks: [grunt, staff] }
+    grumbler: { faction: own, ranks: [grunt, resident] }
   setup: "배식 줄에서 국자가 반만 차서 올라온다. {grumbler:이/가} 식판을 내려다보다가 들으라는 듯 말한다. \"윗사람들 장부에는 우리 배가 안 적히나 보지.\" 줄이 조용해진다."
   ai_direction: 배급이 줄어든 것은 회의가 정한 방침이다 (코드가 정한 사실). 불만은 진짜고, 누가 듣고 있는지 모른다. 맞장구치면 동료들 사이에서는 편해지지만 윗선의 귀에 들어갈 수 있다.
   choices:
@@ -228,7 +228,7 @@
     indoor: true
     own_policy: { ration: [extra] }
   cast:
-    cook: { faction: own, ranks: [grunt, staff] }
+    cook: { faction: own, ranks: [grunt, resident] }
   setup: "오랜만에 솥에서 김이 오른다. 배급이 늘었다는 말이 돌자 식당에 사람이 몰린다. {cook:이/가} 국자를 들고 웃는다. \"오늘은 두 번 받아도 뭐라 안 해.\" 구석에서는 누군가 창고가 금방 바닥날 거라고 중얼거린다."
   ai_direction: 배급을 늘린 것은 회의가 정한 방침이다. 사람들은 반기지만 창고가 빨리 빈다는 걱정도 있다. 창고 숫자는 말하지 않는다.
   choices:

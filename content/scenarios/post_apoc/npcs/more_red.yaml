@@ -5,7 +5,7 @@
   name: 석중기
   alias: 박달나무 몽둥이를 찬 규율반원
   faction: faction_c
-  rank: staff
+  rank: resident
   # 성적 위협 (12-59, 수위가 켜져 있을 때만 쓰인다)
   menace: harass
   age: 47
@@ -104,7 +104,7 @@
   name: 옥금자
   alias: 국자를 허리에 찬 취사반 아주머니
   faction: faction_c
-  rank: staff
+  rank: resident
   occupation: cook
   age: 58
   gender: female
@@ -163,7 +163,7 @@
   name: 편종호
   alias: 손가락에 붉은 페인트가 밴 선전꾼
   faction: faction_c
-  rank: staff
+  rank: resident
   age: 43
   gender: male
   look: 깡마른 몸에 둥근 뿔테 안경. 오른손 손가락 마디마다 붉은 페인트가 배어 지워지지 않는다. 목소리가 크고 맑다.

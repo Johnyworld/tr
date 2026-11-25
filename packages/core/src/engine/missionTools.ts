@@ -34,15 +34,32 @@ import { enterScene } from "./extras.ts";
 function meetHere(ctx: ToolContext, id: string): boolean {
   const state = ctx.store.getState();
   if (state.scene.present.includes(id)) return true;
-  if (!hereWithMe(state, ctx.content, id)) return false;
+  // 거점 밖에 사는 상관이 아침에 들른다 (12-311, 공통 규칙 22): 분대 없는 자리, 우리 거점, 하루 한 번
+  if (!hereWithMe(state, ctx.content, id)) {
+    if (id !== commanderIdOf(state, ctx.content) || !chiefVisits(state, ctx.content, id)) return false;
+    ctx.store.append({ type: "chief_visited", day: dayOf(state.time) });
+    enterScene(ctx, id);
+    visited.set(ctx.store, id);
+    return true;
+  }
   enterScene(ctx, id);
   entered.set(ctx.store, id);
   return true;
 }
 
+/** 이번 도구에서 거점에 들른 상관 (12-311) */
+const visited = new WeakMap<object, string>();
+
 /** 이번 도구에서 들인 상관 (결과 글에 한 줄, 12-262 PT17 분대장·섬) */
 const entered = new WeakMap<object, string>();
 function enteredLine(ctx: ToolContext): string[] {
+  const came = visited.get(ctx.store);
+  visited.delete(ctx.store);
+  if (came) {
+    const s = ctx.store.getState();
+    const home = ctx.content.npcs[came]?.zone;
+    return [`(${josa(playerCalls(s, ctx.content, came), "이/가")} ${home ? `${ctx.content.locations[home]?.name ?? home}에서 ` : ""}건너와 거점에 들렀다. 일감을 주러 온 길이다)`];
+  }
   const id = entered.get(ctx.store);
   entered.delete(ctx.store);
   return id ? [`(같은 장소에 있던 ${josa(playerCalls(ctx.store.getState(), ctx.content, id), "을/를")} 장면에 들였다)`] : [];
@@ -72,6 +89,7 @@ import { storyTitle } from "./storyletTools.ts";
 import { learned } from "../rules/skill.ts";
 import { REGARD_KINDS } from "../rules/regard.ts";
 import { putDownInfected } from "./opposition.ts";
+import { admissionOf, chiefVisitLine, chiefVisits } from "../rules/admission.ts";
 
 const resourceLabel = (s: Scenario, id: string) => s.resources.find((r) => r.id === id)?.label ?? id;
 
@@ -636,11 +654,19 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   // 맡은 일을 앞에, 계급을 괄호로 (설계 목록 10-7, PT17·18: "수색대원 (맡은 일: 청솔형제단 분대원)"이 거꾸로 읽혔다)
   const joined = !!state.customRole && !!player.factionId && state.customRole.rank === player.rank && !state.customRole.label.includes(rankName(ctx.content, player.factionId, player.rank));
   const service = player.factionId ? (joined ? `${state.customRole!.label} (계급: ${rankName(ctx.content, player.factionId, player.rank)})` : rankName(ctx.content, player.factionId, player.rank)) : "";
-  const lines = [player.factionId ? `복무: ${service} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` : `무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
+  // 손님이면 처지는 받아들임 줄 하나가 말한다 (12-310, PT 받아들임 두 판: "무소속. 배급이 없다"가 "손님: 끼니를 준다"와 함께 나왔다)
+  const guest = !player.factionId && !!admissionOf(state);
+  const lines = player.factionId
+    ? [`복무: ${service} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회`]
+    : guest
+      ? []
+      : [`무소속 (${rankName(ctx.content, player.factionId, player.rank)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
   // 상관이 지금 어디 있는지 (12-253, PT15 분대장: 보급 창고에 있을 상관을 교무실에 불러 임무를 받았다)
   const boss = player.factionId ? commanderIdOf(state, ctx.content) : null;
   const bossAt = boss ? whereLabel(state, ctx.content, boss) : null;
   if (boss && bossAt) lines.push(`상관 ${playerCalls(state, ctx.content, boss)}(${boss}): 지금 ${bossAt}`);
+  const visit = boss ? chiefVisitLine(state, ctx.content, boss) : null;
+  if (visit) lines.push(visit);
   // 적응 기간 (12-258): 임무는 원하면 받고, 받은 임무를 버리거나 놓쳐도 탓하지 않는다
   if (player.factionId && state.missionGraceUntil !== null && state.missionGraceUntil > state.time) {
     lines.push(`적응 기간 (${Math.max(1, Math.floor(state.missionGraceUntil / MINUTES_PER_DAY) - Math.floor(state.time / MINUTES_PER_DAY))}일 남음): 임무는 원하면 받는다. 이 기간에 받은 임무는 버리거나 놓쳐도 불복종이 아니다`);

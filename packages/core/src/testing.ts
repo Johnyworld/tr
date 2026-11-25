@@ -81,7 +81,7 @@ export const TEST_SCENARIO: Scenario = {
   rank_ladder: [
     { id: "loner", label: "혼자", level: 0 },
     { id: "grunt", label: "분대원", level: 1 },
-    { id: "staff", label: "주민", level: 1 },
+    { id: "resident", label: "주민", level: 1 },
     { id: "squad_leader", label: "분대장", level: 2 },
     { id: "officer", label: "간부", level: 3 },
   ],

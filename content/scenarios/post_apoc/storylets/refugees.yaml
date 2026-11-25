@@ -63,7 +63,7 @@
     # 여울섬은 정문이 없다 (플레이 테스트 11)
     zones: [a_base, b_base, c_base, d_clinic, e_market]
     indoor: false
-    ranks: [grunt, staff, squad_leader]
+    ranks: [grunt, resident, squad_leader]
     day_gte: 4
     segments: [morning, day, evening]
   setup: 정문 앞에 피난민 대여섯이 주저앉아 있다. 지도부는 아직 결정을 내리지 않았다. 문틈으로 아이 하나가 이쪽을 본다. 초소의 누군가 {scarce}도 모자란데 어쩌자는 거냐고 중얼거린다.

@@ -90,7 +90,7 @@
   name: 문소라
   alias: 안경테를 철사로 감은 장부꾼
   faction: faction_e
-  rank: staff
+  rank: resident
   occupation: trader
   age: 31
   gender: female
@@ -214,7 +214,7 @@
   name: 탁기순
   alias: 장터 끝 천막의 접골사
   faction: faction_e
-  rank: staff
+  rank: resident
   occupation: nurse
   age: 48
   gender: male

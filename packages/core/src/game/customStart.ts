@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Content, RoleContent } from "../content/schemas.ts";
 import { CUSTOM_ROLE_ID } from "./state.ts";
-import { occupationById } from "./occupation.ts";
+import { occupationById, occupationTag } from "./occupation.ts";
 import { checkHistory, historyPartSchema, MAX_HISTORY } from "./background.ts";
 
 /**
@@ -107,7 +107,7 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
   // 개인 사연이 있는 시나리오(가까운 동료·지난 일·찾는 가족)는 그 사람의 것이라 뒤로 미룬다 (그 무리의 보통 자리를 먼저 빌린다)
   const personal = (r: RoleContent) => !!r.start_bonds || (r.history?.length ?? 0) > 0 || !!r.family;
   const roles = faction ? Object.values(content.roles).filter((r) => r.faction === faction).sort((a, b) => Number(personal(a)) - Number(personal(b))) : [];
-  const same = roles.find((r) => r.rank === input.rank) ?? roles[0];
+  const same = roles.find((r) => r.rank === input.rank && !!input.occupation && r.occupation === input.occupation) ?? roles.find((r) => r.rank === input.rank) ?? roles[0];
   const level = rankLevel(content, input.rank);
   const members = faction ? Object.values(content.npcs).filter((n) => n.faction === faction) : [];
   // 같은 계급의 콘텐츠 시나리오가 있으면 그 상관, 없으면 더 높은 계급 중 낮은 순·id 순으로 첫 사람 (파일 순서와 무관하게)
@@ -132,7 +132,9 @@ export function buildCustomRole(content: Content, input: CustomStartInput): Role
     start_inventory: [...kit.items, ...(occ?.kit ?? [])],
     start_location: input.location,
     access: same?.access ?? [],
-    ...(same?.beliefs_preset && same.rank === input.rank ? { beliefs_preset: same.beliefs_preset } : {}),
+    // 시작 지식은 같은 계급·같은 직분의 시나리오 것만 (12-310, PT 받아들임: 붉은연합 수비대원이 약탈조원의 "임무는 염철구를 통해 내려온다"를 받았다).
+    // 직분이 없는 시나리오(간부 등)는 계급만 맞으면
+    ...(same?.beliefs_preset && same.rank === input.rank && (!same.occupation || !input.occupation || same.occupation === input.occupation) ? { beliefs_preset: same.beliefs_preset } : {}),
     known_npcs: members.map((n) => n.id),
     ...(commander ? { commander: commander.id } : {}),
     // 같은 계급 시나리오의 분대를 이어받는다 (기획서 9.11). 분대장이 비어 있는 분대다
@@ -163,7 +165,8 @@ export function joinRole(
     faction,
     rank: chosen,
     occupation: player.occupation ?? null,
-    title: player.title ?? `${factionName} ${content.scenario.rank_ladder.find((r) => r.id === chosen)?.label ?? ""}`.trim(),
+    // 자리 표가 있으면 직함은 자리 이름으로 (청솔형제단 의사, 12-309)
+    title: player.title ?? `${factionName} ${(content.scenario.admission?.posts ? occupationById(content, player.occupation)?.label : undefined) ?? content.scenario.rank_ladder.find((r) => r.id === chosen)?.label ?? ""}`.trim(),
     location: base,
     kit: c?.kits[0]?.id ?? "",
     skills: {},
@@ -171,6 +174,45 @@ export function joinRole(
     opening: `${factionName}에 들어왔다.`,
     background: [],
   });
-  return { ...role, start_inventory: [] };
+  const out: RoleContent = { ...role, start_inventory: [] };
+  // 분대에 들지 않는 자리 (12-309, 사용자 결정: 수색대원만 분대): 분대 없이 같은 일을 하는 윗사람(계급이 더 높은) 밑에서, 없으면 간부(posts.chief_rank) 밑에서
+  const posts = content.scenario.admission?.posts;
+  const occ = occupationById(content, player.occupation);
+  if (!faction || !posts || !occ || posts.squad.includes(occ.id)) return out;
+  const level = levelOf(chosen);
+  const top = Math.max(...content.scenario.rank_ladder.map((r) => r.level));
+  const tag = occupationTag(occ);
+  const members = Object.values(content.npcs).filter((n) => n.faction === faction && !n.start_captive && !n.roams?.length);
+  const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
+  const atBase = (n: { zone?: string | null }) => Number(!!base && n.zone === base);
+  const sameWork = members
+    .filter((n) => {
+      const o = occupationById(content, n.occupation);
+      const l = levelOf(n.rank);
+      // 상관은 계급이 더 높아야 한다 (game/missions.ts commanderOf: 같은 계급이면 다른 사람을 상관으로 찾는다)
+      return !!o && occupationTag(o) === tag && l > level && l < top;
+    })
+    .sort((a, b) => levelOf(b.rank) - levelOf(a.rank) || atBase(b) - atBase(a) || byId(a, b));
+  // 간부는 거점에 사는 사람을 먼저 (12-311, PT 받아들임: 이름순으로 다른 구역의 간부가 상관이 되어 임무를 받으러 멀리 가야 했다).
+  // 거점에 간부가 없으면 그 간부가 아침에 들른다 (rules/admission.ts chiefVisits)
+  const chief = sameWork[0] ?? members.filter((n) => n.rank === posts.chief_rank).sort((a, b) => atBase(b) - atBase(a) || byId(a, b))[0];
+  // 일감·이야기: 그 무리에서 같은 직분·계급의 시나리오, 같은 일(직분 이야기 태그가 같은) 시나리오, 분대 없는 같은 계급 시나리오 순.
+  // 없으면 직분의 일감·이야기만 받는다 (하얀매 간호사는 의무병 시나리오의 것을 받는다)
+  const roles = Object.values(content.roles).filter((r) => r.faction === faction);
+  const sameTag = (r: RoleContent) => {
+    const o = occupationById(content, r.occupation);
+    return !!o && occupationTag(o) === tag;
+  };
+  const same =
+    roles.find((r) => r.rank === chosen && r.occupation === occ.id) ?? roles.find((r) => sameTag(r) && !r.squad?.length) ?? roles.find((r) => r.rank === chosen && !r.squad?.length);
+  delete out.squad;
+  if (chief) out.commander = chief.id;
+  else delete out.commander;
+  out.missions = same?.missions ?? [];
+  out.storylet_tags = same?.storylet_tags ?? [];
+  // 시작 지식도 같은 직분·같은 계급의 시나리오 것만 (다른 상관 밑의 사정을 받지 않는다)
+  if (same?.beliefs_preset && same.rank === chosen && same.occupation === occ.id) out.beliefs_preset = same.beliefs_preset;
+  else delete out.beliefs_preset;
+  return out;
 }
 

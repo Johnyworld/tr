@@ -112,7 +112,7 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/type: "(place_moved|zone_moved)"/, ["rules/place.ts"])).toEqual([]);
   });
   it("규칙 22 (받아들임): 손님 상태는 rules/admission.ts로만 읽는다", () => {
-    expect(offenders(/\b(state|getState\(\)|next|s)\??\.admission\b/, ["game/state.ts", "rules/admission.ts"])).toEqual([]);
+    expect(offenders(/\b(state|getState\(\)|next|s)\??\.(admission|chiefVisitDay)\b/, ["game/state.ts", "rules/admission.ts"])).toEqual([]);
   });
 
   it("규칙 19 (관계 오름): 관계 변화는 rules/regard.ts로만 남기고, 오른 양·까닭 시각은 그 모듈로만 읽는다", () => {

@@ -41,7 +41,7 @@
 - id: a_field_hand
   label: 청솔형제단 텃밭 일꾼
   faction: faction_a
-  rank: staff
+  rank: resident
   age: [15, 65]
   looks:
     - 흙이 손톱 밑까지 낀 텃밭 일꾼. 챙 넓은 모자를 쓰고 호미를 허리에 찼다
@@ -71,7 +71,7 @@
 - id: a_wall_crew
   label: 청솔형제단 담장 보수조
   faction: faction_a
-  rank: staff
+  rank: resident
   age: [17, 55]
   looks:
     - 목장갑에 못 주머니를 찬 보수조원. 어깨에 철판 조각을 메고 다닌다
@@ -134,7 +134,7 @@
 - id: d_orderly
   label: 하얀매 간호조무사
   faction: faction_d
-  rank: staff
+  rank: resident
   age: [17, 50]
   looks:
     - 소매를 걷어붙인 간호조무사. 앞치마에 핏자국이 말라 붙었고 주머니마다 붕대 뭉치가 삐져나와 있다
@@ -165,7 +165,7 @@
 - id: d_runner
   label: 하얀매 약 심부름꾼
   faction: faction_d
-  rank: staff
+  rank: resident
   age: [14, 35]
   looks:
     - 흰 끈으로 묶은 상자를 품에 안은 심부름꾼. 걸음이 빠르고 사람 많은 길을 피한다
@@ -200,7 +200,7 @@
 - id: b_villager
   label: 버들마을 주민
   faction: faction_b
-  rank: staff
+  rank: resident
   age: [14, 70]
   looks:
     - 아파트 동 번호를 등에 페인트로 쓴 점퍼를 입은 주민. 물동이를 들고 우물 줄에 서 있다
@@ -321,7 +321,7 @@
 - id: e_water_seller
   label: 정수장 물장수
   faction: faction_e
-  rank: staff
+  rank: resident
   age: [16, 60]
   looks:
     - 물통을 줄줄이 매단 장대를 어깨에 걸친 물장수. 통마다 눈금을 칼로 새겼다
@@ -387,7 +387,7 @@
 - id: c_absorbed
   label: 붉은연합에 흡수된 주민
   faction: faction_c
-  rank: staff
+  rank: resident
   age: [15, 65]
   looks:
     - 새것처럼 빳빳한 붉은 완장을 찬 주민. 팔을 자꾸 내려다본다. 완장을 찬 지 얼마 안 됐다
@@ -447,7 +447,7 @@
 - id: c_laborer
   label: 붉은연합 노역조
   faction: faction_c
-  rank: staff
+  rank: resident
   age: [16, 60]
   looks:
     - 쇳가루가 눈썹까지 앉은 노역조원. 공단 용접기 앞에서 철판을 담장으로 바꾸고 있다

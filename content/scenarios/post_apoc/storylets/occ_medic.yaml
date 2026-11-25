@@ -87,7 +87,7 @@
     day_gte: 3
     flags_none: [om_scratch_hidden, om_scratch_reported]
   cast:
-    pt: { comes: true, faction: own, ranks: [grunt, staff], keep: om_scratched }
+    pt: { comes: true, faction: own, ranks: [grunt, resident], keep: om_scratched }
   setup: '{pt:이/가} 주위를 살피며 다가와 바지 한쪽을 걷는다. 종아리에 손가락 길이만 한 상처, 가장자리가 들떠 있다. "철조망에 걸렸어. 꿰매기만 해 줘. 장부엔 적지 말고. 적으면 위에서 또 귀찮게 굴잖아."'
   ai_direction: 철조망이 아니다. 오늘 바깥에서 쓰러진 감염체를 넘다가 발목을 잡혔고, 손톱이 긁고 지나갔다. 정말 감염됐는지는 이 장면에서 코드가 굴리고 GM도 결과를 모른다. 이 사람은 격리가 두렵다기보다, 바깥 근무에서 빠지면 배급이 줄어 식구가 굶는다. 상처를 제대로 보면 철조망 자국이 아니라는 것은 알 수 있다.
   choices:
@@ -205,7 +205,7 @@
     flags_none: [om_enemy_cot_done]
   cast:
     enemy: { extra: c_raider, label: 붙잡힌 붉은연합 약탈조원 }
-    guard: { faction: own, ranks: [grunt, staff] }
+    guard: { faction: own, ranks: [grunt, resident] }
   setup: 창고 기둥에 손목이 묶인 채 {enemy:이/가} 앉아 있다. 붉은 완장은 뜯겨 나갔고, 옆구리에 산탄 자국이 셋. {guard:이/가} 총을 무릎에 걸치고 문가에 앉아 있다. "물어볼 게 있대서 살려는 뒀는데. 약 쓸 거면 우리 몫에서 나가는 거 알지?"
   ai_direction: 상처는 깊지 않지만 그냥 두면 곪아 며칠 안에 위험해진다. 약탈조원은 붉은연합의 할당량 때문에 나왔다고 말할 것이다. 치료해 주면 고마워하고, 붙잡히기 전 조가 어느 길로 다녔는지 흘릴 수도 있다. 지켜보는 사람은 약이 적에게 가는 것을 못마땅해한다. 무리 사람들은 이 일을 두고 말이 갈린다.
   choices:
@@ -336,7 +336,7 @@
     segments: [evening, night]
     indoor: "any"
   cast:
-    asker: { comes: true, faction: own, ranks: [squad_leader, staff], known: true }
+    asker: { comes: true, faction: own, ranks: [squad_leader], known: true }
   setup: 이제 약장 열쇠는 당신 허리에 걸려 있다. 밤늦게 {asker:이/가} 찾아와 목소리를 낮춘다. "내일 우리 조가 멀리 나가. 진통제랑 붕대, 조금만 더 챙겨 줘. 남들 몫까지는 안 바래. 돌아오면 갚을게."
   ai_direction: 이 사람의 조가 내일 정말 위험한 데로 나가는 것은 맞다. 다만 다른 조도 다 그렇게 말한다. 한 번 내주면 다음 사람도 온다. 약장 숫자는 무리 전체의 몫이다.
   choices:
@@ -542,11 +542,11 @@
       label: 마을로 간다. 눌러앉는다
       effects:
         - set_flag: om_road_messenger_done
-        - join_faction: { faction: faction_b, title: 마을 의사 }
+        - join_faction: { faction: faction_b, title: 마을 의사, occupation: doctor }
         - standing: 1
         - faction_morale: { faction: faction_b, delta: 1 }
         - relation: { who: runner, axis: trust, delta: 2 }
-        - belief: { fact: "버들마을 열병을 보러 갔다가 눌러앉기로 했다. 마을 대표가 만나 보고 받아 주면 마을 의사가 된다", source: seen }
+        - belief: { fact: "버들마을 열병을 보러 갔다가 눌러앉기로 했다. 마을 대표가 직접 만나 보겠다고 했다", source: seen }
     - id: house_call
       label: 한 번만 가서 보고 온다
       check: first_aid

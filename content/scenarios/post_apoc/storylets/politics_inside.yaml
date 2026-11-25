@@ -17,7 +17,7 @@
     place_kinds: [mess, command]
     own_territory: true
     own_distrust_gte: 3
-    ranks: [grunt, staff]
+    ranks: [grunt, resident]
     indoor: "any"
     segments: [morning, day, evening]
   cast:

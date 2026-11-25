@@ -75,7 +75,7 @@
         - join_faction: { faction: faction_c }
         - relation: { who: boss, axis: respect, delta: 1 }
         - deed: { summary: 떠돌이 신세를 버리고 붉은연합 약탈조를 따라갔다, tags: [enemy_sympathy], severity: 1, privacy: public }
-        - belief: { fact: "붉은연합 약탈 삼조를 따라가기로 했다. 거점에서 우두머리가 받아 주면 그날부터 할당량에 묶인다", source: seen }
+        - belief: { fact: "붉은연합 약탈 삼조를 따라 거점으로 가기로 했다. 붉은연합 식구는 할당량에 묶인다고 들었다", source: seen }
     - id: run
       label: 무너진 건물 사이로 내달린다
       check: stealth
@@ -155,9 +155,9 @@
     - id: join_clinic
       label: 진료소로 따라간다
       effects:
-        - join_faction: { faction: faction_d, rank: staff }
+        - join_faction: { faction: faction_d, rank: resident, occupation: nurse }
         - relation: { who: scav, axis: affection, delta: 1 }
-        - belief: { fact: "남민호를 따라 하얀매 진료소에 가기로 했다. 원장이 만나 보고 받아 주면 수간호사 권정숙 밑에서 일을 배운다", source: seen }
+        - belief: { fact: "남민호를 따라 하얀매 진료소에 가기로 했다. 원장이 직접 만나 보겠다고 했다", source: seen }
     - id: decline
       label: 아직은 혼자가 낫다고 한다
       effects:
@@ -226,7 +226,7 @@
     - id: join_caravan
       label: 상단에 들어간다
       effects:
-        - join_faction: { faction: faction_e, title: 나루상단 짐꾼 }
+        - join_faction: { faction: faction_e, title: 나루상단 짐꾼, occupation: scavenger }
         - belief: { fact: "나루상단 짐꾼 자리를 받기로 했다. 상단 우두머리가 만나 보고 정식으로 받는다. 일은 행상대장 주옥희를 통해 내려온다", source: seen }
     - id: decline
       label: 매이는 건 싫다고 한다
@@ -285,9 +285,9 @@
     - id: join_willow
       label: 경비 일을 맡겠다고 한다
       effects:
-        - join_faction: { faction: faction_b, title: 버들마을 경비병 }
+        - join_faction: { faction: faction_b, title: 버들마을 경비병, occupation: guard }
         - relation: { who: guard, axis: trust, delta: 1 }
-        - belief: { fact: "버들마을 경비를 맡겠다고 했다. 대표가 만나 보고 받아 주면 경비조장 배동철 밑에서 정문과 쪽문을 지킨다", source: seen }
+        - belief: { fact: "버들마을 경비를 맡겠다고 했다. 대표가 직접 만나 보겠다고 했다", source: seen }
     - id: decline
       label: 고맙지만 떠나겠다고 한다
       effects: []

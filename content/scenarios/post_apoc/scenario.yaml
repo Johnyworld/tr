@@ -167,6 +167,8 @@ story_lint:
   knows_endings: [위치, 시간, 시각, 곳, 길, 경로, 방법]
   # 일과 한 칸이 구역 밖에 나간 시간이라는 말 (B①: 일과는 그 구역 장소로 정해지거나 이 말이 있어야 한다)
   routine_away: [길 위, 털이, 정찰, 수색, 호위, 왕복, 오가기, 심부름, 연락, 따라가기, 다녀오기, 들어가기, 나가기]
+  # 믿음에 쓰지 않는 말 (12-310): 처지(손님·자리)와 그 앞날은 엔진이 갖고 있어, 믿음에 적으면 처지가 바뀐 뒤에도 남는다 (PT 받아들임: "나는 아직 손님이다")
+  status_beliefs: [받아 주면, 나는 아직, 아직 손님, 식구가 아니다, 식구가 된다]
   # 시간대를 말하는 낱말 (설계 목록 6-5: 새벽 다섯 시의 빨래, 낮의 "스며드는 비" 야영). 글이 이 말을 하면 when.segments가 그 시간대 안이어야 한다
   segments:
     dawn: [새벽, 동틀, 동이 트]
@@ -490,7 +492,7 @@ custom_start:
     parent_gap: 18
     # 부모·자식은 많아야 38살 차이, 무리에 사는 가족은 그 무리의 주민 (12-239)
     parent_max_gap: 38
-    settled_rank: staff
+    settled_rank: resident
     # 아버지의 성을 형제자매·자식이 따른다 (12-259)
     surname_from: male
     relations:
@@ -963,12 +965,12 @@ card_body_words:
 harm_track: harm
 
 # 소속 등급 사다리. level은 지휘 계통상의 높이 (화법 규칙에 쓴다)
-# staff(주민: 전투 조직 밖에서 무리의 살림을 맡는 사람)와 leader(지도부)는 기획서 12.3 예시에 더해 쓰는 곳이 있어 둔다
+# resident(주민: 전투 조직 밖에서 무리의 살림을 맡는 사람. 예전 id staff는 "간부"로 읽혀 배역에 잘못 쓰였다, 12-310)와 leader(지도부)는 기획서 12.3 예시에 더해 쓰는 곳이 있어 둔다
 rank_ladder:
   - { id: loner, label: 떠돌이, level: 0 }
   - { id: outsider, label: 외부 무리 일원, level: 0 }
   - { id: grunt, label: 분대원, level: 1 }
-  - { id: staff, label: 주민, level: 1 }
+  - { id: resident, label: 주민, level: 1 }
   - { id: squad_leader, label: 분대장, level: 2 }
   - { id: officer, label: 간부, level: 3 }
   - { id: leader, label: 지도부, level: 4 }
@@ -1411,7 +1413,22 @@ crossed: { fond_affection: 4, grudge_trust: -4, harm_stops_before: critical }
 
 # 공통 규칙 22 받아들임 (12-308, 사용자 결정): 무소속이 무리에 들 때는 손님으로 먼저 들이고, 2~5시간 뒤 7~20시 사이에 그 거점에서 대표가 면담해 권한다.
 # 사양하면 손님으로 남고 3일 뒤에 다시 권한다 (청솔 정문에서 판정 하나로 곧장 분대원이 됐다)
-admission: { offer_after_hours: [2, 5], offer_hours: [7, 20], reoffer_days: 3 }
+# 들어갈 자리 (12-309, 사용자 결정): 대표가 붕괴 전 직업을 보고 직분을 권한다 (이야기가 자리를 정해 두었으면 그것). 면담에서 수색대·수비대는 대신 청할 수 있다.
+# 수색대원만 분대에 들고, 나머지는 그 무리에서 같은 일을 하는 윗사람(없으면 간부) 밑에서 일한다
+admission:
+  offer_after_hours: [2, 5]
+  offer_hours: [7, 20]
+  reoffer_days: 3
+  posts:
+    by_past: { doctor: doctor, nurse: nurse, firefighter: scavenger, police: scavenger, soldier: scavenger, thief: scavenger, courier: scavenger, student: scavenger, mechanic: mechanic, builder: carpenter, cook: cook, farmer: cook, salesman: trader, gangster: guard, teacher: guard }
+    default: guard
+    ask: [scavenger, guard]
+    squad: [scavenger]
+    ranks: { scavenger: grunt, guard: grunt, medic: grunt }
+    other_rank: resident
+    chief_rank: officer
+    # 상관이 거점 밖에 살면 (거점에 간부가 없는 무리) 아침 7~10시에 하루 한 번 거점에 들러 일감을 준다 (12-311, 사용자 결정)
+    visit_hours: [7, 10]
 
 storylet_pacing:
   # 이야기 사이 간격: 앞 이야기마다 4~8시간 사이로 (플레이 테스트 12: 하루 상한이 자정에 풀려 00시대에 몰렸다 → 하루 상한 대신 간격. 12-306: 6~12시간이 거점 이야기 밀도의 천장이라 줄임, PT26~29)
@@ -1585,7 +1602,7 @@ leverage:
     move: persuade
     greed: self_interest
     scruple: honesty
-    prices: { loner: 3, outsider: 4, grunt: 4, staff: 4, squad_leader: 8, officer: 15, leader: 30, default: 5 }
+    prices: { loner: 3, outsider: 4, grunt: 4, resident: 4, squad_leader: 8, officer: 15, leader: 30, default: 5 }
     greed_step: 0.25
     trusted: 0.8
     refuse_at: 2

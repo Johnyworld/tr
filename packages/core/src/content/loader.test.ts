@@ -31,6 +31,8 @@ function tempContent(files: Record<string, string>) {
   delete scenario.gear;
   delete scenario.crafting;
   delete scenario.occupations;
+  // 들어갈 자리(12-309)는 직분·과거 배경을 가리킨다
+  if (scenario.admission) delete (scenario.admission as Record<string, unknown>).posts;
   // 캐릭터 설정(4.6.4)도 실제 시나리오·트레잇·아이템을 참조한다
   delete scenario.settings;
   // 과거 배경도 실제 아이템을 참조한다

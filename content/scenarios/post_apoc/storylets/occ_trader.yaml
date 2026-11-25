@@ -174,7 +174,7 @@
     day_gte: 4
     flags_none: [occ_tr_side_deal, occ_tr_side_refused]
   cast:
-    mate: { faction: own, ranks: [grunt, staff], known: true, keep: occ_tr_side_mate }
+    mate: { faction: own, ranks: [grunt, resident], known: true, keep: occ_tr_side_mate }
     boss: { commander: true, enter: false }
   setup: >-
     창고 뒤 그늘에서 {mate:이/가} 자루 아가리를 벌린다. 마른 콩이 반 자루.

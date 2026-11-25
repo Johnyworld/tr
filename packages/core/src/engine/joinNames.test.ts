@@ -18,7 +18,9 @@ describe("무리에 들 때 아는 이름", () => {
     const w = make();
     const me = w.state().playerId;
     expect(knowsName(w.state(), me, "pa_narae")).toBe(false);
-    const out = applyEffect(w.ctx(), { join_faction: { faction: "faction_a", rank: "grunt" } } as StoryletEffect, {}, {}, "테스트");
+    // 무소속은 먼저 손님으로 들고, 대표의 면담에서 받아들일 때 든다 (공통 규칙 22 받아들임, 12-308)
+    applyEffect(w.ctx(), { join_faction: { faction: "faction_a", rank: "grunt" } } as StoryletEffect, {}, {}, "테스트");
+    const out = applyEffect(w.ctx(), { admission: "accept" } as StoryletEffect, {}, {}, "테스트");
     expect(w.state().characters[me]!.factionId).toBe("faction_a");
     const commander = w.state().customRole!.commander!;
     expect(knowsName(w.state(), me, commander)).toBe(true);

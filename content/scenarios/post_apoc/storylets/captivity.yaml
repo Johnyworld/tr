@@ -461,7 +461,7 @@
       when: { flags_all: [cp_d_helped] }
       effects:
         - clear_flag: cp_d_complied
-        - join_faction: { faction: faction_d, rank: staff, title: 격리실 수습 }
+        - join_faction: { faction: faction_d, rank: resident, title: 격리실 수습, occupation: nurse }
         - relation: { who: clerk, axis: trust, delta: 1 }
 
 # ── 1. 갇혀 있을 때: 나루상단 ─────────────────────────
@@ -603,7 +603,7 @@
     captors: [faction_a, faction_b, faction_c, faction_d, faction_e, faction_y]
     segments: [night]
   cast:
-    guard: { faction: captor, ranks: [grunt, staff], keep: cp_guard }
+    guard: { faction: captor, ranks: [grunt, resident], keep: cp_guard }
   setup: 밤 당번 {guard:이/가} 창살 앞 의자에서 졸음을 쫓는다. 손에 쥔 꽁초는 다 탔다. 몇 번 이쪽을 보다가 눈을 돌린다.
   ai_direction: 이 사람도 이 자리가 싫다. 집에 가고 싶고, 배가 고프고, 위에 대한 불만이 있다. 말이 통하면 조금씩 풀린다. 그렇다고 바로 문을 열어 주지는 않는다.
   choices:
@@ -779,7 +779,7 @@
     segments: [day]
     day_gte: 3
   cast:
-    envoy: { afar: true, faction: own, ranks: [squad_leader, officer, staff] }
+    envoy: { afar: true, faction: own, ranks: [squad_leader, officer, resident] }
     keeper: { faction: captor, ranks: [squad_leader, officer, leader] }
   setup: 창고 문이 열리고 끌려 나간 방에 {envoy:이/가} 앉아 있다. 우리 무리에서 왔다. 탁자 건너에 {keeper}. 둘은 당신을 보지 않고 셈을 한다. 몸값인지, 맞바꿀 사람인지.
   ai_direction: 우리 무리가 값을 치르러 왔다. 그 값은 무리 창고에서 나간다 (코드가 정한다). 주인공이 거절하면 무리는 값을 아끼지만 주인공은 갇힌 채 남는다. 흥정이 틀어지면 셈은 다음으로 미뤄진다.
@@ -1166,7 +1166,7 @@
     flags_none: [cp_ours_freed]
   cast:
     ours: { afar: true, captive: true, faction: own, keep: cp_ours }
-    guard: { faction: zone_owner, ranks: [grunt, staff], optional: true }
+    guard: { faction: zone_owner, ranks: [grunt, resident], optional: true }
   setup: 약속대로 다시 왔다. 교대 직전이라 가둬 둔 곳 앞이 비어 있다. 창살 안에서 {ours:이/가} 몸을 일으킨다. 이번엔 준비할 시간이 있었다.
   ai_direction: 주인공이 가진 것(철사, 쇠지렛대, 열쇠 꾸러미)이 있으면 자물쇠 쪽이 쉽다. 소란을 피우면 경비는 그쪽으로 가지만 거점 전체가 깬다. 이 무리의 보초 하나는 담배 몇 갑이면 눈을 감는 사람이다 (있을 때만).
   choices:

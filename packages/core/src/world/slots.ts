@@ -46,6 +46,7 @@ type RawState = {
   playerId?: string;
   time?: number;
   runStartedAt?: number;
+  serviceSince?: number | null;
   playerZone?: string | null;
   scenarioRole?: string;
   chronicle?: unknown[];
@@ -71,7 +72,7 @@ export function toSaveSlot(info: WorldInfo, raw: unknown, content: Content): Sav
           .filter(({ track, shown }) => shown.id !== track.levels[0]!.id && !shown.fatal)
           .map(({ track, shown }) => `${track.label} ${shown.label}`),
         zoneName: state.playerZone ? (content.locations[state.playerZone]?.name ?? state.playerZone) : null,
-        daysServed: typeof state.time === "number" ? daysServed(state.time, state.runStartedAt ?? state.time) + 1 : 1,
+        daysServed: typeof state.time === "number" ? daysServed(state.time, state.serviceSince ?? state.runStartedAt ?? state.time) + 1 : 1,
         generation: (state.chronicle?.length ?? 0) + (player.dead ? 0 : 1),
         dead: player.dead === true,
         // 이어 갈 수 없는 시나리오에서 죽었다 (튜토리얼): 이 판은 끝났다

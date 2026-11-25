@@ -85,7 +85,7 @@
   name: 우상옥
   alias: 철테 안경의 규율반 서기
   faction: faction_c
-  rank: staff
+  rank: resident
   age: 38
   gender: male
   look: 철테 안경에 단추를 끝까지 채운 셔츠. 붉은 완장 대신 붉은 줄을 넣은 소매를 단다. 손가락에 늘 잉크가 묻어 있다.
@@ -208,7 +208,7 @@
   name: 노필수
   alias: 열쇠 꾸러미 찬 허리 굽은 간수
   faction: faction_c
-  rank: staff
+  rank: resident
   age: 61
   gender: male
   look: 허리가 굽고 손이 크다. 허리춤에 바깥문 열쇠 꾸러미가 짤랑거린다. 기침을 할 때마다 등을 돌린다.

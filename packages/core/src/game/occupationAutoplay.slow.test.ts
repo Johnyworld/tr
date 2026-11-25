@@ -33,7 +33,7 @@ const open = (input: CustomStartInput) => {
 describe("직분 자동 플레이", () => {
   for (const [occupation, faction, rank] of [
     ["cook", "faction_c", "grunt"],
-    ["mechanic", "faction_e", "staff"],
+    ["mechanic", "faction_e", "resident"],
     ["trader", null, "loner"],
   ] as const) {
     it(`${occupation}: 오류 없이 돌고, 직분 이야기가 열릴 자리가 있다`, () => {

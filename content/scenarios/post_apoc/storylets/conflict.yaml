@@ -156,7 +156,7 @@
     indoor: false
     own_territory: true
     own_morale_lte: -2
-    ranks: [grunt, staff, squad_leader]
+    ranks: [grunt, resident, squad_leader]
     flags_none: [cf_mutiny_joined]
     segments: [evening, night]
   cast:

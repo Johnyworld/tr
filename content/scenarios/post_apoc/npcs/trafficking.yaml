@@ -9,7 +9,7 @@
   name: 반태수
   alias: 열쇠 꾸러미를 찬 여관 주인
   faction: faction_e
-  rank: staff
+  rank: resident
   occupation: pimp
   occupation_cover: 휴게소 여관 주인
   age: 49
@@ -55,7 +55,7 @@
   name: 홍미란
   alias: 머리를 틀어 올린 여관 일꾼
   faction: faction_e
-  rank: staff
+  rank: resident
   occupation: sex_worker
   age: 29
   gender: female
@@ -141,7 +141,7 @@
   name: 곽연옥
   alias: 손등에 숫자를 쓴 여자
   faction: faction_b
-  rank: staff
+  rank: resident
   age: 27
   gender: female
   start_captive: { by: faction_c, zone: c_warehouse }

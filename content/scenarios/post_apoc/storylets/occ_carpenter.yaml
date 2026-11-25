@@ -189,7 +189,7 @@
     day_gte: 3
     flags_none: [occ_carp_thief_seen]
   cast:
-    mate: { faction: own, ranks: [grunt, staff], known: true, keep: occ_carp_thief }
+    mate: { faction: own, ranks: [grunt, resident], known: true, keep: occ_carp_thief }
   setup: "새벽, 작업장 뒤 쌓아 둔 판자 더미가 어제보다 낮다. 담 그늘에서 {mate:이/가} 판자 두 장을 끈으로 묶어 등에 지는 중이다. 당신을 보고 손을 멈춘다. 끈을 풀지는 않는다."
   ai_direction: 이 동료는 판자를 담 밖 어딘가로 가져간다. 어디로, 왜인지는 아직 말하지 않는다. 판자는 무리 전체의 것이다. 남의 몫에 손대는 것은 어느 무리에서든 무거운 잘못이다.
   choices:
@@ -355,7 +355,7 @@
     flags_all: [occ_carp_weak_cage]
     flags_none: [occ_carp_inspect_done]
   cast:
-    inspector: { faction: own, ranks: [staff, officer] }
+    inspector: { faction: own, ranks: [squad_leader, officer] }
   setup: "{inspector:이/가} 작업장에 들어와 연장을 하나씩 들어 본다. \"수용소 칸 하나 문짝이 빠졌어. 안에 있던 놈이 밤새 발로 찼다더군. 누가 짰나 보러 왔지.\" 그가 당신의 끌을 들고 날을 손가락으로 쓸어 본다."
   ai_direction: 규율반은 아직 확신이 없다. 목수의 실수인지 일부러인지 가리려 한다. 빠져나간 사람이 어떻게 됐는지는 말하지 않는다. 숨기면 판정이 걸리고, 털어놓으면 본보기가 된다.
   choices:

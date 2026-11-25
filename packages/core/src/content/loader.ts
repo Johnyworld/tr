@@ -280,6 +280,33 @@ function checkReferences(content: Content): string[] {
   for (const st of Object.values(content.storylets)) for (const o of [...(st.when.occupations ?? []), ...(st.when.occupations_not ?? [])]) if (o !== "none" && !occIds.has(o)) problems.push(`storylets.${st.id}.when.occupations: 알 수 없는 직분 ${o}`);
   for (const st of Object.values(content.storylets))
     for (const [k, r] of Object.entries(st.cast)) for (const o of r.occupations ?? []) if (o !== "same" && !occIds.has(o)) problems.push(`storylets.${st.id}.cast.${k}: 알 수 없는 직분 ${o}`);
+  // 들어갈 자리 (12-309): 과거·직분·계급이 있는 것인지, 주인공이 맡을 수 없는 직분(성인 직업)은 아닌지
+  const posts = content.scenario.admission?.posts;
+  if (posts) {
+    const at = "scenario.admission.posts";
+    const rankIds = new Set(content.scenario.rank_ladder.map((r) => r.id));
+    const pastIds = new Set((content.scenario.creation?.pasts ?? []).map((p) => p.id));
+    const postOk = (o: string, where: string) => {
+      if (!occIds.has(o)) problems.push(`${at}.${where}: 알 수 없는 직분 ${o}`);
+      else if (content.scenario.occupations.find((x) => x.id === o)?.mature) problems.push(`${at}.${where}: 주인공이 맡을 수 없는 직분 ${o}`);
+    };
+    for (const [past, o] of Object.entries(posts.by_past)) {
+      if (!pastIds.has(past)) problems.push(`${at}.by_past: 알 수 없는 과거 ${past}`);
+      postOk(o, `by_past.${past}`);
+    }
+    postOk(posts.default, "default");
+    for (const o of [...posts.ask, ...posts.squad, ...Object.keys(posts.ranks)]) postOk(o, "ask/squad/ranks");
+    for (const r of [...Object.values(posts.ranks), posts.other_rank, posts.chief_rank]) if (!rankIds.has(r)) problems.push(`${at}: 알 수 없는 계급 ${r}`);
+  }
+  for (const st of Object.values(content.storylets)) {
+    for (const c of st.choices) {
+      if (c.when?.post_not && !occIds.has(c.when.post_not)) problems.push(`storylets.${st.id}.${c.id}.when.post_not: 알 수 없는 직분 ${c.when.post_not}`);
+      for (const e of [...c.effects, ...Object.values(c.outcomes ?? {}).flat()]) {
+        if ("join_faction" in e && e.join_faction.occupation && !occIds.has(e.join_faction.occupation)) problems.push(`storylets.${st.id}: 알 수 없는 직분 ${e.join_faction.occupation}`);
+        if ("admission" in e && typeof e.admission === "object" && !(posts?.ask ?? []).includes(e.admission.ask)) problems.push(`storylets.${st.id}: 면담에서 청할 수 없는 자리 ${e.admission.ask} (scenario.admission.posts.ask)`);
+      }
+    }
+  }
   for (const p of content.scenario.command?.policies ?? []) {
     for (const o of p.options) {
       for (const partner of [o.trade?.partner, o.trade?.fallback_partner]) if (partner && !content.factions[partner]) problems.push(`scenario.command.policies.${p.id}.${o.id}: 알 수 없는 교역 상대 ${partner}`);
@@ -941,6 +968,19 @@ export function checkStorylets(content: Content): string[] {
       const texts = [s.setup, ...(s.variants ?? []), s.ai_direction ?? "", ...s.choices.map((c) => c.label), JSON.stringify(s.choices)];
       for (const t of texts) {
         for (const m of t.matchAll(HARDCODED_PARTICLE)) problems.push(`${where}: {${m[1]}} 뒤에 조사 "${m[2]}"를 직접 적었다. {${m[1]}:${PAIR_HINT[m[2]!] ?? "이/가"}}로 쓴다`);
+      }
+    }
+    // 믿음은 있었던 일의 기억이다 (12-310, 설계 목록 11): 엔진이 따로 갖고 있는 처지(손님인지, 어느 자리인지)나 "받아 주면 ~가 된다" 같은 앞날을 적으면
+    // 처지가 바뀐 뒤에도 그대로 남는다 (손님 뒤 받아들여도 "나는 아직 손님이다"). story_lint.status_beliefs의 말을 쓰지 않는다
+    {
+      const words = content.scenario.story_lint?.status_beliefs ?? [];
+      for (const c of s.choices) {
+        const effects = [...c.effects, ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])];
+        for (const e of effects) {
+          if (!("belief" in e)) continue;
+          const said = words.find((w) => e.belief.fact.includes(w));
+          if (said) problems.push(`${where}.choices.${c.id}: 믿음에 지금 처지나 앞날("${said}")을 적었다. 있었던 일만 적는다 (처지는 상태 줄이 알린다)`);
+        }
       }
     }
     // 성적 위협 배역을 쓰는 이야기는 성인 주제 태그가 있어야 한다 (12-59). 연애 자체는 성인 콘텐츠가 아니다

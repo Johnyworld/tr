@@ -139,7 +139,7 @@
       effects:
         - relation: { who: commander, axis: trust, delta: -1 }
         - deed: { summary: 무리를 떠나 중립인 하얀매 진료소로 갔다, tags: [betrayal], severity: 1, privacy: semi_private }
-        - join_faction: { faction: faction_d, rank: staff, title: 하얀매 진료소 일꾼 }
+        - join_faction: { faction: faction_d, rank: resident, title: 하얀매 진료소 일꾼 }
         - belief: { fact: 하얀매 진료소로 옮겼다. 이제 어느 무리와도 싸우지 않는다. 대신 누구를 먼저 살릴지 정하는 일에 끼게 됐다, source: seen }
     - id: decline
       label: 지금 무리를 떠날 수 없다고 답한다

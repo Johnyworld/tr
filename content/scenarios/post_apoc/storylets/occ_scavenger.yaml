@@ -106,7 +106,7 @@
     flags_none: [occ_sc_pinned_done]
   cast:
     # 플레이 테스트 13: 깔린 사람이 여섯 판 모두 멀쩡했다
-    mate: { faction: own, ranks: [grunt, staff], known: true, not_companion: true, starts: { harm: light } }
+    mate: { faction: own, ranks: [grunt, resident], known: true, not_companion: true, starts: { harm: light } }
   # 플레이 테스트 14: 깔린 상처(starts)에 npc_hurt가 더해져 구했는데 경상 → 치명상. 성공은 깔린 상처 그대로, 대가 있는 성공은 한 단계 더(중상),
   # 실패와 두고 가기는 두 단계(치명상, "크게 다친다"). 구하러 간 쪽이 두고 간 쪽보다 나쁘지 않게 (content:check)
   setup: >-
@@ -262,7 +262,7 @@
     flags_all: [occ_sc_skimmed]
     flags_none: [occ_sc_witness_done]
   cast:
-    witness: { faction: own, ranks: [grunt, staff], known: true }
+    witness: { faction: own, ranks: [grunt, resident], known: true }
     boss: { commander: true, enter: false, optional: true }
   setup: >-
     잠자리에 들기 전, {witness:이/가} 당신 침상 끝에 걸터앉는다. 목소리를 낮춘다.
@@ -369,7 +369,7 @@
     flags_none: [occ_sc_run_planned]
   cast:
     boss: { commander: true, enter: false }
-    vet: { faction: own, ranks: [grunt, staff, squad_leader], known: true, trust_gte: 0, keep: occ_sc_vet }
+    vet: { faction: own, ranks: [grunt, resident, squad_leader], known: true, trust_gte: 0, keep: occ_sc_vet }
     green: { faction: own, ranks: [grunt], keep: occ_sc_green }
   setup: >-
     시립병원 지하 약제실까지 내려가는 깊은 수색. 분대장인 당신이 명단을 정한다. 둘을 데려가면 서로 등을 볼 수 있고, 하나면 덜 들킨다.

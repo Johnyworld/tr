@@ -45,7 +45,7 @@
   cast:
     pious: { faction: own, here: true }
     # 이름난 윗사람(의장, 간부)은 배식 줄에서 빈정대는 자리에 넣지 않는다 (플레이 테스트 11)
-    mocker: { faction: own, here: true, ranks: [grunt, staff, squad_leader] }
+    mocker: { faction: own, here: true, ranks: [grunt, resident, squad_leader] }
   setup: "배식 줄 끝, {pious:이/가} 그릇을 받아 들고 눈을 감는다. 입술만 움직인다. 옆자리 {mocker:이/가} 숟가락으로 그릇을 탁 치며, 이 국 끓인 건 부엌인데 누구한테 고맙냐고 빈정댄다. 몇 사람이 웃는다."
   ai_direction: "{pious:은/는} 대꾸하지 않고 기도를 마친다. {mocker:은/는} 악의라기보다 지쳐 있다. 누가 옳은지 정하지 않는다. 주인공의 편들기가 둘과의 사이를 바꾼다."
   choices:

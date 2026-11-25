@@ -515,7 +515,7 @@
     zones: [south_fields]
     segments: [dawn, morning]
   cast:
-    thief: { faction: own, ranks: [grunt, staff], known: true }
+    thief: { faction: own, ranks: [grunt, resident], known: true }
   setup: 남쪽 텃밭 끝 고랑에 무를 뽑아 간 구멍이 셋 나 있다. 발자국을 따라가니 담장 그늘에서 {thief:이/가} 흙 묻은 무를 외투에 감추다 굳는다.
   ai_direction: "{thief:은/는} 굶는 식구가 있다(누구인지는 그 인물에 맞게). 이 밭은 청솔형제단 땅이라 수확 몫이 걸려 있다. {scarce:이/가} 모자란 때라 모두 예민하다."
   choices:
@@ -554,7 +554,7 @@
     indoor: false
     day_gte: 3
   cast:
-    talker: { faction: own, ranks: [grunt, staff], known: true }
+    talker: { faction: own, ranks: [grunt, resident], known: true }
   setup: 담장 그늘에서 담배를 나눠 피우던 {talker:이/가} 목소리를 낮춘다. "{scarce:이/가} 이렇게 모자란데 청솔 놈들은 몫만 챙겨 가잖아. 붉은연합 쪽은 다르다더라. 너도 생각해 봐."
   ai_direction: "{talker:이/가} 진심인지, 떠보는 것인지는 그 인물의 성격과 비밀에 맞춘다. 근처에 다른 귀가 있을 수 있다."
   choices:

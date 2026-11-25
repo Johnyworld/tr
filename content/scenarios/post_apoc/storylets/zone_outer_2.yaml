@@ -296,7 +296,7 @@
     flags_none: [zo2_ca_crypt_decided]
   cast:
     father: { ids: [zo2_father] }
-    clerk: { faction: faction_e, ranks: [staff, squad_leader, officer] }
+    clerk: { faction: faction_e, ranks: [resident, squad_leader, officer] }
   setup: 성당 마당에 손수레 둘이 서 있다. {clerk:이/가} 장부를 펴 들고 신부에게 말하는 중이다. "지하 납골당을 창고로 빌려주시면 달마다 종탑 아래에 먹을 걸 대겠습니다. 계약서로 쓰지요." {father:이/가} 당신을 돌아본다. "형제 생각은 어떻습니까."
   ai_direction: 나루상단은 성당 지하 납골당이 서늘하고 말라서 약과 곡식을 쌓아 두기 좋다는 것을 안다. 피난처라 다른 무리가 털러 오지 않는다는 것도 계산했다. 대신 창고에는 지킬 사람이 붙는데, 그 사람들이 총을 내려놓을지가 문제다. 신부는 피난민의 끼니가 걸려 있어 거절하기 어렵다. 주인공이 나루상단 사람이면 {clerk:은/는} 동료로 대하고 은근히 거들어 주기를 바란다.
   choices:
@@ -677,7 +677,7 @@
     flags_none: [zo2_cp_recruit_done]
   cast:
     seojin: { ids: [zo2_seojin] }
-    envoy: { faction: faction_d, ranks: [staff, squad_leader, officer] }
+    envoy: { faction: faction_d, ranks: [resident, squad_leader, officer] }
   setup: 약대 건물 앞에 흰 천을 팔에 감은 사람들이 서 있다. {envoy:이/가} 공손하게 고개를 숙인다. "명서진 씨, 진료소에 자리를 마련했습니다. 노트도 함께 가져오시면 됩니다. 여기서 혼자 하시기엔 위험하잖아요." {seojin:이/가} 실험실 문고리를 쥔 채 당신 쪽을 흘끗 본다.
   ai_direction: 하얀매는 명서진의 연구 노트를 원한다. 진료소에서는 지하의 감염체를 두지 않을 것이고 (태운다), 그것을 명서진에게 말하지 않는다. 명서진은 진료소의 약과 장비가 탐나지만 지하를 버리고 싶지 않다. 강제로 끌고 가지는 않는다. 주인공이 하얀매 사람이면 {envoy:은/는} 거들어 주기를 기대한다. 하얀매가 데려가면 명서진은 캠퍼스를 떠난다.
   choices:

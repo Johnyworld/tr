@@ -5,7 +5,7 @@ import { settingBrokeThisTurn } from "../rules/self.ts";
 import { blameSuspended } from "../rules/blame.ts";
 import { leaveMissionsBehind } from "./missionTools.ts";
 import { heldOf, pausedWhileHeld, heldSeenTopic } from "../rules/held.ts";
-import { admissionOf, admitsAsGuest, firstOfferAt, reofferAt } from "../rules/admission.ts";
+import { admissionOf, admitsAsGuest, askedPost, firstOfferAt, postFor, postRank, reofferAt, squadPost } from "../rules/admission.ts";
 import { bleedFromHarm } from "./bleeding.ts";
 import { equippedItem, wearItem } from "./gear.ts";
 import { carriedCount, itemCarriers } from "../game/companions.ts";
@@ -1060,12 +1060,15 @@ export function applyEffect(
   }
   if ("join_faction" in effect) {
     const player = state.characters[playerId]!;
-    const { faction, rank, title, grace_days } = effect.join_faction;
+    const { faction, title, grace_days, occupation } = effect.join_faction;
     if (!content.factions[faction] || player.factionId === faction) return {};
+    // 들어갈 자리 (12-309): 무소속은 이야기가 정한 자리, 없으면 붕괴 전 직업으로. 계급은 이야기가 자리까지 정했을 때만 이야기의 것
+    const post = player.factionId ? (occupation ?? null) : postFor(state, content, occupation);
+    const rank = (occupation ? effect.join_faction.rank : undefined) ?? postRank(content, post) ?? effect.join_faction.rank;
     // 무소속은 먼저 손님으로 들인다 (공통 규칙 22 받아들임, 12-308): 대표의 면담에서 권하면 그때 든다
     if (admitsAsGuest(state, content)) {
       const offerAt = firstOfferAt(content, state.time, ctx.rng);
-      store.append({ type: "player_admitted", factionId: faction, ...(rank ? { rank } : {}), ...(title ? { title } : {}), ...(grace_days ? { graceDays: grace_days } : {}), offerAt });
+      store.append({ type: "player_admitted", factionId: faction, ...(rank ? { rank } : {}), ...(title ? { title } : {}), ...(post ? { post } : {}), ...(grace_days ? { graceDays: grace_days } : {}), offerAt });
       const base = baseOfNow(store.getState(), content, faction);
       const there = !!base && base === store.getState().playerZone;
       return {
@@ -1074,7 +1077,7 @@ export function applyEffect(
           (there || !base ? "몇 시간 안에 우두머리가 직접 만나 보고 식구가 되겠느냐고 물을 것이다 (이야기가 연다)." : `거점(${content.locations[base]?.name ?? base})에 가 있으면 우두머리가 직접 만나 보고 식구가 되겠느냐고 물을 것이다 (이야기가 연다).`),
       };
     }
-    return joinFactionNow(ctx, faction, rank, title, grace_days);
+    return joinFactionNow(ctx, faction, rank, title, grace_days, post);
   }
   if ("admission" in effect) {
     const a = admissionOf(state);
@@ -1083,7 +1086,11 @@ export function applyEffect(
       store.append({ type: "admission_deferred", offerAt: reofferAt(content, state.time) });
       return { line: `${content.factions[a.factionId]?.name ?? a.factionId}에 들어오라는 권유를 사양했다. 손님으로는 그대로 묵을 수 있고, 며칠 뒤에 대표가 다시 물을 것이다.` };
     }
-    return joinFactionNow(ctx, a.factionId, a.rank, a.title, a.graceDays);
+    if (effect.admission === "accept") return joinFactionNow(ctx, a.factionId, a.rank, a.title, a.graceDays, a.post);
+    // 권한 자리 대신 청한 자리로 (12-309): 직함은 그 자리의 것으로 새로
+    const asked = askedPost(state, content, effect.admission.ask);
+    if (!asked) return joinFactionNow(ctx, a.factionId, a.rank, a.title, a.graceDays, a.post);
+    return joinFactionNow(ctx, a.factionId, asked.rank ?? a.rank, undefined, a.graceDays, asked.post);
   }
   if ("companion_join" in effect) {
     const id = whoOf(ctx, effect.companion_join.who, cast);
@@ -1399,7 +1406,14 @@ function factionRef(state: GameState, x: string): string {
 }
 
 /** 주인공이 무리에 들어간다 (무소속이면 가입, 무리에 있으면 옮김, 12-21). 손님의 받아들임(공통 규칙 22)도 여기로 */
-function joinFactionNow(ctx: ToolContext, faction: string, rank: string | undefined, title: string | undefined, graceDays: number | undefined): { line?: string; display?: ToolDisplayEvent } {
+function joinFactionNow(
+  ctx: ToolContext,
+  faction: string,
+  rank: string | undefined,
+  title: string | undefined,
+  graceDays: number | undefined,
+  post?: string | null,
+): { line?: string; display?: ToolDisplayEvent } {
   const { store, content } = ctx;
   const state = store.getState();
   const playerId = state.playerId;
@@ -1408,7 +1422,7 @@ function joinFactionNow(ctx: ToolContext, faction: string, rank: string | undefi
   const from = player.factionId ? (content.roles[state.roleId]?.label ?? content.factions[player.factionId]?.name ?? "") : "무소속";
   // 붙잡은 무리에 들면 더는 포로가 아니다 (빼앗긴 것도 돌려받는다, 12-55)
   if (heldOf(player)) releasePlayer(ctx, heldOf(player)!.by === faction);
-  const made = joinRole(content, faction, rank, { age: player.age, title, occupation: player.occupation?.id ?? null });
+  const made = joinRole(content, faction, rank, { age: player.age, title, occupation: post ?? player.occupation?.id ?? null });
   // 새로 든 사람은 무리 사람들 이름을 아직 모른다: 들어가며 이름을 듣는 상관만 서로 안다. 나머지는 만나서 이름을 듣는다 (learn_name).
   // 처음부터 그 무리에 있던 시나리오·계승과 다르다 (방문자가 무리에 든 뒤 처음 본 의무실 보조가 이름으로 나왔다)
   const role = { ...made, known_npcs: made.commander ? [made.commander] : [] };
@@ -1425,7 +1439,7 @@ function joinFactionNow(ctx: ToolContext, faction: string, rank: string | undefi
   const newName = !!role.commander && !knowsName(state, state.playerId, role.commander);
   return {
     line:
-      `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}${newName ? " (이제 이름을 안다)" : ""}.` : ""} 이제 이 무리의 배급과 임무를 받는다.` +
+      `${content.factions[faction]!.name}에 들어갔다 (${role.label}).${commander ? ` 상관은 ${commander}${newName ? " (이제 이름을 안다)" : ""}.` : ""}${squadPost(content, role.occupation) ? "" : " 분대에는 들지 않는다."} 이제 이 무리의 배급과 임무를 받는다.` +
       (grace ? ` 처음 ${grace}일은 적응 기간이라 위험한 임무를 맡기지 않는다.` : "") +
       (player.factionId ? ` 전에 있던 무리(${content.factions[player.factionId]?.name ?? player.factionId})의 사람들은 이제 남이다.` : "") +
       (beliefs.length ? ` 이 무리 사정을 ${beliefs.length}가지 들었다 (상태의 믿음).` : "") +

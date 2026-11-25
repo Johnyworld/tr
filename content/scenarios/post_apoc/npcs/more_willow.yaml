@@ -5,7 +5,7 @@
   name: 남상구
   alias: 무릎까지 진흙이 마른 늙은 우물꾼
   faction: faction_b
-  rank: staff
+  rank: resident
   occupation: carpenter
   age: 59
   gender: male
@@ -52,7 +52,7 @@
   name: 함영자
   alias: 저울을 등에 진 볕에 탄 아주머니
   faction: faction_b
-  rank: staff
+  rank: resident
   occupation: trader
   age: 55
   gender: female

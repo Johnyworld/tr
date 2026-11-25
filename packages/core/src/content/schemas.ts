@@ -778,9 +778,21 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ faction_population: z.strictObject({ faction: z.string().min(1), delta: z.number().int().min(-10).max(10) }) }),
     /** 주인공이 그 무리에 들어간다: 무소속이면 가입, 다른 무리에 있으면 옮긴다 (rank가 없으면 가장 낮은 계급). 이미 그 무리면 아무 일도 없다 */
     /** grace_days: 들어온 뒤 이 날수 동안은 위험 임무(작전·적 땅)를 오늘의 일감에 내지 않는다 (12-239, 튜토리얼 "일주일은 적응 삼아") */
-    z.strictObject({ join_faction: z.strictObject({ faction: contentIdSchema, rank: idEnum(rankIds(s)).optional(), title: z.string().min(1).max(24).optional(), grace_days: z.number().int().min(1).max(30).optional() }) }),
-    /** 대표의 면담에서 (공통 규칙 22 받아들임, when.admission 이야기): accept 손님으로 든 무리에 들어간다 (들일 때 정한 자리로), decline 손님으로 남고 나중에 다시 권한다 */
-    z.strictObject({ admission: z.enum(["accept", "decline"]) }),
+    /** occupation: 들어갈 자리(직분, 12-309). 없으면 무소속은 붕괴 전 직업으로 정하고(scenario.admission.posts), 무리를 옮기면 지금 직분 그대로. rank는 occupation을 적었을 때만 그 자리의 계급을 대신한다 */
+    z.strictObject({
+      join_faction: z.strictObject({
+        faction: contentIdSchema,
+        rank: idEnum(rankIds(s)).optional(),
+        title: z.string().min(1).max(24).optional(),
+        occupation: contentIdSchema.optional(),
+        grace_days: z.number().int().min(1).max(30).optional(),
+      }),
+    }),
+    /**
+     * 대표의 면담에서 (공통 규칙 22 받아들임, when.admission 이야기): accept 손님으로 든 무리에 들어간다 (권한 자리로), decline 손님으로 남고 나중에 다시 권한다,
+     * { ask: 직분 } 권한 자리 대신 그 자리로 들어간다 (scenario.admission.posts.ask 중 하나, 12-309)
+     */
+    z.strictObject({ admission: z.union([z.enum(["accept", "decline"]), z.strictObject({ ask: contentIdSchema })]) }),
     /**
      * 배역 NPC의 몸 상태 ± (기획서 7.7). chance면 그 확률로만 (긁혔는데 정말 감염됐나는 코드가 굴린다). 부상 트랙은 안 된다.
      * 양수 = 나빠짐, 음수 = 나아짐
@@ -945,6 +957,8 @@ export function createContentSchemas(s: Scenario) {
           in_faction: z.boolean().optional(),
           /** 주인공의 무리가 이 중 하나일 때만 (none = 무소속) */
           factions: z.array(z.string().min(1)).optional(),
+          /** 대표가 권한 자리가 이 직분이 아닐 때만 (면담에서 다른 자리 청하기, 12-309) */
+          post_not: contentIdSchema.optional(),
         })
         .optional(),
       /**

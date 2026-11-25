@@ -5,7 +5,7 @@
   name: 천우경
   alias: 손이 떨리는 외과 의사
   faction: faction_d
-  rank: staff
+  rank: resident
   occupation: doctor
   age: 46
   gender: female
@@ -63,7 +63,7 @@
   name: 연수경
   alias: 약병 라벨을 소리 내어 읽는 약제사
   faction: faction_d
-  rank: staff
+  rank: resident
   occupation: nurse
   age: 33
   gender: female
@@ -151,7 +151,7 @@
   name: 위다현
   alias: 접수대의 머리 땋은 간호사
   faction: faction_d
-  rank: staff
+  rank: resident
   occupation: nurse
   age: 30
   gender: female

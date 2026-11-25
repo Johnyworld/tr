@@ -20,7 +20,7 @@
     day_gte: 2
     flags_none: [occ_mech_rifle_done]
   cast:
-    gunner: { faction: own, ranks: [grunt, staff, squad_leader], known: true }
+    gunner: { faction: own, ranks: [grunt, resident, squad_leader], known: true }
   setup: "출발 직전, {gunner:이/가} 작업대에 총을 내려놓는다. 노리쇠가 반쯤 열린 채 꿈쩍하지 않는다. \"어제 젖은 걸 그냥 뒀어. 한 시간 뒤에 나가야 돼.\" 손이 떨린다. 바깥에 맨손으로 나가게 생겼다."
   ai_direction: 녹과 마른 기름이 노리쇠를 물었다. 제대로 하면 한 시간 넘게 걸린다. 대충 풀면 나가서 또 걸릴 수 있다. 고친 총은 쏴 봐야 확실한데, 쏘면 소리가 난다. 수치는 말하지 않는다.
   choices:
@@ -285,7 +285,7 @@
       label: 장터로 가겠다고 한다
       effects:
         - set_flag: occ_mech_poach_done
-        - join_faction: { faction: faction_e, title: 장터 정비공 }
+        - join_faction: { faction: faction_e, title: 장터 정비공, occupation: mechanic }
         - deed: { summary: 나루상단의 제안을 받고 무리를 떠나 장터로 갔다, tags: [betrayal, selfishness], severity: 2, privacy: public }
         - belief: { fact: "나루상단의 정비공이 되었다. 장부에 내 이름이 새로 적혔다", source: seen }
     - id: refuse
@@ -329,7 +329,7 @@
       label: 붉은연합으로 가겠다고 한다
       effects:
         - set_flag: occ_mech_poach_done
-        - join_faction: { faction: faction_c, title: 정비소 정비공 }
+        - join_faction: { faction: faction_c, title: 정비소 정비공, occupation: mechanic }
         - deed: { summary: 붉은연합의 제안을 받고 상단을 떠났다, tags: [betrayal, selfishness], severity: 2, privacy: public }
         - belief: { fact: "붉은연합의 정비공이 되었다. 장부는 없다. 대신 아침저녁 점호가 있다", source: seen }
     - id: refuse
@@ -486,7 +486,7 @@
     flags_none: [occ_mech_armory_done]
   cast:
     boss: { commander: true, enter: false }
-    hand: { faction: own, ranks: [grunt, staff], known: true }
+    hand: { faction: own, ranks: [grunt, resident], known: true }
   setup: "정비 반장이 된 뒤로 무기고 열쇠가 당신 허리에 걸려 있다. 오늘 탄 상자를 세어 보니 장부보다 모자란다. 한 상자 반. 무기고에 드나드는 사람은 셋뿐이다. 그중 {hand:은/는} 오늘따라 일찍 와서 총을 닦고 있다."
   ai_direction: 탄을 빼돌린 것은 일찍 온 이 사람이다. 바깥 어딘가의 식구에게 탄을 바꿔 먹을 것을 보낸다. 아직 아무도 모른다. 반장이 장부를 고치면 덮이지만, 다음에 모자라면 반장의 이름이 걸린다. 위에 알리면 그 사람은 끝이다. 수치를 말하지 않는다.
   choices:

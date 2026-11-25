@@ -45,7 +45,7 @@
   name: 탁순례
   alias: 두레박 줄을 감은 허리 굽은 할머니
   faction: faction_b
-  rank: staff
+  rank: resident
   age: 68
   gender: female
   look: 허리가 굽었고 손목에 두레박 줄을 감고 다닌다. 고무장화에 늘 흙이 묻어 있다.
@@ -129,7 +129,7 @@
   name: 진은지
   alias: 분필 가루 묻은 안경 쓴 여자
   faction: faction_b
-  rank: staff
+  rank: resident
   age: 34
   gender: female
   look: 테가 휜 안경, 소맷부리에 분필 가루. 주머니에 아이들이 접은 종이별이 들어 있다.
@@ -206,7 +206,7 @@
   name: 오말순
   alias: 약초 바구니를 든 허리 굽은 할머니
   faction: faction_b
-  rank: staff
+  rank: resident
   occupation: nurse
   age: 66
   gender: female

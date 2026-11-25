@@ -587,7 +587,7 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
     stay = Math.max(0, task.until - at);
   } else if (task.kind === "occupy") {
     if ((world.zones[party.goal]?.owner ?? null) === null) {
-      const clash = occupyZone(world, party.faction, party.goal, task.plan);
+      const clash = occupyZone(world, content, party.faction, party.goal, task.plan);
       if (task.credits?.length) clash.credits = task.credits;
       out.clashes.push(clash);
     }

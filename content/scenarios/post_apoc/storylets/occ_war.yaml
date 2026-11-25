@@ -30,9 +30,10 @@
     위험은 판정 전에 말한다: 지혈이 서툴면 피가 멎지 않는다. 오래 머물면 이 자리를 아는 다른 사람이 올지 모른다는 것은 말로만 (부대를 등장시키지 않는다).
     탄띠를 챙기는 것은 우리 무리에 쓸 것을 거두는 일이지만, 숨이 붙은 사람에게서 뺏는 일이기도 하다.
   choices:
+    # 지혈은 응급처치를 배우지 않아도 해 볼 수 있는 일 (PT36 두 판: first_aid로 두니 못 함으로 잠겼다)
     - id: stop_bleeding
-      label: 그 자리에서 지혈해 준다
-      check: first_aid
+      label: 옷을 찢어 그 자리에서 상처를 동여맨다
+      check: improvise
       outcomes:
         success:
           - npc_body: { who: fallen, track: bleeding, delta: -3 }
@@ -47,17 +48,16 @@
         miss:
           - npc_depart: { who: fallen }
           - belief: { fact: "싸움터에 남겨진 사람의 피를 막지 못했다. 그는 피를 흘리며 몸을 끌고 떠났다", source: seen }
+    # 두고 가면 그 자리에 남는다 (치명상인 사람이 제 발로 가지 않는다)
     - id: take_rounds
       label: 탄띠만 풀어 챙기고 일어선다
       effects:
         - give_item: { item: rifle_rounds, quantity: 2 }
-        - npc_depart: { who: fallen }
         - deed: { summary: 싸움터에 숨이 붙은 채 남겨진 사람의 탄띠를 풀어 갔다, tags: [cruelty, selfishness], severity: 1, privacy: private }
         - belief: { fact: "숨이 붙은 사람의 탄띠를 풀어 왔다. 그는 아무 말도 하지 않고 나를 보기만 했다", source: seen }
     - id: leave
       label: 건드리지 않고 하던 일로 돌아간다
       effects:
-        - npc_depart: { who: fallen }
         - belief: { fact: "싸움터에 숨이 붙은 사람을 두고 지나쳤다", source: seen }
 
 - id: ow_sc_unsent_photo

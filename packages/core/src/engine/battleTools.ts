@@ -21,7 +21,7 @@ import {
   wonBy,
   type BattleEffect,
 } from "../sim/battle.ts";
-import { applyBattleOutcome, neighbors, resolveClash, type ClashSpec } from "../sim/war.ts";
+import { applyBattleOutcome, changedTargets, clockValues, neighbors, resolveClash, type ClashSpec } from "../sim/war.ts";
 import { facilitiesAt } from "./facilities.ts";
 import { josa } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
@@ -72,14 +72,17 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
     const state = ctx.store.getState();
     const due = state.pendingClashes.filter((p) => p.at <= state.time).sort((a, b) => a.at - b.at)[0];
     if (!due) return displays;
-    const side = playerInvolvement(state, ctx.content, due);
+    // 그 구역에 숨어 기다리던 지키는 쪽 가로막는 부대는 이 싸움에 든다 (PT36 졸병: 알리고 설득해 숨긴 11명이 빠진 채 2 대 38로 졌다)
+    const guard = foldGuards(ctx, due.zone, due.defender);
+    const spec = guard ? { ...due, guard } : due;
+    const side = playerInvolvement(ctx.store.getState(), ctx.content, spec);
     if (side) {
       // 전투가 벌어지면 진행 중이던 이야기는 끝난다
       displays.push(...endActiveStorylet(ctx, "전투가 벌어졌다"));
       // 바리케이드 (12-176, 12-184에 시설로): 우리 구역을 지킬 때만, 이 전투에서 막기를 다 쓰고 부서진다
       const barriers = side === "defense" ? facilitiesAt(ctx.content, state, due.zone).filter((f) => f.effects.holds) : [];
       const holds = barriers.reduce((n, f) => n + (f.effects.holds ?? 0), 0);
-      const battle = startBattle(ctx.content, ctx.store.getState(), due, side, { id: due.id, at: state.time, holds });
+      const battle = startBattle(ctx.content, ctx.store.getState(), spec, side, { id: due.id, at: state.time, holds });
       for (const f of barriers) {
         ctx.store.append({ type: "facility_broken", zone: due.zone, facility: f.id });
         if (f.effects.fort) ctx.store.append({ type: "zone_fortified", zone: due.zone, delta: -f.effects.fort });
@@ -88,13 +91,37 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
       displays.push({ type: "battle", event: "started", title: battleTitle(ctx.content, battle), detail: describeStart(ctx.content, battle) });
       return displays;
     }
-    const { world, clash } = resolveClash(state, ctx.content, ctx.rng, due);
-    ctx.store.append({ type: "clash_resolved", pendingId: due.id, clash, factions: world.factions, zones: world.zones });
+    const now = ctx.store.getState();
+    const { world, clash } = resolveClash(now, ctx.content, ctx.rng, spec);
+    const targets = changedTargets(world.clocks, now.clocks);
+    ctx.store.append({ type: "clash_resolved", pendingId: due.id, clash, factions: world.factions, zones: world.zones, ...(targets ? { targets } : {}) });
     displays.push(...reportClash(ctx, clash));
     displays.push(...casualtiesToPeople(ctx, [clash]));
     displays.push(...woundedToInfirmary(ctx, [clash]));
     displays.push(...settlePartyAlerts(ctx, [clash]));
   }
+}
+
+/** 구역에 숨어 기다리던 무리의 가로막는 부대를 거둬 전투원으로 돌린다 (교전에 든다). 든 인원 */
+function foldGuards(ctx: ToolContext, zone: string, faction: string): number {
+  const state = ctx.store.getState();
+  const guards = state.parties.filter((p) => p.faction === faction && p.goal === zone && !p.done && p.size > 0 && p.task.kind === "intercept" && !p.task.squad.length);
+  if (!guards.length) return 0;
+  const size = guards.reduce((n, p) => n + p.size, 0);
+  const factions = structuredClone(state.factions);
+  if (factions[faction]) factions[faction]!.combatants += size;
+  const gone = new Set(guards.map((p) => p.id));
+  ctx.store.append({
+    type: "parties_advanced",
+    factions,
+    zones: state.zones,
+    clocks: clockValues(state.clocks, state.clocks),
+    parties: state.parties.filter((p) => !gone.has(p.id)),
+    partiesUpTo: state.partiesUpTo,
+    clashes: [],
+    scheduled: [],
+  });
+  return size;
 }
 
 export type BattleTurn = {
@@ -197,7 +224,8 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
     if (f) f.combatants += Math.min(attackerLosses, party.size);
   }
   const merit = player.dead ? 0 : battleMerit(battle);
-  ctx.store.append({ type: "battle_ended", won, withdrew, clash, factions: world.factions, zones: world.zones, merit });
+  const targets = changedTargets(world.clocks, state.clocks);
+  ctx.store.append({ type: "battle_ended", won, withdrew, clash, factions: world.factions, zones: world.zones, merit, ...(targets ? { targets } : {}) });
   if (party) settlePartyBattle(ctx, party.id, battle.theirs.losses, won);
 
   const lines = [
@@ -326,7 +354,7 @@ function settlePartyBattle(ctx: ToolContext, partyId: string, lost: number, play
     type: "parties_advanced",
     factions: world.factions,
     zones: world.zones,
-    clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
+    clocks: clockValues(world.clocks, state.clocks),
     parties: world.parties,
     partiesUpTo: state.partiesUpTo,
     clashes: [],

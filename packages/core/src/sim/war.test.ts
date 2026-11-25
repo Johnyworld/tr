@@ -156,3 +156,23 @@ describe("태도가 바뀌는 클락 (shift)", () => {
     expect(simulateWarDay(world, content, rng).shifts).toEqual([]);
   });
 });
+
+describe("땅이 바뀐 그 자리에서 계획 목표를 다시 고른다 (PT36)", () => {
+  it("계획 목표를 차지하면 하루 틱을 기다리지 않고 바로 다른 목표로", async () => {
+    const { occupyZone } = await import("./war.ts");
+    const w = initialWarWorld(TEST_CONTENT);
+    w.zones.a_post = { owner: null };
+    occupyZone(w, TEST_CONTENT, "faction_c", "a_post", "c_plan");
+    expect(w.zones.a_post?.owner).toBe("faction_c");
+    expect(w.clocks.c_plan?.target).not.toBe("a_post");
+  });
+
+  it("움직이는 부대의 교전은 실제로 온 인원, 숨어 기다리던 지키는 부대는 지키는 쪽에 든다", async () => {
+    const { clashForces } = await import("./war.ts");
+    const w = initialWarWorld(TEST_CONTENT);
+    const base = clashForces(w, { kind: "assault", attacker: "faction_c", defender: "faction_a", zone: "a_post" }, TEST_CONTENT);
+    const moved = clashForces(w, { kind: "assault", attacker: "faction_c", defender: "faction_a", zone: "a_post", force: 21, guard: 11 }, TEST_CONTENT);
+    expect(moved.attackers).toBe(21);
+    expect(moved.defenders).toBe(base.defenders + 11);
+  });
+});

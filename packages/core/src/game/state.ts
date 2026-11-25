@@ -55,7 +55,7 @@ import { startingSkills } from "./creation.ts";
 // 120: PT34 고침 (12-325). garrisonSeen, 이벤트 party_reported
 // 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
 // 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
-export const SAVE_SCHEMA_VERSION = 122;
+export const SAVE_SCHEMA_VERSION = 123;
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -271,6 +271,8 @@ export const pendingClashSchema = z.strictObject({
   zone: z.string(),
   at: z.number().int(),
   plan: z.string().optional(),
+  /** 움직이는 부대가 닿아 벌어진 교전: 실제로 온 인원 (PT36 졸병: 적 38로 시작했다, 본 부대는 21명) */
+  force: z.number().int().min(1).optional(),
 });
 export type PendingClash = z.infer<typeof pendingClashSchema>;
 
@@ -1174,7 +1176,8 @@ export function createGameSchemas(s: Scenario) {
       type: z.literal("parties_advanced"),
       factions: z.record(z.string(), factionStateSchema),
       zones: z.record(z.string(), zoneStateSchema),
-      clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0) })),
+      /** target: 땅이 바뀌어 다시 고른 목표 (PT36) */
+      clocks: z.record(z.string(), z.strictObject({ filled: z.number().int().min(0), target: z.string().optional() })),
       parties: z.array(partySchema),
       partiesUpTo: z.number().int(),
       /** 새로 낸 부대가 있으면 다음 부대 번호 */
@@ -1329,6 +1332,8 @@ export function createGameSchemas(s: Scenario) {
       clash: clashSchema,
       factions: z.record(z.string(), factionStateSchema),
       zones: z.record(z.string(), zoneStateSchema),
+      /** 땅이 바뀌어 다시 고른 계획 목표 */
+      targets: z.record(z.string(), z.string()).optional(),
     }),
     /** barrierUsed: 이 전투에서 막기로 쓰고 부서지는 준비물 (바리케이드, 12-176) */
     z.strictObject({ type: z.literal("battle_started"), pendingId: z.string(), battle: battleStateSchema, barrierUsed: z.array(z.string()).default([]) }),
@@ -1357,6 +1362,8 @@ export function createGameSchemas(s: Scenario) {
       factions: z.record(z.string(), factionStateSchema),
       zones: z.record(z.string(), zoneStateSchema),
       merit: z.number().int().min(0),
+      /** 땅이 바뀌어 다시 고른 계획 목표 */
+      targets: z.record(z.string(), z.string()).optional(),
     }),
     z.strictObject({ type: z.literal("secret_revealed"), npcId: z.string() }),
     z.strictObject({ type: z.literal("turn_started"), turn: z.number().int().positive(), input: z.string() }),
@@ -2649,7 +2656,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "parties_advanced": {
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
-      for (const [id, clock] of Object.entries(event.clocks)) mustGet(next.clocks, id, "세력 클락").filled = clock.filled;
+      for (const [id, clock] of Object.entries(event.clocks)) {
+        const c = mustGet(next.clocks, id, "세력 클락");
+        c.filled = clock.filled;
+        if (clock.target !== undefined) c.target = clock.target;
+      }
       next.parties = structuredClone(event.parties);
       next.partiesUpTo = event.partiesUpTo;
       if (event.nextPartyNo !== undefined) next.nextPartyNo = event.nextPartyNo;
@@ -3105,6 +3116,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.pendingClashes = next.pendingClashes.filter((p) => p.id !== event.pendingId);
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
+      for (const [id, target] of Object.entries(event.targets ?? {})) if (next.clocks[id]) next.clocks[id]!.target = target;
       rememberClashes(next, [event.clash], state.time);
       seeHereOwner(next);
       break;
@@ -3143,6 +3155,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.battle = null;
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
+      for (const [id, target] of Object.entries(event.targets ?? {})) if (next.clocks[id]) next.clocks[id]!.target = target;
       mustGet(next.characters, state.playerId, "캐릭터").merit += event.merit;
       rememberClashes(next, [event.clash], state.time);
       break;

@@ -28,10 +28,18 @@ function leavesRemains(ctx: ToolContext, state: GameState, c: Character): boolea
   return c.id === state.playerId || !!ctx.content.npcs[c.id];
 }
 
+/** 도구를 실행하기 전 주인공 곁에 있던 사람 (곁에서 죽으면 동행 목록에서 빠지므로 미리 잡아 둔다, PT36) */
+const withMeBefore = new WeakMap<Set<string>, Set<string>>();
+
+function withMe(state: GameState, id: string): boolean {
+  return state.scene.present.includes(id) || (state.companions.includes(id) && !state.bonds[id]?.apart);
+}
+
 /** 그 사람이 죽은 곳 */
-function placeOf(ctx: ToolContext, state: GameState, c: Character): string | null {
+function placeOf(ctx: ToolContext, state: GameState, c: Character, before?: Set<string>): string | null {
   // 주인공 앞(장면·곁의 동행)에서 죽었으면 여기다. 평소 있던 자리가 아니라 (인물은 어디에, 공통 규칙 15)
-  if (state.scene.present.includes(c.id) || (state.companions.includes(c.id) && !state.bonds[c.id]?.apart)) return state.playerZone;
+  // 함께 걷다 죽은 동행은 죽으며 곁에서 빠진다: 평소 자리(집)로 가지 않게 도구 전의 곁을 본다 (PT36 약탈조원)
+  if (withMe(state, c.id) || (before && withMeBefore.get(before)?.has(c.id))) return state.playerZone;
   return zoneOf(state, ctx.content, c.id);
 }
 
@@ -45,7 +53,9 @@ function diedOfInfection(ctx: ToolContext, c: Character): boolean {
 
 /** 살아 있는 사람 id (도구를 실행하기 전에 잡아 둔다) */
 export function livingIds(state: GameState): Set<string> {
-  return new Set(Object.values(state.characters).filter((c) => !c.dead).map((c) => c.id));
+  const living = new Set(Object.values(state.characters).filter((c) => !c.dead).map((c) => c.id));
+  withMeBefore.set(living, new Set([...living].filter((id) => withMe(state, id))));
+  return living;
 }
 
 /** 이번에 새로 죽은 사람의 유해를 남긴다 */
@@ -58,7 +68,7 @@ export function leaveRemainsForNewDeaths(ctx: ToolContext, before: Set<string>):
     // 변이한 사람을 쓰러뜨렸다: 그 사람의 유해 (짐은 변이체가 지니던 것)
     const of = c.extra?.turnedFrom ?? (leavesRemains(ctx, state, c) && !diedOfInfection(ctx, c) ? c.id : null);
     if (!of) continue;
-    const zone = placeOf(ctx, state, c);
+    const zone = placeOf(ctx, state, c, before);
     if (!zone) continue;
     // 주인공 곁에서 죽었으면 그 자리 (공통 규칙 15 spotHere)
     const spot = zone === state.playerZone ? spotHere(state) : null;

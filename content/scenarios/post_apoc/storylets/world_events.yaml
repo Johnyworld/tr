@@ -300,8 +300,8 @@
       outcomes:
         success:
           - set_flag: w_child_found
-          - deed: { summary: 길 잃은 아이를 달래 엄마에게 가는 길을 찾아 주었다, tags: [mercy], severity: 1, privacy: semi_private }
-          - belief: { fact: 아이는 엄마와 물을 길으러 나왔다가 감염체 떼에 쫓겨 흩어졌다고 했다. 엄마가 있는 곳까지 데려다주었다, source: seen }
+          - deed: { summary: 길 잃은 아이를 달래 엄마에게 가는 길을 일러 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: 아이는 엄마와 물을 길으러 나왔다가 감염체 떼에 쫓겨 흩어졌다고 했다. 헤어지면 만나기로 한 곳을 아이에게서 듣고 그 길을 일러 보내 주었다, source: seen }
         partial:
           # 대가 있는 성공: 이름만 겨우 말해서 한참을 업고 헤맨다 (아이를 둔 채 끝나지 않게, 플레이 테스트 4)
           - delay: 120

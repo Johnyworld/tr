@@ -1,4 +1,4 @@
-import { arrivalPlace } from "../rules/place.ts";
+import { arrivalPlace, zoneOf } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -37,6 +37,20 @@ describe("유해", () => {
     expect(s().remains).toHaveLength(1);
     expect(s().remains[0]).toMatchObject({ of: "a_taeho", holder: "a_taeho", buriedAt: null });
     expect(s().characters.a_taeho!.inventory.cigarettes).toBe(2);
+  });
+
+  it("함께 걷다 죽은 동행은 곁에서 빠져도 평소 자리(집)가 아니라 주인공이 있는 곳에 유해가 남는다 (PT36)", () => {
+    const { w, s } = open();
+    const home = zoneOf(s(), content, "a_taeho");
+    w.ctx().store.append({ type: "companion_joined", characterId: "a_taeho" });
+    const away = Object.keys(content.locations).find((z) => z !== s().playerZone && z !== home && content.locations[z]!.kind !== "base")!;
+    s().playerZone = away;
+    const before = livingIds(s());
+    w.ctx().store.append({ type: "companion_left", characterId: "a_taeho" });
+    const levels = content.scenario.condition_tracks.find((t) => t.id === content.scenario.harm_track)!.levels;
+    changeCondition(w.ctx(), "a_taeho", content.scenario.harm_track, levels.length, "cheat", "테스트");
+    leaveRemainsForNewDeaths(w.ctx(), before);
+    expect(s().remains[0]).toMatchObject({ of: "a_taeho", zone: away });
   });
 
   it("감염으로 죽으면 변이하므로 유해가 없고, 변이한 그 사람을 쓰러뜨리면 그때 유해가 남는다", () => {

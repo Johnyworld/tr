@@ -17,7 +17,7 @@ import type { Content } from "../content/schemas.ts";
 import { BELIEF_SOURCE_LABELS, type Belief } from "../game/belief.ts";
 import type { Clash, FactionState, GameState } from "../game/state.ts";
 import { dayOf, formatTime } from "../rules/time.ts";
-import { daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, prefillClocks, rationLevel, simulateWarDay, spawnWatchParties, type WarWorld } from "../sim/war.ts";
+import { clockValues, daysOfStock, frontierTarget, HOSTILE, disposition, initialWarWorld, neighbors, prefillClocks, rationLevel, simulateWarDay, spawnWatchParties, type WarWorld } from "../sim/war.ts";
 import { advanceParties, partiesConfig } from "../sim/parties.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { playerInvolvement, scheduleTime } from "./battleTools.ts";
@@ -67,7 +67,7 @@ export function initFactions(ctx: ToolContext): boolean {
     const world: WarWorld = { factions: structuredClone(s.factions), zones: structuredClone(s.zones), clocks: structuredClone(s.clocks), parties: [], nextPartyNo: s.nextPartyNo, partiesUpTo: s.time };
     spawnWatchParties(world, content, ctx.rng, dayOf(s.time));
     if (world.parties?.length) {
-      store.append({ type: "parties_advanced", factions: world.factions, zones: world.zones, clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])), parties: world.parties, partiesUpTo: s.time, nextPartyNo: world.nextPartyNo ?? s.nextPartyNo, clashes: [], scheduled: [] });
+      store.append({ type: "parties_advanced", factions: world.factions, zones: world.zones, clocks: clockValues(world.clocks, s.clocks), parties: world.parties, partiesUpTo: s.time, nextPartyNo: world.nextPartyNo ?? s.nextPartyNo, clashes: [], scheduled: [] });
     }
   }
   return true;
@@ -125,7 +125,7 @@ export function runWarDays(ctx: ToolContext): ToolDisplayEvent[] {
         const plan = p.task.kind === "clash" || p.task.kind === "occupy" ? p.task.plan : undefined;
         const label = plan ? now.clocks[plan]?.label : undefined;
         if (!label) continue;
-        displays.push(...hearNews(ctx, { fact: `${label}이 끝나 부대가 거점에 모였다고 한다. ${formatTime(p.legs[0]!.to)}께 ${josa(content.locations[p.goal]?.name ?? p.goal, "으로/로")} 나선다`, factions: [mine], topic: WAR_TOPIC, showOursOnly: true }));
+        displays.push(...hearNews(ctx, { fact: `${josa(label, "이/가")} 끝나 부대가 거점에 모였다고 한다. ${formatTime(p.legs[0]!.to)}께 ${josa(content.locations[p.goal]?.name ?? p.goal, "으로/로")} 나선다`, factions: [mine], topic: WAR_TOPIC, showOursOnly: true }));
       }
     }
     // 다른 무리의 형편이 소문으로 (12-105)
@@ -198,7 +198,7 @@ export function runPartiesNow(ctx: ToolContext): ToolDisplayEvent[] {
     type: "parties_advanced",
     factions: world.factions,
     zones: world.zones,
-    clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
+    clocks: clockValues(world.clocks, state.clocks),
     parties: world.parties ?? [],
     partiesUpTo: world.partiesUpTo ?? state.time,
     clashes: r.clashes,

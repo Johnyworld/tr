@@ -36,7 +36,18 @@ export type WarWorld = {
 };
 
 /** 교전 하나의 명세 (아직 결과가 정해지지 않은 것) */
-export type ClashSpec = { kind: "raid" | "skirmish" | "assault"; attacker: string; defender: string; zone: string; plan?: string };
+export type ClashSpec = { kind: "raid" | "skirmish" | "assault"; attacker: string; defender: string; zone: string; plan?: string; /** 움직이는 부대: 실제로 온 인원 */ force?: number; /** 그 구역에 숨어 기다리던 지키는 쪽 부대 인원 (가로막기, PT36) */ guard?: number };
+
+/** 이벤트에 싣는 클락 값: 찬 정도와 바뀐 목표 */
+export function clockValues(clocks: Record<string, ClockState>, prev: Record<string, { target?: string } | undefined>): Record<string, { filled: number; target?: string }> {
+  return Object.fromEntries(Object.entries(clocks).map(([id, c]) => [id, { filled: c.filled, ...(c.target !== prev[id]?.target ? { target: c.target } : {}) }]));
+}
+
+/** 바뀐 목표만 */
+export function changedTargets(clocks: Record<string, ClockState>, prev: Record<string, { target?: string } | undefined>): Record<string, string> | undefined {
+  const out = Object.fromEntries(Object.entries(clocks).filter(([id, c]) => c.target !== prev[id]?.target).map(([id, c]) => [id, c.target]));
+  return Object.keys(out).length ? out : undefined;
+}
 
 export type WarDayResult = WarWorld & {
   clashes: Clash[];
@@ -401,7 +412,11 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     else clashes.push(fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, warShareOf(content, next, spec.attacker, infestedToday)));
   };
   const occupyOrSend = (attacker: string, zone: string, plan?: string) => {
-    if (!cfg) return void clashes.push(occupy(next, attacker, zone, plan));
+    if (!cfg) {
+      clashes.push(occupy(next, attacker, zone, plan));
+      retargetClocks(next, content);
+      return;
+    }
     // 땅 차지는 순찰대가 닿아야 이뤄진다 (2-2)
     const size = Math.max(sizeOf("patrol"), Math.round(next.factions[attacker]!.combatants * COMMIT.occupy));
     // 계획의 공세가 빈 땅 차지로 터져도 앞당긴 일이 실린다 (PT35 졸병: 두 번 앞당긴 공세가 버스 차고지 차지로 터졌는데 "덕분에"가 없었다)
@@ -518,7 +533,7 @@ export function simulateWarDay(world: WarWorld, content: Content, rng: Rng, opti
     if (!alive.includes(clock.factionId)) continue;
     const plan = planOf(content, clockId);
     // 목표가 이미 우리 땅이면 다른 목표를 고른다 (PT35 약탈조원: 빼앗은 동쪽 초소가 다음 공세의 목표로 남았다)
-    if (plan?.kind !== "shift" && clock.target && next.zones[clock.target]?.owner === clock.factionId) clock.target = frontierTarget(next, content, clock.factionId) ?? "";
+    retargetClock(next, content, clockId);
     if (plan?.kind === "shift") {
       // 태도가 바뀌는 계획은 한 번 일어나고 끝난다 (찬 채로 둔다)
       if (clock.filled >= clock.max) continue;
@@ -646,7 +661,7 @@ export function resolveClash(world: WarWorld, content: Content, rng: Rng, spec: 
     const { kind, attacker, defender, zone, plan } = spec;
     return { world: next, clash: { kind, attacker, defender, zone, ...(plan ? { plan } : {}), success: false, attackerLosses: 0, defenderLosses: 0 } };
   }
-  return { world: next, clash: fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan) };
+  return { world: next, clash: fight(next, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, undefined, spec.force, spec.guard) };
 }
 
 /**
@@ -671,8 +686,10 @@ export function applyBattleOutcome(
   a.resources[war.medicine] = Math.max(0, (a.resources[war.medicine] ?? 0) - attackerLosses * war.medicine_per_casualty);
   d.resources[war.medicine] = Math.max(0, (d.resources[war.medicine] ?? 0) - defenderLosses * war.medicine_per_casualty);
   const committed = Math.max(1, Math.round(a.combatants * (content.factions[spec.attacker]?.war_share ?? 1) * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind])));
-  const clash: Clash = { ...spec, success: outcome.success, attackerLosses, defenderLosses };
+  const { force: _force, guard: _guard, ...rest } = spec;
+  const clash: Clash = { ...rest, success: outcome.success, attackerLosses, defenderLosses };
   applySpoils(next, spec.kind, a, d, spec.attacker, spec.defender, spec.zone, outcome.success, committed, clash);
+  retargetClocks(next, content);
   return { world: next, clash };
 }
 
@@ -684,9 +701,9 @@ export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content)
   const a = world.factions[spec.attacker]!;
   const d = world.factions[spec.defender]!;
   return {
-    attackers: Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
+    attackers: spec.force ?? Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
     // 보강된 구역(담·망루)은 지키는 쪽이 더 버틴다 (12-48)
-    defenders: Math.max(1, Math.round(d.combatants * commitAt(world, spec.zone, spec.defender) * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0)))),
+    defenders: Math.max(1, Math.round(d.combatants * commitAt(world, spec.zone, spec.defender) * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0)))) + (spec.guard ?? 0),
   };
 }
 
@@ -738,8 +755,22 @@ export function fightClash(world: WarWorld, content: Content, rng: Rng, spec: Cl
 }
 
 /** 빈 구역에 자리를 잡는다 */
-export function occupyZone(world: WarWorld, attacker: string, zone: string, plan?: string): Clash {
-  return occupy(world, attacker, zone, plan);
+export function occupyZone(world: WarWorld, content: Content, attacker: string, zone: string, plan?: string): Clash {
+  const clash = occupy(world, attacker, zone, plan);
+  retargetClocks(world, content);
+  return clash;
+}
+
+/** 목표가 이미 그 무리 땅인 계획은 다른 목표를 고른다 */
+function retargetClock(world: WarWorld, content: Content, clockId: string): void {
+  const clock = world.clocks[clockId];
+  if (!clock || !clock.target || planOf(content, clockId)?.kind === "shift") return;
+  if (world.zones[clock.target]?.owner === clock.factionId) clock.target = frontierTarget(world, content, clock.factionId) ?? "";
+}
+
+/** 땅이 바뀐 그 자리에서 다시 고른다 (PT36 약탈조원: 하루 틱까지 빼앗은 목표에 "앞당겨졌다"가 쌓였다) */
+export function retargetClocks(world: WarWorld, content: Content): void {
+  for (const clockId of Object.keys(world.clocks)) retargetClock(world, content, clockId);
 }
 
 function occupy(world: WarWorld, attacker: string, zone: string, plan?: string): Clash {
@@ -759,13 +790,15 @@ function fight(
   share: number = content.factions[attackerId]?.war_share ?? 1,
   /** 움직이는 부대: 실제로 간 인원 (없으면 전투원 × 비율) */
   force?: number,
+  /** 그 구역에 숨어 기다리던 지키는 쪽 부대 (가로막기) */
+  guard = 0,
 ): Clash {
   const war = content.scenario.war!;
   const a = world.factions[attackerId]!;
   const d = world.factions[defenderId]!;
   // 바깥의 적·감염체를 막느라 이 전쟁에는 그 몫만 내보낸다 (12-139, 12-144: 자기 땅에 감염체가 몰리면 더 준다)
   const committed = force ?? Math.max(1, Math.round(a.combatants * share * (plan ? PLAN_COMMIT : COMMIT[kind])));
-  const own = Math.max(1, Math.round(d.combatants * commitAt(world, zone, defenderId) * defenseOf(content, d)));
+  const own = Math.max(1, Math.round(d.combatants * commitAt(world, zone, defenderId) * defenseOf(content, d))) + guard;
   // 알려서 더 지키던 것은 이 교전으로 쓴다
   if (world.zones[zone]?.alerted === defenderId) delete world.zones[zone]!.alerted;
   // 지원 방어 (12-140): 지키는 쪽을 우호(ALLY_AT 이상)로 보고 치는 쪽과는 우호가 아닌 무리가 전투원 일부를 보탠다
@@ -804,6 +837,7 @@ function fight(
 
   const clash: Clash = { kind, attacker: attackerId, defender: defenderId, zone, success, attackerLosses, defenderLosses, ...(plan ? { plan } : {}) };
   applySpoils(world, kind, a, d, attackerId, defenderId, zone, success, committed, clash);
+  if (success && kind === "assault") retargetClocks(world, content);
   return clash;
 }
 

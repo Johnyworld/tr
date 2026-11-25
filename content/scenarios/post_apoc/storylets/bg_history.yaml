@@ -8,6 +8,8 @@
 - id: bg_enemy_glimpse
   title: 저 사람이다
   tags: [world]
+  # 길 건너 짐꾼들은 거리의 사람들이지 무리의 부대가 아니다 (PT36)
+  party_story: false
   when:
     indoor: false
     zone_owner: [none, other]

@@ -15,7 +15,7 @@ import { companyHere } from "../rules/company.ts";
 import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.ts";
 import { battleConfig } from "../sim/battle.ts";
 import { arrivalOf, canSend, chaseInto, partiesConfig, partyLabel, partyZoneAt, recordDefeat, routParty, spawnIntercept } from "../sim/parties.ts";
-import { DEFENSE_COMMIT, frontierTarget, neighbors, type WarWorld } from "../sim/war.ts";
+import { clockValues, DEFENSE_COMMIT, frontierTarget, neighbors, type WarWorld } from "../sim/war.ts";
 import type { Content } from "../content/schemas.ts";
 import type { Rng } from "../rng.ts";
 import { josa } from "../text.ts";
@@ -56,7 +56,7 @@ function saveWorld(ctx: ToolContext, world: WarWorld, clashes: Clash[] = []) {
     type: "parties_advanced",
     factions: world.factions,
     zones: world.zones,
-    clocks: Object.fromEntries(Object.entries(world.clocks).map(([id, c]) => [id, { filled: c.filled }])),
+    clocks: clockValues(world.clocks, state.clocks),
     parties: world.parties ?? [],
     partiesUpTo: Math.max(state.partiesUpTo, world.partiesUpTo ?? 0),
     // 새로 낸 부대(가로막기)의 번호를 남긴다 (PT35 분대장: 번호가 남지 않아 다음 공세 부대가 같은 id를 받고 함께 지워졌다)

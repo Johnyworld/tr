@@ -9,7 +9,7 @@ import { eligibleStorylets } from "../story/storylets.ts";
 import { loadRealContent } from "../testing.ts";
 import { buildPlayerView } from "../views/player.ts";
 import { WorldManager } from "../world/manager.ts";
-import { activeSaga, describeSaga, sagaConditionMet, sagaMarketFactor, sagaSpineDue, sagaState } from "./saga.ts";
+import { activeSaga, describeSaga, sagaConditionMet, sagaLead, sagaMarketFactor, sagaSpineDue, sagaState } from "./saga.ts";
 import { isMust } from "./storySlot.ts";
 import { MINUTES_PER_DAY } from "./time.ts";
 
@@ -165,6 +165,19 @@ describe("큰 이야기 (공통 규칙 24)", { timeout: 30_000 }, () => {
     const g = sagaState(w.state(), "test_saga")!;
     expect(g.note).toBe("밤에 장터에 배가 닿는다고 한다");
     expect(g.noteZone).toBe("e_market");
+  });
+
+  it("실마리 표의 실마리는 다른 실마리에 덮여도 따라가는 실마리로 남고, 그 플래그를 조건으로 삼는 이야기는 큰 이야기 몫이다 (PT43)", () => {
+    const w = started();
+    w.ctx().store.append({ type: "flag_set", characterId: w.state().playerId, flag: "ts_clue" });
+    w.runCheat("~time +1h");
+    w.ctx().store.append({ type: "saga_noted", sagaId: "test_saga", text: "다른 말을 들었다", zone: null });
+    const lines = describeSaga(w.state(), content);
+    expect(lines.some((l) => l.includes("아직 따라가는 실마리: 밤에 장터에 배가 닿는다고 한다 → "))).toBe(true);
+    const lead = schemas.storylet.parse({ id: "ts_lead", title: "밤배", tags: ["world"], setup: "밤배.", when: { flags_any: ["ts_clue"] }, choices: [{ id: "a", label: "본다", effects: [] }, { id: "b", label: "간다", effects: [] }] });
+    const other = schemas.storylet.parse({ id: "ts_other", title: "딴 일", tags: ["world"], setup: "딴 일.", when: { flags_any: ["ts_other"] }, choices: [{ id: "a", label: "본다", effects: [] }, { id: "b", label: "간다", effects: [] }] });
+    expect(sagaLead(w.state(), content, lead)).toBe(true);
+    expect(sagaLead(w.state(), content, other)).toBe(false);
   });
 
   it("계승자 이야기는 앞 주인공이 발을 들였고 지금 주인공은 아직일 때만", () => {

@@ -19,6 +19,7 @@ import { hasMet, playerCalls } from "../game/acquaintance.ts";
 import { hearNews } from "./news.ts";
 import { dayOf, MINUTES_PER_DAY, type GameTime } from "./time.ts";
 import { heldOf } from "./held.ts";
+import { isCreature } from "../game/kinds.ts";
 
 /**
  * 이야기 효과를 적용하는 함수 (세계 쪽 사건·결말의 효과). 부르는 쪽(engine)이 넘긴다:
@@ -139,7 +140,9 @@ function pickMarked(ctx: ToolContext, saga: SagaContent): string | null {
         return !!r && (r.trust >= CLOSE_REGARD || r.affection >= CLOSE_REGARD);
       }),
   ]);
-  const candidates = [...close].filter((id) => alive(id) && !fixed.has(id) && !heldOf(state.characters[id])).sort();
+  // 사람만: 짐승·이름 없는 엑스트라는 곁의 R 배역에 못 들어 4막 이야기가 하나도 안 열렸다 (PT43 떠돌이: 동행 개가 곁의 R이 됐다)
+  const person = (id: string) => !isCreature(ctx.content, state.characters[id]) && !state.characters[id]!.extra;
+  const candidates = [...close].filter((id) => alive(id) && person(id) && !fixed.has(id) && !heldOf(state.characters[id])).sort();
   if (candidates.length) return candidates[Math.floor(ctx.rng() * candidates.length)]!;
   const fallback = saga.mark?.fallback ? saga.cast[saga.mark.fallback] : undefined;
   return fallback && alive(fallback) ? fallback : null;
@@ -222,10 +225,10 @@ export function engageSaga(ctx: ToolContext, s: StoryletContent): void {
 }
 
 /** 큰 이야기의 이야기가 끝났다: GM이 이어서 서술하도록 지난 장면 한 줄 */
-export function recordSagaScene(ctx: ToolContext, s: StoryletContent, choiceLabel: string): void {
+export function recordSagaScene(ctx: ToolContext, s: StoryletContent, title: string, choiceLabel: string): void {
   const id = s.when.saga?.id;
   if (!id || !sagaState(ctx.store.getState(), id)) return;
-  ctx.store.append({ type: "saga_scene", sagaId: id, line: `${dayOf(ctx.store.getState().time)}일차 「${s.title}」: ${choiceLabel}` });
+  ctx.store.append({ type: "saga_scene", sagaId: id, line: `${dayOf(ctx.store.getState().time)}일차 「${title}」: ${choiceLabel}` });
 }
 
 /** 기한을 넘긴 막: 세계 쪽 사건 (파트 4) */
@@ -288,6 +291,26 @@ export function runSagas(ctx: ToolContext, apply: SagaEffectApplier): ToolDispla
   return displays;
 }
 
+/** 지금 막에서 실마리 표가 쓴 마지막 실마리 (다른 실마리에 덮여도 길잡이로 남긴다, PT43 수색대원: 철조망 이야기가 밤배 안내를 지웠다) */
+function flagGuide(saga: SagaContent, g: SagaState): { text: string; zone: string | null } | null {
+  for (const flag of [...g.notedFlags].reverse()) {
+    const n = saga.notes.find((x) => x.flag === flag);
+    if (n && (!n.acts || n.acts.includes(g.act))) return { text: n.text, zone: n.zone ?? null };
+  }
+  return null;
+}
+
+/**
+ * 실마리 표가 가리키는 다음 걸음인가: 지금 막에 쓴 실마리 표의 플래그를 조건으로 삼는 이야기.
+ * 큰 이야기의 이야기와 같이 한 몫으로 뽑는다 (PT43 수색대원: 장터의 밤배가 실마리대로 이틀 밤을 기다려도 다른 장터 이야기에 밀렸다)
+ */
+export function sagaLead(state: GameState, content: Content, s: StoryletContent): boolean {
+  const a = activeSaga(state, content);
+  if (!a) return false;
+  const conds = [...(s.when.flags_any ?? []), ...(s.when.flags_all ?? [])];
+  return a.saga.notes.some((n) => a.g.notedFlags.includes(n.flag) && (!n.acts || n.acts.includes(a.g.act)) && conds.includes(n.flag));
+}
+
 /** 상인의 귀한 물건 확률 배율: 끝난 큰 이야기의 결말이 바꾼 것 */
 export function sagaMarketFactor(state: GameState, content: Content, itemId: string): number {
   let factor = 1;
@@ -305,8 +328,16 @@ function noteZoneName(content: Content, note: string | null, zone: string | null
   return content.locations[zone]?.name ?? zone;
 }
 
+/** 길잡이 줄: 실마리 표의 마지막 실마리가 지금 실마리와 다를 때 */
+function guideLine(content: Content, saga: SagaContent, g: SagaState): string | null {
+  const guide = flagGuide(saga, g);
+  if (!guide || guide.text === g.note) return null;
+  const zone = noteZoneName(content, guide.text, guide.zone);
+  return `${guide.text}${zone ? ` → ${zone}` : ""}`;
+}
+
 /** 퀘스트 줄 (상태 화면·?퀘스트): 진행 중인 큰 이야기 */
-export function sagaQuest(state: GameState, content: Content): { key: string; title: string; detail: string; line: string | null; note: string | null; zone: string | null; steps: { text: string; met: boolean }[]; leftMinutes: number | null } | null {
+export function sagaQuest(state: GameState, content: Content): { key: string; title: string; detail: string; line: string | null; note: string | null; zone: string | null; guide: string | null; steps: { text: string; met: boolean }[]; leftMinutes: number | null } | null {
   const a = activeSaga(state, content);
   if (!a) return null;
   const { saga, g } = a;
@@ -320,6 +351,7 @@ export function sagaQuest(state: GameState, content: Content): { key: string; ti
     line: g.note === actOf(saga, g.act)?.line ? null : (actOf(saga, g.act)?.line ?? null),
     note: g.note,
     zone: noteZoneName(content, g.note, g.noteZone),
+    guide: guideLine(content, saga, g),
     // 지난 막과 지금 막까지 (앞 막 제목은 숨긴다)
     steps: saga.acts.slice(0, at + 1).map((x, i) => ({ text: x.title, met: i < at })),
     leftMinutes: due === null ? null : due - state.time,
@@ -339,6 +371,7 @@ export function describeSaga(state: GameState, content: Content): string[] {
     `이 막의 지침: ${act?.gm ?? ""}`,
     ...(act && g.note !== act.line ? [`이 막의 줄 (주인공이 들은 말): ${act.line}`] : []),
     ...(g.note ? [`실마리 (주인공이 들은 말): ${g.note}${noteZoneName(content, g.note, g.noteZone) ? ` → ${noteZoneName(content, g.note, g.noteZone)}` : ""}. 플레이어가 엉뚱한 때·곳에 가면 이 말로 이끈다`] : []),
+    ...(guideLine(content, saga, g) ? [`아직 따라가는 실마리: ${guideLine(content, saga, g)}`] : []),
     ...(g.scenes.length ? [`지난 큰 이야기 장면: ${g.scenes.join(" / ")} (이어서 서술한다)`] : []),
   ];
   if (g.engaged.length && !g.engaged.includes(state.playerId)) lines.push("앞 주인공이 겪던 큰 이야기다. 지금 주인공은 아직 모른다 (다시 잇는 이야기가 실마리를 건넨다)");

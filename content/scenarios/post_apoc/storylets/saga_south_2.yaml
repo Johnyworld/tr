@@ -196,8 +196,9 @@
     segments: [morning, day]
     flags_none: [sb3_seen]
   cast:
-    medic: { ids: [sb_dohyeon] }
-    sergeant: { ids: [sb_mijin], optional: true }
+    # 장터에 머무는 사람들이라 장면 밖에 있어도 데려온다 (PT43 의무병: 낯선 사람으로만 떠돌아 이틀 넘게 안 열렸다)
+    medic: { ids: [sb_dohyeon], afar: true }
+    sergeant: { ids: [sb_mijin], afar: true, optional: true }
   setup: 좌판 사이에 사람들이 둥글게 모였다. 들것 위에서 열에 들뜬 사내가 떨고 있다. 흰머리를 빗어 넘긴 {medic:이/가} 소매를 걷고 앰플을 꺾는다. 주사를 놓고 한참 뒤, 사내의 떨림이 잦아든다. 웅성거림이 퍼진다.
   ai_direction: 경도현이 혈청이 진짜라는 것을 보여 준다. 그다음 편미진이 조건을 읽는다 ("R 한 사람에 혈청 다섯, 탄 한 상자. 거래를 받는 무리는 R을 북부두로 데려오면 됩니다"). 값은 시스템의 일이라 그대로만 읽는다. 사람들은 반은 홀리고 반은 얼어붙는다. 이 장면은 넘기는 쪽이 늘 악이 아니라는 것을 보여 준다.
   choices:
@@ -370,6 +371,9 @@
     saga: { id: south_ship, acts: [act_offer] }
     zones: [e_market, rest_stop]
     indoor: "any"
+    # 무소속의 3막을 넘기는 자리다. 무리에 든 주인공은 회의·보초가 넘긴다. 장터의 군의관을 본 뒤에 (PT43 의무병: 3막 첫날 이 이야기가 막을 끝냈다)
+    in_faction: false
+    flags_all: [sb3_seen]
     flags_none: [sb3_ledger]
   cast:
     broker: { ids: [rs_pansu], afar: true }

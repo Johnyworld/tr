@@ -386,6 +386,7 @@ const mission: CommandDef = {
       lines.push("", `큰 이야기  ${saga.title} — ${saga.detail}${saga.leftMinutes !== null ? ` (${saga.leftMinutes <= 0 ? "기한 지남" : `${timeLeftLabel(saga.leftMinutes)} 남음`})` : ""}`);
       if (saga.line) lines.push(`  막: ${saga.line}`);
       if (saga.note) lines.push(`  실마리: ${saga.note}${saga.zone ? ` → ${saga.zone}` : ""}`);
+      if (saga.guide) lines.push(`  따라가는 실마리: ${saga.guide}`);
     }
     // 다짐 (12-164): 임무 아래
     const vow = resolveLine(state, content);

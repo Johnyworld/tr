@@ -378,7 +378,7 @@ function todoViews(state: GameState, content: Content): TodoView[] {
       dueLabel: left === null ? null : left <= 0 ? "기한 지남" : `${timeLeftLabel(left)} 남음`,
       urgent: left !== null && left < 2 * MINUTES_PER_DAY,
       steps: saga.steps,
-      note: saga.note ? `${saga.note}${saga.zone ? ` → ${saga.zone}` : ""}` : null,
+      note: [saga.note ? `${saga.note}${saga.zone ? ` → ${saga.zone}` : ""}` : null, saga.guide].filter(Boolean).join(" / ") || null,
     });
   }
   const vow = resolveLine(state, content);

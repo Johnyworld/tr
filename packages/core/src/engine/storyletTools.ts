@@ -19,7 +19,7 @@ import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
-import { advanceSaga, endSaga, engageSaga, markSaga, noteSaga, recordSagaScene, SAGA_TAG, type SagaEffectApplier } from "../rules/saga.ts";
+import { advanceSaga, endSaga, engageSaga, markSaga, noteSaga, recordSagaScene, SAGA_TAG, sagaLead, type SagaEffectApplier } from "../rules/saga.ts";
 import { captureNpc, capturePlayer, releasePlayer } from "./captivity.ts";
 import { onSpotted, ownOffense, threatStaysOnMiss } from "../rules/consequence.ts";
 import { rankName } from "../game/ranks.ts";
@@ -131,7 +131,8 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
   // 큰 이야기의 이야기(공통 규칙 24)는 꼭 열려야 할 때(시작 사건·기한 이틀 안의 등뼈)만 맨 앞 묶음에: 시나리오 이야기를 밀어내지 않게 (자동 플레이: 약탈조원 시나리오 이야기가 하나만 열렸다)
   // 꼭이 아닌 큰 이야기의 이야기는 한 몫으로 맨 앞 묶음에 든다 (PT42 세 판: 시나리오 이야기가 늘 있어 2막 진실·5막 행렬이 이틀 넘게 안 열렸다).
   // 몫 하나라 시나리오 이야기를 밀어내지 않는다
-  const sagaShare = eligible.filter((s) => s.tags.includes(SAGA_TAG) && !isMust(state, s));
+  // 실마리 표가 가리키는 다음 걸음(기존 줄기의 이야기)도 이 몫에 든다 (PT43 수색대원)
+  const sagaShare = eligible.filter((s) => (s.tags.includes(SAGA_TAG) || sagaLead(state, content, s)) && !isMust(state, s));
   const roleFixed = eligible.filter((s) => isMust(state, s) || (!s.repeatable && !s.tags.includes(WORLD_TAG) && !s.tags.includes(SAGA_TAG)));
   if (roleFixed.length && sagaShare.length) roleFixed.push(sagaShare[Math.floor(rng() * sagaShare.length)]!);
   const placed = eligible.filter((s) => !!s.when.place_kinds?.length || !!s.when.zones?.length || !!s.when.mission?.length);
@@ -396,7 +397,8 @@ export const resolveStorylet = defineTool({
     const vars = storyletVars(state, ctx.content, a.cast);
     ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
     // 큰 이야기의 지난 장면 (공통 규칙 24): GM이 다음 이야기를 이어서 서술하도록
-    recordSagaScene(ctx, a.storylet, maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars)));
+    // 제목도 주인공이 부르는 말로 (PT43 떠돌이: 「길판수의 장부」가 이름 모르는 거간꾼의 이름을 실었다)
+    recordSagaScene(ctx, a.storylet, storyTitle(state, ctx.content, a.storylet), maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars)));
     const improvised = !!input.improvised_move && input.improvised_move !== choice.check;
     const lines: string[] = [
       `이야기 "${storyTitle(state, ctx.content, a.storylet)}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
@@ -863,7 +865,8 @@ export function applyEffect(
   if ("grudge" in effect) {
     const id = whoOf(ctx, effect.grudge.who, cast);
     if (!id || !state.characters[id] || id === playerId) return {};
-    const part = { kind: "enemy" as const, target: id, why: effect.grudge.why, knows_you: true };
+    // 이름을 모르는 사람이면 얼굴만 아는 원수로 (PT43 의무병: 처음 본 거간꾼이 지난 일에 이름으로 나왔다). 이름을 알게 되면 nameNowKnown이 바꾼다
+    const part = { kind: "enemy" as const, target: id, why: effect.grudge.why, knows_you: true, ...((state.known[playerId] ?? []).includes(id) ? {} : { name_known: false }) };
     // 이름 있는 인물이 아니면 (엑스트라) 원수 목록에는 남기되 배경 플래그로
     const entries = [...state.background, { part: part as never, ...(content.npcs[id] ? {} : { characterId: id }) }];
     store.append({ type: "background_set", entries });

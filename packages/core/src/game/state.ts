@@ -55,7 +55,7 @@ import { startingSkills } from "./creation.ts";
 // 120: PT34 고침 (12-325). garrisonSeen, 이벤트 party_reported
 // 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
 // 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
-export const SAVE_SCHEMA_VERSION = 124;
+export const SAVE_SCHEMA_VERSION = 125;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -239,6 +239,8 @@ export const partyTaskSchema = z.discriminatedUnion("kind", [
     squad: z.array(z.string()).default([]),
     by: z.string().nullable().default(null),
     result: z.strictObject({ enemy: z.string(), faction: z.string(), size: z.number().int(), won: z.boolean(), losses: z.number().int().min(0) }).optional(),
+    /** 이 계획의 공세가 올 때까지 머문다 (공세 계획의 정찰을 설득해 낸 부대, PT40 사용자 결정): 그 사이 다른 무리를 이겨도 돌아가지 않는다 */
+    hold: z.string().optional(),
   }),
 ]);
 export const partySchema = z.strictObject({

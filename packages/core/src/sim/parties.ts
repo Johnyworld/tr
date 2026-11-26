@@ -283,9 +283,9 @@ function meetLegs(p: Party): PartyLeg[] {
   return p.back.filter((l) => l.zone === p.goal && l.from >= arrived).slice(0, 1);
 }
 
-/** g가 c가 치러 오는 구역에 숨어 기다리는 지키는 쪽 부대인가 */
+/** g가 c가 치러 오는 구역에 숨어 기다리는 지키는 쪽 부대인가 (닿아서 기다리는 부대는 done이다: 기다림이 돌아가는 길의 첫 칸) */
 function guardsTarget(g: Party, c: Party): boolean {
-  return g.task.kind === "intercept" && !g.task.squad.length && !g.done && c.task.kind === "clash" && !c.done && c.task.defender === g.faction && g.goal === c.goal;
+  return g.task.kind === "intercept" && !g.task.squad.length && g.size > 0 && c.task.kind === "clash" && !c.done && c.task.defender === g.faction && g.goal === c.goal;
 }
 
 function nextEncounter(content: Content, world: WarWorld, from: number, upTo: number): { a: Party; b: Party; zone: string; at: number } | null {
@@ -375,7 +375,7 @@ function endParty(world: WarWorld, content: Content, party: Party) {
 export function spawnIntercept(
   world: WarWorld,
   content: Content,
-  args: { faction: string; from: string; goal: string; size: number; at: number; until: number; squad?: string[]; by?: string | null; leader?: string | null },
+  args: { faction: string; from: string; goal: string; size: number; at: number; until: number; squad?: string[]; by?: string | null; leader?: string | null; hold?: string },
 ): Party | null {
   const route = partyRoute(content, world, args.faction, args.from, args.goal);
   const f = world.factions[args.faction];
@@ -397,7 +397,7 @@ export function spawnIntercept(
     home: homeBase(content, world, args.faction) ?? args.from,
     goal: args.goal,
     legs,
-    task: { kind: "intercept", until: Math.max(t, args.until), squad: args.squad ?? [], by: args.by ?? null },
+    task: { kind: "intercept", until: Math.max(t, args.until), squad: args.squad ?? [], by: args.by ?? null, ...(args.hold ? { hold: args.hold } : {}) },
     done: false,
     back: [],
     carry: {},
@@ -538,7 +538,8 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
   for (const [p, other, otherSize] of [[a, b, sizes.b], [b, a, sizes.a]] as const) {
     if (p.task.kind === "intercept" && !p.task.result) p.task.result = { enemy: other.id, faction: other.faction, size: otherSize, won: winner === p, losses: winner === p ? winnerLosses : loserLosses };
   }
-  if (winner.task.kind === "intercept" && winner.size > 0) turnBack(world, content, rng, cfg, winner, zone, at);
+  // 공세를 기다리는 부대(hold)는 정찰 따위를 이겨도 자리를 지킨다 (PT40 사용자 결정)
+  if (winner.task.kind === "intercept" && winner.size > 0 && !winner.task.hold) turnBack(world, content, rng, cfg, winner, zone, at);
   out.clashes.push({
     kind: "skirmish",
     attacker: attacker.faction,
@@ -598,7 +599,7 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
       if (far) f.morale -= 1;
       // 정찰로 적 배치를 알고 치면 기습이다 (파트 11, *임시* 화력 ×1.3)
       // 그 구역에 숨어 기다리던 지키는 쪽 부대는 이 교전에 든다 (전투원으로 거둬 지키는 병력에 더한다)
-      const guards = (world.parties ?? []).filter((g) => guardsTarget(g, party));
+      const guards = (world.parties ?? []).filter((g) => guardsTarget(g, party) && partyZoneAt(g, at) === party.goal);
       const guard = guards.reduce((n, g) => n + g.size, 0);
       if (guard) {
         defender.combatants += guard;

@@ -1062,8 +1062,29 @@ describe("PT40 고침", () => {
     const rng = createSeededRng(5);
     const p = spawnParty(w, content, rng, { faction: "faction_c", kind: "raid", goal: "a_east_post", size: 8, dayStart: 0, task: { kind: "clash", clash: "raid", defender: "faction_a" } })!;
     const g = spawnIntercept(w, content, { faction: "faction_a", from: "a_base", goal: "a_east_post", size: 5, at: 0, until: arrivalOf(p) + 600 })!;
+    advanceParties(w, content, rng, arrivalOf(g) + 1);
+    // 닿아서 기다리는 중 (done이어도 그 구역에 있다)
+    expect(partyZoneAt(w.parties!.find((x) => x.id === g.id)!, arrivalOf(p))).toBe("a_east_post");
+    const before = w.factions.faction_a!.combatants;
     const r = advanceParties(w, content, rng, arrivalOf(p));
+    // 숨은 다섯이 전투원으로 거둬져 교전에 들었다 (잃은 만큼만 빠진다)
+    const clash = r.clashes.find((c) => c.attacker === "faction_c")!;
+    expect(w.factions.faction_a!.combatants).toBe(before + 5 - clash.defenderLosses);
     expect(r.clashes.filter((c) => c.attacker === "faction_c" && c.zone === "a_east_post")).toHaveLength(1);
     expect(w.parties!.some((x) => x.id === g.id)).toBe(false);
+  });
+});
+
+describe("공세를 기다리는 가로막는 부대 (PT40 사용자 결정)", () => {
+  it("hold가 있으면 정찰을 이겨도 자리를 지키고, 그 계획의 공세가 오면 그 교전에 든다", () => {
+    const w = fresh();
+    const rng = createSeededRng(11);
+    const g = spawnIntercept(w, content, { faction: "faction_a", from: "a_base", goal: "a_east_post", size: 12, at: 0, until: 3 * 1440, hold: "c_east_offensive" })!;
+    expect(g.task).toMatchObject({ kind: "intercept", hold: "c_east_offensive" });
+    const s = spawnParty(w, content, rng, { faction: "faction_c", kind: "scout", goal: "a_east_post", size: 2, dayStart: arrivalOf(g) + 60, task: { kind: "watch" } })!;
+    advanceParties(w, content, rng, arrivalOf(s) + 30);
+    // 이겼든 안 만났든 그 구역에서 계속 기다린다 (닿아서 기다리는 부대는 done이고, 기다림이 돌아가는 길의 첫 칸)
+    const still = w.parties!.find((x) => x.id === g.id)!;
+    expect(partyZoneAt(still, arrivalOf(s) + 120)).toBe("a_east_post");
   });
 });

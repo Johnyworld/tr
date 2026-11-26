@@ -33,7 +33,7 @@ import { companyHere } from "../rules/company.ts";
 import { casualtiesToPeople } from "./felt.ts";
 import { woundedToInfirmary } from "./warAftermath.ts";
 import { settlePartyAlerts } from "./partyTools.ts";
-import { recordDefeat, routParty } from "../sim/parties.ts";
+import { partyZoneAt, recordDefeat, routParty } from "../sim/parties.ts";
 
 /** 지키는 전투에서 막아 주는 시설의 이름 (월드 팩의 holds 시설) */
 const barrierLabel = (content: Content) => content.scenario.facilities?.find((f) => f.effects.holds)?.label ?? "막아 둔 것";
@@ -112,7 +112,8 @@ export function runPendingClashes(ctx: ToolContext): ToolDisplayEvent[] {
 /** 구역에 숨어 기다리던 무리의 가로막는 부대를 거둬 전투원으로 돌린다 (교전에 든다). 든 인원 */
 function foldGuards(ctx: ToolContext, zone: string, faction: string): number {
   const state = ctx.store.getState();
-  const guards = state.parties.filter((p) => p.faction === faction && p.goal === zone && !p.done && p.size > 0 && p.task.kind === "intercept" && !p.task.squad.length);
+  // 닿아서 기다리는 부대는 done이다(기다림이 돌아가는 길의 첫 칸): 지금 그 구역에 있는지로 본다 (PT40: !done으로 거르다 한 번도 들지 못했다)
+  const guards = state.parties.filter((p) => p.faction === faction && p.goal === zone && p.size > 0 && p.task.kind === "intercept" && !p.task.squad.length && partyZoneAt(p, state.time) === zone);
   if (!guards.length) return 0;
   const size = guards.reduce((n, p) => n + p.size, 0);
   const factions = structuredClone(state.factions);

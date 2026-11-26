@@ -332,14 +332,16 @@ export const alertParty = defineTool({
         const size = persuaded === "success" ? party.size : Math.max(1, Math.ceil(party.size / 2));
         // 할 일을 마치고 돌아가는 무리는 목표가 아니라 돌아가는 길에서 아직 우리 땅인 마지막 칸을 막는다 (PT39 졸병: 숨은 부대가 이미 떠난 목표에 늦게 닿아 아무 일도 없었다)
         const now = store.getState().time;
-        const exit = party.done ? [...party.back].reverse().find((l) => l.to > now && ownedBy(state, l.zone, me.factionId!)) : undefined;
-        const goal = exit?.zone ?? party.goal;
+        // 공세 계획의 정찰이면 그 공세가 노린 우리 구역에서 공세가 끝날 때까지(길어도 사흘) 기다린다 (PT40 사용자 결정: 공세를 보고 설득하면 늦고, 정찰을 막은 부대는 공세 때 없었다)
+        const exit = plan ? undefined : party.done ? [...party.back].reverse().find((l) => l.to > now && ownedBy(state, l.zone, me.factionId!)) : undefined;
+        const goal = plan && zone ? zone : (exit?.zone ?? party.goal);
         const enemyAt = exit ? exit.from : arrivalOf(party);
-        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal, size, at: now, until: Math.max(exit?.to ?? enemyAt, now) + 120, by: state.playerId }) : null;
+        const holdUntil = plan ? until : Math.max(exit?.to ?? enemyAt, now) + 120;
+        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal, size, at: now, until: holdUntil, by: state.playerId, ...(plan ? { hold: plan } : {}) }) : null;
         if (!sent) lines.push(`${josa(bossName, "은/는")} 맞받아칠 뜻은 있지만 지금 내보낼 사람이 없다고 한다. 지키기만 한다.`);
         else {
           saveWorld(ctx, world);
-          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(content.locations[goal]?.name ?? goal, "으로/로")} 내보내 숨어 기다리게 한다 (${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
+          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(content.locations[goal]?.name ?? goal, "으로/로")} 내보내 숨어 기다리게 한다 (${plan ? "그 공세가 올 때까지, 길어도 " : ""}${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
         }
       }
     }

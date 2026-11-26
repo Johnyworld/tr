@@ -215,10 +215,10 @@
           - set_flag: sb3_seen
           - relation: { who: medic, axis: respect, delta: 1 }
           - belief: { fact: "경도현은 R이 '혈청을 만드는 곳'으로 간다고 했다. 어디냐고 다시 묻자 숫자 이야기로 돌렸다: 열에 넷이 돌아온다고", source: report }
-          - saga_note: { text: "집결지가 무리마다 거래를 건다. 경도현은 R이 어디로 가는지 숨긴다" }
+          - saga_note: { text: "집결지가 무리마다 거래를 건다. 남쪽 군의관은 R이 어디로 가는지 숨긴다" }
         partial:
           - set_flag: sb3_seen
-          - saga_note: { text: "집결지가 무리마다 거래를 건다. 경도현은 대답 대신 숫자를 댔다" }
+          - saga_note: { text: "집결지가 무리마다 거래를 건다. 남쪽 군의관은 대답 대신 숫자를 댔다" }
         miss:
           - set_flag: sb3_seen
           - relation: { who: medic, axis: trust, delta: -1 }
@@ -291,7 +291,7 @@
         - relation: { who: sergeant, axis: trust, delta: 2 }
         - set_flag: sb_own_accept
         - saga_advance: { id: south_ship, to: act_hunt }
-        - saga_note: { text: "우리 무리는 거래를 받았다. 남쪽 하사 편미진과 말을 텄다" }
+        - saga_note: { text: "우리 무리는 거래를 받았다. 남쪽 하사와 말을 텄다" }
     - id: object
       label: 상관에게 거래를 거절하자고 말을 올린다
       check: persuade
@@ -338,7 +338,7 @@
         - relation: { who: sergeant, axis: trust, delta: 2 }
         - set_flag: sb_own_refuse
         - saga_advance: { id: south_ship, to: act_hunt }
-        - saga_note: { text: "우리 무리는 거래를 거절했다. 남쪽 하사 편미진과 말을 텄다" }
+        - saga_note: { text: "우리 무리는 거래를 거절했다. 남쪽 하사와 말을 텄다" }
     - id: support
       label: 상관에게 거래를 받자고 말을 올린다
       check: persuade
@@ -385,14 +385,14 @@
         - give_item: { item: pistol_rounds, quantity: 4 }
         - deed: { summary: "거간꾼에게 아는 사람의 이름을 팔았다", tags: [betrayal], severity: 2, privacy: private }
         - saga_advance: { id: south_ship, to: act_hunt }
-        - saga_note: { text: "길판수에게 이름을 팔았다. 사냥이 시작될 것이다" }
+        - saga_note: { text: "거간꾼에게 이름을 팔았다. 사냥이 시작될 것이다" }
     - id: refuse
       label: 거절하고 장부를 덮게 한다
       effects:
         - set_flag: sb3_ledger
         - relation: { who: broker, axis: trust, delta: -1 }
         - saga_advance: { id: south_ship, to: act_hunt }
-        - saga_note: { text: "길판수의 장부에 아는 사람의 이름이 있었다. 사냥이 시작될 것이다" }
+        - saga_note: { text: "거간꾼의 장부에 아는 사람의 이름이 있었다. 사냥이 시작될 것이다" }
     - id: tear
       label: 그 장을 찢어 낸다
       check: deceive
@@ -401,13 +401,13 @@
           - set_flag: sb3_ledger
           - set_flag: sb_ledger_torn
           - saga_advance: { id: south_ship, to: act_hunt }
-          - saga_note: { text: "길판수의 장부에서 아는 이름을 찢어 냈다. 그래도 사냥은 시작될 것이다" }
+          - saga_note: { text: "거간꾼의 장부에서 아는 이름을 찢어 냈다. 그래도 사냥은 시작될 것이다" }
         partial:
           - set_flag: sb3_ledger
           - set_flag: sb_ledger_torn
           - grudge: { who: broker, why: "장부를 찢었다" }
           - saga_advance: { id: south_ship, to: act_hunt }
-          - saga_note: { text: "장부를 찢었지만 길판수가 보았다. 사냥이 시작될 것이다" }
+          - saga_note: { text: "장부를 찢었지만 거간꾼이 보았다. 사냥이 시작될 것이다" }
         miss:
           - set_flag: sb3_ledger
           - grudge: { who: broker, why: "장부를 찢으려 했다" }
@@ -495,7 +495,7 @@
           - set_flag: sb3_medic_night
           - set_flag: sb_medic_secret
           - belief: { fact: "경도현이 털어놓았다: 집결지 막사에서 피를 너무 많이 뽑힌 R이 죽은 적이 있고, 그는 그 기록을 지웠다", source: report }
-          - saga_note: { text: "경도현은 지운 기록이 있다. 배가 오는 밤에 쓸 수 있을지 모른다" }
+          - saga_note: { text: "남쪽 군의관은 지운 기록이 있다. 배가 오는 밤에 쓸 수 있을지 모른다" }
         partial:
           - set_flag: sb3_medic_night
           - belief: { fact: "경도현은 막사 이야기에 대답하지 않고 술잔을 비웠다. 손이 떨렸다", source: seen }

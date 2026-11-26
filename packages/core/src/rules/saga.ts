@@ -177,7 +177,7 @@ export function advanceSaga(ctx: ToolContext, id: string, to: string, options: {
   ctx.store.append({ type: "saga_noted", sagaId: id, text: act.line, zone: null });
   arrive(ctx, saga, act.arrive);
   markOnEntry(ctx, saga, to);
-  return `큰 이야기 「${saga.title}」: ${act.title}`;
+  return `큰 이야기 「${saga.title}」의 「${act.title}」`;
 }
 
 /** 결말로 끝낸다 (이야기 효과 saga_end, 마지막 막의 기한). 결말의 효과를 적용하고 GM에게 알릴 줄 */
@@ -299,8 +299,14 @@ export function sagaMarketFactor(state: GameState, content: Content, itemId: str
   return factor;
 }
 
+/** 실마리 뒤에 붙일 구역 이름: 글에 이미 "→ 곳"이 있으면 붙이지 않는다 (PT42 떠돌이: "→ 가람항 북부두 → 가람항 북부두") */
+function noteZoneName(content: Content, note: string | null, zone: string | null): string | null {
+  if (!zone || note?.includes("→")) return null;
+  return content.locations[zone]?.name ?? zone;
+}
+
 /** 퀘스트 줄 (상태 화면·?퀘스트): 진행 중인 큰 이야기 */
-export function sagaQuest(state: GameState, content: Content): { key: string; title: string; detail: string; note: string | null; zone: string | null; steps: { text: string; met: boolean }[]; leftMinutes: number | null } | null {
+export function sagaQuest(state: GameState, content: Content): { key: string; title: string; detail: string; line: string | null; note: string | null; zone: string | null; steps: { text: string; met: boolean }[]; leftMinutes: number | null } | null {
   const a = activeSaga(state, content);
   if (!a) return null;
   const { saga, g } = a;
@@ -310,8 +316,10 @@ export function sagaQuest(state: GameState, content: Content): { key: string; ti
     key: `saga_${saga.id}`,
     title: saga.title,
     detail: actOf(saga, g.act)?.title ?? "",
+    // 막의 줄은 늘 보인다: 이야기의 실마리가 그 위에 쌓여도 막의 갈 곳·때가 남게 (PT42 수색대원: 2막 실마리가 이미 일어난 일만 말했다)
+    line: g.note === actOf(saga, g.act)?.line ? null : (actOf(saga, g.act)?.line ?? null),
     note: g.note,
-    zone: g.noteZone ? (content.locations[g.noteZone]?.name ?? null) : null,
+    zone: noteZoneName(content, g.note, g.noteZone),
     // 지난 막과 지금 막까지 (앞 막 제목은 숨긴다)
     steps: saga.acts.slice(0, at + 1).map((x, i) => ({ text: x.title, met: i < at })),
     leftMinutes: due === null ? null : due - state.time,
@@ -329,7 +337,8 @@ export function describeSaga(state: GameState, content: Content): string[] {
   const lines = [
     `큰 이야기 「${saga.title}」 — ${act?.title ?? g.act}${left}. ${saga.summary}`,
     `이 막의 지침: ${act?.gm ?? ""}`,
-    ...(g.note ? [`실마리 (주인공이 들은 말): ${g.note}${g.noteZone ? ` → ${content.locations[g.noteZone]?.name ?? g.noteZone}` : ""}. 플레이어가 엉뚱한 때·곳에 가면 이 말로 이끈다`] : []),
+    ...(act && g.note !== act.line ? [`이 막의 줄 (주인공이 들은 말): ${act.line}`] : []),
+    ...(g.note ? [`실마리 (주인공이 들은 말): ${g.note}${noteZoneName(content, g.note, g.noteZone) ? ` → ${noteZoneName(content, g.note, g.noteZone)}` : ""}. 플레이어가 엉뚱한 때·곳에 가면 이 말로 이끈다`] : []),
     ...(g.scenes.length ? [`지난 큰 이야기 장면: ${g.scenes.join(" / ")} (이어서 서술한다)`] : []),
   ];
   if (g.engaged.length && !g.engaged.includes(state.playerId)) lines.push("앞 주인공이 겪던 큰 이야기다. 지금 주인공은 아직 모른다 (다시 잇는 이야기가 실마리를 건넨다)");

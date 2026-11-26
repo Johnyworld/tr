@@ -27,6 +27,8 @@
     - id: back_off
       label: 소리 없이 왔던 길로 물러선다
       effects:
+        # 물러섰으면 장면에 남기지 않는다 (PT42 떠돌이: 물러난 뒤 잠·기다림이 "곁에 위협"으로 막혔다)
+        - threat_passes: true
         - belief: { fact: "{zone}에 감염체가 몰려 있다. 들어서자마자 물러났다", source: seen }
     - id: slip_past
       label: 담벼락에 붙어 둘 뒤로 지나간다
@@ -86,8 +88,10 @@
       check: athletics
       outcomes:
         success:
+          - threat_passes: true
           - belief: { fact: "{zone}에 감염체 물결이 흐르고 있었다. 되돌아 뛰어 피했다", source: seen }
         partial:
+          - threat_passes: true
           - body: { track: fatigue, delta: 1 }
           - belief: { fact: "{zone}의 물결을 피해 한참을 뛰었다. 숨이 턱까지 찼다", source: seen }
         miss:

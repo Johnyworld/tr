@@ -129,7 +129,11 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
   // 고르는 차례 (PT36 사용자 결정, 세 판 모두 새 길목 이야기 0번: 한 번뿐인 공통 이야기가 길목에서도 늘 먼저 뽑혔다):
   // ① 꼭 열려야 하는 이야기·시나리오(역할)의 한 번뿐인 이야기 → ② 지금 자리에 묶인 이야기(장소 종류·구역·임무 자리, 한 번뿐이든 되풀이든) → ③ 어디서나 열리는 공통 이야기(한 번뿐인 것 먼저)
   // 큰 이야기의 이야기(공통 규칙 24)는 꼭 열려야 할 때(시작 사건·기한 이틀 안의 등뼈)만 맨 앞 묶음에: 시나리오 이야기를 밀어내지 않게 (자동 플레이: 약탈조원 시나리오 이야기가 하나만 열렸다)
+  // 꼭이 아닌 큰 이야기의 이야기는 한 몫으로 맨 앞 묶음에 든다 (PT42 세 판: 시나리오 이야기가 늘 있어 2막 진실·5막 행렬이 이틀 넘게 안 열렸다).
+  // 몫 하나라 시나리오 이야기를 밀어내지 않는다
+  const sagaShare = eligible.filter((s) => s.tags.includes(SAGA_TAG) && !isMust(state, s));
   const roleFixed = eligible.filter((s) => isMust(state, s) || (!s.repeatable && !s.tags.includes(WORLD_TAG) && !s.tags.includes(SAGA_TAG)));
+  if (roleFixed.length && sagaShare.length) roleFixed.push(sagaShare[Math.floor(rng() * sagaShare.length)]!);
   const placed = eligible.filter((s) => !!s.when.place_kinds?.length || !!s.when.zones?.length || !!s.when.mission?.length);
   const worldFixed = eligible.filter((s) => !s.repeatable);
   const fixed = roleFixed.length ? roleFixed : placed.length ? placed : worldFixed;
@@ -788,7 +792,7 @@ export function applyEffect(
   // 큰 이야기 (공통 규칙 24)
   if ("saga_advance" in effect) {
     const line = advanceSaga(ctx, effect.saga_advance.id, effect.saga_advance.to, { rush: effect.saga_advance.rush });
-    return line ? { line: `(${line}. 다음 막이 시작됐다)`, display: { type: "belief", fact: line, sourceLabel: "큰 이야기" } } : {};
+    return line ? { line: `(${line} 막이 시작됐다)`, display: { type: "belief", fact: line, sourceLabel: "큰 이야기" } } : {};
   }
   if ("saga_end" in effect) {
     const done = endSaga(ctx, sagaApplier(ctx), effect.saga_end.id, effect.saga_end.ending);

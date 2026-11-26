@@ -37,12 +37,13 @@
     saga: { id: south_ship, acts: [open] }
     in_faction: true
     own_territory: true
-    indoor: false
+    # 안에 있어도 연다: 바깥에서만 열면 거점 안에서 지내는 날 이틀씩 늦었다 (PT42 세 판)
+    indoor: "any"
     segments: [dawn, morning, day, evening]
     zones_none: [yeoul_isle]
   cast:
     daon: { ids: [sb_daon], afar: true }
-  setup: 거점 둘레 배수로 아래, 젖은 콘크리트에 누가 웅크려 있다. {daon:이/가} 고개를 든다. 젖은 군용 점퍼, 맨발, 오른 팔뚝을 소매로 꽉 감싸 쥐었다. "소리 지르지 마요. 금방 갈게요."
+  setup: 배수로 쪽에서 인기척이 난다. 거점 둘레 배수로 아래, 젖은 콘크리트에 누가 웅크려 있다. {daon:이/가} 고개를 든다. 젖은 군용 점퍼, 맨발, 오른 팔뚝을 소매로 꽉 감싸 쥐었다. "소리 지르지 마요. 금방 갈게요."
   ai_direction: 계다온이다. 이름은 묻기 전에는 말하지 않는다. 남쪽에서 밤새 걸어 올라왔다. 소매가 밀려 올라가면 팔뚝 안쪽에 지워지지 않는 잉크로 찍힌 "R 0412"가 보인다. 뭐냐고 물으면 "도장이요"라고만 한다. 계다온은 무리에 알려지는 것을 가장 무서워한다. 쫓는 사람이 있다는 것은 숨기지 않는다 ("정장 입은 아저씨가 와요. 착하게 굴어요. 그게 더 무서워"). 우리 무리에 알리는 것은 무리 사람으로서 자연스러운 길이고, 숨기는 것은 무리 몰래라 대가가 있을 수 있다.
   choices:
     - id: hide
@@ -80,7 +81,6 @@
   when:
     saga: { id: south_ship, acts: [open] }
     indoor: "any"
-    place_kinds: [street, mess, yard, road]
     segments: [morning, day, evening]
     zone_owner: [other, none]
     zones_none: [yeoul_isle]
@@ -96,7 +96,7 @@
         - relation: { who: hunter, axis: trust, delta: 2 }
         - give_item: { item: pistol_rounds, quantity: 3 }
         - saga_advance: { id: south_ship, to: act_stamp }
-        - saga_note: { text: "함명철이 도장 찍힌 여자를 찾는 일을 맡겼다. 남쪽 옛 항구 쪽에서 올라왔다고 한다 → 가람항 북부두", zone: south_port }
+        - saga_note: { text: "사냥꾼이 도장 찍힌 여자를 찾는 일을 맡겼다. 남쪽 옛 항구 쪽에서 올라왔다고 한다 → 가람항 북부두", zone: south_port }
     - id: press
       label: 그 도장이 무엇이고 왜 쫓는지 캐묻는다
       check: insight
@@ -106,7 +106,7 @@
           - set_flag: sb_hunter_daughter_hint
           - belief: { fact: "함명철은 남쪽 가람항 집결지에서 도망친 R을 데려가는 일을 한다. 딸 이야기가 나오자 가슴 주머니의 사진을 손으로 덮었다", source: seen }
           - saga_advance: { id: south_ship, to: act_stamp }
-          - saga_note: { text: "함명철은 집결지에서 도망친 R을 쫓는다. 그 여자는 남쪽 옛 항구 쪽에서 올라왔다고 한다 → 가람항 북부두", zone: south_port }
+          - saga_note: { text: "사냥꾼은 집결지에서 도망친 R을 쫓는다. 그 여자는 남쪽 옛 항구 쪽에서 올라왔다고 한다 → 가람항 북부두", zone: south_port }
         partial:
           - set_flag: sb_daon_gone
           - relation: { who: hunter, axis: trust, delta: -1 }
@@ -358,7 +358,7 @@
         - relation: { who: hunter, axis: trust, delta: 1 }
         - deed: { summary: "도망친 R을 사냥꾼과 함께 잡아 넘겼다", tags: [cruelty], severity: 1, privacy: semi_private }
         - saga_advance: { id: south_ship, to: act_blood }
-        - saga_note: { text: "{daon:은/는} 남쪽 집결지로 끌려갔다. 함명철이 사례를 남겼다. 집결지가 무엇을 하는 곳인지 아직 모른다" }
+        - saga_note: { text: "{daon:은/는} 남쪽 집결지로 끌려갔다. 사냥꾼이 사례를 남겼다. 집결지가 무엇을 하는 곳인지 아직 모른다" }
     - id: ask_photo
       label: 사진 속 사람이 누구냐고 묻는다
       check: insight
@@ -367,7 +367,7 @@
           - set_flag: sb_hunter_secret
           - relation: { who: hunter, axis: affection, delta: 1 }
           - belief: { fact: "함명철의 딸 함지수는 R이라 남쪽 집결지에 맡겨졌다. 함명철은 도망친 R을 데려가는 값으로 딸의 소식을 받는다", source: report }
-          - saga_note: { text: "함명철은 딸 소식을 받으려고 R을 쫓는다. {daon:은/는} 컨테이너 사이에 숨어 있다" }
+          - saga_note: { text: "사냥꾼은 딸 소식을 받으려고 R을 쫓는다. {daon:은/는} 컨테이너 사이에 숨어 있다" }
         partial:
           - belief: { fact: "함명철의 사진 속에는 짙은 눈썹의 앳된 여자가 있었다. '딸입니다.' 그 말뿐이었다", source: seen }
         miss:
@@ -382,7 +382,7 @@
             until: { flag: sb_end_blocked }
         - relation: { who: hunter, axis: trust, delta: -3 }
         - relation: { who: daon, axis: trust, delta: 2 }
-        - saga_note: { text: "사냥꾼에게 등을 돌리고 {daon} 편에 섰다. 함명철이 다시 올 것이다" }
+        - saga_note: { text: "사냥꾼에게 등을 돌리고 {daon} 편에 섰다. 사냥꾼이 다시 올 것이다" }
 
 - id: sb1_knock
   title: 문 두드리는 사냥꾼
@@ -403,22 +403,22 @@
         - set_flag: sb_daon_handed
         - give_item: { item: pistol_rounds, from: hunter, quantity: 4 }
         - deed: { summary: "숨겨 주던 사람을 사냥꾼에게 넘겼다", tags: [betrayal], severity: 2, privacy: semi_private }
-        - saga_note: { text: "도장 찍힌 여자를 넘겼다. 함명철은 남쪽으로 데려간다고 했다" }
+        - saga_note: { text: "도장 찍힌 여자를 넘겼다. 사냥꾼은 남쪽으로 데려간다고 했다" }
     - id: fool
       label: 그런 사람은 이미 떠났다고 속인다
       check: deceive
       outcomes:
         success:
           - set_flag: sb_hunter_once
-          - saga_note: { text: "함명철을 속여 보냈다. 사흘 뒤 다시 올 것이다" }
+          - saga_note: { text: "사냥꾼을 속여 보냈다. 사흘 뒤 다시 올 것이다" }
         partial:
           - set_flag: sb_hunter_once
           - relation: { who: hunter, axis: trust, delta: -1 }
-          - saga_note: { text: "함명철은 믿지 않는 눈치로 물러났다. 사흘 뒤 다시 온다고 했다" }
+          - saga_note: { text: "사냥꾼은 믿지 않는 눈치로 물러났다. 사흘 뒤 다시 온다고 했다" }
         miss:
           - set_flag: sb_hunter_once
           - relation: { who: hunter, axis: trust, delta: -2 }
-          - saga_note: { text: "함명철은 다 안다는 얼굴이었다. 사흘 뒤 다시 온다고 했다" }
+          - saga_note: { text: "사냥꾼은 다 안다는 얼굴이었다. 사흘 뒤 다시 온다고 했다" }
     - id: drive_off
       label: 돌아가라고 문을 막아선다
       check: intimidate
@@ -426,16 +426,16 @@
         success:
           - set_flag: sb_hunter_once
           - relation: { who: hunter, axis: respect, delta: 1 }
-          - saga_note: { text: "함명철을 돌려보냈다. 사흘 뒤 다시 오겠다고 했다" }
+          - saga_note: { text: "사냥꾼을 돌려보냈다. 사흘 뒤 다시 오겠다고 했다" }
         partial:
           - set_flag: sb_hunter_once
           - relation: { who: hunter, axis: trust, delta: -1 }
-          - saga_note: { text: "함명철이 물러났다. 사흘 뒤 사람을 더 데려올지도 모른다" }
+          - saga_note: { text: "사냥꾼이 물러났다. 사흘 뒤 사람을 더 데려올지도 모른다" }
         miss:
           - set_flag: sb_hunter_once
           - relation: { who: hunter, axis: trust, delta: -2 }
           - wound: { steps: 1, cause: "사냥꾼과 몸싸움" }
-          - saga_note: { text: "몸싸움 끝에 함명철이 물러났다. 사흘 뒤 다시 온다" }
+          - saga_note: { text: "몸싸움 끝에 사냥꾼이 물러났다. 사흘 뒤 다시 온다" }
 
 - id: sb1_knock_handed
   title: 사냥꾼의 사례
@@ -484,24 +484,24 @@
           - set_flag: sb_daon_stayed
           - relation: { who: hunter, axis: respect, delta: 1 }
           - saga_advance: { id: south_ship, to: act_blood }
-          - saga_note: { text: "함명철이 도장 찍힌 여자를 포기했다. 도장 찍힌 여자가 말한 집결지와 혈청이 무엇인지 맞춰 볼 때다" }
+          - saga_note: { text: "사냥꾼이 도장 찍힌 여자를 포기했다. 도장 찍힌 여자가 말한 집결지와 혈청이 무엇인지 맞춰 볼 때다" }
         partial:
           - set_flag: sb_daon_stayed
           - relation: { who: hunter, axis: trust, delta: -2 }
           - saga_advance: { id: south_ship, to: act_blood }
-          - saga_note: { text: "함명철이 이를 악물고 물러났다. 도장 찍힌 여자는 남았다. 집결지와 혈청이 무엇인지 맞춰 볼 때다" }
+          - saga_note: { text: "사냥꾼이 이를 악물고 물러났다. 도장 찍힌 여자는 남았다. 집결지와 혈청이 무엇인지 맞춰 볼 때다" }
         miss:
           - set_flag: sb_daon_stayed
           - wound: { steps: 1, cause: "사냥꾼과 몸싸움" }
           - saga_advance: { id: south_ship, to: act_blood }
-          - saga_note: { text: "몸싸움 끝에 함명철이 물러났다. 도장 찍힌 여자는 남았다" }
+          - saga_note: { text: "몸싸움 끝에 사냥꾼이 물러났다. 도장 찍힌 여자는 남았다" }
     - id: give_up
       label: 도장 찍힌 여자를 넘긴다
       effects:
         - set_flag: sb_daon_handed
         - give_item: { item: pistol_rounds, from: hunter, quantity: 4 }
         - deed: { summary: "숨겨 주던 사람을 사냥꾼에게 넘겼다", tags: [betrayal], severity: 2, privacy: semi_private }
-        - saga_note: { text: "도장 찍힌 여자를 넘겼다. 함명철은 남쪽으로 데려간다고 했다" }
+        - saga_note: { text: "도장 찍힌 여자를 넘겼다. 사냥꾼은 남쪽으로 데려간다고 했다" }
 
 - id: sb1_trail
   title: 남쪽으로 난 발자국
@@ -586,6 +586,6 @@
     - id: hear
       label: 그 일을 듣는다
       effects:
-        - belief: { fact: "함명철은 남쪽 집결지에서 도망친 R(팔뚝에 R 도장이 찍힌 여자)을 쫓는다. 앞사람이 그 일에 얽혀 있었다", source: report }
-        - saga_note: { text: "앞사람이 얽혔던 일: 팔뚝에 R 도장이 찍힌 여자와 그를 쫓는 사냥꾼 함명철. 여자는 남쪽 옛 항구 쪽에 있다고 한다 → 가람항 북부두", zone: south_port }
+        - belief: { fact: "정중한 사냥꾼이 남쪽 집결지에서 도망친 R(팔뚝에 R 도장이 찍힌 여자)을 쫓는다. 앞사람이 그 일에 얽혀 있었다", source: report }
+        - saga_note: { text: "앞사람이 얽혔던 일: 팔뚝에 R 도장이 찍힌 여자와 그를 쫓는 사냥꾼. 여자가 올라왔다는 남쪽 옛 항구에 실마리가 남았을지 모른다 → 가람항 북부두", zone: south_port }
         - set_flag: sb_daon_gone

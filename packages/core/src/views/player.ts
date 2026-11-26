@@ -374,7 +374,7 @@ function todoViews(state: GameState, content: Content): TodoView[] {
       kind: "큰 이야기",
       title: saga.title,
       who: null,
-      detail: saga.detail,
+      detail: saga.line ? `${saga.detail} — ${saga.line}` : saga.detail,
       dueLabel: left === null ? null : left <= 0 ? "기한 지남" : `${timeLeftLabel(left)} 남음`,
       urgent: left !== null && left < 2 * MINUTES_PER_DAY,
       steps: saga.steps,

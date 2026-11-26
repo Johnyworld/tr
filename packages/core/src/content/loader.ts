@@ -883,6 +883,18 @@ export function checkNpcRoutines(content: Content): string[] {
  * - 마지막이 아닌 막마다 다음 막으로 넘기는 이야기가 둘 이상, 그중 하나는 사람을 정해 두지 않은 배역만 쓴다 (열쇠 인물이 죽어도 길이 남게)
  * - 마지막 막에는 결말로 끝내는 이야기가 있다
  */
+/** 이야기 선택지 안의 saga_note 글 */
+function sagaNoteTexts(v: unknown, out: string[] = []): string[] {
+  if (Array.isArray(v)) for (const x of v) sagaNoteTexts(x, out);
+  else if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    const note = o.saga_note as { text?: unknown } | undefined;
+    if (typeof note?.text === "string") out.push(note.text);
+    for (const x of Object.values(o)) sagaNoteTexts(x, out);
+  }
+  return out;
+}
+
 export function checkSagas(content: Content): string[] {
   const problems: string[] = [];
   type Found = { kind: "advance" | "end"; id: string; to: string };
@@ -923,6 +935,17 @@ export function checkSagas(content: Content): string[] {
     for (const r of saga.opens.roles_none ?? []) if (!content.roles[r]) problems.push(`${at}.opens.roles_none: 없는 역할 ${r}`);
     const mine = Object.values(content.storylets).filter((st) => st.when.saga?.id === saga.id);
     for (const st of mine) if (!st.tags.includes("saga")) problems.push(`storylets.${st.id}: 큰 이야기의 이야기는 tags에 saga를 둔다`);
+    // 퀘스트 줄(플레이어에게 보이는 말)에 배역의 이름을 적지 않는다: 이름을 모를 때 샌다 (PT42 셋 중 둘). 이야기의 실마리는 배역 자리({hunter})로
+    const names = Object.values(saga.cast).map((id) => content.npcs[id]?.name).filter((n): n is string => !!n);
+    const quested: [string, string][] = [
+      ...saga.acts.flatMap((a): [string, string][] => [[`acts.${a.id}.line`, a.line], [`acts.${a.id}.lapse.news`, a.lapse.news], [`acts.${a.id}.lapse.note`, a.lapse.note ?? ""]]),
+      ...saga.notes.map((n): [string, string] => [`notes.${n.flag}`, n.text]),
+    ];
+    for (const st of mine) for (const t of sagaNoteTexts(st.choices)) quested.push([`storylets.${st.id} saga_note`, t]);
+    for (const [where, text] of quested) for (const n of names) if (text.includes(n)) problems.push(`${at} ${where}: 퀘스트 줄에 인물 이름 「${n}」을 적지 않는다 (호칭이나 배역 자리로)`);
+    // 큰 이야기의 판정은 배우지 않아도 하는 기술로: 전문 기술(expert)이면 배우지 않은 주인공에게 길이 닫힌다 (PT42 약탈조원: 급조를 못 해 등대 패가 없었다)
+    const expert = new Set(content.scenario.moves.filter((k) => k.kind === "expert").map((k) => k.id));
+    for (const st of mine) for (const c of st.choices) if (c.check && expert.has(c.check)) problems.push(`storylets.${st.id}.${c.id}: 큰 이야기의 판정에 전문 기술(${c.check})을 쓰지 않는다`);
     const leads = (from: string, kind: Found["kind"], to: string) =>
       mine.filter((st) => (st.when.saga!.acts ?? []).includes(from) && found(st.choices).some((f) => f.id === saga.id && f.kind === kind && f.to === to));
     const starts = leads("open", "advance", acts[0]!);

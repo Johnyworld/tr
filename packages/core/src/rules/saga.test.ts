@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 import { checkSagas } from "../content/loader.ts";
 import { createContentSchemas, type Content } from "../content/schemas.ts";
 import { formatChronicle } from "../engine/succession.ts";
-import { eligibleStorylets } from "../story/storylets.ts";
+import { choiceAvailable, eligibleStorylets } from "../story/storylets.ts";
+import { currentResolve } from "../engine/resolve.ts";
 import { loadRealContent } from "../testing.ts";
 import { buildPlayerView } from "../views/player.ts";
 import { WorldManager } from "../world/manager.ts";
@@ -52,7 +53,9 @@ const start = story({
 const spine = story({ id: "ts_spine", title: "등뼈", when: { saga: { id: "test_saga", acts: ["a1"], spine: true } }, choices: [{ id: "next", label: "넘긴다", effects: [{ saga_advance: { id: "test_saga", to: "a2" } }] }, { id: "stay", label: "머문다", effects: [] }] });
 const heir = story({ id: "ts_heir", title: "다시 잇기", essential: true, when: { saga: { id: "test_saga", successor: true } }, choices: [{ id: "hear", label: "듣는다", effects: [] }] });
 
-const content: Content = { ...real, sagas: { test_saga: saga }, storylets: { ...real.storylets, ts_start: start, ts_spine: spine, ts_heir: heir } };
+const vow = story({ id: "ts_vow", title: "지키겠다는 말", essential: true, when: { saga: { id: "test_saga", acts: ["a1"] }, indoor: "any" }, choices: [{ id: "tell", label: "말해 준다", effects: [] }, { id: "vow", label: "지키겠다고 한다", effects: [{ resolve: { kind: "survive", n: 10, text: "살아남는다" } }] }] });
+
+const content: Content = { ...real, sagas: { test_saga: saga }, storylets: { ...real.storylets, ts_start: start, ts_spine: spine, ts_heir: heir, ts_vow: vow } };
 const make = (roleId = "role_a_grunt") =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-saga-")), content, rngFactory: () => () => 0.5 }).create("mcp", roleId, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] } as never);
 
@@ -178,6 +181,14 @@ describe("큰 이야기 (공통 규칙 24)", { timeout: 30_000 }, () => {
     const other = schemas.storylet.parse({ id: "ts_other", title: "딴 일", tags: ["world"], setup: "딴 일.", when: { flags_any: ["ts_other"] }, choices: [{ id: "a", label: "본다", effects: [] }, { id: "b", label: "간다", effects: [] }] });
     expect(sagaLead(w.state(), content, lead)).toBe(true);
     expect(sagaLead(w.state(), content, other)).toBe(false);
+  });
+
+  it("다짐이 있어도 큰 이야기의 이야기는 열리고, 다짐을 건네는 선택지만 빠진다 (PT44)", () => {
+    const w = started();
+    expect(currentResolve(w.state())).not.toBeNull();
+    expect(eligibleStorylets(w.state(), content).some((s) => s.id === "ts_vow")).toBe(true);
+    expect(choiceAvailable(w.state(), vow.choices[0]!)).toBe(true);
+    expect(choiceAvailable(w.state(), vow.choices[1]!)).toBe(false);
   });
 
   it("계승자 이야기는 앞 주인공이 발을 들였고 지금 주인공은 아직일 때만", () => {

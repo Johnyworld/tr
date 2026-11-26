@@ -805,8 +805,12 @@ export function applyEffect(
     return text ? { display: { type: "belief", fact: text, sourceLabel: "실마리" } } : {};
   }
   if ("saga_mark" in effect) {
-    const id = whoOf(ctx, effect.saga_mark.who, cast);
-    if (id) markSaga(ctx, id);
+    // none: 곁의 R을 비운다 (빼낸 사람은 결말이 데려가지 않는다, 반쪽 결말 PT44)
+    if (effect.saga_mark.who === "none") markSaga(ctx, null);
+    else {
+      const id = whoOf(ctx, effect.saga_mark.who, cast);
+      if (id) markSaga(ctx, id);
+    }
     return {};
   }
   if ("resolve" in effect) {

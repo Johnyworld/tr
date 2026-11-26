@@ -317,7 +317,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
   const own = state.factions[player.factionId];
   if (w.ranks && !w.ranks.includes(player.rank)) return false;
   // 다짐을 건네는 이야기는 다짐이 없을 때만 (12-199: 품은 다짐은 덮어쓰지 않는다)
-  if (offersResolve(storylet) && currentResolve(state)) return false;
+  // 큰 이야기의 이야기·꼭 열리는 이야기는 막지 않는다: 다짐을 건네는 선택지만 빠진다 (PT44 의무병: 4막 첫 이야기가 시작 다짐 때문에 영영 안 열렸다)
+  if (offersResolve(storylet) && currentResolve(state) && !storylet.essential && !storylet.tags.includes(SAGA_TAG)) return false;
   if (usesScarce(storylet)) {
     const scarce = scarcestOf(state, content);
     if (!scarce || scarce.days > SCARCE_DAYS) return false;
@@ -401,7 +402,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     if (last === undefined || at - last < w.after_storylet.hours * 60) return false;
   }
   // 이야기가 말하는 장소와 지금 장소가 다르면 열지 않는다 (12-251)
-  if (!storyPlacesFit(state, content, w, storyText(storylet), !!w.summons, indoor)) return false;
+  // 큰 이야기의 이야기는 글의 낱말로 자리를 묶지 않는다: 구역·장소 종류·장소 id로만 (PT44 약탈조원: 「배수로의 사람」이 "배수로" 때문에 담 밖 배수로에서만 열렸다)
+  if (!storyPlacesFit(state, content, w, storylet.tags.includes(SAGA_TAG) && !w.summons ? "" : storyText(storylet), !!w.summons, indoor)) return false;
   if (w.companions_lte !== undefined && state.companions.length > w.companions_lte) return false;
   if (w.companions_gte !== undefined && state.companions.length < w.companions_gte) return false;
   if (w.own_territory !== undefined) {
@@ -550,6 +552,8 @@ export function choiceAvailable(state: GameState, choice: StoryletChoice, cast: 
   // 성인 선택지는 성인 옵션이 켜져 있을 때만 (공통 규칙 21)
   if (!choiceShown(state, choice)) return false;
   if (choice.when && !itemFlagsMet(state, choice.when)) return false;
+  // 다짐을 건네는 선택지는 다짐이 없을 때만 (12-199: 품은 다짐은 덮어쓰지 않는다)
+  if (choiceOffersResolve(choice) && currentResolve(state)) return false;
   // 있으면 쓰는 배역이 비었으면 그 배역을 쓰는 선택지는 빠진다
   if (choice.when?.cast && !choice.when.cast.every((k) => !!cast[k])) return false;
   if (choice.when?.factions && !choice.when.factions.includes(state.characters[state.playerId]?.factionId || "none")) return false;
@@ -752,6 +756,11 @@ function scarcestOf(state: GameState, content: Content): { label: string; days: 
       .map((r) => ({ label: r.label, days: daysOfStock(content, own, r.id) }))
       .sort((a, b) => a.days - b.days)[0] ?? null
   );
+}
+
+/** 이 선택지가 다짐을 건네는가 */
+function choiceOffersResolve(c: StoryletChoice): boolean {
+  return [...(c.effects ?? []), ...(c.outcomes ? [...c.outcomes.success, ...c.outcomes.partial, ...c.outcomes.miss] : [])].some((e) => "resolve" in e);
 }
 
 const offersResolveCache = new WeakMap<object, boolean>();

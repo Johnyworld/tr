@@ -210,8 +210,8 @@ export function noteSaga(ctx: ToolContext, text: string, zone: string | null): s
   return text;
 }
 
-/** 곁의 R을 이 사람으로 (이야기 효과 saga_mark) */
-export function markSaga(ctx: ToolContext, characterId: string): void {
+/** 곁의 R을 이 사람으로, null이면 비운다 (이야기 효과 saga_mark, who: none) */
+export function markSaga(ctx: ToolContext, characterId: string | null): void {
   const a = activeSaga(ctx.store.getState(), ctx.content);
   if (a) ctx.store.append({ type: "saga_marked", sagaId: a.saga.id, characterId });
 }

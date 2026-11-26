@@ -422,7 +422,8 @@
           - zone_noise: 1
           - saga_note: { text: "등대 문을 열었지만 소리가 컸다. 패 하나" }
         miss:
-          - set_flag: sb5_lighthouse
+          # 실패해도 닫지 않는다: 다시 와서 해 볼 수 있다 (PT44 수색대원: 판정 한 번에 등대 패가 사라졌다)
+          - zone_noise: 1
     - id: leave
       label: 그냥 둔다
       effects:
@@ -454,10 +455,13 @@
         success:
           - set_flag: sb5_flares
           - set_flag: sb_half_saved
+          # 빼낸 사람은 배가 떠나도 데려가지 않는다: 결말이 곁의 R을 떠나보내지 않게 비운다 (PT44 약탈조원: 반쪽 결말이 아무것도 바꾸지 않았다)
+          - saga_mark: { who: none }
           - saga_note: { text: "줄에서 아는 얼굴을 빼냈다. 배의 불빛이 부두에 닿는다" }
         partial:
           - set_flag: sb5_flares
           - set_flag: sb_half_saved
+          - saga_mark: { who: none }
           - wound: { steps: 1, cause: "부두의 감시에게 걸렸다" }
           - saga_note: { text: "빼냈지만 다쳤다. 배의 불빛이 부두에 닿는다" }
         miss:

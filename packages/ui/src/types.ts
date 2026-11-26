@@ -14,7 +14,7 @@ export type PlayerView = {
   occupationLabel: string | null;
   motive?: { label: string; summary: string } | null;
   scenario?: { title: string; pitch: string } | null;
-  past?: { label: string; summary: string } | null;
+  past?: { label: string; summary: string; icon?: string | null } | null;
   timeLabel: string;
   clock?: { time: string; hhmm?: string; minute?: number; segmentLabel?: string; date?: string | null; segment: string; season: string | null; weather: { label: string; icon: string | null; chill: number } | null; temperature?: { outside: number; feels: number; detail: string } | null };
   conditions: { id: string; label: string; levelLabel: string; worsened: boolean; icon?: string | null; step?: number; penalty?: number; fatal?: boolean }[];
@@ -117,11 +117,11 @@ export type NewGameView = {
     };
     /** 캐릭터 설정 고르기 (4.6.4) */
     settings?: {
-      slots: { id: string; label: string; max: number; hint: string; rolls: boolean }[];
+      slots: { id: string; label: string; max: number; hint: string; rolls: boolean; describe?: boolean }[];
       items: { id: string; slot: string; name: string; description: string; ok: boolean; reasons: string[]; clash: boolean; opposites: string[] }[];
     } | null;
     /** 과거 배경 (12-84) */
-    pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge?: number | null }[];
+    pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge?: number | null; icon?: string | null }[];
     /** 자리(계급·직분)가 점수 없이 배운 상태로 주는 전문 기술 (4.2.1) */
     grantedSkills?: string;
     /** 고치기에서 점수를 둘 수 있는 전문 기술 id */
@@ -139,7 +139,7 @@ export type NewGameView = {
     stats: { id: string; label: string; description: string }[];
     tiers: { value: number; count: number; label: string }[] | null;
     points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
-    traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
+    traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[]; group?: "phobia" | "habit" | null }[];
     traitLimits: { max_positive: number; max_negative: number; max_personality?: number; max_phobia?: number } | null;
     unusedPoints: number;
     /** 성격 축 (12-99) */

@@ -96,7 +96,10 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
             <>
           {player.past && (
             <section className="block origin">
-              <div className="origin-title" title={player.past.summary}>{player.past.label} 출신</div>
+              <div className="origin-title" title={player.past.summary}>
+                {player.past.icon && <Icon name={player.past.icon} size={16} />}
+                {player.past.label} 출신
+              </div>
             </section>
           )}
 

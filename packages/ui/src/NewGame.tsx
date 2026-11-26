@@ -264,31 +264,10 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       {step === "portrait" && <PortraitStep view={view} busy={busy} answer={answer} />}
       {step === "name" && <NameStep view={view} busy={busy} answer={answer} />}
       {step === "age" && <AgeStep view={view} busy={busy} answer={answer} />}
-      {(step === "gender" || step === "abilities" || step === "skills" || step === "traits") && (
+      {step === "gender" && (
         <>
-          <h2 className="newgame-title">
-            {step === "gender"
-              ? "성별을 골라 주세요"
-              : step === "abilities"
-                ? "타고난 능력은 어떻게 정할까요?"
-                : step === "skills"
-                  ? "몸에 익은 솜씨(스킬)는 어떻게 할까요?"
-                  : "타고난 기질과 버릇(트레잇)은 어떻게 할까요?"}
-          </h2>
-          {step === "abilities" && (
-            <p className="newgame-note">
-              {c.tiers
-                ? `${c.pastDefaults ? "고치면 과거 배경의 배치에서 시작합니다. " : ""}직접 정하면 ${c.tiers.map((t) => `${t.label}(${signed(t.value)}) ${t.count}개`).join(", ")}를 고르고 나머지는 보통(0)입니다.`
-                : `모두 0에서 시작해 ${c.points?.total ?? 0}포인트를 나눠 씁니다.`}
-            </p>
-          )}
-          {step === "traits" && c.traitLimits && (
-            <p className="newgame-note">
-              강점은 약점으로 얻은 포인트만큼만 가질 수 있습니다. 약점 {c.traitLimits.max_negative}개 · 강점 {c.traitLimits.max_positive}개까지{c.traitLimits.max_phobia !== undefined ? ` · 공포증 ${c.traitLimits.max_phobia}개까지` : ""}
-              {c.traitLimits.max_personality !== undefined ? `, 성격 ${c.traitLimits.max_personality}개까지` : ", 성격은 몇 개든"}.
-            </p>
-          )}
-          <div className={step === "gender" ? "choice-row" : "choice-list"}>
+          <h2 className="newgame-title">성별을 골라 주세요</h2>
+          <div className="choice-row">
             {options.map((o) => (
               <button key={o.value} type="button" className={wasPicked(view, o.value) ? "choice-card remembered" : "choice-card"} disabled={busy} onClick={() => answer(o.value)}>
                 <strong>{o.label}</strong>
@@ -302,18 +281,58 @@ function CharacterStep({ view, busy, answer }: StepProps) {
       {(step === "traits_pick" || step === "traits_personality") && <TraitStep key={step} view={view} busy={busy} answer={answer} onLive={onLive} />}
       {step === "persona" && <PersonaStep view={view} busy={busy} answer={answer} />}
       {step === "settings" && <SettingsStep view={view} busy={busy} answer={answer} />}
-      {step === "confirm" && (
-        <>
-          <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
-          {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}점을 쓰지 않았습니다. 이대로 시작하면 사라집니다.</p>}
-          <div className="newgame-actions">
-            {options.map((o) => (
-              <button key={o.value} type="button" className={o.value === "start" ? "primary" : ""} disabled={busy} onClick={() => answer(o.value)}>
-                {o.label}
+      {step === "confirm" && <ConfirmStep view={view} busy={busy} answer={answer} />}
+    </>
+  );
+}
+
+/**
+ * 확인: [처음부터 다시 작성](확인 창) / [이대로 시작]을 세로로, 아래에 붙여 둔다.
+ * 한 단계 뒤로는 머리의 뒤로 단추로 (채팅의 "한 단계 뒤로" 보기는 core에 그대로)
+ */
+function ConfirmStep({ view, busy, answer }: StepProps) {
+  const c = view.character!;
+  const [asking, setAsking] = useState(false);
+  useEffect(() => {
+    if (!asking) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setAsking(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [asking]);
+  return (
+    <>
+      <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
+      {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}점을 쓰지 않았습니다. 이대로 시작하면 사라집니다.</p>}
+      <div className="newgame-actions pinned stacked">
+        <button type="button" disabled={busy} onClick={() => setAsking(true)}>
+          처음부터 다시 작성
+        </button>
+        <button type="button" className="primary" disabled={busy} onClick={() => answer("start")}>
+          이대로 시작
+        </button>
+      </div>
+      {asking && (
+        <div className="confirm-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setAsking(false)}>
+          <div className="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="restart-title">
+            <h2 id="restart-title">처음부터 다시 만들까요?</h2>
+            <p>지금까지 정한 과거 배경·이름·능력·스킬·트레잇·성격·설정이 모두 지워집니다.</p>
+            <div className="confirm-actions">
+              <button type="button" onClick={() => setAsking(false)} autoFocus>
+                취소
               </button>
-            ))}
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  setAsking(false);
+                  answer("restart");
+                }}
+              >
+                처음부터 다시
+              </button>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </>
   );
@@ -467,12 +486,15 @@ function PastStep({ view, busy, answer }: StepProps) {
   return (
     <>
       <h2 className="newgame-title">붕괴 전에는 무엇을 했나요?</h2>
-      <p className="newgame-note">과거 배경이 능력과 스킬의 기본값을 정합니다. 뒤에서 같은 포인트 안에서 고칠 수 있습니다.</p>
+      <p className="newgame-note">과거 배경이 능력과 스킬의 기본값을 정합니다.</p>
       <div className="past-grid">
         {c.pasts.map((p) => (
           <button key={p.id} type="button" className={wasPicked(view, p.id) ? "past-card remembered" : "past-card"} disabled={busy} onClick={() => answer(p.id)}>
             <span className="past-head">
-              <strong>{p.label}</strong>
+              <strong className="past-name">
+                {p.icon && <Icon name={p.icon} size={16} />}
+                {p.label}
+              </strong>
               {p.minAge && <span className="past-age">{p.minAge}세부터</span>}
             </span>
             <span className="past-line">{p.skills}</span>
@@ -516,7 +538,7 @@ function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
     <>
       <h2 className="newgame-title">스킬을 정해 주세요</h2>
       <p className="newgame-note">
-        {rule.points}점을 나눕니다. 0은 1점, +1 숙련은 3점, +2 마스터는 6점입니다. 누구나 하는 일은 찍지 않아도 -1로 할 수 있고, 전문 기술은 배운 것만 할 수 있습니다.
+        스킬 점수 {rule.points}점을 분배합니다. 높은 숫자는 많은 점수를 필요로 합니다.<br />전문 기술은 배운 것만 할 수 있습니다.<br />
         {c.grantedSkills ? ` 자리가 요구하는 ${c.grantedSkills}은 점수 없이 배운 상태로 받습니다.` : ""} 남긴 점수는 레벨업 점수와 함께 나중에 씁니다.
       </p>
       {categories.map((cat) => (
@@ -533,7 +555,12 @@ function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
                   <div key={m.id} className={v > rule.min ? "skill-card on" : locked ? "skill-card locked" : "skill-card"}>
                     <span className="past-head">
                       <strong>{m.label}</strong>
-                      {m.stats && <span className="past-age">{m.kind === "expert" ? "전문 · " : ""}{m.stats}</span>}
+                      {m.stats && 
+                        <span className="past-age">
+                          {m.kind === "expert" ? <span className="past-age expert">전문 · </span> : ""}
+                          {m.stats}
+                        </span>
+                      }
                     </span>
                     {m.description && <span className="skill-desc">{m.description}</span>}
                     <span className="skill-level">
@@ -566,7 +593,10 @@ function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
           </div>
         </div>
       ))}
-      <div className="newgame-actions">
+      <div className="newgame-actions pinned split">
+        <button type="button" className="reset" disabled={busy} onClick={() => setLayout({ ...(c.pastDefaults?.skills ?? {}) })}>
+          초기화
+        </button>
         <button type="button" className="primary" disabled={busy || left < 0} onClick={submit}>
           {left > 0 ? `${left}점 남기고 다음` : "다음"}
         </button>
@@ -596,7 +626,7 @@ function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: s
   return (
     <>
       <h2 className="newgame-title">타고난 능력을 골라 주세요</h2>
-      <p className="newgame-note">{tiers.map((t) => `${signed(t.value)} ${t.count}개`).join(", ")}를 고르고, 나머지는 0입니다.</p>
+      <p className="newgame-note">{tiers.map((t) => `${signed(t.value)} ${t.count}개`).join(", ")}, 나머지는 0입니다.</p>
       <div className="tier-table">
         {c.stats.map((s) => (
           <div key={s.id} className="tier-row">
@@ -626,7 +656,10 @@ function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: s
           </div>
         ))}
       </div>
-      <div className="newgame-actions">
+      <div className="newgame-actions pinned split">
+        <button type="button" className="reset" disabled={busy} onClick={() => setPicked(Object.fromEntries(Object.entries(c.pastDefaults?.stats ?? {}).filter(([, v]) => v !== 0)))}>
+          초기화
+        </button>
         <button type="button" className="primary" disabled={busy || !full} onClick={submit}>
           다음
         </button>
@@ -639,7 +672,7 @@ function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: s
 function PointStep({ view, busy, answer }: StepProps) {
   const c = view.character!;
   const p = c.points!;
-  const [values, setValues] = useState<Record<string, number>>(() => ({ ...(rememberedOf(view)?.values ?? {}) }));
+  const [values, setValues] = useState<Record<string, number>>(() => ({ ...(rememberedOf(view)?.values ?? c.pastDefaults?.stats ?? {}) }));
   const values0 = p.cost.map((x) => x.value);
   const min = Math.min(...values0, 0);
   const max = Math.max(...values0, 0);
@@ -671,7 +704,10 @@ function PointStep({ view, busy, answer }: StepProps) {
           </div>
         ))}
       </div>
-      <div className="newgame-actions">
+      <div className="newgame-actions pinned split">
+        <button type="button" className="reset" disabled={busy} onClick={() => setValues({ ...(c.pastDefaults?.stats ?? {}) })}>
+          초기화
+        </button>
         <button
           type="button"
           className="primary"
@@ -758,7 +794,7 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
       <p className="newgame-note">
         {personality
           ? "성격은 GM이 이 사람을 그릴 때의 말투와 태도입니다. 몇 개든 고를 수 있고, 반대되는 것끼리는 함께 고를 수 없습니다."
-          : "약점을 고르면 포인트를 얻고, 그 포인트로 강점을 고릅니다. 반대되는 것끼리는 함께 고를 수 없습니다."}
+          : `반대되는 것끼리는 함께 고를 수 없습니다.\n${lim ? ` 약점 ${lim.max_negative}개 · 강점 ${lim.max_positive}개까지${lim.max_phobia !== undefined ? ` · 공포증 ${lim.max_phobia}개까지` : ""}.` : ""}`}
       </p>
       {!personality && (
         <div className="trait-pair-head">
@@ -774,15 +810,28 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
           </div>
         ))}
       </div>
-      {singles.length > 0 && (
-        <>
-          <h3 className="newgame-sub">{personality ? "그 밖의 성격" : "짝이 없는 것"}</h3>
-          <div className="trait-pairs">
-            <div className="trait-single">{singles.map(card)}</div>
+      {/* 짝이 없는 것은 아래에 묶음별로: 공포증, 습관, 그 밖 */}
+      {(personality
+        ? [{ key: "rest", title: "그 밖의 성격", list: singles }]
+        : [
+            { key: "phobia", title: "공포증", list: singles.filter((t) => t.group === "phobia") },
+            { key: "habit", title: "습관", list: singles.filter((t) => t.group === "habit") },
+            { key: "rest", title: "짝이 없는 것", list: singles.filter((t) => !t.group) },
+          ]
+      )
+        .filter((g) => g.list.length > 0)
+        .map((g) => (
+          <div key={g.key}>
+            <h3 className="newgame-sub">{g.title}</h3>
+            <div className="trait-pairs">
+              <div className="trait-single">{g.list.map(card)}</div>
+            </div>
           </div>
-        </>
-      )}
-      <div className="newgame-actions">
+        ))}
+      <div className="newgame-actions pinned split">
+        <button type="button" className="reset" disabled={busy} onClick={() => setPicked([])}>
+          초기화
+        </button>
         <button type="button" className="primary" disabled={busy || over} onClick={() => answer(picked)}>
           {picked.length ? `${picked.length}개로 다음` : "고르지 않고 다음"}
         </button>
@@ -802,7 +851,7 @@ function PersonaStep({ view, busy, answer }: StepProps) {
   return (
     <>
       <h2 className="newgame-title">어떤 성격인가요?</h2>
-      <p className="newgame-note">양 끝은 캐릭터의 성격이 강하게 드러냅니다. GM이 말투와 태도를 이 성격대로 그립니다. 그리고 사회 관계에 영향이 있을 수도 있습니다.</p>
+      <p className="newgame-note">GM이 말투와 태도를 이 성격대로 그립니다.<br />비슷한 사람끼리 끌립니다.</p>
       <div className="persona-table">
         {axes.map((a) => (
           <div key={a.id} className="persona-row">
@@ -828,7 +877,10 @@ function PersonaStep({ view, busy, answer }: StepProps) {
           </div>
         ))}
       </div>
-      <div className="newgame-actions">
+      <div className="newgame-actions pinned split">
+        <button type="button" className="reset" disabled={busy} onClick={() => setValues({})}>
+          초기화
+        </button>
         <button type="button" className="primary" disabled={busy} onClick={submit}>
           다음
         </button>
@@ -862,7 +914,7 @@ function SettingsStep({ view, busy, answer }: StepProps) {
     <>
       <h2 className="newgame-title">설정을 골라 주세요</h2>
       <p className="newgame-note">
-        성격이 어떻게 말하고 대하는지라면, 설정은 무엇을 믿고, 하지 않고, 몸에 배었는지입니다. 모두 건너뛰어도 됩니다. 보상은 없고, 이상·금기·결점을 거스르는 행동은 그때 정신력으로 굴립니다.
+        믿음, 신념, 습관. 이상, 금기, 결점.
       </p>
       {data.slots.map((slot) => (
         <div key={slot.id}>
@@ -880,23 +932,30 @@ function SettingsStep({ view, busy, answer }: StepProps) {
                 return (
                   <button key={item.id} type="button" className={`choice-card${on ? " featured" : ""}${disabled && !on ? " locked" : ""}`} disabled={disabled} aria-pressed={on} onClick={() => toggle(item.id, slot.id, slot.max)}>
                     <strong>{item.name}</strong>
-                    <span className="choice-desc">
-                      {item.description}
-                      {reasons.length > 0 && <span className="muted"> · {reasons.join(", ")}</span>}
-                      {item.clash && <span className="muted"> · 이 시나리오와 자주 부딪힘</span>}
-                    </span>
+                    {/* 설명은 describe 칸(이상)만. 다른 칸은 이름만 보이고, 못 고르는 까닭·부딪힘은 늘 보인다 */}
+                    {(slot.describe || reasons.length > 0 || item.clash) && (
+                      <span className="choice-desc">
+                        {[
+                          slot.describe ? <span key="d">{item.description}</span> : null,
+                          reasons.length > 0 ? <span key="r" className="muted">{reasons.join(", ")}</span> : null,
+                          item.clash ? <span key="c" className="muted">이 시나리오와 자주 부딪힘</span> : null,
+                        ]
+                          .filter(Boolean)
+                          .flatMap((x, i) => (i ? [" · ", x] : [x]))}
+                      </span>
+                    )}
                   </button>
                 );
               })}
           </div>
         </div>
       ))}
-      <div className="newgame-actions">
-        <button type="button" disabled={busy} onClick={() => answer("없음")}>
-          모두 건너뛰기
+      <div className="newgame-actions pinned split">
+        <button type="button" className="reset" disabled={busy} onClick={() => setPicked([])}>
+          초기화
         </button>
         <button type="button" className="primary" disabled={busy} onClick={() => answer(picked.length ? picked.map(nameOf).join(", ") : "없음")}>
-          다음
+          {picked.length ? "다음" : "고르지 않고 다음"}
         </button>
       </div>
     </>

@@ -148,7 +148,7 @@ export function StatusApp() {
               </span>
             </div>
           ) : (
-            <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : inMenu ? "TRPG" : (status?.scenarioName ?? "TRPG")}</h1>
+            <h1 className="hdr-title">{creating ? newGameTitle(status.creation!.view) : inMenu ? "" : (status?.scenarioName ?? "")}</h1>
           )}
           {status?.open && <HeaderDate player={status.player} />}
         </div>

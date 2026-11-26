@@ -45,7 +45,7 @@
   /* 제목 글자 (본문보다 밝게) */
   --heading: #eef1f5;
   --muted: #8c94a3;
-  --accent: #718286;
+  --accent: #6f9bb1;
   --primary: #40525f;
   /* 강조색 위의 글자 */
   --on-accent: #ffffff;
@@ -1999,12 +1999,6 @@ body {
 /* 함께 있는 인물 (HUD, 12-65) */
 /* 새 게임 고르기 (12-67) */
 .newgame {
-  display: flex;
-  /* 짧으면 가운데, 화면보다 길면 위부터 (그냥 center면 넘친 위쪽이 스크롤로도 닿지 않는다) */
-  justify-content: safe center;
-  min-height: 100%;
-  flex-direction: column;
-  gap: 12px;
   padding-bottom: 62px;
 }
 
@@ -2078,10 +2072,12 @@ body {
 }
 
 .newgame-note {
-  margin: 0;
+  text-align: center;
+  margin: 0 0 12px;
   font-size: 13px;
   line-height: 1.6;
   color: var(--muted);
+  white-space: pre-line;
 }
 
 .newgame-warn {
@@ -2101,7 +2097,8 @@ body {
 }
 
 .choice-list {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   flex-direction: column;
   gap: 8px;
 }
@@ -2254,6 +2251,45 @@ body {
   margin-right: auto;
 }
 
+/* 능력·스킬·트레잇·성격·설정: [초기화 1/3][다음 2/3] 한 줄 */
+/* .pinned(display: flex)보다 뒤에 있어도 이기게 둘 다 적는다 */
+.newgame-actions.pinned.split {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+
+.newgame-actions.split > button {
+  width: 100%;
+  padding: 12px 16px;
+}
+
+/* 확인 단계: 단추를 세로로, 좌우 꽉 차게 */
+.newgame-actions.stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.newgame-actions.stacked > button {
+  width: 100%;
+  padding: 12px 16px;
+}
+
+/* 능력·스킬·기질·성격·설정: 표가 길어 [다음]을 화면 아래에 붙여 둔다 (스크롤해도 보인다) */
+.newgame-actions.pinned {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 8px;
+  padding: 24px 0 16px;
+  display: flex;
+  justify-content: stretch;
+}
+
+.newgame-actions.pinned > * {
+  width: 100%;
+}
+
 .newgame-input {
   width: 100%;
   font: inherit;
@@ -2261,15 +2297,19 @@ body {
   line-height: 1.6;
   color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--surface);
   border-radius: 8px;
   padding: 10px 12px;
   resize: vertical;
+  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
 }
 
 .newgame-input:focus {
   outline: none;
-  border-color: var(--accent);
+}
+
+.newgame-input::placeholder {
+  color: var(--muted);
 }
 
 .newgame-form {
@@ -2488,6 +2528,7 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 6px;
+  margin-bottom: 4px;
 }
 
 .past-head strong,
@@ -2496,10 +2537,26 @@ body {
   color: var(--heading);
 }
 
+/* 과거 배경 이름 앞의 아이콘 (이름과 같은 줄, 강조색) */
+.past-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.past-name .icon {
+  flex: none;
+  color: var(--accent);
+}
+
 .past-age {
   flex: none;
   font-size: 11px;
   color: var(--muted);
+}
+
+.past-age.expert {
+  color: var(--partial);
 }
 
 .past-line {
@@ -3686,7 +3743,7 @@ button.persona-btn {
   width: 14px;
   height: 14px;
   border-color: var(--on-accent);
-  background: var(--success);
+  background: var(--accent);
 }
 
 button.persona-btn:not(:disabled) {
@@ -3708,6 +3765,15 @@ button.persona-btn:not(:disabled):hover {
 }
 .origin-title {
   font-weight: 600;
+  /* 과거 배경 아이콘과 이름을 한 줄에 */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.origin-title .icon {
+  flex: none;
+  color: var(--accent);
 }
 .origin-text {
   margin: 2px 0 0;
@@ -4016,6 +4082,12 @@ button.persona-btn:not(:disabled):hover {
 }
 
 .mainmenu {
+  display: flex;
+  flex-direction: column;
+  /* 짧으면 가운데, 화면보다 길면 위부터 (그냥 center면 넘친 위쪽이 스크롤로도 닿지 않는다) */
+  justify-content: safe center;
+  min-height: 100%;
+  gap: 12px;
   padding-top: 8px;
 }
 

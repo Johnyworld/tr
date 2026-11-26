@@ -31,7 +31,7 @@ export class ContentError extends Error {
   }
 }
 
-type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations" | "storylets" | "extras";
+type Kind = "items" | "roles" | "npcs" | "beliefs" | "missions" | "factions" | "locations" | "storylets" | "extras" | "sagas";
 
 /**
  * 시나리오 팩 폴더(content/scenarios/<id>/)를 읽어 검증한다.
@@ -171,9 +171,10 @@ export function loadContent(contentDir: string): Content {
     locations: schemas.location,
     storylets: schemas.storylet,
     extras: schemas.extra,
+    sagas: schemas.saga,
   };
   const problems: string[] = [];
-  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {}, storylets: {}, extras: {} };
+  const content: Content = { scenario, items: {}, roles: {}, npcs: {}, beliefs: {}, missions: {}, factions: {}, locations: {}, storylets: {}, extras: {}, sagas: {} };
 
   for (const [kind, schema] of Object.entries(KINDS) as [Kind, z.ZodType][]) {
     const dir = join(contentDir, kind);
@@ -691,6 +692,7 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkThreatPasses(content));
   problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
+  problems.push(...checkSagas(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
   for (const t of content.scenario.offense?.excuse_tags ?? []) if (!(DEED_TAGS as readonly string[]).includes(t)) problems.push(`scenario.offense.excuse_tags: 행적 태그가 아니다: ${t}`);
   for (const t of content.scenario.offense?.tags ?? []) if (!(DEED_TAGS as readonly string[]).includes(t)) problems.push(`scenario.offense.tags: 행적 태그가 아니다: ${t} (있는 것: ${DEED_TAGS.join(", ")})`);
@@ -875,6 +877,80 @@ export function checkNpcRoutines(content: Content): string[] {
  * 다짐의 줄기 이야기 (12-251, 플레이 테스트 14: 섬의 "의회 저장고"가 조건을 채운 밤에 이야기 간격에 막혀 열리지 않았다).
  * 시나리오의 다짐이 진실 알기(check beliefs)이면, 그 시나리오에만 있는 이야기 가운데 그 진실을 믿음으로 주는 것은 꼭 열리는 이야기(essential)여야 한다
  */
+/**
+ * 큰 이야기 (공통 규칙 24, docs/saga-plan.md 파트 3·13): 참조, 막마다 시계와 세계 쪽 사건, 길.
+ * - 시작 사건(acts: [open])이 첫 막으로 넘기고 꼭 열리는 이야기다
+ * - 마지막이 아닌 막마다 다음 막으로 넘기는 이야기가 둘 이상, 그중 하나는 사람을 정해 두지 않은 배역만 쓴다 (열쇠 인물이 죽어도 길이 남게)
+ * - 마지막 막에는 결말로 끝내는 이야기가 있다
+ */
+export function checkSagas(content: Content): string[] {
+  const problems: string[] = [];
+  type Found = { kind: "advance" | "end"; id: string; to: string };
+  const found = (v: unknown, out: Found[] = []): Found[] => {
+    if (Array.isArray(v)) for (const x of v) found(x, out);
+    else if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      const adv = o.saga_advance as { id?: string; to?: string } | undefined;
+      const end = o.saga_end as { id?: string; ending?: string } | undefined;
+      if (adv?.id && adv.to) out.push({ kind: "advance", id: adv.id, to: adv.to });
+      if (end?.id && end.ending) out.push({ kind: "end", id: end.id, to: end.ending });
+      for (const x of Object.values(o)) found(x, out);
+    }
+    return out;
+  };
+  const RESERVED = ["open", "ended"];
+  for (const saga of Object.values(content.sagas)) {
+    const at = `sagas.${saga.id}`;
+    const acts = saga.acts.map((a) => a.id);
+    const endings = saga.endings.map((e) => e.id);
+    if (new Set(acts).size !== acts.length) problems.push(`${at}.acts: 막 id가 겹친다`);
+    if (new Set(endings).size !== endings.length) problems.push(`${at}.endings: 결말 id가 겹친다`);
+    for (const a of saga.acts) {
+      if (RESERVED.includes(a.id)) problems.push(`${at}.acts.${a.id}: open·ended는 막 id로 쓰지 않는다`);
+      if (a.next && !acts.includes(a.next)) problems.push(`${at}.acts.${a.id}.next: 없는 막 ${a.next}`);
+      if (a.lapse.ending && !endings.includes(a.lapse.ending)) problems.push(`${at}.acts.${a.id}.lapse.ending: 없는 결말 ${a.lapse.ending}`);
+    }
+    for (const [key, id] of Object.entries(saga.cast)) if (!content.npcs[id]) problems.push(`${at}.cast.${key}: 없는 인물 ${id}`);
+    if (saga.mark && !acts.includes(saga.mark.at)) problems.push(`${at}.mark.at: 없는 막 ${saga.mark.at}`);
+    if (saga.mark?.fallback && !saga.cast[saga.mark.fallback]) problems.push(`${at}.mark.fallback: cast에 없는 배역 ${saga.mark.fallback}`);
+    for (const n of saga.notes) {
+      if (n.zone && !content.locations[n.zone]) problems.push(`${at}.notes.${n.flag}: 없는 구역 ${n.zone}`);
+      for (const a of n.acts ?? []) if (!acts.includes(a)) problems.push(`${at}.notes.${n.flag}: 없는 막 ${a}`);
+    }
+    if (saga.opens.saga_ended && !content.sagas[saga.opens.saga_ended.id]) problems.push(`${at}.opens.saga_ended: 없는 큰 이야기 ${saga.opens.saga_ended.id}`);
+    for (const r of saga.opens.roles_none ?? []) if (!content.roles[r]) problems.push(`${at}.opens.roles_none: 없는 역할 ${r}`);
+    const mine = Object.values(content.storylets).filter((st) => st.when.saga?.id === saga.id);
+    for (const st of mine) if (!st.tags.includes("saga")) problems.push(`storylets.${st.id}: 큰 이야기의 이야기는 tags에 saga를 둔다`);
+    const leads = (from: string, kind: Found["kind"], to: string) =>
+      mine.filter((st) => (st.when.saga!.acts ?? []).includes(from) && found(st.choices).some((f) => f.id === saga.id && f.kind === kind && f.to === to));
+    const starts = leads("open", "advance", acts[0]!);
+    if (!starts.length) problems.push(`${at}: 시작 사건(when.saga.acts: [open])에서 첫 막 ${acts[0]}으로 넘기는 이야기가 없다`);
+    for (const st of starts) if (!st.essential) problems.push(`storylets.${st.id}: 큰 이야기 ${saga.id}의 시작 사건이다. essential: true로 둔다`);
+    for (const a of saga.acts) {
+      const ways = a.next ? leads(a.id, "advance", a.next) : saga.endings.flatMap((e) => leads(a.id, "end", e.id));
+      const need = a.next ? 2 : 1;
+      if (ways.length < need) problems.push(`${at}.acts.${a.id}: ${a.next ? `다음 막 ${a.next}으로 넘기는` : "결말로 끝내는"} 이야기가 ${ways.length}편이다 (${need}편 이상)`);
+      else if (!ways.some((st) => Object.values(st.cast).every((r) => !("ids" in r) || !r.ids))) problems.push(`${at}.acts.${a.id}: 넘기는 이야기가 모두 사람을 정해 둔 배역(ids)을 쓴다. 열쇠 인물이 죽어도 남는 길을 하나 둔다`);
+    }
+  }
+  for (const st of Object.values(content.storylets)) {
+    const w = st.when.saga;
+    if (w) {
+      const saga = content.sagas[w.id];
+      if (!saga) problems.push(`storylets.${st.id}.when.saga: 없는 큰 이야기 ${w.id}`);
+      for (const a of w.acts ?? []) if (saga && !RESERVED.includes(a) && !saga.acts.some((x) => x.id === a)) problems.push(`storylets.${st.id}.when.saga.acts: 없는 막 ${a}`);
+      for (const e of w.ending ?? []) if (saga && !saga.endings.some((x) => x.id === e)) problems.push(`storylets.${st.id}.when.saga.ending: 없는 결말 ${e}`);
+    }
+    for (const f of found(st.choices)) {
+      const saga = content.sagas[f.id];
+      if (!saga) problems.push(`storylets.${st.id}: 없는 큰 이야기 ${f.id}`);
+      else if (f.kind === "advance" && !saga.acts.some((x) => x.id === f.to)) problems.push(`storylets.${st.id}: 큰 이야기 ${f.id}에 없는 막 ${f.to}`);
+      else if (f.kind === "end" && !saga.endings.some((x) => x.id === f.to)) problems.push(`storylets.${st.id}: 큰 이야기 ${f.id}에 없는 결말 ${f.to}`);
+    }
+  }
+  return problems;
+}
+
 export function checkResolveSpine(content: Content): string[] {
   const problems: string[] = [];
   const flagsSet = (v: unknown, out: string[] = []): string[] => {

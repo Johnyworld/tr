@@ -1458,26 +1458,6 @@ body {
   border-top: 1px dashed var(--border);
 }
 
-.todo-kind {
-  flex: none;
-  width: 2.2em;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--heading);
-}
-
-.todo[data-kind="의뢰"] .todo-kind {
-  color: var(--success);
-}
-
-.todo[data-kind="약속"] .todo-kind {
-  color: var(--player);
-}
-
-.todo[data-kind="다짐"] .todo-kind {
-  color: var(--partial);
-}
-
 .todo-main {
   flex: 1;
   min-width: 0;
@@ -1485,10 +1465,6 @@ body {
 
 .todo-title {
   color: var(--text);
-}
-
-.todo[data-kind="임무"] .todo-title {
-  font-weight: 600;
 }
 
 .todo-who {

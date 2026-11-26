@@ -63,7 +63,7 @@ export type PlayerView = {
   /** 다짐 (12-164): 임무 칸 맨 아래 */
   resolve?: string | null;
   /** 할 일: 임무·부탁·약속·다짐 (core views/player.ts TodoView) */
-  todos?: { key: string; kind: "임무" | "의뢰" | "약속" | "다짐"; title: string; who: string | null; detail: string | null; dueLabel: string | null; urgent: boolean; steps: { text: string; met: boolean }[]; note: string | null }[];
+  todos?: { key: string; kind: "임무" | "의뢰" | "약속" | "큰 이야기" | "다짐"; title: string; who: string | null; detail: string | null; dueLabel: string | null; urgent: boolean; steps: { text: string; met: boolean }[]; note: string | null }[];
   squad?: { id: string; name: string; doing: string; report: string | null; states?: SymptomView[] }[] | null;
   policy?: { label: string; option: string }[];
   ties?: { key: string; text: string }[];

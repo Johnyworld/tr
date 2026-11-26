@@ -1,4 +1,5 @@
 import { arrivalPlace, movePlayer } from "../rules/place.ts";
+import { cheatSaga } from "../rules/saga.ts";
 import { josa } from "../text.ts";
 import { facilitiesAt } from "../engine/facilities.ts";
 import { leaveRemainsForNewDeaths, livingIds } from "../engine/remains.ts";
@@ -9,7 +10,7 @@ import { dayOf, MINUTES_PER_DAY, nextSegmentStart, timeSegmentSchema } from "../
 import { harmTrack, trackOf } from "../scenario/scenario.ts";
 import { startBattle } from "../sim/battle.ts";
 import { changeCondition } from "../engine/body.ts";
-import { endActiveStorylet, fireStorylet } from "../engine/storyletTools.ts";
+import { endActiveStorylet, fireStorylet, sagaApplier } from "../engine/storyletTools.ts";
 import { enterScene, EXTRA_TOOLS } from "../engine/extras.ts";
 import { levelForXp } from "../engine/growth.ts";
 import { runAfterTimeAdvance } from "../engine/turnStart.ts";
@@ -46,6 +47,7 @@ const HELP = [
   "~time +2d|+5h|시간대   시간을 보낸다 (그 사이 세계도 돌아간다)",
   "~weather 날씨          오늘 날씨",
   "~storylet 이야기       그 이야기를 지금 시작한다",
+  "~saga 큰이야기 [막|end 결말]  큰 이야기의 문을 열고(조건 없이), 막을 정하거나 결말로 끝낸다 (플레이 테스트용)",
   "~battle                지금 구역에서 전투 장면을 연다",
   "~relation 인물 [대상] 축 ±값  그 인물의 나(또는 대상)에 대한 관계 (축: trust, affection, respect)",
   "~faction 세력 자원|morale 값  세력 자원·사기",
@@ -198,6 +200,12 @@ export function runCheat(input: string, ctx: ToolContext): Result {
         if (!w || !s.weather?.kinds.some((k) => k.id === w)) return { ok: false, error: `~weather 날씨 — ${s.weather?.kinds.map((k) => k.id).join(", ") ?? "날씨 규칙 없음"}` };
         store.append({ type: "weather_set", day: dayOf(state.time), weatherId: w });
         return { ok: true, text: `오늘 날씨: ${w}` };
+      }
+      case "saga": {
+        const saga = content.sagas[args[0] ?? ""];
+        if (!saga) return { ok: false, error: `~saga 큰이야기 [막|end 결말] — ${Object.keys(content.sagas).join(", ") || "없음"}` };
+        const line = cheatSaga(ctx, sagaApplier(ctx), saga.id, args[1] ?? null, args[2] ?? null);
+        return line.ok ? { ok: true, text: line.text } : { ok: false, error: line.text };
       }
       case "storylet": {
         const storylet = content.storylets[args[0] ?? ""];

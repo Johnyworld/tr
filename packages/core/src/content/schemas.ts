@@ -720,6 +720,14 @@ export function createContentSchemas(s: Scenario) {
     z.strictObject({ agenda: z.strictObject({ who: z.string().min(1), delta: z.number().int().min(-10).max(10).default(0), stop: z.boolean().default(false) }) }),
     /** 다짐의 단계를 한 칸 올린다 (12-164): text는 지금 어디까지 왔는지 한 줄 (상태 화면에 다짐 옆으로 보인다). 다짐이 없으면 아무 일도 없다 */
     z.strictObject({ resolve_step: z.strictObject({ text: z.string().min(1).max(60) }) }),
+    /** 큰 이야기 (공통 규칙 24, docs/saga-plan.md): 이 막으로 넘긴다. rush면 새 막의 기한이 절반 (시작 사건에서 모른 척) */
+    z.strictObject({ saga_advance: z.strictObject({ id: contentIdSchema, to: contentIdSchema, rush: z.boolean().optional() }) }),
+    /** 큰 이야기를 이 결말로 끝낸다 (결말의 효과·연대기는 큰 이야기 파일에) */
+    z.strictObject({ saga_end: z.strictObject({ id: contentIdSchema, ending: contentIdSchema }) }),
+    /** 진행 중인 큰 이야기의 실마리 한 줄 (퀘스트 줄 설명). 주인공이 들은 말로, 때와 자리를 담는다. zone이면 "→ 구역" */
+    z.strictObject({ saga_note: z.strictObject({ text: z.string().min(1).max(100), zone: contentIdSchema.optional() }) }),
+    /** 진행 중인 큰 이야기의 "곁의 R"을 이 배역으로 정한다 (이름 없는 R을 들일 때) */
+    z.strictObject({ saga_mark: z.strictObject({ who: z.string().min(1) }) }),
     /**
      * 다짐을 건넨다 (12-164): 이 선택지를 고르면 주인공의 다짐이 된다 (다짐이 없을 때만, 12-199. 이 효과가 있는 이야기는 다짐이 있으면 열리지 않는다). target은 배역 key나 콘텐츠 id (zone이면 지금 구역, own이면 우리 무리),
      * text는 다짐 한 줄 (문장의 자리를 쓸 수 있다)
@@ -897,6 +905,8 @@ export function createContentSchemas(s: Scenario) {
     agenda_half: z.boolean().optional(),
     /** 주인공의 다짐의 대상인 사람 (12-164). here와 함께 쓰면 지금 이 구역에 있을 때만 */
     resolve_target: z.boolean().optional(),
+    /** 진행 중인 큰 이야기의 "곁의 R"인 사람 (공통 규칙 24) */
+    saga_marked: z.boolean().optional(),
     /** 소문으로만 주인공을 아는 팬(fan) 또는 안티(anti)만 (12-127) */
     stance: z.enum(["fan", "anti"]).optional(),
     /** 발동할 때 장면에 들어온다. 들어오는 배역은 지금 같은 장소에 있을 사람만 (공통 규칙 15 castHere, 12-292) */
@@ -1160,6 +1170,21 @@ export function createContentSchemas(s: Scenario) {
         resolve: z
           .strictObject({ kinds: z.array(contentIdSchema).min(1).optional(), stage: z.number().int().min(0).optional(), stage_gte: z.number().int().min(0).optional(), stage_lte: z.number().int().min(0).optional(), near_target: z.boolean().optional() })
           .optional(),
+        /**
+         * 큰 이야기 (공통 규칙 24): 그 큰 이야기가 이 막 중 하나일 때 (open = 문이 열리고 시작 사건을 기다리는 동안, ended = 끝난 뒤).
+         * ending: 끝난 뒤 그 결말일 때. spine: 이 막을 끝내는 등뼈 이야기 (기한 이틀 전부터 꼭 등급). successor: 앞 주인공이 발을 들였고 지금 주인공은 아직일 때.
+         * marked: 곁의 R이 정해졌는지
+         */
+        saga: z
+          .strictObject({
+            id: contentIdSchema,
+            acts: z.array(contentIdSchema).min(1).optional(),
+            ending: z.array(contentIdSchema).min(1).optional(),
+            spine: z.boolean().optional(),
+            successor: z.boolean().optional(),
+            marked: z.boolean().optional(),
+          })
+          .optional(),
         /** 이 구역에 이전 주인공의 유해(remains, 묻히지 않은 것)나 무덤(grave)이 있다 (12-130: 계승의 흔적) */
         predecessor_here: z.enum(["remains", "grave"]).optional(),
         /** 큰 재난 (12-169): 그 재난이 이 단계 (omen 전조, struck 덮친 뒤)이고 주인공이 가까이 있을 때. kinds가 있으면 그 재난만. 문장의 {disaster_zone} */
@@ -1328,7 +1353,73 @@ export function createContentSchemas(s: Scenario) {
     fright_tags: z.array(contentIdSchema).optional(),
   });
 
-  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet, extra };
+  /**
+   * 큰 이야기 (공통 규칙 24, docs/saga-plan.md). 월드 공통 장편 줄기. 문 조건(opens)이 차면 열리고, 시작 사건(이야기)이 1막으로 넘긴다.
+   * 막마다 기한(days)이 있고 넘기면 세계 쪽 사건(lapse)이 일어나 다음 막으로 (마지막 막이면 결말로). 이야기는 storylets/에 쓰고 when.saga로 묶는다
+   */
+  const saga = z.strictObject({
+    id: contentIdSchema,
+    title: z.string().min(1),
+    /** GM에게 주는 큰 이야기 한 줄 소개 */
+    summary: z.string().min(1),
+    /** 문 조건: 모두 맞아야 열린다 */
+    opens: z.strictObject({
+      day_gte: z.number().int().min(1).default(1),
+      /** 시나리오(역할) 이야기가 이만큼 열렸다 (첫 줄기를 하나 겪었다) */
+      role_stories_gte: z.number().int().min(0).default(0),
+      flags_all: z.array(contentIdSchema).optional(),
+      /** 이 시나리오(역할)를 하는 동안은 열지 않는다 (튜토리얼) */
+      roles_none: z.array(contentIdSchema).optional(),
+      /** 앞 큰 이야기가 이 결말로 끝났다 (다음 DLC) */
+      saga_ended: z.strictObject({ id: contentIdSchema, ending: z.array(contentIdSchema).optional() }).optional(),
+    }),
+    /** 정해 둔 사람 (배역 key → 인물 id). 세계 쪽 사건·결말의 효과가 who로 부른다 */
+    cast: z.record(contentIdSchema, contentIdSchema).default({}),
+    /** 곁의 R을 고르는 막 (그 막이 시작될 때), 가까운 사람이 없을 때 대신할 배역 key */
+    mark: z.strictObject({ at: contentIdSchema, fallback: contentIdSchema.optional() }).optional(),
+    acts: z
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          title: z.string().min(1),
+          /** 막이 시작될 때의 실마리 한 줄 */
+          line: z.string().min(1),
+          /** 이 막의 GM 지침 한 단락 */
+          gm: z.string().min(1),
+          days: z.number().positive(),
+          /** 다음 막 (없으면 마지막 막) */
+          next: contentIdSchema.optional(),
+          /** 기한을 넘기면 일어나는 세계 쪽 사건. 마지막 막이면 ending으로 끝난다 */
+          lapse: z.strictObject({
+            effects: z.array(storyletEffect).default([]),
+            /** 주인공에게 닿는 소식 (공통 규칙 14) */
+            news: z.string().min(1),
+            /** 넘긴 뒤의 실마리 한 줄 (없으면 다음 막의 line) */
+            note: z.string().min(1).optional(),
+            ending: contentIdSchema.optional(),
+          }),
+        }),
+      )
+      .min(1),
+    endings: z
+      .array(
+        z.strictObject({
+          id: contentIdSchema,
+          title: z.string().min(1),
+          /** 연대기 한 줄 (시계로 끝났을 때는 lapsed_chronicle) */
+          chronicle: z.string().min(1),
+          lapsed_chronicle: z.string().min(1).optional(),
+          effects: z.array(storyletEffect).default([]),
+          /** 상인의 귀한 물건 확률 배율 (merchant.rare에 곱한다) */
+          market: z.record(contentIdSchema, z.number().min(0)).optional(),
+        }),
+      )
+      .min(1),
+    /** 플래그 실마리 표: 그 플래그가 생기면 실마리 한 줄이 바뀐다 (기존 줄기의 이야기를 고치지 않고 다음 길을 보인다). acts면 그 막에서만 */
+    notes: z.array(z.strictObject({ flag: contentIdSchema, text: z.string().min(1).max(100), zone: contentIdSchema.optional(), acts: z.array(contentIdSchema).optional() })).default([]),
+  });
+
+  return { item: itemContentSchema, role, npc, beliefPreset, mission, faction, location, storylet, extra, saga };
 }
 
 type ContentSchemas = ReturnType<typeof createContentSchemas>;
@@ -1341,6 +1432,7 @@ export type FactionContent = z.infer<ContentSchemas["faction"]>;
 export type LocationContent = z.infer<ContentSchemas["location"]>;
 export type StoryletContent = z.infer<ContentSchemas["storylet"]>;
 export type ExtraContent = z.infer<ContentSchemas["extra"]>;
+export type SagaContent = z.infer<ContentSchemas["saga"]>;
 export type StoryletChoice = StoryletContent["choices"][number];
 export type StoryletEffect = StoryletChoice["effects"][number];
 
@@ -1357,4 +1449,6 @@ export type Content = {
   storylets: Record<string, StoryletContent>;
   /** 엑스트라 틀 (기획서 7.5) */
   extras: Record<string, ExtraContent>;
+  /** 큰 이야기 (공통 규칙 24) */
+  sagas: Record<string, SagaContent>;
 };

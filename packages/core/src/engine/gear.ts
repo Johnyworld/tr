@@ -1,4 +1,5 @@
 import { stakesOf } from "../rules/stakes.ts";
+import { sagaMarketFactor } from "../rules/saga.ts";
 import { heldOf } from "../rules/held.ts";
 import { needsLight } from "../rules/place.ts";
 import { animalCarry } from "../game/companions.ts";
@@ -391,7 +392,8 @@ export function runRestock(ctx: ToolContext): void {
     }
     // 귀한 물건은 떨어졌을 때 하루 한 번 굴려 가끔만 들어온다 (혈청, 12-106)
     const missingRare = Object.entries(npc.merchant.rare).filter(([id]) => (c.inventory[id] ?? 0) === 0);
-    for (const [id, chance] of missingRare) if (ctx.rng() < chance) items[id] = 1;
+    // 끝난 큰 이야기의 결말이 바꾼 배율 (공통 규칙 24: 혈청이 끊기거나 흔해진다)
+    for (const [id, chance] of missingRare) if (ctx.rng() < chance * sagaMarketFactor(state, content, id)) items[id] = 1;
     // 모자란 것이 있을 때만 (날마다 빈 기록을 쌓지 않는다). 귀한 물건을 굴렸으면 오늘 굴린 것을 남긴다
     if (Object.keys(items).length || missingRare.length) store.append({ type: "merchant_restocked", npcId: npc.id, day, items });
   }

@@ -1,4 +1,5 @@
 import { runPartySightings } from "./partySight.ts";
+import { runSagas } from "../rules/saga.ts";
 import { runGarrisonWatch, runPartyFights, settlePartyAlerts } from "./partyTools.ts";
 import { runInfirmary } from "./warAftermath.ts";
 import { runPartiesNow } from "./warTools.ts";
@@ -14,7 +15,7 @@ import { runCompanions } from "./companionTools.ts";
 import { spreadRumors } from "./reputationTools.ts";
 import { runWarDays } from "./warTools.ts";
 import { runPendingClashes } from "./battleTools.ts";
-import { runStorylets, runSwarms } from "./storyletTools.ts";
+import { runStorylets, runSwarms, sagaApplier } from "./storyletTools.ts";
 import { runLateRation, runNaturalRecovery, runWearOff } from "./body.ts";
 import { runHelpless } from "./helpless.ts";
 import { leaveRemainsForNewDeaths, livingIds } from "./remains.ts";
@@ -106,6 +107,8 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   runRestock(ctx);
   // 소리를 듣고 몰려온 감염체 (플레이 테스트 12): 그 자리에 있으면 마주친다
   const swarms = runSwarms(ctx);
+  // 큰 이야기: 문 열기, 막의 시계, 플래그 실마리 (공통 규칙 24). 이야기를 고르기 전에
+  const sagas = runSagas(ctx, sagaApplier(ctx));
   // 조건이 맞는 이야기 (간격이 지났고 전투 중이 아닐 때)
   const storylets = options.storylets === false ? [] : runStorylets(ctx, options);
   // 새 부상 없이 며칠이 지나면 조금씩 낫는다
@@ -116,5 +119,5 @@ export function runAfterTimeAdvance(ctx: ToolContext, options: { urgentOnly?: bo
   const worn = runWearOff(ctx);
   caughtUp.set(ctx.store, ctx.store.getState().time);
   leaveRemainsForNewDeaths(ctx, living);
-  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...swarms, ...storylets, ...healed, ...calmed, ...worn];
+  return [...helpless, ...bled, ...war, ...battles, ...missions, ...squad, ...companions, ...grown, ...swarms, ...sagas, ...storylets, ...healed, ...calmed, ...worn];
 }

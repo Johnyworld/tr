@@ -1,4 +1,5 @@
 import { heldOf, heldSeenZone } from "../rules/held.ts";
+import { sagaQuest } from "../rules/saga.ts";
 import { buildMapView, type MapView, buildPlaceMapView, type PlaceMapView } from "./map.ts";
 import { resolveLine } from "../engine/resolve.ts";
 import { pledges } from "../engine/promises.ts";
@@ -323,7 +324,8 @@ const deadLast = (a: { dead: boolean }, b: { dead: boolean }) => Number(a.dead) 
 
 export type TodoView = {
   key: string;
-  kind: "임무" | "의뢰" | "약속" | "다짐";
+  /** 정렬·키용 (화면에는 보이지 않는다: 모두 같은 퀘스트로, 2026-11-25 사용자 결정) */
+  kind: "임무" | "의뢰" | "약속" | "큰 이야기" | "다짐";
   title: string;
   /** 맡긴 사람·약속한 사람 */
   who: string | null;
@@ -336,7 +338,7 @@ export type TodoView = {
   note: string | null;
 };
 
-/** 할 일 목록: 임무 → 받아 준 부탁 → 약속 → 다짐 (부탁·약속은 기한 순) */
+/** 퀘스트 목록: 임무 → 받아 준 부탁 → 약속 → 큰 이야기 → 다짐 (부탁·약속은 기한 순) */
 function todoViews(state: GameState, content: Content): TodoView[] {
   const me = state.characters[state.playerId]!;
   const out: TodoView[] = [];
@@ -362,6 +364,22 @@ function todoViews(state: GameState, content: Content): TodoView[] {
     for (const p of ps.filter((x) => x.kind === kind)) {
       out.push({ key: p.id, kind, title: p.text, who: p.who, detail: kind === "의뢰" ? `${p.who}의 의뢰를 맡았다` : `${p.who}에게 한 약속`, dueLabel: p.leftLabel, urgent: p.urgent, steps: [], note: null });
     }
+  }
+  // 큰 이야기 (공통 규칙 24): 설명은 실마리 한 줄, 체크 목록은 지난 막과 지금 막, 기한은 다른 퀘스트와 같이
+  const saga = sagaQuest(state, content);
+  if (saga) {
+    const left = saga.leftMinutes;
+    out.push({
+      key: saga.key,
+      kind: "큰 이야기",
+      title: saga.title,
+      who: null,
+      detail: saga.detail,
+      dueLabel: left === null ? null : left <= 0 ? "기한 지남" : `${timeLeftLabel(left)} 남음`,
+      urgent: left !== null && left < 2 * MINUTES_PER_DAY,
+      steps: saga.steps,
+      note: saga.note ? `${saga.note}${saga.zone ? ` → ${saga.zone}` : ""}` : null,
+    });
   }
   const vow = resolveLine(state, content);
   if (vow) out.push({ key: "resolve", kind: "다짐", title: vow, who: null, detail: "이 주인공의 큰 줄기", dueLabel: null, urgent: false, steps: [], note: null });

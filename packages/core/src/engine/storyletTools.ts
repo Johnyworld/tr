@@ -19,6 +19,7 @@ import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
+import { advanceSaga, endSaga, engageSaga, markSaga, noteSaga, recordSagaScene, type SagaEffectApplier } from "../rules/saga.ts";
 import { captureNpc, capturePlayer, releasePlayer } from "./captivity.ts";
 import { onSpotted, ownOffense, threatStaysOnMiss } from "../rules/consequence.ts";
 import { rankName } from "../game/ranks.ts";
@@ -184,6 +185,8 @@ export function fireStorylet(ctx: ToolContext, storylet: StoryletContent, picked
     const keep = storylet.cast[key]?.keep;
     if (keep) store.append({ type: "extra_kept", key: keep, characterId: id });
   }
+  // 큰 이야기의 이야기면 이 주인공이 발을 들였다 (계승자 이야기를 가른다, 공통 규칙 24)
+  engageSaga(ctx, storylet);
   // 적의 매복 (12-177): 열리면 주인공이 매복당한다 (곁의 개가 알아채면 아니다). 줄은 GM 상태의 전투 칸에 보인다
   if (storylet.ambush) springEnemyAmbush(ctx);
   store.append({
@@ -387,6 +390,8 @@ export const resolveStorylet = defineTool({
     }
     const vars = storyletVars(state, ctx.content, a.cast);
     ctx.store.append({ type: "storylet_resolved", storyletId: a.storylet.id, choiceId: choice.id, outcome });
+    // 큰 이야기의 지난 장면 (공통 규칙 24): GM이 다음 이야기를 이어서 서술하도록
+    recordSagaScene(ctx, a.storylet, maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars)));
     const improvised = !!input.improvised_move && input.improvised_move !== choice.check;
     const lines: string[] = [
       `이야기 "${storyTitle(state, ctx.content, a.storylet)}": ${improvised ? `플레이어의 방법으로 즉흥으로 풀었다 (${moveLabel(ctx.content.scenario, input.improvised_move!)} 판정, "${maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}"의 결과를 따른다)` : maskUnknownNames(state, ctx.content, fillStorylet(choice.label, vars))}${outcome ? ` (${CHECK_OUTCOME_LABELS[outcome]})` : ""}.`,
@@ -535,6 +540,11 @@ function whoOf(ctx: ToolContext, who: string, cast: Record<string, string>): str
   if (cast[who]) return cast[who]!;
   if (who === "commander") return commanderOf(ctx.store.getState(), ctx.content);
   return null;
+}
+
+/** 큰 이야기의 세계 쪽 사건·결말 효과를 적용하는 함수 (공통 규칙 24: 규칙 모듈이 엔진을 불러오지 않게 넘겨준다) */
+export function sagaApplier(ctx: ToolContext): SagaEffectApplier {
+  return (effect, cast, reason) => applyEffect(ctx, effect, cast, storyletVars(ctx.store.getState(), ctx.content, cast), reason, { judged: true, source: `saga:${reason}` });
 }
 
 /** 효과 하나를 적용한다. GM에게 돌려줄 한 줄 (잠입의 목표처럼 이야기 밖에서도 쓴다, 12-154) */
@@ -773,6 +783,24 @@ export function applyEffect(
   if ("resolve_step" in effect) {
     const line = stepResolve(ctx, fillStorylet(effect.resolve_step.text, vars));
     return line ? { line: `(${line})`, display: { type: "belief", fact: line, sourceLabel: "다짐" } } : {};
+  }
+  // 큰 이야기 (공통 규칙 24)
+  if ("saga_advance" in effect) {
+    const line = advanceSaga(ctx, effect.saga_advance.id, effect.saga_advance.to, { rush: effect.saga_advance.rush });
+    return line ? { line: `(${line}. 다음 막이 시작됐다)`, display: { type: "belief", fact: line, sourceLabel: "큰 이야기" } } : {};
+  }
+  if ("saga_end" in effect) {
+    const done = endSaga(ctx, sagaApplier(ctx), effect.saga_end.id, effect.saga_end.ending);
+    return done.line ? { line: done.line, displays: done.displays } : {};
+  }
+  if ("saga_note" in effect) {
+    const text = noteSaga(ctx, fillStorylet(effect.saga_note.text, vars), effect.saga_note.zone ?? null);
+    return text ? { display: { type: "belief", fact: text, sourceLabel: "실마리" } } : {};
+  }
+  if ("saga_mark" in effect) {
+    const id = whoOf(ctx, effect.saga_mark.who, cast);
+    if (id) markSaga(ctx, id);
+    return {};
   }
   if ("resolve" in effect) {
     const e = effect.resolve;

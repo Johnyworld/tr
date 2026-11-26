@@ -1,4 +1,5 @@
 import { admissionLine } from "../rules/admission.ts";
+import { describeSaga } from "../rules/saga.ts";
 import { staunchHelper } from "../rules/company.ts";
 import { heldOf, heldSeenZone, pausedWhileHeld } from "../rules/held.ts";
 import { maskUnknownNames } from "./storyletTools.ts";
@@ -214,7 +215,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["battle", [describeCaptivityForGm(state, content), describeBattleForGm(state, content), ...describeAmbush(content, state)].filter(Boolean).join("\n")],
     ["romance", describeRomanceForGm(state, content)],
     // 다짐·시설·재난은 자주 바뀌지 않아 따로 둔다 (시각이 바뀔 때마다 다시 싣지 않게)
-    ["resolve", describeResolve(state, content).join("\n")],
+    ["resolve", [...describeSaga(state, content), ...describeResolve(state, content)].join("\n")],
     ["disaster", describeDisaster(content, state).join("\n")],
     ["storylet", [describeStoryletForGm(state, content), describeImprovSlotForGm(state, content)].filter(Boolean).join("\n")],
     ["missions", [admissionLine(state, content), describeMissionsForGm(state, { content }), describePolicyForGm(state, content), describeRequestForGm(state, content)].filter(Boolean).join("\n")],

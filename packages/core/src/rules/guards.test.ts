@@ -43,6 +43,10 @@ describe("공통 규칙을 건너뛰지 않는다", () => {
     expect(offenders(/\b(lastHealerDay|lastAidDay|healerSnap|aidSnap)\b/, ["game/state.ts", "engine/care/slots.ts"])).toEqual([]);
   });
 
+  it("규칙 24 (큰 이야기): 큰 이야기 상태(sagas)는 rules/saga.ts로만 읽는다", () => {
+    expect(offenders(/\b(state|getState\(\)|next|now|s)\??\.sagas\b/, ["game/state.ts", "rules/saga.ts"])).toEqual([]);
+  });
+
   it("규칙 10 (남의 물건): 빌린 장비·맡은 짐은 rules/entrusted.ts로만 읽는다", () => {
     expect(offenders(/\b(state|getState\(\)|next|s)\??\.(loans|cargo)\b/, ["game/state.ts", "rules/entrusted.ts"])).toEqual([]);
   });

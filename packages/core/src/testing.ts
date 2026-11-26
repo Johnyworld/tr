@@ -265,6 +265,7 @@ export const TEST_SCENARIO: Scenario = {
 
 export const TEST_CONTENT: Content = {
   scenario: TEST_SCENARIO,
+  sagas: {},
   extras: {
     test_sentry: {
       id: "test_sentry",

@@ -19,6 +19,7 @@
 import type { Content, StoryletContent } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { offerOpensAt } from "./admission.ts";
+import { sagaSpineDue } from "./saga.ts";
 import { heldOf, playerHeld } from "./held.ts";
 import { storyIndoor, storyPlaces } from "./place.ts";
 import { dayOf, MINUTES_PER_DAY, SEGMENT_START_HOUR, TIME_SEGMENTS, type GameTime } from "./time.ts";
@@ -41,8 +42,13 @@ export function isThreat(content: Content, s: StoryletContent): boolean {
   return (s.fright ?? 0) > 0 || !!s.ambush || threatTags(content, s).includes("infected");
 }
 
-export function storyTier(content: Content, s: StoryletContent): StoryTier {
-  if (s.essential) return "must";
+/** 꼭 열려야 하는 이야기인가: essential이거나, 기한 이틀 안의 큰 이야기 등뼈 이야기 (공통 규칙 24) */
+export function isMust(state: GameState | null, s: StoryletContent, at: GameTime = state?.time ?? 0): boolean {
+  return s.essential || (!!state && sagaSpineDue(state, s, at));
+}
+
+export function storyTier(content: Content, s: StoryletContent, state: GameState | null = null, at?: GameTime): StoryTier {
+  if (isMust(state, s, at)) return "must";
   if (s.urgent) return isThreat(content, s) ? "urgent_threat" : "urgent";
   return s.tags.includes(WORLD_TAG) ? "common" : "role";
 }
@@ -141,7 +147,7 @@ export function urgentAllowed(state: GameState, content: Content, at: GameTime):
  */
 export function pacingBlocks(state: GameState, content: Content, s: StoryletContent, at: GameTime): boolean {
   const p = content.scenario.storylet_pacing;
-  if (s.when.mission || s.essential) return false;
+  if (s.when.mission || isMust(state, s, at)) return false;
   const today = dayOf(at);
   const fired = Object.entries(state.storyletLog).filter(([id, log]) => dayOf(log.lastFiredAt) === today && !content.storylets[id]?.when.mission);
   if (p.per_day && fired.length >= p.per_day) return true;
@@ -150,8 +156,8 @@ export function pacingBlocks(state: GameState, content: Content, s: StoryletCont
   if (p.road_per_day && road && s.tags.includes(road) && fired.filter(([id]) => content.storylets[id]?.tags.includes(road)).length >= p.road_per_day) return true;
   const mine = storyPlaces(state, content, s.when, storyText(s), storyIndoor(s.when));
   if (mine.length) {
-    const rank = STORY_TIERS[storyTier(content, s)];
-    const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o)] >= rank && storyPlaces(state, content, o.when, storyText(o), storyIndoor(o.when)).some((pl) => mine.includes(pl));
+    const rank = STORY_TIERS[storyTier(content, s, state, at)];
+    const rival = (o: StoryletContent) => STORY_TIERS[storyTier(content, o, state, at)] >= rank && storyPlaces(state, content, o.when, storyText(o), storyIndoor(o.when)).some((pl) => mine.includes(pl));
     // 바로 앞 이야기를 잇는 후속(after_storylet)은 그 앞 이야기가 쓴 장소라도 막지 않는다 (설계 목록 10-1, PT16·19·20 튜토리얼: 정문 재시도가 다음 날 새벽에야)
     if (fired.some(([id]) => id !== s.id && id !== s.when.after_storylet?.id && content.storylets[id] && rival(content.storylets[id]!))) return true;
   }

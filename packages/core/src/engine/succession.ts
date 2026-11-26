@@ -1,4 +1,5 @@
 import { heldOf } from "../rules/held.ts";
+import { sagaChronicle } from "../rules/saga.ts";
 import { checkResolve } from "./resolve.ts";
 import { bindOwnLovers } from "./romance.ts";
 import { resolveChronicle } from "./resolve.ts";
@@ -396,8 +397,10 @@ export const SUCCESSION_TOOLS = [writeEpitaph] as const;
 
 /** 연대기 텍스트 (!연대기, get_chronicle). 플레이어(사람)를 위한 기록이다 */
 export function formatChronicle(state: GameState, content: Content): string[] {
-  if (state.chronicle.length === 0) return ["아직 죽은 캐릭터가 없습니다."];
-  const lines: string[] = [];
+  // 끝난 큰 이야기는 세계의 것이라 맨 위에 (공통 규칙 24)
+  const sagas = sagaChronicle(state, content);
+  if (state.chronicle.length === 0) return sagas.length ? [...sagas, "", "아직 죽은 캐릭터가 없습니다."] : ["아직 죽은 캐릭터가 없습니다."];
+  const lines: string[] = sagas.length ? [...sagas, ""] : [];
   state.chronicle.forEach((r, i) => {
     const faction = content.factions[r.factionId]?.name ?? r.factionId;
     lines.push(

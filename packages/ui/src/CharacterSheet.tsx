@@ -664,8 +664,8 @@ function SymptomList({ list, itemClassName = "" }: { list: SymptomView[]; itemCl
 }
 
 /**
- * 할 일 칸: 임무·부탁·약속·다짐을 같은 모양의 목록으로 (core views/player.ts todoViews).
- * 한 줄 = 종류 · 제목(맡긴 사람) · 기한. 임무는 요구 조건을 체크 목록으로 아래에 단다
+ * 퀘스트 칸: 임무·부탁·약속·큰 이야기·다짐을 종류 구분 없이 같은 퀘스트로 (core views/player.ts todoViews, 2026-11-25 사용자 결정).
+ * 한 줄 = 제목(맡긴 사람) · 기한. 요구 조건·큰 이야기의 막은 체크 목록으로 아래에, 실마리는 그 아래 한 줄
  */
 function TodoCard({ todos }: { todos: NonNullable<PlayerView["todos"]> }) {
   const first = todos[0];
@@ -673,18 +673,17 @@ function TodoCard({ todos }: { todos: NonNullable<PlayerView["todos"]> }) {
   return (
     <HudPanel
       id="todo"
-      label="할 일"
+      label="퀘스트"
       meta={todos.length > 0 && <span className={urgent ? "todo-count urgent" : "todo-count"}>{urgent ? `급한 일 ${urgent} · ` : ""}{todos.length}개</span>}
-      peek={first ? `${first.kind} · ${first.title}${todos.length > 1 ? ` 외 ${todos.length - 1}` : ""}` : "할 일이 없습니다"}
+      peek={first ? `${first.title}${todos.length > 1 ? ` 외 ${todos.length - 1}` : ""}` : "퀘스트가 없습니다"}
       empty={todos.length === 0}
     >
       {todos.length === 0 ? (
-        <div className="muted small">할 일이 없습니다. 상관에게 일감을 받거나, 사람들의 부탁을 들어줄 수 있습니다.</div>
+        <div className="muted small">퀘스트가 없습니다. 상관에게 일감을 받거나, 사람들의 부탁을 들어줄 수 있습니다.</div>
       ) : (
         <ul className="todo-list">
           {todos.map((t) => (
-            <li key={t.key} className="todo" data-kind={t.kind}>
-              <span className="todo-kind">{t.kind}</span>
+            <li key={t.key} className="todo">
               <div className="todo-main">
                 <div className="todo-title" title={t.detail ?? undefined}>
                   {t.title}

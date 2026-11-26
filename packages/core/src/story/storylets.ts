@@ -1,4 +1,5 @@
 import { neighbors } from "../sim/war.ts";
+import { SAGA_TAG, sagaConditionMet, sagaMarked } from "../rules/saga.ts";
 import { hostileFaction } from "../rules/home.ts";
 import { partyZoneAt } from "../sim/parties.ts";
 import { situationOf, storyFits } from "../rules/situation.ts";
@@ -40,7 +41,7 @@ import { learned } from "../rules/skill.ts";
 import {storyPlaceFits, storyPlaces, storyPlacesFit, fireLitHere } from "../rules/place.ts";
 import { castHere, inZone, nearby, routineAway, storyIndoor, whereIs } from "../rules/place.ts";
 import { ownOffense } from "../rules/consequence.ts";
-import { bedsideGapPassed, inCrisis, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
+import { bedsideGapPassed, inCrisis, isMust, isThreat, pacingBlocks, storyText, storyTier, STORY_TIERS, storySlotFloor, threatTags, urgentAllowed } from "../rules/storySlot.ts";
 import { keepsAway, sparesPlayer } from "../rules/crossed.ts";
 import { choiceShown } from "../rules/lens.ts";
 export { inCrisis, isThreat, pacingBlocks, storyletGapMinutes, threatTags, urgentAllowed } from "../rules/storySlot.ts";
@@ -115,6 +116,7 @@ export function castCandidates(state: GameState, content: Content, role: CastRol
     .filter((c) => !role.vendetta || (state.vendettas ?? []).some((v) => v.avenger === c.id))
     .filter((c) => !role.mourner || mournedBy(state, content, c.id).length > 0)
     .filter((c) => !role.resolve_target || currentResolve(state)?.target === c.id)
+    .filter((c) => !role.saga_marked || sagaMarked(state, content) === c.id)
     .filter((c) => !role.agenda_half || agendaShowing(content, state, c.id))
     // here: 지금 이 구역에 있는 사람만 (장면에 있거나, 함께 다니거나, 있을 곳이 여기) (장면에 있거나, 함께 다니거나, 있을 곳이 여기)
     .filter(
@@ -441,6 +443,8 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
       if (near !== w.resolve.near_target) return false;
     }
   }
+  // 큰 이야기 (공통 규칙 24)
+  if (w.saga && !sagaConditionMet(state, content, w.saga)) return false;
   if (w.bounty !== undefined && (state.bounties ?? []).length > 0 !== w.bounty) return false;
   if (w.funeral !== undefined && !!recentlyDeadComrade(state, content, at) !== w.funeral) return false;
   if (w.predecessor_here) {
@@ -586,7 +590,8 @@ export function eligibleStorylets(state: GameState, content: Content, at: GameTi
     // 태그가 없거나 world면 어느 시나리오에서나, 아니면 역할의 태그와 겹칠 때만
     // 지금 처지에 맞는 이야기만 (공통 규칙 4, rules/situation.ts): 갇힘·누움·탐험·위협 앞 등
     .filter((s) => storyFits(s, state, content, situation))
-    .filter((s) => (captivityTag && s.tags.includes(captivityTag)) || s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || roleTags.has(t)))
+    // 큰 이야기의 이야기(saga)는 어느 시나리오에서나 (조건 when.saga가 막는다, 공통 규칙 24)
+    .filter((s) => (captivityTag && s.tags.includes(captivityTag)) || s.tags.length === 0 || s.tags.some((t) => t === WORLD_TAG || t === SAGA_TAG || roleTags.has(t)))
     .filter((s) => {
       const log = state.storyletLog[s.id];
       if (!log) return true;
@@ -649,10 +654,10 @@ export function storyletAllowed(state: GameState, content: Content, s: StoryletC
   if (options.urgentOnly && !s.wakes) return false;
   // 임무 자리의 이야기(when.mission)는 임무의 결과 조건을 채우는 길이라 간격 바닥에 막히지 않는다 (12-294, PT26 하얀매: 30분 전 길 위의 일이 연 최소 간격에 막혀 부상자 수습이 일부 완수)
   if (s.when.mission && !options.urgentOnly) return true;
-  const tier = STORY_TIERS[storyTier(content, s)];
+  const tier = STORY_TIERS[storyTier(content, s, state, at)];
   if (tier < WINDOW_FLOOR[window]) return false;
   // 꼭 열려야 하는 이야기는 급한 이야기의 하루 상한에도 막히지 않는다 (플레이 테스트 13: 튜토리얼 재회가 17시간 막혔다)
-  if (s.essential) return true;
+  if (isMust(state, s, at)) return true;
   if (s.urgent) return urgentAllowed(state, content, at);
   // 자는 동안에는 급한 이야기만
   return !options.urgentOnly;

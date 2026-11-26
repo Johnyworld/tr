@@ -56,7 +56,8 @@ import { startingSkills } from "./creation.ts";
 // 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
 // 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
 // 126: 지도에 아는 전황 (12-336). partyIntel.zone (본·전해 들은 곳)
-export const SAVE_SCHEMA_VERSION = 126;
+// 127: 큰 이야기 (공통 규칙 24, docs/saga-plan.md). sagas, 이벤트 saga_*
+export const SAVE_SCHEMA_VERSION = 127;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -284,6 +285,29 @@ export const pendingClashSchema = z.strictObject({
   force: z.number().int().min(1).optional(),
 });
 export type PendingClash = z.infer<typeof pendingClashSchema>;
+
+/**
+ * 큰 이야기 하나의 상태 (공통 규칙 24). 세계의 것이라 주인공이 바뀌어도 남는다.
+ * act: 지금 막 (open = 문이 열려 시작 사건을 기다림, ended = 끝남), days: 이 막의 기한(일, 모른 척이면 절반), lapsed: 기한을 넘겨 세계가 넘긴 막,
+ * engaged: 큰 이야기의 이야기를 겪은 캐릭터, scenes: GM에게 보이는 지난 장면 몇 줄, notedFlags: 실마리 표에서 이미 쓴 플래그
+ */
+export const sagaStateSchema = z.strictObject({
+  act: z.string(),
+  openedAt: z.number().int(),
+  actStartedAt: z.number().int(),
+  days: z.number().nullable(),
+  ending: z.string().nullable(),
+  endedAt: z.number().int().nullable(),
+  endedByLapse: z.boolean(),
+  note: z.string().nullable(),
+  noteZone: z.string().nullable(),
+  marked: z.string().nullable(),
+  lapsed: z.array(z.string()),
+  engaged: z.array(z.string()),
+  scenes: z.array(z.string()),
+  notedFlags: z.array(z.string()),
+});
+export type SagaState = z.infer<typeof sagaStateSchema>;
 
 /** 연대기: 죽은 캐릭터 한 명의 기록 (기획서 3.2). 플레이어(사람)가 보는 기록이고, 다음 캐릭터의 지식은 아니다 */
 /** 다짐 (12-164): 갈래(kind), 대상, 둘째 대상(휴전의 상대), 수, 한 줄, 세운 때, 출처, 무리·구역 다짐에서 주인공이 그 전투에 꼈는지 */
@@ -566,6 +590,8 @@ export function createGameSchemas(s: Scenario) {
     resolveLog: z
       .array(z.strictObject({ characterId: z.string(), text: z.string(), outcome: z.enum(["achieved", "let_go", "broken", "by_others"]), at: z.number().int(), note: z.string().nullable() }))
       .default([]),
+    /** 큰 이야기 (공통 규칙 24): 문이 열린 큰 이야기마다. 이 상태는 rules/saga.ts로만 읽는다 (rules/guards.test.ts) */
+    sagas: z.record(z.string(), sagaStateSchema).default({}),
     /** 탐험할 곳 (12-162): 캐릭터마다 찾은 숨은 곳, 지금 탐험 중인 곳 (깊이, 소음 0~3, 뒤진 칸) */
     ruinsFound: z.record(z.string(), z.array(z.string())).default({}),
     exploration: z
@@ -895,6 +921,16 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("resolve_tracked"), characterId: z.string(), day: z.number().int().optional(), mark: z.number().int().optional() }),
     z.strictObject({ type: z.literal("resolve_note"), characterId: z.string(), note: z.string() }),
     z.strictObject({ type: z.literal("resolve_seeded"), characterId: z.string() }),
+    // 큰 이야기 (공통 규칙 24)
+    z.strictObject({ type: z.literal("saga_opened"), sagaId: z.string() }),
+    /** 막을 넘겼다 (lapsed: 기한을 넘겨 세계가 넘겼다) */
+    z.strictObject({ type: z.literal("saga_advanced"), sagaId: z.string(), act: z.string(), days: z.number().nullable(), lapsed: z.boolean() }),
+    z.strictObject({ type: z.literal("saga_ended"), sagaId: z.string(), ending: z.string(), lapsed: z.boolean() }),
+    /** 실마리 한 줄 (flag: 실마리 표에서 온 것이면 그 플래그) */
+    z.strictObject({ type: z.literal("saga_noted"), sagaId: z.string(), text: z.string(), zone: z.string().nullable(), flag: z.string().optional() }),
+    z.strictObject({ type: z.literal("saga_marked"), sagaId: z.string(), characterId: z.string().nullable() }),
+    z.strictObject({ type: z.literal("saga_engaged"), sagaId: z.string(), characterId: z.string() }),
+    z.strictObject({ type: z.literal("saga_scene"), sagaId: z.string(), line: z.string() }),
     // 탐험할 곳 (12-162)
     z.strictObject({ type: z.literal("ruin_found"), characterId: z.string(), ruin: z.string() }),
     z.strictObject({ type: z.literal("exploration_started"), ruin: z.string() }),
@@ -1490,6 +1526,7 @@ export const EMPTY_STATE: GameState = {
   resolveSeeded: [],
   resolveNote: null,
   resolveLog: [],
+  sagas: {},
   exploration: null,
   bribes: [],
   promises: [],
@@ -2166,6 +2203,42 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "resolve_note":
       next.resolveNote = event.note;
       return next;
+    case "saga_opened":
+      next.sagas = {
+        ...(next.sagas ?? {}),
+        [event.sagaId]: { act: "open", openedAt: state.time, actStartedAt: state.time, days: null, ending: null, endedAt: null, endedByLapse: false, note: null, noteZone: null, marked: null, lapsed: [], engaged: [], scenes: [], notedFlags: [] },
+      };
+      return next;
+    case "saga_advanced": {
+      const g = next.sagas?.[event.sagaId];
+      if (g) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, act: event.act, actStartedAt: state.time, days: event.days, lapsed: event.lapsed ? [...g.lapsed, g.act] : g.lapsed } };
+      return next;
+    }
+    case "saga_ended": {
+      const g = next.sagas?.[event.sagaId];
+      if (g) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, act: "ended", ending: event.ending, endedAt: state.time, endedByLapse: event.lapsed, days: null, lapsed: event.lapsed ? [...g.lapsed, g.act] : g.lapsed } };
+      return next;
+    }
+    case "saga_noted": {
+      const g = next.sagas?.[event.sagaId];
+      if (g) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, note: event.text, noteZone: event.zone, notedFlags: event.flag ? [...g.notedFlags, event.flag] : g.notedFlags } };
+      return next;
+    }
+    case "saga_marked": {
+      const g = next.sagas?.[event.sagaId];
+      if (g) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, marked: event.characterId } };
+      return next;
+    }
+    case "saga_engaged": {
+      const g = next.sagas?.[event.sagaId];
+      if (g && !g.engaged.includes(event.characterId)) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, engaged: [...g.engaged, event.characterId] } };
+      return next;
+    }
+    case "saga_scene": {
+      const g = next.sagas?.[event.sagaId];
+      if (g) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, scenes: [...g.scenes, event.line].slice(-3) } };
+      return next;
+    }
     case "resolve_seeded":
       if (!(next.resolveSeeded ?? []).includes(event.characterId)) next.resolveSeeded = [...(next.resolveSeeded ?? []), event.characterId];
       return next;

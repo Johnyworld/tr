@@ -1,4 +1,5 @@
 import { heldOf, heldSeenZone } from "../rules/held.ts";
+import { sagaQuest } from "../rules/saga.ts";
 import { maskUnknownNames } from "../engine/storyletTools.ts";
 import { placeListLines, visitedZones } from "../views/map.ts";
 import { knownOwner } from "../rules/knowledge.ts";
@@ -28,7 +29,7 @@ import { factionOutlook, WAR_INTEL_TOPIC, WAR_TOPIC, zoneOutlook } from "../engi
 import { formatChronicle, storyEnded, successionOptions } from "../engine/succession.ts";
 import { seasonAt, seasonLabel } from "../sim/season.ts";
 import { weatherNow } from "../sim/weather.ts";
-import { buildPlayerView, type PlayerView } from "../views/player.ts";
+import { buildPlayerView, timeLeftLabel, type PlayerView } from "../views/player.ts";
 import { personProfile } from "../views/person.ts";
 import { DIALOGUE_STYLE_LABELS } from "../engine/storyletTools.ts";
 import { beliefText } from "../rules/lens.ts";
@@ -347,8 +348,9 @@ const factions: CommandDef = {
 const mission: CommandDef = {
   id: "mission",
   name: "임무",
-  aliases: ["mission"],
-  description: "현재 임무와 목표, 지킬 약속",
+  // 상태 화면의 퀘스트 칸과 같은 목록 (2026-11-25 사용자 결정)
+  aliases: ["mission", "퀘스트", "quest"],
+  description: "현재 임무와 목표, 지킬 약속, 큰 이야기",
   run(ctx) {
     const { state, content } = ctx;
     const active = activeMissionOf(state.missions, state.playerId);
@@ -378,6 +380,12 @@ const mission: CommandDef = {
     // 약속 (12-160)·받아 준 부탁 (12-174)
     const promises = promiseLines(state, content);
     if (promises.length) lines.push("", "지킬 약속·부탁", ...promises.map((l) => `  ${l}`));
+    // 큰 이야기 (공통 규칙 24): 다짐 위에
+    const saga = sagaQuest(state, content);
+    if (saga) {
+      lines.push("", `큰 이야기  ${saga.title} — ${saga.detail}${saga.leftMinutes !== null ? ` (${saga.leftMinutes <= 0 ? "기한 지남" : `${timeLeftLabel(saga.leftMinutes)} 남음`})` : ""}`);
+      if (saga.note) lines.push(`  실마리: ${saga.note}${saga.zone ? ` → ${saga.zone}` : ""}`);
+    }
     // 다짐 (12-164): 임무 아래
     const vow = resolveLine(state, content);
     if (vow) lines.push("", `다짐  ${vow}`);

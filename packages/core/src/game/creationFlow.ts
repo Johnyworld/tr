@@ -50,7 +50,10 @@ export type CreationAnswer =
 export type CreationDraft = {
   /** new_world: 새 게임 (세계 소개부터) / heir: 사망 뒤 같은 세계의 새 캐릭터 */
   mode: "new_world" | "heir";
+  /** 고른 값 (고른 순서대로). 뒤로 가도 지우지 않는다: at 뒤의 것은 그 단계로 다시 왔을 때 채워 둘 값 */
   answers: CreationAnswer[];
+  /** 지금 위치: 앞의 at개가 정해진 답 (없으면 모두). 뒤로 가기는 이것만 줄인다 */
+  at?: number;
   /** 이미 정해진 나이 (직접 쓰는 시나리오에서 플레이어가 쓴 나이). 있으면 나이를 묻지 않는다 */
   presetAge?: number;
   /** 계급의 최소 나이 (12-87, 간부 등). 과거 배경의 최소 나이와 함께 나이의 아래 끝이 된다 */
@@ -93,6 +96,17 @@ const TRAIT_KIND_STEP = {
 } as const satisfies Record<string, readonly ("negative" | "positive" | "personality")[]>;
 type TraitStep = keyof typeof TRAIT_KIND_STEP;
 
+/** 정해진 답 (지금 위치 앞까지). 단계와 정한 값은 모두 이것으로 계산한다 */
+export function liveAnswers(draft: CreationDraft): CreationAnswer[] {
+  return draft.at === undefined ? draft.answers : draft.answers.slice(0, draft.at);
+}
+
+/** 지금 단계에 전에 골라 둔 값 (뒤로 왔을 때 화면이 채워 둔다). 없으면 undefined */
+export function rememberedAnswer(s: Scenario, draft: CreationDraft): CreationAnswer | undefined {
+  const kept = draft.answers[liveAnswers(draft).length];
+  return kept && kept.step === currentStep(s, draft) ? kept : undefined;
+}
+
 /** 지금까지의 답에서 정해진 것 */
 export function collectDraft(draft: CreationDraft) {
   let past: string | undefined;
@@ -111,7 +125,7 @@ export function collectDraft(draft: CreationDraft) {
   const traitSteps = new Set<string>();
   let persona: Record<string, number> | undefined;
   let settings: string[] | undefined;
-  for (const a of draft.answers) {
+  for (const a of liveAnswers(draft)) {
     if (a.step === "past") past = a.value;
     else if (a.step === "skills") {
       skillMethod = a.value;
@@ -409,7 +423,13 @@ export type CreationReply =
 export function answerCreation(s: Scenario, draft: CreationDraft, answer: string | string[], rng: Rng): CreationReply {
   const step = currentStep(s, draft);
   const text = Array.isArray(answer) ? answer.join(", ") : answer;
-  const add = (a: CreationAnswer): CreationReply => ({ ok: true, draft: { ...draft, answers: [...draft.answers, a] }, done: false });
+  // 전에 고른 것과 같으면 그 뒤에 골라 둔 값도 이어서 쓰고, 다르면 버린다 (과거 배경·고르는 방식이 바뀌면 뒤의 값이 맞지 않는다)
+  const add = (a: CreationAnswer): CreationReply => {
+    const n = liveAnswers(draft).length;
+    const kept = draft.answers[n];
+    const answers = kept && JSON.stringify(kept) === JSON.stringify(a) ? draft.answers : [...draft.answers.slice(0, n), a];
+    return { ok: true, draft: { ...draft, answers, at: n + 1 < answers.length ? n + 1 : undefined }, done: false };
+  };
   const options = stepOptions(s, draft, step);
   const fromOptions = (): string | null => pick(options, text) ?? (RANDOM_WORDS.includes(text.trim().toLowerCase()) ? pick(options, "random") : null);
 
@@ -555,7 +575,9 @@ function parseSettings(s: Scenario, draft: CreationDraft, answer: string | strin
 
 /** 한 단계 뒤로 */
 export function backCreation(draft: CreationDraft): CreationDraft {
-  return { ...draft, answers: draft.answers.slice(0, -1) };
+  // 고른 값은 두고 위치만 하나 앞으로
+  const n = liveAnswers(draft).length;
+  return n === 0 ? draft : { ...draft, at: n - 1 };
 }
 
 /** 지금까지 정한 것 (한 줄씩) */
@@ -610,7 +632,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   const past = pastOf(s, collectDraft(draft).past);
   const lines: string[] = [];
 
-  if (draft.answers.length === 0 && !introShown) {
+  if (liveAnswers(draft).length === 0 && !introShown) {
     // 새 게임의 지금 상황은 캐릭터를 다 만든 뒤 첫 장면 앞에서 들려준다 (MCP 어댑터가 붙인다)
     if (draft.mode === "heir") {
       lines.push(
@@ -783,7 +805,7 @@ export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; tota
   const portraitStep = draft.withPortrait ? 1 : 0;
   const genderStep = draft.presetGender === undefined ? 1 : 0;
   const total = 4 + pastStep + skillSteps + genderStep + portraitStep + ageStep + abilitySteps + traitSteps + personaStep;
-  return { at: Math.min(draft.answers.length + 1, total), total };
+  return { at: Math.min(liveAnswers(draft).length + 1, total), total };
 }
 
 export type { CreationRules };

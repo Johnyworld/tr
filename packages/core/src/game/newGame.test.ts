@@ -9,7 +9,7 @@ import type { Content } from "../content/schemas.ts";
 import { createSeededRng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
 import { newGameView } from "./newGameView.ts";
-import { answerNewGame, backNewGame, describeNewGameStep, newGameDraft, newGameStep, type NewGameDraft } from "./newGame.ts";
+import { answerNewGame, backNewGame, describeNewGameStep, newGameDraft, newGameStep, skipLoneWorld, type NewGameDraft } from "./newGame.ts";
 import { loadRealContent } from "../testing.ts";
 
 const REAL_DIR = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../../content/scenarios/post_apoc");
@@ -93,6 +93,18 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
     const toScenario = Array.from({ length: 30 }).reduce<NewGameDraft>((d) => (newGameStep(d) === "scenario" ? d : backNewGame(d)), content);
     expect(newGameStep(toScenario)).toBe("scenario");
     expect(newGameStep(backNewGame(toScenario))).toBe("world");
+  });
+
+  it("월드가 하나뿐이면 월드 고르기를 건너뛰고 시나리오가 첫 단계다 (뒤로 가도 월드로 돌아가지 않는다)", () => {
+    const lone = new Map([[real.scenario.id, real]]);
+    const d = skipLoneWorld(lone, newGameDraft());
+    expect(newGameStep(d)).toBe("scenario");
+    expect(d.packId).toBe(real.scenario.id);
+    expect(d.contentRating).toBe(!!real.scenario.content_rating);
+    expect(newGameView(lone, d)).toMatchObject({ step: "scenario", first: true });
+    expect(newGameStep(backNewGame(d))).toBe("scenario");
+    // 월드가 둘이면 그대로 월드부터
+    expect(newGameStep(skipLoneWorld(packs, newGameDraft()))).toBe("world");
   });
 
   it("끝까지 고르면 월드·시나리오·캐릭터·수위·서술 방식을 돌려준다", () => {

@@ -16,6 +16,7 @@ import {
   withPortraitStep,
   heirDraft,
   newGameDraft,
+  skipLoneWorld,
   worldInfo,
   type Content,
   type NewGameDraft,
@@ -312,7 +313,7 @@ export function createMcpServer(
       resetCreation();
       if (args.new_world || args.slot === 0) {
         if (!args.character && anyCreationRules()) {
-          const fresh = newGameDraft(manager.unlocks());
+          const fresh = skipLoneWorld(packs, newGameDraft(manager.unlocks()));
           setDraft(fresh);
           if (args.in_browser) return waitForScreen(extra as WaitExtra);
           return creationStep(fresh);
@@ -427,7 +428,7 @@ export function createMcpServer(
     if (driver === "chat") return { ok: false, error: "채팅에서 만드는 중입니다. 채팅에서 이어 가 주세요." };
     if (input.version !== undefined && input.version !== draftVersion) return { ok: false, error: "그사이 단계가 바뀌었습니다. 지금 단계를 확인해 주세요." };
     if (input.menu) {
-      if (!fromMenu || draft.mode !== "new_world" || newGameStep(draft) !== "world") return { ok: false, error: "지금은 메인 메뉴로 돌아갈 수 없습니다." };
+      if (!fromMenu || draft.mode !== "new_world" || !(newGameStep(draft) === "world" || (draft.loneWorld && newGameStep(draft) === "scenario"))) return { ok: false, error: "지금은 메인 메뉴로 돌아갈 수 없습니다." };
       resetCreation();
       return { ok: true };
     }
@@ -455,7 +456,7 @@ export function createMcpServer(
     if (!waiters.size) return { ok: false, error: "Claude 채팅에 /play를 입력한 뒤에 고를 수 있습니다." };
     if (input.action === "new") {
       if (!anyCreationRules()) return { ok: false, error: "이 월드는 화면에서 캐릭터를 만들 수 없습니다." };
-      setDraft(withPortraitStep(newGameDraft(manager.unlocks())));
+      setDraft(withPortraitStep(skipLoneWorld(packs, newGameDraft(manager.unlocks()))));
       driver = "screen";
       fromMenu = true;
       return { ok: true };

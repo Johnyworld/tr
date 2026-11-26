@@ -9,6 +9,7 @@ import {
   describeCreationStep,
   draftChoice,
   newCreationDraft,
+  rememberedAnswer,
   stepOptions,
   type CreationDraft,
 } from "./creationFlow.ts";
@@ -41,6 +42,40 @@ function run(answers: (string | string[])[], draft = newCreationDraft("new_world
   }
   return { draft: d, choice: null };
 }
+
+describe("뒤로 가도 고른 값은 남는다", () => {
+  it("뒤로 가면 그 단계에 전에 고른 값이 남아 있고, 같은 값을 고르면 뒤의 값도 이어 쓴다", () => {
+    const { draft } = run(["한서진", "female", "30"]);
+    expect(currentStep(s, draft)).toBe("abilities");
+    const toName = backCreation(backCreation(backCreation(draft)));
+    expect(currentStep(s, toName)).toBe("name");
+    expect(rememberedAnswer(s, toName)).toEqual({ step: "name", value: "한서진" });
+    // 같은 이름: 성별·나이도 남아 있다
+    const again = answerCreation(s, toName, "한서진", createSeededRng(1));
+    if (!again.ok || again.done) throw new Error("name");
+    expect(currentStep(s, again.draft)).toBe("gender");
+    expect(rememberedAnswer(s, again.draft)).toEqual({ step: "gender", value: "female" });
+    // 지금 위치 뒤의 값은 정해진 것에 들지 않는다
+    expect(describeCreationStep(content, again.draft, roleId)).not.toContain("성별: 여성");
+  });
+
+  it("다른 값을 고르면 뒤에 골라 둔 값은 버린다", () => {
+    const { draft } = run(["한서진", "female", "30"]);
+    const toName = backCreation(backCreation(backCreation(draft)));
+    const other = answerCreation(s, toName, "윤하", createSeededRng(1));
+    if (!other.ok || other.done) throw new Error("name");
+    expect(rememberedAnswer(s, other.draft)).toBeUndefined();
+    expect(other.draft.answers.at(-1)).toEqual({ step: "name", value: "윤하" });
+  });
+
+  it("처음 단계에서 뒤로 가면 그대로, 처음부터 다시는 모두 지운다", () => {
+    const d = newCreationDraft("new_world");
+    expect(backCreation(d)).toEqual(d);
+    const { draft } = run(["한서진", "female", "30"]);
+    const toName = backCreation(backCreation(backCreation(draft)));
+    expect(rememberedAnswer(s, toName)).toBeDefined();
+  });
+});
 
 describe("대화로 하는 캐릭터 생성", () => {
   it("첫 단계는 과거 배경. 지금 상황은 캐릭터를 다 만든 뒤 첫 장면 앞에서 (여기서는 묻지 않는다). 사망 뒤 새 캐릭터는 다른 사람의 삶으로 운을 띄운다", () => {

@@ -50,6 +50,7 @@ export {
   describeNewGameStep,
   heirDraft,
   newGameDraft,
+  skipLoneWorld,
   newGameStep,
   withPortraitStep,
   type NewGameDraft,
@@ -61,7 +62,7 @@ export { loadContent, ContentError } from "./content/loader.ts";
 
 export { InMemoryRepository, type GameRepository } from "./persistence/repository.ts";
 export { SqliteRepository, SaveFormatError, archiveSave } from "./persistence/sqlite.ts";
-export { acquireLock, readLock, isProcessAlive, WorldLockedError, type LockInfo } from "./persistence/lock.ts";
+export { acquireLock, readLock, isProcessAlive, isLockHeld, WorldLockedError, type LockInfo } from "./persistence/lock.ts";
 
 export { buildGmGuide } from "./engine/prompt.ts";
 export { describePlayerState } from "./engine/context.ts";

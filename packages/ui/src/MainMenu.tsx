@@ -50,6 +50,10 @@ export function MainMenu({ gm, page, onPage, onStatus }: { gm: GmLink | undefine
   if (page === "continue") return <ContinueList busy={busy} ready={ready} run={run} error={error} onBack={() => onPage("home")} />;
   return (
     <div className={busy ? "newgame mainmenu busy" : "newgame mainmenu"}>
+      <div className="mainmenu-title">
+        <h1>가람</h1>
+        <p>생존자들의 도시</p>
+      </div>
       <div className="mainmenu-buttons">
         <button type="button" className="mainmenu-button primary" disabled={busy || !ready} onClick={() => void run({ action: "new" })}>
           새로운 게임
@@ -58,6 +62,7 @@ export function MainMenu({ gm, page, onPage, onStatus }: { gm: GmLink | undefine
           이어서 하기
         </button>
       </div>
+      <p className="mainmenu-desc">도망. 생존. 전쟁.<br/>멸망한 도시에서 누군가의 마지막을 경험하세요.</p>
       {error && (
         <p className="newgame-error" role="alert">
           {error}
@@ -124,8 +129,22 @@ function ContinueList({ busy, ready, run, error, onBack }: { busy: boolean; read
 function SaveRow({ slot, busy, canOpen, onOpen, onDelete }: { slot: SaveSlot; busy: boolean; canOpen: boolean; onOpen: () => void; onDelete: () => void }) {
   const h = slot.hero;
   const locked = slot.lockedBy !== null;
+  // 줄 전체가 열기 단추다 (GM이 기다리고 있고, 다른 세션이 쓰고 있지 않을 때)
+  const openable = !busy && !locked && canOpen;
   return (
-    <li className={locked ? "save-row locked" : "save-row"}>
+    <li
+      className={["save-row", locked && "locked", openable && "openable"].filter(Boolean).join(" ")}
+      role="button"
+      tabIndex={openable ? 0 : -1}
+      aria-disabled={!openable}
+      aria-label={`${h?.name ?? "세이브"} 열기`}
+      onClick={() => openable && onOpen()}
+      onKeyDown={(e) => {
+        if (!openable || e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        onOpen();
+      }}
+    >
       <Portrait id={h?.portrait ?? null} pack={slot.packId} size={52} />
       <div className="save-info">
         <div className="save-name">
@@ -149,11 +168,20 @@ function SaveRow({ slot, busy, canOpen, onOpen, onDelete }: { slot: SaveSlot; bu
           {locked ? " · 다른 세션에서 하는 중" : ""}
         </div>
       </div>
-      <div className="save-actions">
-        <button type="button" className="primary" disabled={busy || locked || !canOpen} onClick={onOpen}>
-          열기
-        </button>
-        <button type="button" className="save-delete" aria-label={`${h?.name ?? "세이브"} 삭제`} title="삭제" disabled={busy || locked} onClick={onDelete}>
+      {/* 삭제는 줄의 열기로 번지지 않게 막는다 (클릭·키 모두. 막힌 단추를 누른 클릭도 줄로 올라가지 않게 감싼 칸에서 한 번 더) */}
+      <div className="save-actions" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="save-delete"
+          aria-label={`${h?.name ?? "세이브"} 삭제`}
+          title="삭제"
+          disabled={busy || locked}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
           <Icon name="trash" size={14} />
         </button>
       </div>

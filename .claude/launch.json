@@ -4,19 +4,39 @@
     {
       "name": "status",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "tail -f /dev/null | TRPG_STATUS_PORT=8799 RAG=off pnpm --silent mcp"],
+      "runtimeArgs": [
+        "-c",
+        "tail -f /dev/null | TRPG_STATUS_PORT=8799 RAG=off pnpm --silent mcp"
+      ],
+      "port": 8799
+    },
+    {
+      "name": "status-menu",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "{ printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"ui-dev\",\"version\":\"0\"}}}' '{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}'; until curl -sf http://127.0.0.1:8799/api/status >/dev/null; do sleep 1; done; printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"start_session\",\"arguments\":{\"in_browser\":true}}}'; tail -f /dev/null; } | TRPG_STATUS_PORT=8799 TRPG_CREATE_WAIT_MS=2000000000 RAG=off pnpm --silent mcp > /dev/null"
+      ],
       "port": 8799
     },
     {
       "name": "server",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@trpg/server", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@trpg/server",
+        "dev"
+      ],
       "port": 8787
     },
     {
       "name": "ui",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@trpg/ui", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@trpg/ui",
+        "dev"
+      ],
       "port": 5173
     }
   ]

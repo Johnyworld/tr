@@ -182,19 +182,19 @@ describe("MCP 세이브 삭제", () => {
 });
 
 describe("MCP 캐릭터 생성 (대화로 한 단계씩)", () => {
-  it("새 게임은 월드 → 시나리오 → 캐릭터를 create_character로 하나씩 답해 마지막 확인에서 세계가 열린다", async () => {
+  it("새 게임은 (월드가 하나뿐이면 월드를 건너뛰고) 시나리오 → 캐릭터를 create_character로 하나씩 답해 마지막 확인에서 세계가 열린다", async () => {
     const { call, app, manager } = await connect(REAL_CONTENT);
     const first = await call("start_session", { new_world: true });
     expect(app.world).toBeNull();
     expect(app.creating).toBe(true);
-    expect(first.text).toContain("월드 고르기");
+    // 월드가 하나뿐이라 월드 고르기 없이 시나리오부터
+    expect(first.text).not.toContain("월드 고르기");
     expect(first.text).toContain("무너진 도시 가람");
-    const scenario = await call("create_character", { answer: "post_apoc" });
-    expect(scenario.text).toContain("어떤 시나리오로 시작할까요");
-    expect(scenario.text).toContain("튜토리얼: 방문자");
-    expect(scenario.text).toContain("🔒 비극의 고리 (잠김)");
-    expect((await call("create_character", { back: true })).text).toContain("월드 고르기");
-    await call("create_character", { answer: "무너진 도시 가람" });
+    expect(first.text).toContain("— 시나리오 선택");
+    expect(first.text).toContain("튜토리얼: 방문자");
+    expect(first.text).toContain("🔒 비극의 고리 (잠김)");
+    // 뒤로 가도 월드로 돌아가지 않는다
+    expect((await call("create_character", { back: true })).text).toContain("— 시나리오 선택");
     expect((await call("create_character", { answer: "비극의 고리" })).isError).toBe(true); // 잠겨 있다
     // 지금 상황은 캐릭터 만들기에서 묻지 않는다 (게임을 시작할 때 첫 장면 앞에서)
     const name = await call("create_character", { answer: "튜토리얼: 방문자" });
@@ -556,13 +556,13 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
   }
   const settle = () => new Promise((r) => setTimeout(r, 10));
 
-  it("in_browser면 tool이 기다리고, 화면이 월드 → 시나리오 → 캐릭터를 고르면 세계를 열고 돌아간다", async () => {
+  it("in_browser면 tool이 기다리고, 화면이 시나리오 → 캐릭터를 고르면 세계를 열고 돌아간다 (월드가 하나뿐이면 월드는 건너뛴다)", async () => {
     const { app, call } = await connectWithScreen();
     const waiting = call("start_session", { new_world: true, in_browser: true });
     await settle();
-    expect(app.creation?.view).toMatchObject({ step: "world" });
-    expect(app.submitCreation({ answer: "없는 월드" })).toMatchObject({ ok: false });
-    for (const answer of ["post_apoc", "role_t_visitor", "police", "윤하", "female"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    expect(app.creation?.view).toMatchObject({ step: "scenario", first: true });
+    expect(app.submitCreation({ answer: "없는 시나리오" })).toMatchObject({ ok: false });
+    for (const answer of ["role_t_visitor", "police", "윤하", "female"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     // 화면에서 만들면 성별 다음에 그 성별의 얼굴을 화풍 섹션으로 고른다 (12-139)
     expect(app.creation!.view.step).toBe("portrait");
     expect(app.creation!.view.world?.id).toBe("post_apoc");
@@ -606,7 +606,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     const first = await call("start_session", { new_world: true, in_browser: true });
     expect(first.text).toContain("다 했어");
-    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "없음", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "없음", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     expect(app.world).not.toBeNull();
     const later = await call("create_character", { wait: true });
     expect(later.text).toContain("상태 화면에서 골랐다");
@@ -615,7 +615,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
   it("화면에서 시작한 만들기는 끝까지 화면에서: GM이 wait 없이 답을 넘겨도 받지 않는다 (12-214)", async () => {
     const { app, call } = await connectWithScreen(30);
     await call("start_session", { new_world: true, in_browser: true });
-    for (const a of ["post_apoc", "role_t_visitor"]) expect(app.submitCreation({ answer: a })).toEqual({ ok: true });
+    for (const a of ["role_t_visitor"]) expect(app.submitCreation({ answer: a })).toEqual({ ok: true });
     const r = await call("create_character", { answer: "police" });
     expect(r.isError).toBe(true);
     expect(r.text).toContain("상태 화면에서 만드는 중");
@@ -629,12 +629,12 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     expect(app.creation).toBeNull();
     expect(app.gm).toEqual({ waiting: true });
     expect(app.menuAction({ action: "new" })).toEqual({ ok: true });
-    expect(app.creation).toMatchObject({ driver: "screen", fromMenu: true, view: { step: "world" } });
+    expect(app.creation).toMatchObject({ driver: "screen", fromMenu: true, view: { step: "scenario", first: true } });
     // 첫 단계에서 메인 메뉴로 돌아갈 수 있다
     expect(app.submitCreation({ menu: true })).toEqual({ ok: true });
     expect(app.creation).toBeNull();
     expect(app.menuAction({ action: "new" })).toEqual({ ok: true });
-    for (const answer of ["post_apoc", "role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "없음", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
+    for (const answer of ["role_t_visitor", "police", "서진", "male", "none", "기본", "random", "past", "none", "기본", "없음", "start", "off", "novel"]) expect(app.submitCreation({ answer }), answer).toEqual({ ok: true });
     const done = await waiting;
     expect(done.text).toContain("상태 화면에서 골랐다");
     expect(app.world).not.toBeNull();
@@ -679,7 +679,7 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
   it("채팅에서 시작한 만들기는 끝까지 채팅에서: 화면은 따라 그리기만 하고 답을 받지 않는다 (12-214)", async () => {
     const { app, call } = await connectWithScreen();
     await call("start_session", { new_world: true });
-    for (const answer of ["post_apoc", "role_t_visitor", "police"]) await call("create_character", { answer });
+    for (const answer of ["role_t_visitor", "police"]) await call("create_character", { answer });
     expect(app.creation).toMatchObject({ driver: "chat", view: { step: "name" } });
     expect(app.submitCreation({ answer: "서진", version: app.creation!.version })).toMatchObject({ ok: false });
     expect(app.submitCreation({ back: true })).toMatchObject({ ok: false });
@@ -693,8 +693,8 @@ describe("상태 화면에서 새 게임 고르기 (12-67)", () => {
     const { app, call } = await connectWithScreen(30);
     await call("start_session", { new_world: true, in_browser: true });
     const version = app.creation!.version;
-    expect(app.submitCreation({ answer: "post_apoc", version })).toEqual({ ok: true });
-    expect(app.submitCreation({ answer: "role_t_visitor", version })).toMatchObject({ ok: false });
-    expect(app.submitCreation({ answer: "role_t_visitor", version: app.creation!.version })).toEqual({ ok: true });
+    expect(app.submitCreation({ answer: "role_t_visitor", version })).toEqual({ ok: true });
+    expect(app.submitCreation({ answer: "police", version })).toMatchObject({ ok: false });
+    expect(app.submitCreation({ answer: "police", version: app.creation!.version })).toEqual({ ok: true });
   });
 });

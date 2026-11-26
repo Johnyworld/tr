@@ -24,12 +24,27 @@ export async function postCreation(body: CreationBody): Promise<{ ok: boolean; e
 }
 
 /** readOnly: 채팅에서 만드는 중 (12-214). 화면은 진행을 보여 주기만 하고 누를 수 없다 */
-export function NewGame({ creation, readOnly = false, onStatus }: { creation: CreationStatus; readOnly?: boolean; onStatus: (status: unknown) => void }) {
+/**
+ * peek: 시나리오 선택에서 설명을 보고 있는 시나리오 (roleId). 목록 → 설명 → 시작의 두 쪽이고, 머리의 뒤로 단추가 설명에서 목록으로 돌아가야 해서 StatusApp이 쥔다
+ */
+export function NewGame({
+  creation,
+  readOnly = false,
+  onStatus,
+  peek = null,
+  onPeek = () => {},
+}: {
+  creation: CreationStatus;
+  readOnly?: boolean;
+  onStatus: (status: unknown) => void;
+  peek?: string | null;
+  onPeek?: (roleId: string | null) => void;
+}) {
   const { view, version } = creation;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 단계가 바뀌면 오류를 지운다
-  const stepKey = `${view.step}:${view.character?.index.at ?? ""}`;
+  const stepKey = `${view.step}:${view.character?.index.at ?? ""}:${peek ?? ""}`;
   useEffect(() => setError(null), [stepKey]);
   // 다음(또는 앞) 단계로 넘어가면 맨 위부터 보이게
   const rootRef = useRef<HTMLDivElement>(null);
@@ -53,7 +68,7 @@ export function NewGame({ creation, readOnly = false, onStatus }: { creation: Cr
     <div className={busy ? "newgame busy" : readOnly ? "newgame read-only" : "newgame"} ref={rootRef}>
       {/* 보기 전용이면 fieldset으로 안의 단추·입력을 모두 막는다 */}
       <fieldset className="newgame-fields" disabled={readOnly}>
-        <Step view={view} busy={busy} answer={answer} />
+        <Step view={view} busy={busy} answer={answer} peek={peek} onPeek={onPeek} />
       </fieldset>
       {error && (
         <p className="newgame-error" role="alert">
@@ -75,19 +90,19 @@ export function newGameTitle(view: NewGameView): string {
   return c ? `${who} ${c.index.at}/${c.index.total}` : who;
 }
 
-/** 한 단계 뒤로 갈 수 있는지 (처음 단계에서는 못 간다. 새 캐릭터는 캐릭터 만들기의 첫 단계가 처음이다: 과거 배경이 있으면 그것, 없으면 이름) */
+/** 한 단계 뒤로 갈 수 있는지 (처음 단계(first)에서는 못 간다. 새 캐릭터는 캐릭터 만들기의 첫 단계가 처음이다: 과거 배경이 있으면 그것, 없으면 이름) */
 export function canGoBack(view: NewGameView): boolean {
-  return !(view.step === "world" || (view.mode === "heir" && (view.character?.index.at ?? 1) === 1));
+  return !(view.first || view.step === "world" || (view.mode === "heir" && (view.character?.index.at ?? 1) === 1));
 }
 
-/** 메인 메뉴의 새로운 게임으로 연 만들기는 첫 단계(월드)에서 메인 메뉴로 돌아간다 (12-214) */
+/** 메인 메뉴의 새로운 게임으로 연 만들기는 첫 단계(월드, 월드가 하나뿐이면 시나리오)에서 메인 메뉴로 돌아간다 (12-214) */
 export function canGoMenu(creation: CreationStatus): boolean {
-  return creation.fromMenu === true && creation.driver === "screen" && creation.view.mode === "new_world" && creation.view.step === "world";
+  return creation.fromMenu === true && creation.driver === "screen" && creation.view.mode === "new_world" && (creation.view.first === true || creation.view.step === "world");
 }
 
 type StepProps = { view: NewGameView; busy: boolean; answer: (a: string | string[]) => void };
 
-function Step({ view, busy, answer }: StepProps) {
+function Step({ view, busy, answer, peek, onPeek }: StepProps & { peek: string | null; onPeek: (roleId: string | null) => void }) {
   switch (view.step) {
     case "world":
       return (
@@ -105,7 +120,7 @@ function Step({ view, busy, answer }: StepProps) {
         </>
       );
     case "scenario":
-      return <ScenarioStep view={view} busy={busy} answer={answer} />;
+      return <ScenarioStep view={view} busy={busy} answer={answer} peek={peek} onPeek={onPeek} />;
     case "content":
       return (
         <>
@@ -151,10 +166,24 @@ function Step({ view, busy, answer }: StepProps) {
 }
 
 /** 시나리오 고르기 (기획서 12.4.1): 카드를 누르면 바로 고른다. 잠긴 시나리오는 해금 조건과 함께 흐리게 */
-function ScenarioStep({ view, busy, answer }: StepProps) {
+/** 시나리오 선택: 목록(이름과 누구로 시작하는지만) → 설명(짧은 소개·목표와 시작 단추). 잠긴 것은 이름과 해금 조건만 */
+function ScenarioStep({ view, busy, answer, peek, onPeek }: StepProps & { peek: string | null; onPeek: (roleId: string | null) => void }) {
+  const picked = view.scenarios!.find((c) => c.roleId === peek && !c.locked);
+  if (picked)
+    return (
+      <div className="scenario-detail">
+        <h2 className="newgame-title">{picked.title}</h2>
+        <span className="choice-tagline">{picked.who}</span>
+        <p className="scenario-pitch">{picked.pitch}</p>
+        {picked.goal && <p className="choice-gains">목표: {picked.goal}</p>}
+        <button type="button" className="primary scenario-start" disabled={busy} onClick={() => answer(picked.roleId)}>
+          이 시나리오로 시작
+        </button>
+      </div>
+    );
   return (
     <>
-      <h2 className="newgame-title">어떤 시나리오로 시작할까요?</h2>
+      <h2 className="newgame-title">시나리오 선택</h2>
       <div className="choice-list">
         {view.scenarios!.map((c) =>
           c.locked ? (
@@ -165,11 +194,9 @@ function ScenarioStep({ view, busy, answer }: StepProps) {
               <span className="choice-desc">해금 조건: {c.locked}</span>
             </div>
           ) : (
-            <button key={c.roleId} type="button" className="choice-card" disabled={busy} onClick={() => answer(c.roleId)}>
+            <button key={c.roleId} type="button" className="choice-card" disabled={busy} onClick={() => onPeek(c.roleId)}>
               <strong>{c.title}</strong>
               <span className="choice-tagline">{c.who}</span>
-              <span className="choice-desc">{c.pitch}</span>
-              {c.goal && <span className="choice-gains">목표: {c.goal}</span>}
             </button>
           ),
         )}
@@ -214,6 +241,14 @@ function Story({ text, title }: { text: string; title?: string }) {
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
+/** 뒤로 왔을 때 이 단계에 전에 골라 둔 값 (없으면 undefined) */
+const rememberedOf = (view: NewGameView) => (view.character?.remembered?.step === view.step ? view.character.remembered : undefined);
+/** 전에 고른 보기인지 (눌러서 바로 고르는 단계에서 표시만 한다) */
+const wasPicked = (view: NewGameView, value: string | null) => {
+  const r = rememberedOf(view);
+  return r !== undefined && r.value === value;
+};
+
 function CharacterStep({ view, busy, answer }: StepProps) {
   const c = view.character!;
   const step = view.step;
@@ -255,7 +290,7 @@ function CharacterStep({ view, busy, answer }: StepProps) {
           )}
           <div className={step === "gender" ? "choice-row" : "choice-list"}>
             {options.map((o) => (
-              <button key={o.value} type="button" className="choice-card" disabled={busy} onClick={() => answer(o.value)}>
+              <button key={o.value} type="button" className={wasPicked(view, o.value) ? "choice-card remembered" : "choice-card"} disabled={busy} onClick={() => answer(o.value)}>
                 <strong>{o.label}</strong>
                 {o.description && <span className="choice-desc">{o.description}</span>}
               </button>
@@ -326,7 +361,7 @@ function PortraitStep({ view, busy, answer }: StepProps) {
     <button
       key={id}
       type="button"
-      className="portrait-pick"
+      className={wasPicked(view, id) ? "portrait-pick remembered" : "portrait-pick"}
       disabled={busy}
       aria-label={number !== undefined ? `초상화 ${number}` : `초상화 ${id}`}
       onClick={() => answer(id)}
@@ -351,7 +386,7 @@ function PortraitStep({ view, busy, answer }: StepProps) {
         <div className="portrait-grid">{PORTRAIT_IDS.map((id) => pick(id, 56, false))}</div>
       )}
       <div className="newgame-actions">
-        <button type="button" disabled={busy} onClick={() => answer("none")}>
+        <button type="button" className={wasPicked(view, null) ? "remembered" : undefined} disabled={busy} onClick={() => answer("none")}>
           고르지 않기
         </button>
       </div>
@@ -364,7 +399,7 @@ const WIDE = /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f
 const nameWidth = (name: string) => [...name].reduce((w, ch) => w + (WIDE.test(ch) ? 2 : 1), 0);
 
 function NameStep({ view, busy, answer }: StepProps) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => String(rememberedOf(view)?.value ?? ""));
   const max = view.character!.nameMax;
   const width = nameWidth(name.trim());
   const over = width > max;
@@ -391,7 +426,7 @@ function NameStep({ view, busy, answer }: StepProps) {
 /** 나이: 숫자로 적거나 시나리오의 나이 그대로 */
 function AgeStep({ view, busy, answer }: StepProps) {
   const range = view.character!.age!;
-  const [age, setAge] = useState(String(range.default));
+  const [age, setAge] = useState(() => String(rememberedOf(view)?.value ?? range.default));
   const n = Number(age);
   const ok = Number.isInteger(n) && n >= range.min && n <= range.max;
   return (
@@ -435,7 +470,7 @@ function PastStep({ view, busy, answer }: StepProps) {
       <p className="newgame-note">과거 배경이 능력과 스킬의 기본값을 정합니다. 뒤에서 같은 포인트 안에서 고칠 수 있습니다.</p>
       <div className="past-grid">
         {c.pasts.map((p) => (
-          <button key={p.id} type="button" className="past-card" disabled={busy} onClick={() => answer(p.id)}>
+          <button key={p.id} type="button" className={wasPicked(view, p.id) ? "past-card remembered" : "past-card"} disabled={busy} onClick={() => answer(p.id)}>
             <span className="past-head">
               <strong>{p.label}</strong>
               {p.minAge && <span className="past-age">{p.minAge}세부터</span>}
@@ -458,7 +493,7 @@ function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
   const c = view.character!;
   const rule = c.skillRule ?? { points: 0, min: -1, max: 2, costs: [] };
   const teachable = c.teachable ?? [];
-  const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...(c.pastDefaults?.skills ?? {}) }));
+  const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...(rememberedOf(view)?.values ?? c.pastDefaults?.skills ?? {}) }));
   const costTo = (v: number) => Array.from({ length: Math.max(0, v - rule.min) }, (_, i) => rule.costs[i] ?? 1).reduce((a, b) => a + b, 0);
   const spent = Object.values(layout).reduce((n, v) => n + costTo(v), 0);
   const left = rule.points - spent;
@@ -544,7 +579,7 @@ function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: s
   const c = view.character!;
   const tiers = c.tiers!;
   // 과거 배경이 있으면 그 배치에서 고치기 시작한다 (12-84)
-  const [picked, setPicked] = useState<Record<string, number>>(() => Object.fromEntries(Object.entries(c.pastDefaults?.stats ?? {}).filter(([, v]) => v !== 0)));
+  const [picked, setPicked] = useState<Record<string, number>>(() => Object.fromEntries(Object.entries(rememberedOf(view)?.values ?? c.pastDefaults?.stats ?? {}).filter(([, v]) => v !== 0)));
   const count = (v: number) => Object.values(picked).filter((x) => x === v).length;
   const full = tiers.every((t) => count(t.value) === t.count);
   const toggle = (id: string, v: number) =>
@@ -604,7 +639,7 @@ function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: s
 function PointStep({ view, busy, answer }: StepProps) {
   const c = view.character!;
   const p = c.points!;
-  const [values, setValues] = useState<Record<string, number>>({});
+  const [values, setValues] = useState<Record<string, number>>(() => ({ ...(rememberedOf(view)?.values ?? {}) }));
   const values0 = p.cost.map((x) => x.value);
   const min = Math.min(...values0, 0);
   const max = Math.max(...values0, 0);
@@ -661,7 +696,10 @@ function PointStep({ view, busy, answer }: StepProps) {
 function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: string, bad?: boolean) => void }) {
   const c = view.character!;
   const personality = view.step === "traits_personality";
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(() => {
+    const r = rememberedOf(view)?.value;
+    return Array.isArray(r) ? r : [];
+  });
   const byId = useMemo(() => new Map(c.traits.map((t) => [t.id, t])), [c.traits]);
   const chosen = picked.map((id) => byId.get(id)!).filter(Boolean);
   const gained = chosen.filter((t) => t.kind === "negative").reduce((n, t) => n + t.cost, 0);
@@ -756,7 +794,7 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
 /** 성격 (12-99): 축마다 다섯 칸 (2 1 0 1 2), 기본 0. 답은 채팅과 같은 말 ("다혈질 2, 과묵함 1" / "기본") */
 function PersonaStep({ view, busy, answer }: StepProps) {
   const axes = view.character!.personaAxes ?? [];
-  const [values, setValues] = useState<Record<string, number>>({});
+  const [values, setValues] = useState<Record<string, number>>(() => ({ ...(rememberedOf(view)?.values ?? {}) }));
   const submit = () => {
     const parts = axes.filter((a) => values[a.id]).map((a) => `${values[a.id]! > 0 ? a.high : a.low} ${Math.abs(values[a.id]!)}`);
     answer(parts.length ? parts.join(", ") : "기본");
@@ -805,7 +843,10 @@ function PersonaStep({ view, busy, answer }: StepProps) {
  */
 function SettingsStep({ view, busy, answer }: StepProps) {
   const data = view.character!.settings;
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(() => {
+    const r = rememberedOf(view)?.value;
+    return Array.isArray(r) ? r : [];
+  });
   if (!data) return null;
   const nameOf = (id: string) => data.items.find((x) => x.id === id)?.name ?? id;
   const toggle = (id: string, slot: string, max: number) =>

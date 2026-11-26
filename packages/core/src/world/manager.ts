@@ -31,7 +31,7 @@ import { runAfterTimeAdvance } from "../engine/turnStart.ts";
 import { bodyLines, worldLines } from "../engine/action.ts";
 import type { ToolDisplayEvent } from "../engine/toolkit.ts";
 const eventLines = (displays: readonly ToolDisplayEvent[]) => [...bodyLines(displays), ...worldLines(displays)];
-import { acquireLock, isProcessAlive, readLock, WorldLockedError, type LockInfo } from "../persistence/lock.ts";
+import { acquireLock, isLockHeld, readLock, WorldLockedError, type LockInfo } from "../persistence/lock.ts";
 import { archiveSave, SaveFormatError, SqliteRepository } from "../persistence/sqlite.ts";
 import { formatTime } from "../rules/time.ts";
 import { GameWorld } from "./world.ts";
@@ -122,7 +122,7 @@ export class WorldManager {
     return this.listWorlds()
       .filter((w) => w.scenarioId !== null && this.packs.has(w.scenarioId))
       // 죽은 프로세스가 남긴 잠금은 사용 중이 아니다
-      .map((w) => toSaveSlot({ ...w, lockedBy: w.lockedBy && isProcessAlive(w.lockedBy.pid) ? w.lockedBy : null }, w.raw, this.packs.get(w.scenarioId!)!));
+      .map((w) => toSaveSlot({ ...w, lockedBy: w.lockedBy && isLockHeld(w.lockedBy) ? w.lockedBy : null }, w.raw, this.packs.get(w.scenarioId!)!));
   }
 
   /**
@@ -211,7 +211,7 @@ export class WorldManager {
     const path = this.pathOf(worldId);
     if (!existsSync(path)) throw new Error(`없는 세이브: ${worldId}`);
     const holder = readLock(path);
-    if (holder && isProcessAlive(holder.pid)) throw new WorldLockedError(holder);
+    if (holder && isLockHeld(holder)) throw new WorldLockedError(holder);
     removeSaveFiles(path);
   }
 

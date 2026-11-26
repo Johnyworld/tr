@@ -90,6 +90,8 @@ export type TraitKind = "positive" | "negative" | "personality";
 export type NewGameView = {
   mode: "new_world" | "heir";
   step: string;
+  /** 새 게임의 첫 단계 (월드, 월드가 하나뿐이면 시나리오): 뒤로 대신 메인 메뉴 */
+  first?: boolean;
   worlds?: { id: string; title: string; tagline: string; description: string }[];
   world?: { id?: string; title: string };
   /** 시나리오 고르기 (core scenarioChoices). locked: 잠겼으면 해금 조건 */
@@ -97,6 +99,8 @@ export type NewGameView = {
   content?: { adultAge: number };
   character?: {
     index: { at: number; total: number };
+    /** 뒤로 왔을 때 이 단계에 전에 골라 둔 값 (core CreationAnswer): 처음 값으로 채운다 */
+    remembered?: { step: string; value?: string | number | string[] | null; values?: Record<string, number> };
     roleLabel: string;
     startSkills: { label: string; value: number }[];
     chosen: {

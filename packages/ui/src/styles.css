@@ -38,14 +38,15 @@
   --panel: #252932;
   /* 장비·소지품 같은 안쪽 상자 */
   --surface: #16191e;
-  --border: #353b47;
+  --border: #26282c;
   /* 누를 수 있는 상자에 마우스를 올렸을 때의 테두리 (회색을 조금 밝게) */
   --border-hover: #586070;
   --text: #c5cad3;
   /* 제목 글자 (본문보다 밝게) */
   --heading: #eef1f5;
   --muted: #8c94a3;
-  --accent: #40525f;
+  --accent: #718286;
+  --primary: #40525f;
   /* 강조색 위의 글자 */
   --on-accent: #ffffff;
   --player: #9fb3a1;
@@ -101,6 +102,7 @@ body {
   align-items: baseline;
   gap: 12px;
   padding: 20px 0 12px;
+  height: 40px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1998,11 +2000,12 @@ body {
 /* 새 게임 고르기 (12-67) */
 .newgame {
   display: flex;
-  justify-content: center;
-  height: 100%;
+  /* 짧으면 가운데, 화면보다 길면 위부터 (그냥 center면 넘친 위쪽이 스크롤로도 닿지 않는다) */
+  justify-content: safe center;
+  min-height: 100%;
   flex-direction: column;
   gap: 12px;
-  padding-bottom: 32px;
+  padding-bottom: 62px;
 }
 
 .newgame button {
@@ -2019,7 +2022,8 @@ body {
 }
 
 .newgame button:hover:not(:disabled) {
-  border-color: var(--accent);
+  /* border-color: var(--accent); */
+  filter: brightness(1.2);
 }
 
 .newgame button:disabled {
@@ -2033,7 +2037,7 @@ body {
 }
 
 .newgame button.primary {
-  background: var(--accent);
+  background: var(--primary);
   color: var(--on-accent);
   font-weight: 700;
 }
@@ -2050,8 +2054,6 @@ body {
 .newgame .newgame-chat {
   padding: 4px 10px;
   font-size: 12px;
-  color: var(--muted);
-  background: transparent;
 }
 
 .newgame-crumb {
@@ -2062,9 +2064,10 @@ body {
 }
 
 .newgame-title {
-  margin: 8px 0 0;
+  margin: 24px 0 8px;
   font-size: 19px;
   color: var(--text);
+  text-align: center;
 }
 
 .newgame-sub {
@@ -2116,7 +2119,6 @@ body {
   gap: 4px;
   text-align: left;
   padding: 12px 14px;
-  background: var(--surface);
 }
 
 .newgame .choice-card strong {
@@ -2127,7 +2129,6 @@ body {
 .newgame .choice-card.locked {
   border: 1px dashed var(--border);
   border-radius: 8px;
-  background: none;
   opacity: 0.6;
 }
 
@@ -2139,13 +2140,47 @@ body {
 }
 
 .newgame .choice-card.featured {
-  border-color: rgba(46, 116, 214, 0.55);
-  background: rgba(46, 116, 214, 0.08);
+  border-color: var(--accent);
+  border-width: 2px;
 }
 
 .choice-tagline {
   font-size: 13px;
   color: var(--accent);
+}
+
+/* 시나리오 설명 (목록에서 고른 뒤의 둘째 쪽): 소개·목표와 시작 단추 */
+.scenario-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scenario-detail .newgame-title {
+  margin-bottom: 0;
+}
+
+/* 누구로 시작하는지는 제목 바로 아래 (제목과 같이 가운데) */
+.scenario-detail > .choice-tagline {
+  text-align: center;
+}
+
+.scenario-pitch {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.8;
+  word-break: keep-all;
+  color: var(--text);
+}
+
+.scenario-detail .choice-gains {
+  margin: 0;
+}
+
+.newgame .scenario-start {
+  margin-top: 16px;
+  padding: 14px 16px;
+  font-size: 16px;
 }
 
 .choice-desc {
@@ -2197,8 +2232,8 @@ body {
 }
 
 .newgame .choice-gains {
-  margin: 0;
-  font-size: 11px;
+  margin: 8px 0 0;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -2253,14 +2288,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
-  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.6);
   padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
   display: flex;
   flex-direction: column;
   gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .chosen-name {
@@ -2338,14 +2372,12 @@ body {
 
 .newgame .tier-btn.on.up {
   background: rgba(255, 255, 255, 0.9);
-  border-color: #fff;
   color: #14161a;
   font-weight: 700;
 }
 
 .newgame .tier-btn.on.down {
   background: var(--error);
-  border-color: var(--error);
   color: #14161a;
   font-weight: 700;
 }
@@ -2369,7 +2401,6 @@ body {
   gap: 2px;
   text-align: left;
   padding: 9px 12px;
-  background: var(--surface);
 }
 
 .trait-head {
@@ -2393,7 +2424,7 @@ body {
 
 .newgame .trait-card.on {
   border-color: var(--accent);
-  background: rgba(46, 116, 214, 0.12);
+  border-width: 2px;
 }
 
 .created-toast {
@@ -2419,8 +2450,8 @@ body {
 
 /* 현황 카드의 남은 수 (능력·스킬·트레잇을 고르는 중) */
 .chosen-live {
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: 8px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--accent);
 }
@@ -2445,7 +2476,11 @@ body {
   padding: 10px 12px;
   text-align: left;
   white-space: normal;
-  background: var(--surface);
+  background-color: var(--panel);
+}
+
+.newgame .skill-card {
+  background-color: var(--surface);
 }
 
 .past-head {
@@ -2481,7 +2516,7 @@ body {
 
 .newgame .skill-card.on {
   border-color: var(--accent);
-  background: rgba(46, 116, 214, 0.12);
+  border-width: 2px;
 }
 
 /* 스킬 배치 (4.2.1): 카드마다 − 단계 + */
@@ -2500,6 +2535,10 @@ body {
   gap: 8px;
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
+}
+
+.skill-level > span {
+  flex: 1;
 }
 
 .skill-level > span:not(.muted) {
@@ -2747,9 +2786,9 @@ body {
 .newgame .portrait-pick {
   padding: 3px;
   background: none;
-  border: 2px solid transparent;
-  /* 고른 테두리도 초상화처럼 원 */
+  border: none;
   border-radius: 50%;
+  box-shadow: none;
 }
 
 .newgame .portrait-pick.on {
@@ -3619,7 +3658,7 @@ body {
   background: var(--border-hover);
 }
 
-.persona-btn {
+button.persona-btn {
   position: relative;
   width: 40px;
   height: 40px;
@@ -3630,6 +3669,7 @@ body {
   border: 0;
   border-radius: 6px;
   background: transparent;
+  box-shadow: none;
 }
 
 .persona-btn::after {
@@ -3643,10 +3683,10 @@ body {
 }
 
 .persona-btn.on::after {
-  width: 10px;
-  height: 10px;
-  border-color: var(--accent);
-  background: var(--accent);
+  width: 14px;
+  height: 14px;
+  border-color: var(--on-accent);
+  background: var(--success);
 }
 
 button.persona-btn:not(:disabled) {
@@ -3967,8 +4007,40 @@ button.persona-btn:not(:disabled):hover {
 }
 
 /* ── 메인 메뉴 (12-214): 새로운 게임 / 이어서 하기 ── */
+/* 행복고흥 (고흥군 무료 글꼴). 메인 메뉴 제목에만 */
+@font-face {
+  font-family: "HappyGoheung";
+  src: url("./assets/fonts/HappyGoheungB.otf") format("opentype");
+  font-weight: 700;
+  font-display: block;
+}
+
 .mainmenu {
   padding-top: 8px;
+}
+
+.mainmenu-title {
+  position: relative;
+}
+
+.mainmenu-title h1 {
+  margin: 0;
+  text-align: center;
+  font-family: "HappyGoheung", "BusanDandiMyeongjo", serif;
+  font-weight: 700;
+  font-size: clamp(90px, 18vw, 132px);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+
+.mainmenu-title p {
+  position: absolute;
+  bottom: 8px;
+  right: 50%;
+  transform: translateX(100%);
+  font-size: clamp(10px, 2vw, 14px);
+  text-align: center;
 }
 
 .mainmenu-buttons {
@@ -3984,6 +4056,13 @@ button.persona-btn:not(:disabled):hover {
   padding: 14px 16px;
   font-size: 16px;
   white-space: normal;
+}
+
+.mainmenu-desc {
+  font-size: 12px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.8;
 }
 
 .mainmenu-hint {
@@ -4042,13 +4121,33 @@ button.persona-btn:not(:disabled):hover {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--surface);
   border-radius: 8px;
-  background: var(--surface);
+  background: var(--panel);
+  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+}
+
+.save-row:hover {
+  filter: brightness(1.2);
 }
 
 .save-row.locked {
   opacity: 0.6;
+}
+
+/* 줄 전체가 열기 단추 (단추와 같이 밝아진다) */
+.save-row.openable {
+  cursor: pointer;
+}
+
+.save-row.openable:hover {
+  filter: brightness(1.2);
+}
+
+.save-row.openable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .save-info {
@@ -4084,6 +4183,8 @@ button.persona-btn:not(:disabled):hover {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* 휴지통은 줄의 오른쪽 위 */
+  align-self: start;
 }
 
 .newgame .save-actions button {
@@ -4122,6 +4223,7 @@ button.persona-btn:not(:disabled):hover {
   border-radius: 10px;
   background: var(--panel);
   white-space: normal;
+  box-shadow: 0 12px 12px rgba(0, 0, 0, 0.9);
 }
 
 .confirm-box h2 {
@@ -4147,20 +4249,13 @@ button.persona-btn:not(:disabled):hover {
   font-size: 13px;
   padding: 7px 14px;
   color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
-}
-
-.confirm-actions button:hover:not(:disabled) {
-  border-color: var(--border-hover);
 }
 
 .confirm-actions button.danger {
   color: #fff;
   background: var(--error);
-  border-color: var(--error);
   font-weight: 700;
 }
 
@@ -4219,11 +4314,22 @@ button.persona-btn:not(:disabled):hover {
   background:
     linear-gradient(
       to bottom,
-      rgba(17, 19, 23, 0.82) 0%,
+      rgba(17, 19, 23, 0.85) 0%,
       rgba(17, 19, 23, 0.5) 45%,
-      rgba(17, 19, 23, 0.35) 70%,
-      rgba(17, 19, 23, 0.7) 100%
+      rgba(17, 19, 23, 0.4) 70%,
+      rgba(17, 19, 23, 0.75) 100%
     ),
     var(--title-bg) center 92% / cover no-repeat,
     var(--bg);
+}
+
+/* 뒤로 왔을 때 전에 고른 보기 (누르면 그대로 다시 고른다) */
+.newgame .remembered {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.newgame .portrait-pick.remembered {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }

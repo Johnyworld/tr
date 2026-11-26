@@ -12,7 +12,9 @@ import {
   currentStep,
   stepIndex,
   stepOptions,
+  rememberedAnswer,
   traitChoices,
+  type CreationAnswer,
   type AbilityTier,
   type CreationStepId,
   type StepOption,
@@ -31,6 +33,8 @@ export type NewGameView = {
   step: "world" | "scenario" | "content" | "dialogue" | CreationStepId;
   /** 월드 고르기: 이름, 한 줄 소개, 짧은 설명 */
   worlds?: { id: string; title: string; tagline: string; description: string }[];
+  /** 새 게임의 첫 단계 (뒤로 갈 곳이 없다: 월드, 월드가 하나뿐이면 시나리오) */
+  first?: boolean;
   /** 고른 월드. id: 월드 팩 id (초상화 그림 주소에 쓴다) */
   world?: { id: string; title: string };
   /** 시나리오 고르기 (잠긴 것도 해금 조건과 함께) */
@@ -43,6 +47,8 @@ export type CharacterStepView = {
   index: { at: number; total: number };
   roleLabel: string;
   startSkills: { label: string; value: number }[];
+  /** 뒤로 왔을 때 이 단계에 전에 골라 둔 값 (화면이 처음 값으로 채운다) */
+  remembered?: CreationAnswer;
   /** 지금까지 정한 것. past: 과거 배경 이름, skills: 고른 스킬 */
   chosen: {
     past: string | null;
@@ -98,10 +104,10 @@ export type CharacterStepView = {
 
 export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameDraft): NewGameView {
   const step = newGameStep(draft);
-  if (step === "world") return { mode: draft.mode, step, worlds: [...packs.values()].map(worldInfo) };
+  if (step === "world") return { mode: draft.mode, step, first: true, worlds: [...packs.values()].map(worldInfo) };
   const pack = packs.get(draft.packId!)!;
   const world = { id: draft.packId!, title: worldInfo(pack).title };
-  if (step === "scenario") return { mode: draft.mode, step, world, scenarios: scenarioChoices(pack, draft.unlocked?.[pack.scenario.id] ?? []) };
+  if (step === "scenario") return { mode: draft.mode, step, ...(draft.loneWorld ? { first: true } : {}), world, scenarios: scenarioChoices(pack, draft.unlocked?.[pack.scenario.id] ?? []) };
   if (step === "content") return { mode: draft.mode, step, world, content: { adultAge: pack.scenario.content_rating?.adult_age ?? 18 } };
   if (step === "dialogue" && draft.choice) return { mode: draft.mode, step, world };
 
@@ -110,6 +116,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
   const roleId = draft.roleId!;
   const rules = creationRules(content, roleId);
   const cstep = currentStep(s, draft.character);
+  const remembered = rememberedAnswer(s, draft.character);
   const d = collectDraft(draft.character);
   const role = content.roles[roleId];
   const { spent } = abilitySpend(s, d.abilities);
@@ -120,6 +127,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
     world,
     character: {
       index: stepIndex(s, draft.character),
+      ...(remembered ? { remembered } : {}),
       roleLabel: rules?.roleLabel ?? role?.label ?? "",
       startSkills: rules?.startSkills ?? [],
       chosen: {

@@ -25,11 +25,12 @@ export const listedScenario = (r: RoleContent): boolean => r.scenario?.order !==
 /** 고를 수 있는지: 해금 조건이 없거나 이미 열렸다 */
 export const scenarioOpen = (r: RoleContent, unlocked: readonly string[]): boolean => !r.scenario?.unlock || unlocked.includes(r.id);
 
-/** 시나리오 목록 (순서대로). 잠긴 것도 보인다 */
+/** 시나리오 목록 (열린 것 먼저, 그 안에서 순서대로). 잠긴 것도 아래에 보인다 */
 export function scenarioChoices(content: Content, unlocked: readonly string[]): ScenarioChoice[] {
   return Object.values(content.roles)
     .filter(listedScenario)
-    .sort((a, b) => a.scenario!.order! - b.scenario!.order! || a.id.localeCompare(b.id))
+    // 열린 것 먼저, 잠긴 것은 아래로. 그 안에서는 순서(order)대로
+    .sort((a, b) => Number(!scenarioOpen(a, unlocked)) - Number(!scenarioOpen(b, unlocked)) || a.scenario!.order! - b.scenario!.order! || a.id.localeCompare(b.id))
     .map((r) => ({
       roleId: r.id,
       title: r.scenario!.title,

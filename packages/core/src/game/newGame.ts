@@ -5,6 +5,7 @@ import type { Rng } from "../rng.ts";
 import {
   answerCreation,
   backCreation,
+  liveAnswers,
   ageFloor,
   currentStep,
   describeCreationStep,
@@ -38,6 +39,10 @@ export type NewGameDraft = {
   options?: { mature?: boolean; dialogue?: DialogueStyle } | null;
   /** 고른 월드가 수위 설정을 여는지 */
   contentRating?: boolean;
+  /** 시나리오로 뒤로 오기 전에 고른 시나리오: 같은 것을 다시 고르면 골라 둔 캐릭터 값을 이어 쓰고, 다르면 버린다 */
+  prevRoleId?: string;
+  /** 월드가 하나뿐이라 월드 단계를 건너뛰었다 (시나리오가 첫 단계, 뒤로 가도 월드로 돌아가지 않는다) */
+  loneWorld?: boolean;
   /** 월드별로 열린 해금 (모든 판에 남는 것, 기획서 9.12). 잠긴 시나리오를 가린다 */
   unlocked?: Record<string, string[]>;
 };
@@ -46,6 +51,13 @@ export type NewGameStep = "world" | "scenario" | "character" | "content" | "dial
 
 export function newGameDraft(unlocked: Record<string, string[]> = {}): NewGameDraft {
   return { mode: "new_world", packId: null, roleId: null, character: newCreationDraft("new_world"), unlocked };
+}
+
+/** 월드가 하나뿐이면 월드 고르기를 건너뛰고 그 월드로 정한다 (고를 것이 없는 화면을 보이지 않는다) */
+export function skipLoneWorld(packs: ReadonlyMap<string, Content>, draft: NewGameDraft): NewGameDraft {
+  if (draft.packId || packs.size !== 1) return draft;
+  const [content] = [...packs.values()];
+  return { ...draft, packId: content!.scenario.id, contentRating: !!content!.scenario.content_rating, loneWorld: true };
 }
 
 /** 사망 뒤 같은 세계의 새 캐릭터 (기획서 12.4.1): 고른 무리·계급의 자리(역할)는 정해져 있고 캐릭터 만들기부터 */
@@ -59,7 +71,9 @@ function pickRole(content: Content, draft: NewGameDraft, roleId: string): NewGam
   const minAge = content.scenario.creation?.rank_min_age[role?.rank ?? ""];
   // 자리가 주는 전문 기술 (4.2.1)
   const seat = role ? { rank: role.rank, occupation: role.occupation ?? null, roleId: role.id, faction: role.faction || null } : undefined;
-  return { ...draft, roleId, character: { ...draft.character, minAge, seat } };
+  // 다른 시나리오면 앞서 골라 둔 캐릭터 값은 버린다 (자리·최소 나이가 다르다)
+  const kept = !draft.prevRoleId || draft.prevRoleId === roleId ? draft.character : { ...draft.character, answers: [], at: undefined };
+  return { ...draft, roleId, prevRoleId: undefined, character: { ...kept, minAge, seat } };
 }
 
 export function newGameStep(draft: NewGameDraft): NewGameStep {
@@ -159,9 +173,10 @@ export function backNewGame(draft: NewGameDraft): NewGameDraft {
   if (draft.mode === "new_world" && draft.options?.mature !== undefined && draft.contentRating) return { ...draft, options: { ...draft.options, mature: undefined } };
   // 다 만든 캐릭터에서 뒤로: 캐릭터 확인 단계로
   if (draft.choice) return { ...draft, choice: undefined };
-  if (draft.character.answers.length > 0) return { ...draft, character: backCreation(draft.character) };
+  if (liveAnswers(draft.character).length > 0) return { ...draft, character: backCreation(draft.character) };
   if (draft.mode === "heir") return draft;
-  if (draft.roleId) return { ...draft, roleId: null, character: { ...draft.character, minAge: undefined, seat: undefined } };
+  if (draft.roleId) return { ...draft, roleId: null, prevRoleId: draft.roleId, character: { ...draft.character, minAge: undefined, seat: undefined } };
+  if (draft.loneWorld) return draft;
   return { ...draft, packId: null };
 }
 
@@ -189,7 +204,7 @@ export function describeNewGameStep(packs: ReadonlyMap<string, Content>, draft: 
     const choices = scenarioChoices(content, draft.unlocked?.[content.scenario.id] ?? []);
     const open = choices.filter((c) => !c.locked);
     return [
-      `## 새 게임: ${worldInfo(content).title} — 어떤 시나리오로 시작할까요?`,
+      `## 새 게임: ${worldInfo(content).title} — 시나리오 선택`,
       "물을 것: 시나리오. 목록 순서대로 이름과 짧은 설명을 보여 주고 고르게 한다. 잠긴 시나리오도 이름과 해금 조건을 함께 보여 준다 (고를 수는 없다). 처음이면 튜토리얼을 권한다. 세계 배경을 따로 길게 풀지 않는다.",
       "",
       ...choices.map((c) =>

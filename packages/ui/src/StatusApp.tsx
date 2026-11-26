@@ -99,6 +99,12 @@ export function StatusApp() {
 
   // 메인 메뉴의 쪽 (메뉴 / 이어서 하기). 메뉴를 떠나면 처음으로
   const [menuPage, setMenuPage] = useState<"home" | "continue">("home");
+  // 시나리오 선택에서 설명을 보고 있는 시나리오 (목록 → 설명 두 쪽). 시나리오 단계를 떠나면 비운다
+  const [scenarioPeek, setScenarioPeek] = useState<string | null>(null);
+  const onScenarioStep = !!status && !status.open && status.creation?.view.step === "scenario";
+  useEffect(() => {
+    if (!onScenarioStep) setScenarioPeek(null);
+  }, [onScenarioStep]);
   // 새 게임·새 캐릭터를 만드는 중 (화면에서든 채팅에서든)
   const creating = !!status && !status.open && !!status.creation;
   const inMenu = !!status && !status.open && !status.creation;
@@ -112,8 +118,14 @@ export function StatusApp() {
   return (
     <div className="status-page" data-title-bg={titleScreen || undefined} style={titleScreen ? { ["--title-bg" as string]: `url(${titleBg})` } : undefined}>
       <header className="header status-header">
-        {creating && driver === "screen" && (canGoBack(status.creation!.view) || canGoMenu(status.creation!)) && (
-          <BackButton toMenu={!canGoBack(status.creation!.view)} version={status.creation!.version} onStatus={applyStatus} />
+        {creating && driver === "screen" && (scenarioPeek || canGoBack(status.creation!.view) || canGoMenu(status.creation!)) && (
+          <BackButton
+            toMenu={!scenarioPeek && !canGoBack(status.creation!.view)}
+            version={status.creation!.version}
+            onStatus={applyStatus}
+            // 시나리오 설명에서는 목록으로 (서버의 단계는 그대로)
+            onLocal={scenarioPeek ? () => setScenarioPeek(null) : undefined}
+          />
         )}
         <div className="hdr-left">
           {!creating && status?.open && status.player.zone ? (
@@ -161,7 +173,7 @@ export function StatusApp() {
         <p className="muted status-empty">불러오는 중…</p>
       ) : !status.open && status.creation ? (
         <div key="newgame" className="status-sheet">
-          <NewGame creation={status.creation} readOnly={driver === "chat"} onStatus={applyStatus} />
+          <NewGame creation={status.creation} readOnly={driver === "chat"} onStatus={applyStatus} peek={scenarioPeek} onPeek={setScenarioPeek} />
         </div>
       ) : !status.open ? (
         <div key="menu" className="status-sheet">
@@ -306,7 +318,7 @@ function GmBanner({ status }: { status: StatusView }) {
 }
 
 /** 새 게임 고르기 중 머리 왼쪽: 한 단계 뒤로. 메인 메뉴에서 연 만들기의 첫 단계면 메인 메뉴로 */
-function BackButton({ toMenu, version, onStatus }: { toMenu: boolean; version?: number; onStatus: (status: unknown) => void }) {
+function BackButton({ toMenu, version, onStatus, onLocal }: { toMenu: boolean; version?: number; onStatus: (status: unknown) => void; onLocal?: () => void }) {
   const [busy, setBusy] = useState(false);
   return (
     <button
@@ -316,6 +328,7 @@ function BackButton({ toMenu, version, onStatus }: { toMenu: boolean; version?: 
       title={toMenu ? "메인 메뉴로" : "한 단계 뒤로"}
       disabled={busy}
       onClick={() => {
+        if (onLocal) return onLocal();
         setBusy(true);
         void postCreation(toMenu ? { menu: true, version } : { back: true, version }).then((out) => {
           setBusy(false);

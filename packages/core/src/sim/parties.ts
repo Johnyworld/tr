@@ -563,7 +563,7 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
     if (world.zones[party.goal]?.owner === task.defender && defender && defender.population > 0) {
       if (opts.defer?.(spec, at)) {
         // 플레이어가 낄 교전: 그 시각의 예정된 교전이 된다 (전투 장면, 기획서 9.5). 부대는 닿은 자리에서 흩어져, 다음에 거둘 때 전투원으로 돌아간다
-        out.deferred.push({ ...spec, at });
+        out.deferred.push({ ...spec, at, force: party.size });
         party.done = true;
         party.back = [];
         return;

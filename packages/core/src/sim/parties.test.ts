@@ -120,14 +120,14 @@ describe("움직이는 부대 (docs/war-parties-plan.md ①)", () => {
     expect(w.factions.faction_a!.resources.ammo).toBe(a0.ammo! + 15);
   });
 
-  it("플레이어가 낄 교전은 닿는 시각으로 미루고, 부대는 흩어져 전투원으로 돌아간다", () => {
+  it("플레이어가 낄 교전은 닿는 시각으로 미루고(실제로 온 인원과 함께, PT37), 부대는 흩어져 전투원으로 돌아간다", () => {
     const w = fresh();
     const rng = createSeededRng(7);
     const total = w.factions.faction_c!.combatants;
     const p = spawnParty(w, content, rng, { faction: "faction_c", kind: "raid", goal: "a_east_post", size: 8, dayStart: 0, task: { kind: "clash", clash: "raid", defender: "faction_a" } })!;
     const r = advanceParties(w, content, rng, arrivalOf(p), { defer: () => true });
     expect(r.clashes).toEqual([]);
-    expect(r.deferred).toEqual([{ kind: "raid", attacker: "faction_c", defender: "faction_a", zone: "a_east_post", at: arrivalOf(p) }]);
+    expect(r.deferred).toEqual([{ kind: "raid", attacker: "faction_c", defender: "faction_a", zone: "a_east_post", at: arrivalOf(p), force: 8 }]);
     expect(w.parties).toEqual([]);
     expect(w.factions.faction_c!.combatants).toBe(total);
   });

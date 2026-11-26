@@ -30,10 +30,10 @@
     위험은 판정 전에 말한다: 지혈이 서툴면 피가 멎지 않는다. 오래 머물면 이 자리를 아는 다른 사람이 올지 모른다는 것은 말로만 (부대를 등장시키지 않는다).
     탄띠를 챙기는 것은 우리 무리에 쓸 것을 거두는 일이지만, 숨이 붙은 사람에게서 뺏는 일이기도 하다.
   choices:
-    # 지혈은 응급처치를 배우지 않아도 해 볼 수 있는 일 (PT36 두 판: first_aid로 두니 못 함으로 잠겼다)
+    # 지혈은 배우지 않아도 해 볼 수 있는 일: 전문 기술(응급처치·급조)이 아닌 생존으로 (PT36·37 두 판씩: 못 함으로 잠겼다)
     - id: stop_bleeding
       label: 옷을 찢어 그 자리에서 상처를 동여맨다
-      check: improvise
+      check: survival
       outcomes:
         success:
           - npc_body: { who: fallen, track: bleeding, delta: -3 }

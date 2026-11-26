@@ -361,6 +361,11 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const owner = state.playerZone ? state.zones[state.playerZone]?.owner : null;
     if (!owner || !w.owners.includes(owner)) return false;
   }
+  // 지금 구역의 주인이 이 무리 중 하나가 아닐 때 (주인 없음은 통과). 발전소 목장: 붉은연합 땅이 돼도 남는다 (docs/cannibal-plan.md 2, 사용자 결정)
+  if (w.owners_not) {
+    const owner = state.playerZone ? state.zones[state.playerZone]?.owner : null;
+    if (owner && w.owners_not.includes(owner)) return false;
+  }
   if (w.zone_owner) {
     const owner = state.playerZone ? (state.zones[state.playerZone]?.owner ?? null) : null;
     const kind = owner === null ? "none" : owner === player.factionId ? "own" : "other";

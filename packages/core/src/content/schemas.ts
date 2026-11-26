@@ -1093,6 +1093,8 @@ export function createContentSchemas(s: Scenario) {
         zone_owner: z.array(z.enum(["none", "own", "other"])).optional(),
         /** 지금 구역의 주인이 이 무리 중 하나 (플레이 테스트 11, D6: 처음 땅이 전쟁으로 넘어가도 그 땅 주인의 보초가 나오게) */
         owners: z.array(contentIdSchema).min(1).optional(),
+        /** 지금 구역의 주인이 이 무리 중 하나가 아닐 때만 (주인 없는 땅은 통과, 발전소 목장: 붉은연합 땅이 돼도 남는다) */
+        owners_not: z.array(contentIdSchema).min(1).optional(),
         /** 플레이어의 소속 세력 (none = 무소속) */
         factions: z.array(z.string().min(1)).optional(),
         /** 주인공에게 연인이 있다/없다 (12-58) */

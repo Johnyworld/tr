@@ -1,7 +1,8 @@
 /* 부산단디명조 (부산광역시, 공공누리 제1유형: 출처표시). 눈누 CDN */
 @font-face {
   font-family: "BusanDandiMyeongjo";
-  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조L.woff2") format("woff2");
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조L.woff2")
+    format("woff2");
   font-weight: 300;
   font-display: swap;
   /* 글꼴의 위아래 여백(14:5)이 달라 글자가 줄 칸에서 아래로 치우친다. 한글 획이 줄 칸 가운데 오도록 맞춘다 */
@@ -11,7 +12,8 @@
 }
 @font-face {
   font-family: "BusanDandiMyeongjo";
-  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조M.woff2") format("woff2");
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조M.woff2")
+    format("woff2");
   font-weight: 400 500;
   font-display: swap;
   /* 글꼴의 위아래 여백(14:5)이 달라 글자가 줄 칸에서 아래로 치우친다. 한글 획이 줄 칸 가운데 오도록 맞춘다 */
@@ -21,7 +23,8 @@
 }
 @font-face {
   font-family: "BusanDandiMyeongjo";
-  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조B.woff2") format("woff2");
+  src: url("https://cdn.jsdelivr.net/gh/Project-Noonnu/2610132210@l-2/l/부산단디명조B.woff2")
+    format("woff2");
   font-weight: 600 700;
   font-display: swap;
   /* 글꼴의 위아래 여백(14:5)이 달라 글자가 줄 칸에서 아래로 치우친다. 한글 획이 줄 칸 가운데 오도록 맞춘다 */
@@ -42,7 +45,7 @@
   /* 제목 글자 (본문보다 밝게) */
   --heading: #eef1f5;
   --muted: #8c94a3;
-  --accent: #2e74d6;
+  --accent: #40525f;
   /* 강조색 위의 글자 */
   --on-accent: #ffffff;
   --player: #9fb3a1;
@@ -1170,7 +1173,13 @@ body {
 }
 
 /* 장비 (기획서 4.8) */
-.gear-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.gear-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
 .gear-slot {
   display: inline-block;
   min-width: 2.2em;
@@ -1340,8 +1349,6 @@ body {
 .hero-name-row .xp-bar {
   height: 3.5px;
 }
-
-
 
 .bar {
   display: block;
@@ -1991,6 +1998,8 @@ body {
 /* 새 게임 고르기 (12-67) */
 .newgame {
   display: flex;
+  justify-content: center;
+  height: 100%;
   flex-direction: column;
   gap: 12px;
   padding-bottom: 32px;
@@ -2002,8 +2011,9 @@ body {
   flex-shrink: 0;
   color: var(--text);
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--surface);
   border-radius: 8px;
+  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
   padding: 8px 14px;
   cursor: pointer;
 }
@@ -2024,7 +2034,6 @@ body {
 
 .newgame button.primary {
   background: var(--accent);
-  border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 700;
 }
@@ -2712,11 +2721,21 @@ body {
   color: var(--error);
 }
 
-.state-step-0 { color: #6fbf73; }
-.state-step-1 { color: #e3c14a; }
-.state-step-2 { color: #e8893a; }
-.state-step-3 { color: var(--error); }
-.state-dead { color: var(--error); }
+.state-step-0 {
+  color: #6fbf73;
+}
+.state-step-1 {
+  color: #e3c14a;
+}
+.state-step-2 {
+  color: #e8893a;
+}
+.state-step-3 {
+  color: var(--error);
+}
+.state-dead {
+  color: var(--error);
+}
 
 .present-row.dead .present-name,
 .present-row.dead .present-rank {
@@ -2984,7 +3003,6 @@ body {
 .hdr-temp.bad {
   color: var(--miss);
 }
-
 
 .hdr-right {
   display: flex;
@@ -3659,60 +3677,262 @@ button.persona-btn:not(:disabled):hover {
 }
 
 /* 지도 탭 (12-201) */
-.map-panel svg { display: block; }
-.map-edge { stroke: var(--border-hover); stroke-width: 1.2; }
-.map-edge.faint { stroke: var(--border); stroke-dasharray: 3 3; }
-.map-node circle { fill: var(--text); stroke: var(--bg); stroke-width: 2; }
-.map-node text { fill: var(--text); font-size: 12px; }
-.map-node.base circle { fill: var(--player); }
-.map-node.seen circle { fill: var(--bg); stroke: var(--border-hover); stroke-width: 1; stroke-dasharray: 2 2; }
-.map-node.seen text { fill: var(--muted); }
-.map-node.here circle { fill: var(--accent); stroke: var(--heading); stroke-width: 2; }
-.map-node.here text { fill: var(--heading); font-weight: bold; }
-.map-legend { font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.map-key { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--text); }
-.map-key.here { background: var(--accent); }
-.map-key.seen { background: transparent; border: 1px dashed var(--border-hover); }
+.map-panel svg {
+  display: block;
+}
+.map-edge {
+  stroke: var(--border-hover);
+  stroke-width: 1.2;
+}
+.map-edge.faint {
+  stroke: var(--border);
+  stroke-dasharray: 3 3;
+}
+.map-node circle {
+  fill: var(--text);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.map-node text {
+  fill: var(--text);
+  font-size: 12px;
+}
+.map-node.base circle {
+  fill: var(--player);
+}
+.map-node.seen circle {
+  fill: var(--bg);
+  stroke: var(--border-hover);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.map-node.seen text {
+  fill: var(--muted);
+}
+.map-node.here circle {
+  fill: var(--accent);
+  stroke: var(--heading);
+  stroke-width: 2;
+}
+.map-node.here text {
+  fill: var(--heading);
+  font-weight: bold;
+}
+.map-legend {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.map-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text);
+}
+.map-key.here {
+  background: var(--accent);
+}
+.map-key.seen {
+  background: transparent;
+  border: 1px dashed var(--border-hover);
+}
 /* 구역 안 지도 (12-304) */
-.place-map { margin-bottom: 12px; }
-.place-wall { fill: none; stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
-.map-node.place rect { fill: var(--text); stroke: var(--bg); stroke-width: 2; }
-.map-node.place.here rect { fill: var(--accent); stroke: var(--heading); }
-.map-node.place.seen rect { fill: var(--bg); stroke: var(--border-hover); stroke-dasharray: 2 2; stroke-width: 1; }
-.place-road { fill: var(--muted); font-size: 11px; }
-.place-road.faint { opacity: 0.5; }
+.place-map {
+  margin-bottom: 12px;
+}
+.place-wall {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.map-node.place rect {
+  fill: var(--text);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.map-node.place.here rect {
+  fill: var(--accent);
+  stroke: var(--heading);
+}
+.map-node.place.seen rect {
+  fill: var(--bg);
+  stroke: var(--border-hover);
+  stroke-dasharray: 2 2;
+  stroke-width: 1;
+}
+.place-road {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.place-road.faint {
+  opacity: 0.5;
+}
 /* 전황 지도 (디버그 전용, TRPG_DEBUG=1) */
 /* 지도 탭의 서브 탭 (segmented control) */
-.map-tabs { padding-top: 14px; }
-.segmented { display: flex; margin-bottom: 12px; padding: 3px; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
-.segmented button { flex: 1; min-width: 0; font: inherit; font-size: 12px; padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.segmented button:hover { color: var(--text); }
-.segmented button.on { background: var(--panel); color: var(--heading); font-weight: bold; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
-.war-zone rect, .war-zone circle { stroke: var(--bg); stroke-width: 1.5; }
-.war-zone.here rect, .war-zone.here circle { stroke: var(--heading); stroke-width: 3; }
-.war-label { fill: var(--muted); font-size: 10px; }
-.war-zone.here .war-label { fill: var(--heading); font-weight: bold; }
-.war-fort { fill: var(--muted); font-size: 7px; }
-.war-alert { fill: var(--partial); font-size: 12px; font-weight: bold; }
-.war-clash { fill: var(--error); font-size: 15px; font-weight: bold; pointer-events: none; }
-.war-route { stroke-width: 1.2; stroke-dasharray: 3 2; opacity: 0.8; fill: none; }
-.war-party circle { stroke-width: 1.5; }
-.war-party text { fill: #fff; font-size: 8px; font-weight: bold; pointer-events: none; }
-.war-party.returning text { fill: var(--text); }
-.war-factions, .war-list { list-style: none; margin: 6px 0; padding: 0; font-size: 12px; display: grid; gap: 2px; }
-.war-factions .map-key { vertical-align: -1px; }
-.war-h { margin: 10px 0 2px; font-size: 13px; color: var(--heading); }
-.war-h .muted { font-size: 11px; font-weight: normal; margin-left: 4px; }
-.war-legend { list-style: none; margin: 8px 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 12px; color: var(--muted); }
-.war-legend li { display: flex; align-items: center; gap: 4px; }
-.war-legend-here { stroke: var(--heading); stroke-width: 3; }
-.map-node.stale circle, .map-node.stale rect { fill-opacity: 0.4; stroke-dasharray: 2 2; }
-.map-node rect { stroke: var(--bg); stroke-width: 2; }
-.map-node.here rect { stroke: var(--heading); stroke-width: 3; }
-.map-legend-here { stroke: var(--heading); stroke-width: 3; }
-.map-legend-seen { fill: var(--bg); stroke: var(--border-hover); stroke-width: 1; stroke-dasharray: 2 2; }
-.map-party rect { stroke: var(--bg); stroke-width: 1.5; }
-.war-clash { stroke: var(--bg); stroke-width: 3; paint-order: stroke; }
+.map-tabs {
+  padding-top: 14px;
+}
+.segmented {
+  display: flex;
+  margin-bottom: 12px;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.segmented button {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.segmented button:hover {
+  color: var(--text);
+}
+.segmented button.on {
+  background: var(--panel);
+  color: var(--heading);
+  font-weight: bold;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.war-zone rect,
+.war-zone circle {
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+.war-zone.here rect,
+.war-zone.here circle {
+  stroke: var(--heading);
+  stroke-width: 3;
+}
+.war-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+.war-zone.here .war-label {
+  fill: var(--heading);
+  font-weight: bold;
+}
+.war-fort {
+  fill: var(--muted);
+  font-size: 7px;
+}
+.war-alert {
+  fill: var(--partial);
+  font-size: 12px;
+  font-weight: bold;
+}
+.war-clash {
+  fill: var(--error);
+  font-size: 15px;
+  font-weight: bold;
+  pointer-events: none;
+}
+.war-route {
+  stroke-width: 1.2;
+  stroke-dasharray: 3 2;
+  opacity: 0.8;
+  fill: none;
+}
+.war-party circle {
+  stroke-width: 1.5;
+}
+.war-party text {
+  fill: #fff;
+  font-size: 8px;
+  font-weight: bold;
+  pointer-events: none;
+}
+.war-party.returning text {
+  fill: var(--text);
+}
+.war-factions,
+.war-list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  font-size: 12px;
+  display: grid;
+  gap: 2px;
+}
+.war-factions .map-key {
+  vertical-align: -1px;
+}
+.war-h {
+  margin: 10px 0 2px;
+  font-size: 13px;
+  color: var(--heading);
+}
+.war-h .muted {
+  font-size: 11px;
+  font-weight: normal;
+  margin-left: 4px;
+}
+.war-legend {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.war-legend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.war-legend-here {
+  stroke: var(--heading);
+  stroke-width: 3;
+}
+.map-node.stale circle,
+.map-node.stale rect {
+  fill-opacity: 0.4;
+  stroke-dasharray: 2 2;
+}
+.map-node rect {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.map-node.here rect {
+  stroke: var(--heading);
+  stroke-width: 3;
+}
+.map-legend-here {
+  stroke: var(--heading);
+  stroke-width: 3;
+}
+.map-legend-seen {
+  fill: var(--bg);
+  stroke: var(--border-hover);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.map-party rect {
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+.war-clash {
+  stroke: var(--bg);
+  stroke-width: 3;
+  paint-order: stroke;
+}
 
 /* 캐릭터 시트의 성격 표: 만들 때와 같은 모양, 누를 수 없다 */
 .persona-table.readonly {
@@ -3991,4 +4211,19 @@ button.persona-btn:not(:disabled):hover {
 .settings-sheet .stats dd {
   margin-top: 1px;
   line-height: 1.4;
+}
+
+/* ── 메인 메뉴·캐릭터 만들기 배경 ───────────── */
+/* 세로로 긴 그림(세 사람이 아래 가운데)을 창에 맞춰 덮고, 글이 읽히게 위아래를 어둡게 덮는다 */
+.status-page[data-title-bg] {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(17, 19, 23, 0.82) 0%,
+      rgba(17, 19, 23, 0.5) 45%,
+      rgba(17, 19, 23, 0.35) 70%,
+      rgba(17, 19, 23, 0.7) 100%
+    ),
+    var(--title-bg) center 92% / cover no-repeat,
+    var(--bg);
 }

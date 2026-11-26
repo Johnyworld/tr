@@ -4,6 +4,7 @@ import { SettingsButton } from "./Settings.tsx";
 import { Icon } from "./Icon.tsx";
 import { canGoBack, canGoMenu, CreatedToast, NewGame, newGameTitle, postCreation } from "./NewGame.tsx";
 import { MainMenu } from "./MainMenu.tsx";
+import titleBg from "./assets/title_bg.jpg";
 import type { CreationStatus, GmLink, PlayerView, WarMapView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
@@ -106,8 +107,10 @@ export function StatusApp() {
   }, [inMenu]);
   const gm = status?.gm;
   const driver = creating ? (status.creation!.driver ?? "screen") : null;
+  // 메인 메뉴와 캐릭터 만들기는 같은 배경 그림 위에 (게임 중 시트에는 없다)
+  const titleScreen = !!status && !status.open;
   return (
-    <div className="status-page">
+    <div className="status-page" data-title-bg={titleScreen || undefined} style={titleScreen ? { ["--title-bg" as string]: `url(${titleBg})` } : undefined}>
       <header className="header status-header">
         {creating && driver === "screen" && (canGoBack(status.creation!.view) || canGoMenu(status.creation!)) && (
           <BackButton toMenu={!canGoBack(status.creation!.view)} version={status.creation!.version} onStatus={applyStatus} />

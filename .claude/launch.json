@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "status",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "tail -f /dev/null | TRPG_STATUS_PORT=8799 RAG=off pnpm --silent mcp"],
+      "port": 8799
+    },
+    {
       "name": "server",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@trpg/server", "dev"],

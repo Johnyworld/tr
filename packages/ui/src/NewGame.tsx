@@ -184,23 +184,31 @@ function ScenarioStep({ view, busy, answer, peek, onPeek }: StepProps & { peek: 
   return (
     <>
       <h2 className="newgame-title">시나리오 선택</h2>
+      {/* 열린 것은 한 줄에 하나, 잠긴 것은 아래에 두 열로 */}
       <div className="choice-list">
-        {view.scenarios!.map((c) =>
-          c.locked ? (
-            <div key={c.roleId} className="choice-card locked" aria-disabled="true">
-              <strong>
-                <Icon name="lock" size={14} /> {c.title}
-              </strong>
-              <span className="choice-desc">해금 조건: {c.locked}</span>
-            </div>
-          ) : (
+        {view.scenarios!
+          .filter((c) => !c.locked)
+          .map((c) => (
             <button key={c.roleId} type="button" className="choice-card" disabled={busy} onClick={() => onPeek(c.roleId)}>
               <strong>{c.title}</strong>
               <span className="choice-tagline">{c.who}</span>
             </button>
-          ),
-        )}
+          ))}
       </div>
+      {view.scenarios!.some((c) => c.locked) && (
+        <div className="choice-grid">
+          {view.scenarios!
+            .filter((c) => c.locked)
+            .map((c) => (
+              <div key={c.roleId} className="choice-card locked" aria-disabled="true">
+                <strong>
+                  <Icon name="lock" size={14} /> {c.title}
+                </strong>
+                <span className="choice-desc">해금 조건: {c.locked}</span>
+              </div>
+            ))}
+        </div>
+      )}
     </>
   );
 }
@@ -921,7 +929,7 @@ function SettingsStep({ view, busy, answer }: StepProps) {
           <h3 className="newgame-sub">
             {slot.label} <span className="muted small">({slot.hint}, {slot.max}개까지)</span>
           </h3>
-          <div className="choice-list">
+          <div className="choice-grid">
             {data.items
               .filter((x) => x.slot === slot.id)
               .map((item) => {

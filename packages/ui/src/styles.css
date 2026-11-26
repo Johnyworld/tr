@@ -2097,8 +2097,7 @@ body {
 }
 
 .choice-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   flex-direction: column;
   gap: 8px;
 }
@@ -4050,9 +4049,14 @@ button.persona-btn:not(:disabled):hover {
   font-size: 13px;
 }
 
+/* 시트의 점 칸은 <span>이라 button.persona-btn 규칙을 받지 않는다: 칸 모양(가운데 점)을 여기서 준다 */
 .persona-table.readonly .persona-btn {
+  position: relative;
   width: 28px;
   height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .persona-table.readonly .persona-buttons::before {
@@ -4404,4 +4408,11 @@ button.persona-btn:not(:disabled):hover {
 .newgame .portrait-pick.remembered {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/* 두 열 보기: 잠긴 시나리오, 캐릭터 설정 */
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }

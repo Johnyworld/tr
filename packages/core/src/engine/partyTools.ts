@@ -214,7 +214,7 @@ export function fightMembersHere(state: GameState): string[] {
   return Object.values(state.partyFights).filter((f) => f.zone === state.playerZone).flatMap((f) => f.members);
 }
 
-/** 맞붙은 주인공이 옆 구역으로 달아나다 빗나가 부대원이 쫓아왔다: 맞붙음과 부대 자리를 그 구역으로 옮긴다 (부대는 하던 일을 접는다) */
+/** 맞붙은 주인공이 옆 구역으로 달아나다 빗나가 부대원이 쫓아왔다: 맞붙음과 부대 자리를 그 구역으로 옮긴다 (부대는 하던 일을 접는다. 공세·차지하러 가던 부대는 머문 뒤 제 길로) */
 export function chaseParties(ctx: ToolContext, from: string, to: string, chasing: readonly string[]): void {
   const state = ctx.store.getState();
   const fights = Object.entries(state.partyFights).filter(([, f]) => f.zone === from && f.members.some((id) => chasing.includes(id)));

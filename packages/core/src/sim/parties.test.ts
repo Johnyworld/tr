@@ -6,7 +6,7 @@ import { createSeededRng } from "../rng.ts";
 import { loadRealContent } from "../testing.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
-import { advanceParties, arrivalOf, canSend, detourRoute, hidingAt, spawnIntercept, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
+import { advanceParties, arrivalOf, canSend, chaseInto, detourRoute, hidingAt, spawnIntercept, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
 import { ALERT_PLAN_DAYS, runGarrisonWatch, settlePartyAlerts, warConfessions } from "../engine/partyTools.ts";
 import { executeTool } from "../engine/tools.ts";
 import { factionOutlook } from "../engine/warTools.ts";
@@ -1042,5 +1042,28 @@ describe("알리기 구조 (12-327)", () => {
     const r = w.executeTool("alert_party", { party_id: "ps" });
     expect(!r.ok && r.error).toContain("하루가 넘은");
     w.close();
+  });
+});
+
+describe("PT40 고침", () => {
+  it("공세 부대는 한 사람을 쫓았다고 하던 일을 접지 않는다: 쫓아온 곳이 목표면 거기서 교전, 아니면 제 길로", () => {
+    const w = fresh();
+    const rng = createSeededRng(3);
+    const p = spawnParty(w, content, rng, { faction: "faction_c", kind: "raid", goal: "a_east_post", size: 8, dayStart: 0, task: { kind: "clash", clash: "raid", defender: "faction_a" } })!;
+    const t = p.legs[1]!.from + 1;
+    chaseInto(w, content, rng, p.id, "a_east_post", t, 60);
+    const q = w.parties!.find((x) => x.id === p.id)!;
+    expect(q.done).toBe(false);
+    expect(q.legs[q.legs.length - 1]).toMatchObject({ zone: "a_east_post", to: t + 60 });
+  });
+
+  it("치러 오는 구역에 숨어 기다리던 지키는 쪽 부대는 따로 맞붙지 않고 그 교전에 든다", () => {
+    const w = fresh();
+    const rng = createSeededRng(5);
+    const p = spawnParty(w, content, rng, { faction: "faction_c", kind: "raid", goal: "a_east_post", size: 8, dayStart: 0, task: { kind: "clash", clash: "raid", defender: "faction_a" } })!;
+    const g = spawnIntercept(w, content, { faction: "faction_a", from: "a_base", goal: "a_east_post", size: 5, at: 0, until: arrivalOf(p) + 600 })!;
+    const r = advanceParties(w, content, rng, arrivalOf(p));
+    expect(r.clashes.filter((c) => c.attacker === "faction_c" && c.zone === "a_east_post")).toHaveLength(1);
+    expect(w.parties!.some((x) => x.id === g.id)).toBe(false);
   });
 });

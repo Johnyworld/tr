@@ -283,6 +283,11 @@ function meetLegs(p: Party): PartyLeg[] {
   return p.back.filter((l) => l.zone === p.goal && l.from >= arrived).slice(0, 1);
 }
 
+/** g가 c가 치러 오는 구역에 숨어 기다리는 지키는 쪽 부대인가 */
+function guardsTarget(g: Party, c: Party): boolean {
+  return g.task.kind === "intercept" && !g.task.squad.length && !g.done && c.task.kind === "clash" && !c.done && c.task.defender === g.faction && g.goal === c.goal;
+}
+
 function nextEncounter(content: Content, world: WarWorld, from: number, upTo: number): { a: Party; b: Party; zone: string; at: number } | null {
   const parties = world.parties ?? [];
   let best: { a: Party; b: Party; zone: string; at: number } | null = null;
@@ -291,6 +296,8 @@ function nextEncounter(content: Content, world: WarWorld, from: number, upTo: nu
       const a = parties[i]!;
       const b = parties[j]!;
       if (a.size <= 0 || b.size <= 0 || a.met.includes(b.id) || !hostile(content, world, a.faction, b.faction)) continue;
+      // 지키는 구역에 숨어 기다리던 부대는 그 구역을 치러 온 부대와 따로 맞붙지 않는다: 그 교전에 지키는 쪽으로 든다 (PT40 분대장: 숨은 열 명이 공세 25분 전에 따로 싸워 지고 전투 장면엔 빠졌다)
+      if (guardsTarget(a, b) || guardsTarget(b, a)) continue;
       for (const la of meetLegs(a)) {
         for (const lb of meetLegs(b)) {
           if (la.zone !== lb.zone) continue;
@@ -443,6 +450,23 @@ export function chaseInto(world: WarWorld, content: Content, rng: Rng, partyId: 
   if (!cfg || !party || party.size <= 0) return;
   const before = (legs: PartyLeg[]) => legs.filter((l) => l.from <= at).map((l) => (l.to > at ? { ...l, to: at } : l));
   const stay = { zone, from: at, to: at + hold };
+  // 할 일이 남은 부대(공세·차지·운반·살피기)는 쫓은 뒤 제 길로 돌아간다 (PT40 졸병: 맞붙은 공세 부대가 초소까지 쫓아온 뒤 할 일을 마친 것으로 처리돼 공세가 사라졌다)
+  // 공세·차지하러 가던 부대는 한 사람을 쫓았다고 하던 일을 접지 않는다 (PT40 졸병: 맞붙은 공세 부대가 초소까지 쫓아온 뒤 할 일을 마친 것으로 처리돼 공세가 사라졌다).
+  // 쫓아온 곳이 목표면 거기 닿은 것이다(머문 뒤 교전), 아니면 머문 뒤 제 길로
+  const bound = !party.done && (party.task.kind === "clash" || party.task.kind === "occupy");
+  if (bound && zone === party.goal) {
+    party.legs = [...before(party.legs), stay];
+    party.back = [];
+    return;
+  }
+  if (bound && zone !== party.goal) {
+    const onward = partyRoute(content, world, party.faction, zone, party.goal);
+    if (onward && onward.length >= 2) {
+      party.legs = [...before(party.legs), ...planLegs(content, cfg, party.kind, onward, at, at + hold, party.size, rng)];
+      party.back = [];
+      return;
+    }
+  }
   if (party.done) party.back = [...before(party.back), stay];
   else {
     party.legs = [...before(party.legs), stay];
@@ -573,7 +597,14 @@ function arrive(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig,
       f.combatants += party.size;
       if (far) f.morale -= 1;
       // 정찰로 적 배치를 알고 치면 기습이다 (파트 11, *임시* 화력 ×1.3)
-      const clash = fightClash(world, content, rng, spec, task.surprise ? Math.round(party.size * SURPRISE_FACTOR) : party.size);
+      // 그 구역에 숨어 기다리던 지키는 쪽 부대는 이 교전에 든다 (전투원으로 거둬 지키는 병력에 더한다)
+      const guards = (world.parties ?? []).filter((g) => guardsTarget(g, party));
+      const guard = guards.reduce((n, g) => n + g.size, 0);
+      if (guard) {
+        defender.combatants += guard;
+        world.parties = (world.parties ?? []).filter((g) => !guards.includes(g));
+      }
+      const clash = fightClash(world, content, rng, spec, task.surprise ? Math.round(party.size * SURPRISE_FACTOR) : party.size, guard);
       if (task.credits?.length) clash.credits = task.credits;
       if (far) f.morale = Math.min(3, f.morale + 1);
       recordDefeat(world, clash.success ? task.defender : party.faction, at);

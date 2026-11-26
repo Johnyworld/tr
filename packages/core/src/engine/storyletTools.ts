@@ -95,7 +95,9 @@ export function endActiveStorylet(ctx: ToolContext, reason: string): ToolDisplay
   store.append({ type: "storylet_expired", storyletId: active.id });
   const displays: ToolDisplayEvent[] = [];
   for (const [key, id] of Object.entries(active.cast)) {
-    if (!s?.cast[key]?.enter || !store.getState().scene.present.includes(id)) continue;
+    // 이야기가 데려온 이름 없는 사람·짐승(배역의 extra)도 함께 물러난다 (PT40 분대장 [막힘]: 외면한 이야기의 감염체가 남아 보초를 막았다)
+    const spec = s?.cast[key];
+    if (!(spec?.enter || (spec && "extra" in spec && spec.extra)) || !store.getState().scene.present.includes(id)) continue;
     store.append({ type: "npc_left", npcId: id });
     displays.push({ type: "presence", npcName: playerCalls(store.getState(), content, id), action: "leave" });
   }

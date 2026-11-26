@@ -754,8 +754,8 @@ function attackOptions(world: WarWorld, content: Content, attacker: FactionConte
 }
 
 /** 부대가 닿아 싸운다 (움직이는 부대): 실제로 간 인원으로 */
-export function fightClash(world: WarWorld, content: Content, rng: Rng, spec: ClashSpec, force: number): Clash {
-  return fight(world, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, undefined, force);
+export function fightClash(world: WarWorld, content: Content, rng: Rng, spec: ClashSpec, force: number, guard = 0): Clash {
+  return fight(world, content, rng, spec.kind, spec.attacker, spec.defender, spec.zone, spec.plan, undefined, force, guard);
 }
 
 /** 빈 구역에 자리를 잡는다 */

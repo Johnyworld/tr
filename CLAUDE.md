@@ -2,7 +2,7 @@
 
 포스트아포칼립스 배경의 1인용 AI TRPG. 코드가 시뮬레이션을 돌리고, Claude가 GM으로서 이야기를 연출한다.
 Claude 앱 세션(Claude Code·Claude 데스크톱)이 GM이고, 엔진은 로컬 MCP 서버다 (MCP 모드 하나. 웹 앱 모드는 폐기, `docs/design.md` 11.5).
-전체 기획은 `docs/design.md`를 참고한다. 설계 판단이 필요하면 먼저 그 문서를 읽고, 결정이 바뀌면 문서도 함께 갱신한다.
+전체 기획은 `docs/design.md`(목차)와 장별 파일 `docs/design/NN-*.md`에 있다. "docs/design.md 12.4" 같은 참조는 목차에서 장 번호로 파일을 찾는다. 설계 판단이 필요하면 해당 장을 `grep -n`으로 찾아 필요한 절만 읽고(4장·17장은 100KB가 넘는다), 결정이 바뀌면 그 장 파일과 목차도 함께 갱신한다.
 
 ## 절대 원칙
 
@@ -36,7 +36,7 @@ packages/ui       상태 화면 (Vite + React, 캐릭터 시트). MCP 서버가 
 .claude/skills/   Claude Code 스킬 /play, /stop
 content/scenarios/<id>/   시나리오 팩: scenario.yaml, YAML 콘텐츠(factions, npcs, locations, roles, items, storylets),
                           lore/(RAG 원문), speech/, prompts/, eval/(검색 평가 세트)
-docs/design.md    기획서
+docs/design.md    기획서 목차 (본문은 docs/design/ 장별 파일, 개발 기록 12-xxx는 17-dev-order.md)
 ```
 
 - 스택: TypeScript, pnpm workspaces, MCP SDK, Vite + React(상태 화면), SQLite + Drizzle, zod, RAG(bge-m3 로컬 임베딩, sqlite-vec, FTS5)

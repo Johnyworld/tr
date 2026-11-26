@@ -1151,7 +1151,7 @@ export function checkStorylets(content: Content): string[] {
   for (const [what, tag] of [["infestation.arrival", content.scenario.infestation?.arrival?.tag], ["alarm", content.scenario.alarm?.tag]] as const) {
     if (hasStories && tag && !Object.values(content.storylets).some((st) => st.tags.includes(tag))) problems.push(`${what}: 태그 ${tag}인 이야기가 없다`);
   }
-  for (const st of Object.values(content.storylets)) for (const f of st.when.owners ?? []) if (!content.factions[f]) problems.push(`이야기 ${st.id}: 알 수 없는 세력 ${f}`);
+  for (const st of Object.values(content.storylets)) for (const f of [...(st.when.owners ?? []), ...(st.when.owners_not ?? [])]) if (!content.factions[f]) problems.push(`이야기 ${st.id}: 알 수 없는 세력 ${f}`);
   return problems;
 }
 

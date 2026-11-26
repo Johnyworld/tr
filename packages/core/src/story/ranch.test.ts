@@ -31,6 +31,21 @@ describe("발전소 목장", () => {
     w.close();
   });
 
+  it("발전소가 붉은연합 땅이어도 목장은 남고, 다른 무리가 차지하면 빈 컨테이너만 열린다 (owners_not)", () => {
+    const { w, night } = open();
+    const owned = (owner: string | null) => {
+      const s = w.state();
+      return { ...s, zones: { ...s.zones, power_plant: { ...s.zones.power_plant!, owner } } };
+    };
+    const at = (owner: string | null) => eligibleStorylets(owned(owner), w.content, night).map((x) => x.id);
+    expect(at(null)).toContain("rn_pens");
+    expect(at("faction_c")).toContain("rn_pens");
+    expect(at("faction_c")).not.toContain("rn_empty");
+    expect(at("faction_a")).not.toContain("rn_pens");
+    expect(at("faction_a")).toContain("rn_empty");
+    w.close();
+  });
+
   it("컨테이너를 본 뒤에만 낮에 목장주가 고기를 권하고, 목장이 끝나면 아무것도 열리지 않는다", () => {
     const { w, store, noon, night } = open();
     store.append({ type: "flag_set", characterId: "player", flag: "rn_lead" });

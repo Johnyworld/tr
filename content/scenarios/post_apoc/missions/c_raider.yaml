@@ -96,6 +96,8 @@
   title: 동쪽 초소 경계 재기
   # 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역의 적 부대를 보고, 앞당긴 공세가 기습이 된다
   scouts: true
+  # 노리는 구역: 우리 땅이 되면 내지 않는다 (PT37)
+  target: a_east_post
   where: c_warehouse
   # 작전: 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
   armed: true

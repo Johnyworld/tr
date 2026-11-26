@@ -35,7 +35,15 @@ export function sightKey(party: Party, zone: string, t: number): string {
 
 /** 주인공 쪽 사람 수 (주인공 + 곁의 동행) */
 function groupSize(state: GameState, content: Content): number {
-  return 1 + companyHere(state, content).length;
+  return 1 + companyHere(state, content).length + alliedPartiesHere(state).reduce((n, p) => n + p.size, 0);
+}
+
+/** 지금 주인공 구역에 있는 우리 무리 부대 (맞닥뜨리면 함께 맞선다, PT37 사용자 결정) */
+export function alliedPartiesHere(state: GameState, at: number = state.time): Party[] {
+  const mine = state.characters[state.playerId]?.factionId;
+  const zone = state.playerZone;
+  if (!mine || !zone) return [];
+  return state.parties.filter((p) => p.faction === mine && p.size > 0 && partyZoneAt(p, at) === zone);
 }
 
 /** 지금 자리에서 바깥이 보이는가: 바깥 장소이거나 망루. 장소가 없는 구역이면 본다 */
@@ -140,7 +148,7 @@ export function rollPartySight(state: GameState, content: Content, rng: Rng, par
   const partySaw = seen.bSees;
   // 주인공을 본 부대가 덤비는가: 적대하는 무리이고, 주인공 쪽보다 넉넉히 많을 때 (4-2)
   const onOwnLand = ownedBy(state, zone, party.faction);
-  const attacks = partySaw && hostileFaction(state, content, party.faction) && partyChoice({ kind: party.kind, size: party.size, onOwnLand }, { size: groupSize(state, content) }) === "fight";
+  const attacks = partySaw && hostileFaction(state, content, party.faction) && partyChoice({ kind: party.kind, size: party.size, onOwnLand, returning: party.done }, { size: groupSize(state, content) }) === "fight";
   return { player, party: partySaw, attacks, rolled: true };
 }
 

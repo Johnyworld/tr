@@ -19,7 +19,8 @@ import { disposition } from "../sim/war.ts";
 import { recordDeed, recordDeedIfSeen } from "../engine/reputationTools.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { dayOf } from "./time.ts";
-import { ownedBy } from "./home.ts";
+import { hostileFaction, ownedBy } from "./home.ts";
+import { partyZoneAt } from "../sim/parties.ts";
 
 /** 들키지 않기가 조건인 임무가 깨졌다. 알릴 줄 (이미 깨졌거나 그런 임무가 아니면 null) */
 function spoilUnseenMission(ctx: ToolContext): string | null {
@@ -81,6 +82,9 @@ export function onSpottedAtHome(ctx: ToolContext): string[] {
   const state = ctx.store.getState();
   const me = state.characters[state.playerId];
   if (!me?.factionId || !state.playerZone || !ownedBy(state, state.playerZone, me.factionId)) return [];
+  // 우리 땅에 든 적대 무리 앞에서 몸을 숨긴 것은 우리 사람에게 수상한 짓이 아니다 (PT37 졸병: 망루에서 붉은 완장들을 지켜보다 빗나가 "명령 불복종")
+  const zone = state.playerZone;
+  if (state.parties.some((p) => p.size > 0 && partyZoneAt(p, state.time) === zone && hostileFaction(state, ctx.content, p.faction))) return ["몸을 숨기는 데 서툴렀다. 저쪽이 눈치챘는지는 모른다."];
   // 본 사람이 있을 때만 들킨 것이다 (PT15 졸병: 아무도 없는 창고에서 "들켰다"가 남았다)
   const { deed, visible } = recordDeedIfSeen(ctx, { summary: "우리 땅에서 수상한 짓을 하다 들켰다", tags: ["disobedience"], severity: 1, privacy: "semi_private", noisy: true });
   if (!deed) return ["숨는 데는 서툴렀지만 다행히 본 사람이 없는 것 같다."];

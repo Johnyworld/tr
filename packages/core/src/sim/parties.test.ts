@@ -7,7 +7,7 @@ import { loadRealContent } from "../testing.ts";
 import { MINUTES_PER_DAY } from "../rules/time.ts";
 import { WorldManager } from "../world/manager.ts";
 import { advanceParties, arrivalOf, canSend, detourRoute, hidingAt, spawnIntercept, maxParties, partiesConfig, partyRoute, partyZoneAt, recordDefeat, returnOf, spawnParty } from "./parties.ts";
-import { runGarrisonWatch, settlePartyAlerts, warConfessions } from "../engine/partyTools.ts";
+import { ALERT_PLAN_DAYS, runGarrisonWatch, settlePartyAlerts, warConfessions } from "../engine/partyTools.ts";
 import { executeTool } from "../engine/tools.ts";
 import { factionOutlook } from "../engine/warTools.ts";
 import { describePlayerState } from "../engine/context.ts";
@@ -996,7 +996,7 @@ describe("알리기 구조 (12-327)", () => {
     w.ctx().store.append({ type: "party_sighted", key: sightKey(w.state().parties[0]!, goal, t), player: true, party: false });
   };
 
-  it("우리 땅의 우리 사람 앞이면 초소에서도 알리고, 공세를 앞둔 정찰이면 그 공세의 목표를 하루 동안 더 지킨다", () => {
+  it("우리 땅의 우리 사람 앞이면 초소에서도 알리고, 공세를 앞둔 정찰이면 그 공세의 목표를 그 공세가 끝날 때까지(길어도 사흘) 더 지킨다 (PT37)", () => {
     const w = make();
     seenScout(w, "rail_embankment", "c_east_offensive");
     w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "a_east_post", place: "trench" });
@@ -1004,10 +1004,11 @@ describe("알리기 구조 (12-327)", () => {
     w.executeTool("npc_presence", { npc_id: mate, action: "enter" });
     const r = w.executeTool("alert_party", { party_id: "ps" });
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
-    expect(r.ok && r.resultText).toContain("하루 동안");
+    expect(r.ok && r.resultText).toContain("그 공세가 끝날 때까지");
     const target = w.state().clocks.c_east_offensive!.target;
     expect(w.state().zones[target]!.alerted).toBe("faction_a");
-    expect(w.state().partyAlerts[0]!.until).toBe(w.state().time + MINUTES_PER_DAY);
+    expect(w.state().partyAlerts[0]!.until).toBe(w.state().time + ALERT_PLAN_DAYS * MINUTES_PER_DAY);
+    expect(w.state().partyAlerts[0]!.plan).toBe("c_east_offensive");
     w.close();
   });
 

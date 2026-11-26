@@ -696,6 +696,7 @@ function checkReferences(content: Content): string[] {
   const plans = Object.values(content.factions).flatMap((f) => f.plans.map((p) => p.id));
   for (const m of Object.values(content.missions)) {
     if (m.advances && !plans.includes(m.advances.clock)) problems.push(`missions.${m.id}.advances: 알 수 없는 세력 클락 ${m.advances.clock}`);
+    if (m.target && !content.locations[m.target]) problems.push(`missions.${m.id}.target: 알 수 없는 구역 ${m.target}`);
     for (const w of Array.isArray(m.where) ? m.where : m.where ? [m.where] : []) if (w !== "outside" && w !== "near" && w !== "enemy" && !content.locations[w]) problems.push(`missions.${m.id}.where: 알 수 없는 구역 ${w}`);
   }
   if (new Set(plans).size !== plans.length) problems.push("factions: 세력 클락(plans) id가 겹친다");

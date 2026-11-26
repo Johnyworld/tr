@@ -55,7 +55,13 @@ import { startingSkills } from "./creation.ts";
 // 120: PT34 고침 (12-325). garrisonSeen, 이벤트 party_reported
 // 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
 // 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
-export const SAVE_SCHEMA_VERSION = 123;
+export const SAVE_SCHEMA_VERSION = 124;
+
+/** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
+function retarget(clock: { target: string; credits?: unknown }, target: string): void {
+  if (clock.target !== target) delete clock.credits;
+  clock.target = target;
+}
 /** 이 버전보다 앞선 세이브는 스킬을 옮긴다 (upgradeSkills) */
 export const SKILL_REWORK_VERSION = 80;
 
@@ -708,7 +714,7 @@ export function createGameSchemas(s: Scenario) {
     /** 우리 땅을 지키는 사람이 이미 알아챈 적 부대 (PT34 사용자 결정, 한 부대에 한 번) */
     garrisonSeen: z.array(z.string()).default([]),
     /** 주인공이 무리에 알린 부대 (5-3): 같은 부대로 다시 조르지 못하고, 그 부대가 막히면 공적 */
-    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false), closed: z.boolean().default(false), /** 더 지키는 때 (12-327: 하루) */ until: z.number().int().default(0) })).default([]),
+    partyAlerts: z.array(z.strictObject({ partyId: z.string(), faction: z.string(), zone: z.string(), at: z.number().int(), persuaded: z.enum(["none", "success", "partial", "miss"]), credited: z.boolean().default(false), closed: z.boolean().default(false), /** 더 지키는 때 (12-327: 하루, 계획 정찰은 그 공세가 끝날 때까지 길어도 사흘) */ until: z.number().int().default(0), /** 계획 정찰이면 그 계획 (그 공세가 끝나면 거둔다, PT37 사용자 결정) */ plan: z.string().nullable().default(null) })).default([]),
     /** 주인공이 맞붙은 부대 (움직이는 부대 ③): 부대 id → 장면에 들인 부대원(엑스트라·우두머리)과 구역 */
     partyFights: z.record(z.string(), z.strictObject({ members: z.array(z.string()), zone: z.string(), at: z.number().int() })).default({}),
     /** 구역 소유 */
@@ -988,7 +994,7 @@ export function createGameSchemas(s: Scenario) {
      */
     z.strictObject({ type: z.literal("party_reported"), partyId: z.string(), via: z.enum(["squad", "garrison"]), zone: z.string(), faction: z.string().optional(), /** 이미 왔다 간 뒤에 알게 됐다: 알릴 무리도 더 지킬 곳도 아니다 */ gone: z.boolean().optional() }),
     /** 본 부대를 무리에 알렸다 (5-3): 그 부대가 노리는 구역을 더 지킨다. persuaded: 맞받아치자고 설득한 결과 */
-    z.strictObject({ type: z.literal("party_alerted"), partyId: z.string(), faction: z.string(), zone: z.string(), persuaded: z.enum(["none", "success", "partial", "miss"]), until: z.number().int().optional() }),
+    z.strictObject({ type: z.literal("party_alerted"), partyId: z.string(), faction: z.string(), zone: z.string(), persuaded: z.enum(["none", "success", "partial", "miss"]), until: z.number().int().optional(), plan: z.string().optional() }),
     /** 알린 부대의 끝 (5-3): credited 막아 내 공적을 받았다, clear 더 지키던 것을 거둔다 */
     z.strictObject({ type: z.literal("party_alert_settled"), partyId: z.string(), zone: z.string(), credited: z.boolean(), clear: z.boolean() }),
     /** 배경 부품이 세계의 사실이 되었다 (기획서 12.6) */
@@ -2637,7 +2643,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         // 다 차서 다시 시작한 계획은 기여 기록을 비운다 (그 공세에 실려 나갔다)
         if (clock.filled < c.filled) delete c.credits;
         c.filled = clock.filled;
-        if (clock.target !== undefined) c.target = clock.target;
+        if (clock.target !== undefined) retarget(c, clock.target);
       }
       next.lastWarDay = event.day;
       next.pendingClashes.push(...structuredClone(event.scheduled));
@@ -2659,7 +2665,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       for (const [id, clock] of Object.entries(event.clocks)) {
         const c = mustGet(next.clocks, id, "세력 클락");
         c.filled = clock.filled;
-        if (clock.target !== undefined) c.target = clock.target;
+        if (clock.target !== undefined) retarget(c, clock.target);
       }
       next.parties = structuredClone(event.parties);
       next.partiesUpTo = event.partiesUpTo;
@@ -2712,7 +2718,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         next.partyAlerts = next.partyAlerts.map((a) => (a.partyId === event.partyId ? { ...a, persuaded: event.persuaded } : a));
         break;
       }
-      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false, closed: false, until: event.until ?? 0 }];
+      next.partyAlerts = [...next.partyAlerts, { partyId: event.partyId, faction: event.faction, zone: event.zone, at: state.time, persuaded: event.persuaded, credited: false, closed: false, until: event.until ?? 0, plan: event.plan ?? null }];
       const z = next.zones[event.zone];
       if (z && z.owner === event.faction) z.alerted = event.faction;
       break;
@@ -3116,7 +3122,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.pendingClashes = next.pendingClashes.filter((p) => p.id !== event.pendingId);
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
-      for (const [id, target] of Object.entries(event.targets ?? {})) if (next.clocks[id]) next.clocks[id]!.target = target;
+      for (const [id, target] of Object.entries(event.targets ?? {})) if (next.clocks[id]) retarget(next.clocks[id]!, target);
       rememberClashes(next, [event.clash], state.time);
       seeHereOwner(next);
       break;
@@ -3155,7 +3161,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.battle = null;
       next.factions = structuredClone(event.factions);
       next.zones = structuredClone(event.zones);
-      for (const [id, target] of Object.entries(event.targets ?? {})) if (next.clocks[id]) next.clocks[id]!.target = target;
+      for (const [id, target] of Object.entries(event.targets ?? {})) if (next.clocks[id]) retarget(next.clocks[id]!, target);
       mustGet(next.characters, state.playerId, "캐릭터").merit += event.merit;
       rememberClashes(next, [event.clash], state.time);
       break;

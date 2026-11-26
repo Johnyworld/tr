@@ -291,6 +291,8 @@ export function pickDailyOffers(
     })
     .filter((id) => !canDo || content.missions[id]!.requirements.every((r) => !("check" in r) || canDo(r.check)))
     .filter((id) => !safeOnly || !riskyMission(content.missions[id]!))
+    // 노리던 구역이 이미 우리 땅이면 그 일은 끝났다
+    .filter((id) => !lost?.factionId || !content.missions[id]!.target || lost.owners[content.missions[id]!.target!]?.owner !== lost.factionId)
     .filter((id) => {
       const where = content.missions[id]!.where;
       if (!lost?.factionId || !where || where === "outside" || where === "near" || where === "enemy") return true;

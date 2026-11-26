@@ -21,6 +21,7 @@ import { loversOf } from "./romance.ts";
 import { traitIdsOf } from "./traits.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
+import { depthAt, placesIn } from "../rules/place.ts";
 
 /**
  * 다짐 (기획서 3.5, 12-164). 주인공의 큰 줄기 (메인 임무에 가까운 것). 한 번에 하나.
@@ -54,6 +55,13 @@ function evaluate(content: Content, state: GameState, r: Resolve): boolean | nul
   const result = evaluateCheck(content, state, r);
   if (result === true && (r.stage ?? 0) < (kindOf(content, r.kind)?.min_stage ?? 0)) return null;
   return result;
+}
+
+/** 그 구역에 닿았는가: 담 있는 구역(거점 등)은 담 안에 들어서야 닿은 것이다 (PT37 떠돌이: 경비병이 들여보내지 않았는데 담 밖 길에서 "우리 집에 가 봤다") */
+function reachedInside(state: GameState, content: Content, zone: string | null): boolean {
+  if (!zone || state.playerZone !== zone) return false;
+  const walled = placesIn(state, content, zone).some((p) => p.gate);
+  return !walled || (depthAt(state, content) ?? 1) >= 1;
 }
 
 function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean | null {
@@ -94,7 +102,7 @@ function evaluateCheck(content: Content, state: GameState, r: Resolve): boolean 
     case "reach":
       // 그곳을 떠나 있다가 닿아야 한다 (처음부터 그곳에 있으면 이룬 것이 아니다)
       // 갇혀 있으면 닿은 것이 아니다 (플레이 테스트 13: 그 구역 감옥에서 자다 "우리 집에 가 봤다"). 그 자리에서 풀려나면 닿은 것
-      return r.involved && state.playerZone === r.target && !pausedWhileHeld(state, "resolve_reach") ? true : null;
+      return r.involved && reachedInside(state, content, r.target) && !pausedWhileHeld(state, "resolve_reach") ? true : null;
     case "beliefs": {
       const words = (r.target ?? "").split("|").filter(Boolean);
       const n = (state.beliefs[state.playerId] ?? []).filter((b) => words.some((w) => b.fact.includes(w))).length;
@@ -220,7 +228,7 @@ function autoStep(ctx: ToolContext): void {
   // 첫 단계는 다짐이 생긴 날이 지난 뒤부터 (플레이 테스트 13: 생긴 지 5분 만에 "하루를 함께했다")
   if (r.autoDay === today || dayOf(r.since) === today) return;
   const person = state.characters[r.target];
-  const together = person ? !person.dead && (state.scene.present.includes(r.target) || state.companions.includes(r.target)) : state.playerZone === r.target && !pausedWhileHeld(state, "resolve_reach");
+  const together = person ? !person.dead && (state.scene.present.includes(r.target) || state.companions.includes(r.target)) : reachedInside(state, ctx.content, r.target) && !pausedWhileHeld(state, "resolve_reach");
   if (!together) return;
   // 오른 날을 함께 적는다 (12-257, PT15 분대장: 언제 오른 단계인지 몰라 "둘째 날에 안 올랐다"로 읽혔다)
   const text = `${!person ? `${name}에 닿았다` : kind?.check === "gone" ? `${josa(name, "을/를")} 마주쳤다` : `${josa(name, "과/와")} 하루를 함께했다`} (${today}일차)`;

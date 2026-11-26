@@ -484,7 +484,7 @@ function meet(world: WarWorld, content: Content, rng: Rng, cfg: PartiesConfig, e
   if (seen.bSees) knows(b, a);
   const own = (p: Party) => world.zones[zone]?.owner === p.faction;
   const intercepting = (p: Party) => p.task.kind === "intercept";
-  const wants = (p: Party, other: Party, sees: boolean) => sees && partyChoice({ kind: p.kind, size: p.size, onOwnLand: own(p), intercept: intercepting(p) }, { size: other.size }) === "fight";
+  const wants = (p: Party, other: Party, sees: boolean) => sees && partyChoice({ kind: p.kind, size: p.size, onOwnLand: own(p), intercept: intercepting(p), returning: p.done }, { size: other.size }) === "fight";
   const aFights = wants(a, b, seen.aSees);
   const bFights = wants(b, a, seen.bSees);
   if (!aFights && !bFights) return;

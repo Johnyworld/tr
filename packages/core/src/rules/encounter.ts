@@ -62,9 +62,11 @@ export type PartyChoice = "fight" | "avoid";
  * 알아챈 부대가 무엇을 하는가 (4-2, 결정적): 정찰·짐 행렬은 피하고 세 배가 넘을 때만 싸운다.
  * 순찰은 자기 땅이면 싸우고 남의 땅이면 두 배가 넘을 때만. 습격·공세는 가는 길에 만난 상대를 피하고 두 배가 넘으면 싸운다
  */
-export function partyChoice(me: { kind: string; size: number; onOwnLand: boolean; intercept?: boolean }, other: { size: number }): PartyChoice {
+export function partyChoice(me: { kind: string; size: number; onOwnLand: boolean; intercept?: boolean; returning?: boolean }, other: { size: number }): PartyChoice {
   // 가로막으러 나간 부대는 보면 친다 (5-3·5-4)
   if (me.intercept) return "fight";
+  // 할 일을 마치고 돌아가는 정찰·운반은 먼저 덤비지 않는다 (PT37 졸병, 사용자 결정: 일을 마친 정찰대 넷이 우리 초소 망루로 덤벼 왔다)
+  if (me.returning && (me.kind === "scout" || me.kind === "supply")) return "avoid";
   const ratio = me.size / Math.max(1, other.size);
   if (me.kind === "scout" || me.kind === "supply") return ratio > 3 ? "fight" : "avoid";
   if (me.kind === "patrol") return me.onOwnLand || ratio > 2 ? "fight" : "avoid";

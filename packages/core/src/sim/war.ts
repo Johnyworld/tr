@@ -765,7 +765,11 @@ export function occupyZone(world: WarWorld, content: Content, attacker: string, 
 function retargetClock(world: WarWorld, content: Content, clockId: string): void {
   const clock = world.clocks[clockId];
   if (!clock || !clock.target || planOf(content, clockId)?.kind === "shift") return;
-  if (world.zones[clock.target]?.owner === clock.factionId) clock.target = frontierTarget(world, content, clock.factionId) ?? "";
+  if (world.zones[clock.target]?.owner !== clock.factionId) return;
+  const next = frontierTarget(world, content, clock.factionId) ?? "";
+  // 그 목표에 쌓인 공은 다른 목표로 옮겨 가지 않는다 (PT37)
+  if (next !== clock.target) delete clock.credits;
+  clock.target = next;
 }
 
 /** 땅이 바뀐 그 자리에서 다시 고른다 (PT36 약탈조원: 하루 틱까지 빼앗은 목표에 "앞당겨졌다"가 쌓였다) */

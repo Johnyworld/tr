@@ -176,3 +176,21 @@ describe("땅이 바뀐 그 자리에서 계획 목표를 다시 고른다 (PT36
     expect(moved.defenders).toBe(base.defenders + 11);
   });
 });
+
+describe("PT37 고침", () => {
+  it("할 일을 마치고 돌아가는 정찰·운반은 먼저 덤비지 않는다", async () => {
+    const { partyChoice } = await import("../rules/encounter.ts");
+    expect(partyChoice({ kind: "scout", size: 4, onOwnLand: false }, { size: 1 })).toBe("fight");
+    expect(partyChoice({ kind: "scout", size: 4, onOwnLand: false, returning: true }, { size: 1 })).toBe("avoid");
+    expect(partyChoice({ kind: "assault", size: 20, onOwnLand: false, returning: true }, { size: 1 })).toBe("fight");
+  });
+
+  it("목표를 다시 고르면 그 목표에 쌓인 공은 비운다", async () => {
+    const { occupyZone } = await import("./war.ts");
+    const w = initialWarWorld(TEST_CONTENT);
+    w.zones.a_post = { owner: null };
+    w.clocks.c_plan!.credits = [{ by: "p", mission: "경계 재기", scout: true }];
+    occupyZone(w, TEST_CONTENT, "faction_c", "a_post", "c_plan");
+    expect(w.clocks.c_plan?.credits).toBeUndefined();
+  });
+});

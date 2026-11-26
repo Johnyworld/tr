@@ -617,10 +617,14 @@ export function applyEffect(
       .filter((f) => f !== me.factionId && content.factions[f]?.startable !== false)
       .filter((f) => want === "other" || (want === "enemy" ? !me.factionId || disposition(content, me.factionId, f, state) < 0 : f === want));
     const target = pool.sort((a, b) => progress(b) - progress(a) || a.localeCompare(b))[0];
-    const clock = target ? Object.values(state.clocks).filter((c) => c.factionId === target).sort((a, b) => b.filled / b.max - a.filled / a.max)[0] : undefined;
-    if (!target || !clock) return {};
+    // 부대가 모였거나 나선 계획이 있으면 그것을 먼저 말한다 (PT37 졸병: 공세 부대가 이미 모인 날 시계가 0으로 돌아가 "막 시작됐다")
+    const outFor = (clockId: string) => state.parties.find((p) => p.faction === target && !p.done && p.size > 0 && (p.task.kind === "clash" || p.task.kind === "occupy") && p.task.plan === clockId);
+    const entries = target ? Object.entries(state.clocks).filter(([, c]) => c.factionId === target) : [];
+    const [clockId, clock] = entries.find(([id]) => outFor(id)) ?? entries.sort(([, a], [, b]) => b.filled / b.max - a.filled / a.max)[0] ?? [];
+    if (!target || !clock || !clockId) return {};
     const ratio = clock.filled / clock.max;
-    const stage = ratio >= 0.75 ? "거의 다 됐다" : ratio >= 0.4 ? "절반쯤 와 있다" : ratio > 0 ? "막 시작됐다" : "아직 말뿐이다";
+    const out = outFor(clockId);
+    const stage = out ? (out.legs[0]!.to > state.time ? "부대가 모여 곧 나선다" : "부대가 이미 나섰다") : ratio >= 0.75 ? "거의 다 됐다" : ratio >= 0.4 ? "절반쯤 와 있다" : ratio > 0 ? "막 시작됐다" : "아직 말뿐이다";
     const fact = sentence(`${josa(content.factions[target]?.name ?? target, "이/가")} 준비하는 일: ${clock.label}. ${stage}`);
     store.append({
       type: "belief_added",

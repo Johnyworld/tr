@@ -1,4 +1,4 @@
-import { sightKey } from "./partySight.ts";
+import { alliedPartiesHere, sightKey } from "./partySight.ts";
 import { z } from "zod";
 import type { BattleState, Clash, GameState, Party } from "../game/state.ts";
 import { heldOf } from "../rules/held.ts";
@@ -75,6 +75,31 @@ function leaderLost(ctx: ToolContext, world: WarWorld, factionId: string) {
   }
 }
 
+/** 그 구역의 우리 무리 부대원을 장면에 들인다 (맞붙음에 함께 맞선다). 들인 id */
+function allyExtras(ctx: ToolContext): string[] {
+  const { store, content, rng } = ctx;
+  const state = store.getState();
+  const mine = state.characters[state.playerId]?.factionId;
+  const parties = alliedPartiesHere(state);
+  if (!mine || !parties.length) return [];
+  const templateId = content.factions[mine]?.party_extra ?? Object.values(content.extras).find((t) => t.faction === mine)?.id;
+  const template = templateId ? content.extras[templateId] : undefined;
+  if (!template) return [];
+  const out: string[] = [];
+  const total = Math.min(3, parties.reduce((n, p) => n + p.size, 0));
+  const label = partyLabel(content, parties[0]!);
+  for (let i = 0; i < total; i++) {
+    const now = store.getState();
+    const id = `ex_${now.nextExtraNo}`;
+    const usedNames = new Set(Object.values(now.characters).map((c) => c.name));
+    const usedLooks = new Set(Object.values(now.characters).flatMap((c) => (c.extra ? [c.extra.look] : [])));
+    const character = createExtraCharacter(content, template, { id, label: `우리 ${label} ${i + 1}`, zone: state.playerZone!, time: now.time, usedNames, usedLooks }, rng);
+    store.append({ type: "extra_spawned", character });
+    out.push(id);
+  }
+  return out;
+}
+
 export const engageParty = defineTool({
   name: "engage_party",
   description:
@@ -113,7 +138,8 @@ export function startPartyFight(ctx: ToolContext, party: Party, opts: { byParty?
     // 큰 무리와 무리에 속한 주인공: 전투 장면 (5-1)
     if (party.size > SMALL_MAX && me.factionId && content.scenario.battle) {
       saveWorld(ctx, world);
-      const group = 1 + companyHere(state, content).length;
+      // 그 구역의 우리 무리 부대도 함께 맞선다 (PT37 사용자 결정)
+      const group = 1 + companyHere(state, content).length + alliedPartiesHere(state).reduce((n, p) => n + p.size, 0);
       const defenders = ownedBy(state, zone, me.factionId) ? Math.round((state.factions[me.factionId]?.combatants ?? 0) * DEFENSE_COMMIT) : 0;
       const config = battleConfig(content);
       const battle: BattleState = {
@@ -167,10 +193,13 @@ export function startPartyFight(ctx: ToolContext, party: Party, opts: { byParty?
     }
     store.append({ type: "party_engaged", partyId: party.id, members, zone });
     const rest = party.size - members.length;
+    // 그 구역의 우리 무리 부대가 함께 맞선다 (PT37 사용자 결정: 우리 초소에서 우리 순찰대 다섯이 곁에 있는데 둘이서만 싸웠다). 보이는 사람은 셋까지
+    const allies = allyExtras(ctx);
     return {
       ok: true,
       resultText:
         `${opts.byParty ? `${josa(label, "이/가")} 덤벼 왔다.` : `${josa(label, "과/와")} 맞붙었다.`} 장면에 들어온 사람: ${members.join(", ")}${rest > 0 ? ` (뒤에 ${forceWords(rest)}이 더 있다)` : ""}. ` +
+        (allies.length ? `함께 맞서는 우리 사람: ${allies.join(", ")} (우리 무리 부대). ` : "") +
         `이제 take_action 싸움 판정으로 한다(target·target_harm). 절반이 쓰러지거나${leader ? " 우두머리가 쓰러지거나" : ""} 하면 무리가 달아난다. 몸의 위험을 먼저 선언한다. 달아나려면 판정을 걸고 자리를 옮긴다(place_to·move_to + check): 빗나가면 쫓아와 맞붙음이 이어진다.`,
       display: { type: "presence", npcName: label, action: "enter", note: `${label} ${forceWords(party.size)}과 맞붙었다` },
     };
@@ -226,12 +255,15 @@ function superiorHere(state: GameState, content: Content): string | null {
   );
 }
 
+/** 계획 정찰을 알렸을 때 더 지키는 가장 긴 날 (*임시*) */
+export const ALERT_PLAN_DAYS = 3;
+
 export const alertParty = defineTool({
   name: "alert_party",
   description:
     "주인공이 본(또는 보고받은) 다른 무리의 무리를 우리 무리에 알린다 (움직이는 부대 5-3, 12-327). 상태의 '알릴 수 있는 것' id, 본 지 하루 안. " +
-    "우리 땅에서 우리 무리 사람 앞(초소를 지키는 사람도), 우리 거점, 윗사람 앞이면 된다. 알리면 무리가 그 무리가 살피거나 노린 우리 구역을 하루 동안 더 지킨다(정찰은 공세의 예고). " +
-    "persuade: true면 맞받아치자고 설득한다 (윗사람이 장면에 있고 그 무리가 아직 나가 있을 때, approach는 교섭·전략): 받아들여지면 무리가 가로막을 부대를 낸다. 알린 뒤에도 설득은 한 번. 결과는 코드가 정한다.",
+    "우리 땅에서 우리 무리 사람 앞(초소를 지키는 사람도), 우리 거점, 윗사람 앞이면 된다. 알리면 무리가 그 무리가 살피거나 노린 우리 구역을 하루 동안 더 지킨다(공세 계획의 정찰이면 그 공세가 끝날 때까지, 길어도 사흘). " +
+    "persuade: true면 맞받아치자고 설득한다 (윗사람이 장면에 있고 그 무리가 아직 나가 있거나 우리 땅에 있을 때, approach는 교섭·전략): 받아들여지면 무리가 가로막을 부대를 낸다. 알린 뒤에도 설득은 한 번. 결과는 코드가 정한다.",
   schema: z.strictObject({
     party_id: z.string().describe("본 무리의 id"),
     persuade: z.boolean().default(false).describe("맞받아치자고 설득하면 true"),
@@ -249,7 +281,8 @@ export const alertParty = defineTool({
     if (!intel) return { ok: false, error: `본 적도 보고받은 적도 없는 무리다: ${input.party_id} (상태의 '알릴 수 있는 것'을 본다)` };
     if (state.time - intel.at > MINUTES_PER_DAY) return { ok: false, error: "본 지 하루가 넘은 무리다. 이제 알려도 무리가 할 일이 없다." };
     if (!hostileFaction(state, content, intel.faction)) return { ok: false, error: "우리를 적대하는 무리만 알린다." };
-    const live = state.parties.find((p) => p.id === input.party_id && p.size > 0 && !p.done);
+    // 할 일을 마쳤어도 아직 우리 땅에 있으면 맞받아칠 수 있다 (PT37 두 판: 돌아가는 정찰대가 우리 초소에 네댓 시간 더 있는데 "이미 물러갔다")
+    const live = state.parties.find((p) => p.id === input.party_id && p.size > 0 && (!p.done || ownedBy(state, partyZoneAt(p, state.time), me.factionId!)));
     // 알린 무리도 맞받아치자는 설득은 한 번 더 할 수 있다 (PT35 분대장)
     const prior = state.partyAlerts.find((a) => a.partyId === input.party_id);
     if (prior && (!input.persuade || prior.persuaded !== "none")) return { ok: false, error: prior.persuaded !== "none" ? "이미 알리고 설득까지 한 무리다. 같은 무리로 다시 조르지 못한다." : "이미 알린 무리다. 맞받아치자고 설득하려면 윗사람 앞에서 persuade: true로 다시 부른다." };
@@ -263,11 +296,13 @@ export const alertParty = defineTool({
     const label = partyLabel(content, { faction: intel.faction, kind: intel.kind } as Party);
     const zone = defendZone(state, content, intel, me.factionId);
     const zoneName = zone ? (content.locations[zone]?.name ?? zone) : "";
-    const until = state.time + MINUTES_PER_DAY;
+    // 계획 정찰은 공세의 예고: 그 계획의 공세가 끝날 때까지(길어도 사흘) 더 지킨다 (PT37 사용자 결정: 하루 지키고 하루 반 뒤에 총공격이 왔다)
+    const plan = intel.plan && zone ? intel.plan : null;
+    const until = state.time + (plan ? ALERT_PLAN_DAYS : 1) * MINUTES_PER_DAY;
     const relay = !boss && state.playerZone !== base ? " (곁의 우리 사람이 거점에 전한다)" : "";
     const lines = prior
       ? [`이미 알린 ${josa(label, "을/를")} 두고 맞받아치자고 말한다.`]
-      : [`${josa(label, "을/를")} 무리에 알렸다${relay}.${zone ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 하루 동안(${formatTime(until)}까지) 더 지킨다. 그 사이 그곳을 친 무리가 막히면 공이 된다.` : " 우리 땅을 노린 것이 아니라 더 지킬 곳은 없다."}`];
+      : [`${josa(label, "을/를")} 무리에 알렸다${relay}.${zone ? ` 무리는 그쪽이 ${josa(zoneName, "을/를")} 노린다고 보고 그곳을 ${plan ? `그 공세가 끝날 때까지(길어도 ${formatTime(until)}까지)` : `하루 동안(${formatTime(until)}까지)`} 더 지킨다. 그 사이 그곳을 친 무리가 막히면 공이 된다.` : " 우리 땅을 노린 것이 아니라 더 지킬 곳은 없다."}`];
     let persuaded: "none" | "success" | "partial" | "miss" = "none";
     let display: ToolDisplayEvent = { type: "belief", fact: `${label}을 무리에 알렸다`, sourceLabel: "한 일" };
     if (input.persuade) {
@@ -300,7 +335,7 @@ export const alertParty = defineTool({
         }
       }
     }
-    store.append({ type: "party_alerted", partyId: input.party_id, faction: me.factionId, zone: zone ?? "", persuaded, ...(prior ? {} : { until }) });
+    store.append({ type: "party_alerted", partyId: input.party_id, faction: me.factionId, zone: zone ?? "", persuaded, ...(prior ? {} : { until, ...(plan ? { plan } : {}) }) });
     lines.push("알리는 장면을 서술한다. 무리가 무엇을 할지는 이 결과대로만.");
     void rng;
     return { ok: true, resultText: lines.join("\n"), display };
@@ -356,8 +391,9 @@ export function settlePartyAlerts(ctx: ToolContext, clashes: readonly Clash[]): 
       }
       continue;
     }
-    // 하루가 지나면 더 지키던 것을 거둔다 (12-327). 지킬 곳이 없던 알림은 바로 닫는다
-    if (!alert.zone || (alert.until > 0 && state.time > alert.until)) {
+    // 하루가 지나면 더 지키던 것을 거둔다 (12-327). 지킬 곳이 없던 알림은 바로 닫는다. 계획 정찰을 알린 것은 그 계획의 공세가 끝나면(어디서든 치렀으면) 거둔다
+    const planDone = !!alert.plan && clashes.some((c) => c.plan === alert.plan && c.attacker === enemy);
+    if (!alert.zone || planDone || (alert.until > 0 && state.time > alert.until)) {
       const other = state.partyAlerts.some((a) => a !== alert && !a.closed && !a.credited && a.zone === alert.zone && a.until >= state.time);
       store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: false, clear: !!alert.zone && !other && state.zones[alert.zone]?.alerted === alert.faction });
     }

@@ -1,4 +1,4 @@
-import { whereIs } from "../rules/place.ts";
+import { placesIn, whereIs } from "../rules/place.ts";
 import { arrivalPlace } from "../rules/place.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -175,7 +175,13 @@ describe("닿는 다짐 (플레이 테스트에서 고침)", () => {
     look(w);
     w.ctx().store.append({ type: "resolve_stepped", characterId: w.state().playerId, text: "길이 떠올랐다" });
     w.ctx().store.append({ type: "resolve_stepped", characterId: w.state().playerId, text: "옛 이웃을 만났다" });
+    // 담 있는 구역은 담 밖 길에 닿기만 해서는 아니다 (PT37 떠돌이: 경비병이 들여보내지 않았다)
     w.ctx().store.append({ type: "zone_moved", from: "old_town", to: target });
+    look(w);
+    expect(currentResolve(w.state())).not.toBeNull();
+    // 담 안에 들어서면 이룬다
+    const inside = placesIn(w.state(), content, target).find((p) => p.gate)!.id;
+    w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: inside });
     const r = look(w);
     if (r.ok) expect(r.resultText).toContain("다짐을 이뤘다");
     expect(currentResolve(w.state())).toBeNull();

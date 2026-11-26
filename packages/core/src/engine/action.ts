@@ -863,6 +863,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
   // 적대하는 땅에서 시간을 들이는 일 (플레이 테스트 12): 숨은 확률 대신 주인공이 한 번 굴린다. 판정이 없으면 숨기 판정을 건다
+  /** 이번 판정 실패로 경보 이야기가 열렸다 (들킨 시각에 하던 일이 끊긴다) */
+  let alarmCut = false;
   const exposed = !input.move_to && !inBattle && !start.infiltration && !heldOf(start.characters[start.playerId]) && !isIncapacitated(content, player) && !incapacitatingSymptom(scenario, player) && !!scenario.alarm && hostileHere(ctx)
     // 드러내 놓고 말을 거는 일(talk)은 숨을 일이 아니다: 실패해도 "몰래 들어왔다 들켰다"가 아니다 (플레이 테스트 13). 치료·배움은 시간을 들이는 일이다
     && ((!!input.activity && !["brief", "talk"].includes(input.activity.kind)) || !!input.forage || input.trap === "set" || !!input.craft || !!input.build || !!input.treatment || !!input.lesson);
@@ -997,7 +999,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       // 적대하는 땅에서 시간을 들인 일의 판정이 실패하면 무엇을 하던 중이든 들킨다 (한 행동에 판정은 하나)
       for (const d of runAlarm(ctx, exposed ? scenario.alarm!.moves[0]! : input.check.move)) {
         displays.push(d);
-        if (d.type === "storylet" && d.event === "started") lines.push(`들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+        if (d.type === "storylet" && d.event === "started") {
+          lines.push(`들켰다: "${d.title}". 그 장면으로 이어 연출하라 (상태의 '진행 중인 이야기').`);
+          alarmCut = true;
+        }
         // 경보 이야기 없이 들킨 일도 결과 줄로 (PT35 졸병: 화면 표시에만 있어 결과 글엔 "실패한다"뿐이었다)
         else if (d.type === "belief" && d.fact) lines.push(`${d.fact}.${d.note ? ` ${d.note}` : ""}`);
       }
@@ -1296,7 +1301,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const inMove = !!placeMove && activity === "brief" && !input.check && !inBattle;
   // 임무 작업은 hours 없이 걸면 임무에 남은 만큼 한다 (12-261, PT16 섬: 남은 4시간인데 기본 2시간만 했다)
   const workMinutes = activity === "work" ? (hours ? hours * 60 : missionWorkLeft(store.getState(), forMission)) : null;
-  const time = advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : workMinutes, hours);
+  // 적 땅에서 시간을 들이던 일이 들켰으면 들킨 그 시각에 끊긴다 (PT37 약탈조원: 기다림이 한 시간 반 그대로 흘러 그 사이 땅이 바뀌었는데 적 보초 장면이 남았다)
+  const cutShort = alarmCut && !["brief", "travel", "combat"].includes(activity);
+  if (cutShort) lines.push("들킨 그 자리에서 하던 일이 끊겼다.");
+  const time = cutShort ? advanceTime(ctx, "brief", null, forMission) : advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : workMinutes, hours);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
   if (forMission && !input.move_to) {
     const m = store.getState().missions[forMission];

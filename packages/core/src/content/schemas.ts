@@ -1009,6 +1009,13 @@ export function createContentSchemas(s: Scenario) {
       leaves: z.array(contentIdSchema).optional(),
       /** 이 선택지는 이번 턴 이 행동의 판정 결과에 따라 갈린다 */
       check: idEnum(moveIds(s)).optional(),
+      /**
+       * 이 선택지의 판정에 붙는 보정 (큰 이야기의 패, docs/saga-plan.md 11-4·11-5, 사용자 결정 PT44): 주인공에게 있는 플래그 하나당
+       * plus는 +1, minus는 -1, 합은 ±max까지. 이야기가 열려 있는 동안 그 스킬로 굴리면 판정 줄에 label로 보인다
+       */
+      edge: z
+        .strictObject({ label: z.string().min(1), plus: z.array(contentIdSchema).default([]), minus: z.array(contentIdSchema).default([]), max: z.number().int().min(1).max(3) })
+        .optional(),
       effects: z.array(storyletEffect).default([]),
       outcomes: z
         .strictObject({ success: z.array(storyletEffect), partial: z.array(storyletEffect), miss: z.array(storyletEffect) })

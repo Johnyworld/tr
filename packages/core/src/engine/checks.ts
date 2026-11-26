@@ -54,6 +54,25 @@ export function takeReactionChecks(store: ToolContext["store"]): CheckDisplay[] 
  * 플레이어 캐릭터의 2d6 판정을 굴리고 check_rolled 이벤트로 기록한다.
  * 행동과 능력치는 시나리오에서 오고, 보정은 능력치 + 난이도 + 상태 트랙 보정이다.
  */
+/**
+ * 열려 있는 이야기의 선택지가 그 스킬의 판정에 거는 보정 (choice.edge, 큰 이야기의 패): 주인공에게 있는 플래그 하나당 ±1, 합은 ±max까지.
+ * 같은 스킬을 쓰는 선택지가 여럿이면 가장 큰 쪽 (PT44: 패가 선택지만 열고 판정에는 들지 않았다)
+ */
+function edgeParts(content: Content, state: GameState, move: string): Part[] {
+  const a = state.activeStorylet;
+  const s = a ? content.storylets[a.id] : undefined;
+  if (!s) return [];
+  const flags = new Set(state.flags[state.playerId] ?? []);
+  let best: Part | null = null;
+  for (const c of s.choices) {
+    if (c.check !== move || !c.edge) continue;
+    const raw = c.edge.plus.filter((f) => flags.has(f)).length - c.edge.minus.filter((f) => flags.has(f)).length;
+    const value = Math.max(-c.edge.max, Math.min(c.edge.max, raw));
+    if (!best || value > best.value) best = { label: c.edge.label, value };
+  }
+  return best && best.value !== 0 ? [best] : [];
+}
+
 /** 이야기 배역이 무리(crowd 2 이상)면 그 상대와 맞서는 판정에 -1 */
 function crowdParts(content: Content, state: GameState, opponent: string | null): Part[] {
   const a = state.activeStorylet;
@@ -137,6 +156,7 @@ export function rollPlayerCheck(
     ...(options.situation ?? []),
     // 여럿이 막아섰다 (플레이 테스트 13: 넷이 막아섰는데 한 사람과만 맞섰다): 이야기 배역의 crowd
     ...crowdParts(content, state, opponent),
+    ...(options.reaction ? [] : edgeParts(content, state, input.move)),
   ];
   // 갇힌 곳의 감시 (플레이 테스트 12): 탈출에 실패한 만큼 탈출 판정이 어렵다
   // 탈출 판정(갇힌 채 옮겨 가기)에만 (플레이 테스트 13: 광장 이야기의 버티기에도 -3이 붙었다)

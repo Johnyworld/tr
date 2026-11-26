@@ -489,12 +489,13 @@
     medic: { ids: [sb_dohyeon], afar: true, optional: true }
     sergeant: { ids: [sb_mijin], afar: true, optional: true }
   setup: 배가 부두 끝에 옆구리를 댄다. 확성기에서 영어와 한국어가 번갈아 나온다. "승선 인원, 줄 서." 경도현이 명단을 들고 계선주 옆에 섰다. 하사가 조명탄 권총을 다시 장전한다.
-  ai_direction: "둘째 박자, 결말이 갈린다. 막는 방법은 넷: 등대 불과 크레인으로 배의 접안을 흐린다 (등대·크레인 패가 있으면 쉽다), 경도현의 지운 기록으로 흔든다 (그 비밀을 알면), 편미진을 설득한다 (관계와 패), 힘으로 (전투 장치). 성공하면 배를 막는다. 대가 있는 성공이면 반쪽이다: 결말은 정해진 대로 두고 무엇을 건졌는지가 갈린다. 지켜보거나 실패하면 배는 R을 싣고 떠난다. 결말에서 배가 어디로 가는지(섬 진료동과 더 남쪽) 경도현이나 편미진의 입으로 드러난다."
+  ai_direction: "둘째 박자, 결말이 갈린다. 막는 방법은 넷: 등대 불과 크레인으로 배의 접안을 흐린다 (등대·크레인 패가 있을 때), 경도현의 지운 기록으로 흔든다 (그 비밀을 알면), 편미진을 설득한다 (관계와 패), 힘으로 (전투 장치). 모은 패와 기한을 넘긴 막은 코드가 판정 보정(패)으로 넣으니 난이도는 그 일 자체로만 정한다. 성공하면 배를 막는다. 대가 있는 성공이면 반쪽이다: 결말은 정해진 대로 두고 무엇을 건졌는지가 갈린다. 지켜보거나 실패하면 배는 R을 싣고 떠난다. 결말에서 배가 어디로 가는지(섬 진료동과 더 남쪽) 경도현이나 편미진의 입으로 드러난다."
   choices:
     - id: lighthouse
       label: 등대 불을 켜고 크레인을 돌려 접안을 흐린다
       when: { flags_any: [sb_card_lighthouse, sb_card_crane] }
       check: athletics
+      edge: { label: 패, plus: [sb_card_lighthouse, sb_card_crane, sb_card_mijin, sb_card_hunter], minus: [sb_lapse_blood, sb_lapse_offer], max: 2 }
       outcomes:
         success:
           - give_item: { item: sb_flare_pistol, quantity: 1 }
@@ -509,6 +510,7 @@
       label: 경도현에게 지운 기록을 꺼낸다
       when: { flags_all: [sb_medic_secret] }
       check: intimidate
+      edge: { label: 패, plus: [sb_card_lighthouse, sb_card_crane, sb_card_mijin, sb_card_hunter], minus: [sb_lapse_blood, sb_lapse_offer], max: 2 }
       outcomes:
         success:
           - give_item: { item: sb_flare_pistol, quantity: 1 }
@@ -522,6 +524,7 @@
       label: 하사에게 조명탄을 쏘지 말라고 한다
       when: { flags_any: [sb_card_mijin, sb3_mijin_talk] }
       check: persuade
+      edge: { label: 패, plus: [sb_card_lighthouse, sb_card_crane, sb_card_mijin, sb_card_hunter], minus: [sb_lapse_blood, sb_lapse_offer], max: 2 }
       outcomes:
         success:
           - give_item: { item: sb_flare_pistol, quantity: 1 }
@@ -534,6 +537,7 @@
     - id: force
       label: 계선주의 밧줄을 끊고 싸운다
       check: fight
+      edge: { label: 패, plus: [sb_card_lighthouse, sb_card_crane, sb_card_mijin, sb_card_hunter], minus: [sb_lapse_blood, sb_lapse_offer], max: 2 }
       outcomes:
         success:
           - saga_end: { id: south_ship, ending: blocked }
@@ -586,6 +590,7 @@
     - id: turn
       label: 막판에 돌아서서 밧줄을 끊는다
       check: athletics
+      edge: { label: 패, plus: [sb_card_lighthouse, sb_card_crane, sb_card_mijin, sb_card_hunter], minus: [sb_lapse_blood, sb_lapse_offer], max: 2 }
       outcomes:
         success:
           - set_flag: sb5_guard

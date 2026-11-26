@@ -55,7 +55,9 @@ const heir = story({ id: "ts_heir", title: "다시 잇기", essential: true, whe
 
 const vow = story({ id: "ts_vow", title: "지키겠다는 말", essential: true, when: { saga: { id: "test_saga", acts: ["a1"] }, indoor: "any" }, choices: [{ id: "tell", label: "말해 준다", effects: [] }, { id: "vow", label: "지키겠다고 한다", effects: [{ resolve: { kind: "survive", n: 10, text: "살아남는다" } }] }] });
 
-const content: Content = { ...real, sagas: { test_saga: saga }, storylets: { ...real.storylets, ts_start: start, ts_spine: spine, ts_heir: heir, ts_vow: vow } };
+const ship = story({ id: "ts_ship", title: "배", when: { saga: { id: "test_saga", acts: ["a1"] }, indoor: "any" }, choices: [{ id: "block", label: "막는다", check: "athletics", edge: { label: "패", plus: ["ts_card1", "ts_card2", "ts_card3"], minus: ["ts_lapsed1"], max: 2 }, outcomes: { success: [], partial: [], miss: [] } }, { id: "watch", label: "본다", effects: [] }] });
+
+const content: Content = { ...real, sagas: { test_saga: saga }, storylets: { ...real.storylets, ts_start: start, ts_spine: spine, ts_heir: heir, ts_vow: vow, ts_ship: ship } };
 const make = (roleId = "role_a_grunt") =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-saga-")), content, rngFactory: () => () => 0.5 }).create("mcp", roleId, { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] } as never);
 
@@ -189,6 +191,21 @@ describe("큰 이야기 (공통 규칙 24)", { timeout: 30_000 }, () => {
     expect(eligibleStorylets(w.state(), content).some((s) => s.id === "ts_vow")).toBe(true);
     expect(choiceAvailable(w.state(), vow.choices[0]!)).toBe(true);
     expect(choiceAvailable(w.state(), vow.choices[1]!)).toBe(false);
+  });
+
+  it("패: 이야기 선택지의 edge가 그 스킬 판정에 플래그 하나당 ±1, 상한까지 (PT44 사용자 결정)", () => {
+    const w = started();
+    const me = w.state().playerId;
+    for (const flag of ["ts_card1", "ts_card2", "ts_card3"]) w.ctx().store.append({ type: "flag_set", characterId: me, flag });
+    expect(w.runCheat("~storylet ts_ship").ok).toBe(true);
+    const roll = () => {
+      const r = w.executeTool("take_action", { intent: "밧줄을 끊는다", check: { move: "athletics", stat: "strength", difficulty: "normal", harm_on_failure: "none", harm_cause: "" }, activity: null, deed: null, target: null, narration_summary: null, for_mission: false });
+      expect(r.ok, r.ok ? "" : r.error).toBe(true);
+      return JSON.stringify(r);
+    };
+    expect(roll()).toContain("+2(패)");
+    w.ctx().store.append({ type: "flag_set", characterId: me, flag: "ts_lapsed1" });
+    expect(roll()).toContain("+2(패)");
   });
 
   it("계승자 이야기는 앞 주인공이 발을 들였고 지금 주인공은 아직일 때만", () => {

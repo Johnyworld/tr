@@ -58,7 +58,7 @@ export function buildWarMapView(state: GameState, content: Content): WarMapView 
     const z = state.zones[l.id];
     return {
       id: l.id,
-      name: l.name,
+      name: l.map!.label ?? l.name,
       label: l.map!.label ?? l.name,
       x: l.map!.x,
       y: l.map!.y,

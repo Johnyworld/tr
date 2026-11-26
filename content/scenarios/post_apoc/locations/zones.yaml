@@ -14,16 +14,16 @@
     - { id: infirmary, name: "의무실", indoor: true, map: { x: 30, y: 40 }, near: [assembly], kinds: [care], description: "보건실 침대 넷과 약장 하나. 소독약 냄새가 밴다", aliases: ["의무실"] }
     - { id: barracks, name: "막사", indoor: true, map: { x: 64, y: 28 }, kinds: [sleep], description: "교실 바닥에 매트와 담요를 깐 숙소. 젖은 양말이 줄에 걸려 있다", aliases: ["막사", "간부 숙소", "침상"] }
     - { id: mess, name: "식당 천막", indoor: true, map: { x: 28, y: 58 }, kinds: [mess], description: "운동장 한쪽, 방수포를 덧댄 큰 천막 아래 솥과 긴 탁자", aliases: ["식당 천막", "배식", "배급 줄", "불 피우기"] }
-    - { id: storehouse, name: "보급 창고·무기고", indoor: true, map: { x: 72, y: 46 }, kinds: [store, work], description: "자물쇠 채운 옛 창고. 상자와 자루, 총기 거치대가 줄지어 있다", aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }
+    - { id: storehouse, name: "보급 창고·무기고", indoor: true, map: { x: 62, y: 60 }, kinds: [store, work], description: "자물쇠 채운 옛 창고. 상자와 자루, 총기 거치대가 줄지어 있다", aliases: ["보급 창고", "창고", "무기고", "발전기실", "공작실", "총기 손질"] }
     - { id: yard_gate, name: "운동장·정문·담장", indoor: false, map: { x: 48, y: 56 }, kinds: [yard, gate], description: "흙바닥 운동장과 철판 덧댄 정문, 담장 위 망루", aliases: ["정문", "운동장", "담장", "망루", "거점 순회", "모닥불", "보초 보조", "분대 훈련", "쪽문"], near: [mess, barracks, storehouse, staff_room, infirmary, stockade], gate: true }
-    - { id: stockade, name: "수용소", indoor: true, map: { x: 64, y: 66 }, description: "체육 창고에 철망을 친 우리. 바닥이 차다", aliases: ["수용소"], jail: true }
-    - { id: to_post, name: "초소·고가 가는 길", indoor: false, map: { x: 58, y: 4 }, description: "북쪽으로 올라가 동쪽 초소와 끊긴 고가에 닿는 흙길. 바퀴 자국이 깊다", near: [wall_path], road: true, to: [a_east_post, overpass] }
-    - { id: to_old_town, name: "차고지·구시가 가는 길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 버스 차고지를 지나 구시가로 내려가는 아스팔트 길. 갈라진 틈에 풀이 솟았다", near: [wall_path], road: true, to: [bus_depot] }
-    - { id: to_riverside, name: "배수로·강변 가는 길", indoor: false, map: { x: 96, y: 50 }, description: "동쪽 공단 배수로를 따라 강변 공장 지대로 가는 길. 바람에 기름 냄새가 실려 온다", near: [wall_path], road: true, to: [drain_canal] }
-    - { id: to_south, name: "농협 사거리·텃밭 가는 길", indoor: false, map: { x: 35, y: 96 }, description: "남쪽 농협 사거리를 지나 텃밭으로 내려가는 길. 사람 발자국이 잦다", near: [wall_path], road: true, to: [coop_crossroads] }
-    - { id: wall_path, name: "담 밖 둘레길", indoor: false, map: { x: 58, y: 86 }, kinds: [street], description: "철판 덧댄 담을 따라 도는 좁은 길. 담 위 망루에서 내려다보인다", near: [checkpoint, back_gap] }
-    - { id: checkpoint, name: "정문 앞 1번 초소", indoor: false, map: { x: 44, y: 74 }, kinds: [gate], description: "정문 앞 바리케이드와 모래주머니 초소. 드나드는 사람을 여기서 세운다", aliases: ["1번 초소"], near: [yard_gate] }
-    - { id: back_gap, name: "뒷담 쪽문", indoor: false, map: { x: 80, y: 18 }, kinds: [gate], description: "막사 뒤편 담에 낸 좁은 쪽문. 밤에는 빗장을 지른다", near: [yard_gate, barracks], gate: true }
+    - { id: stockade, name: "수용소", indoor: true, map: { x: 24, y: 70 }, description: "체육 창고에 철망을 친 우리. 바닥이 차다", aliases: ["수용소"], jail: true }
+    - { id: to_post, name: "초소·고가 가는 길", indoor: false, map: { x: 95, y: 44 }, description: "북쪽으로 올라가 동쪽 초소와 끊긴 고가에 닿는 흙길. 바퀴 자국이 깊다", near: [wall_path], road: true, to: [a_east_post, overpass] }
+    - { id: to_old_town, name: "차고지·구시가 가는 길", indoor: false, map: { x: 8, y: 76 }, description: "서쪽 버스 차고지를 지나 구시가로 내려가는 아스팔트 길. 갈라진 틈에 풀이 솟았다", near: [wall_path], road: true, to: [bus_depot] }
+    - { id: to_riverside, name: "배수로·강변 가는 길", indoor: false, map: { x: 92, y: 76 }, description: "동쪽 공단 배수로를 따라 강변 공장 지대로 가는 길. 바람에 기름 냄새가 실려 온다", near: [wall_path], road: true, to: [drain_canal] }
+    - { id: to_south, name: "농협 사거리·텃밭 가는 길", indoor: false, map: { x: 35, y: 97 }, description: "남쪽 농협 사거리를 지나 텃밭으로 내려가는 길. 사람 발자국이 잦다", near: [wall_path], road: true, to: [coop_crossroads] }
+    - { id: wall_path, name: "담 밖 둘레길", indoor: false, map: { x: 60, y: 88 }, kinds: [street], description: "철판 덧댄 담을 따라 도는 좁은 길. 담 위 망루에서 내려다보인다", near: [checkpoint, back_gap] }
+    - { id: checkpoint, name: "정문 앞 1번 초소", indoor: false, map: { x: 46, y: 74 }, kinds: [gate], description: "정문 앞 바리케이드와 모래주머니 초소. 드나드는 사람을 여기서 세운다", aliases: ["1번 초소"], near: [yard_gate] }
+    - { id: back_gap, name: "뒷담 쪽문", indoor: false, map: { x: 86, y: 20 }, kinds: [gate], description: "막사 뒤편 담에 낸 좁은 쪽문. 밤에는 빗장을 지른다", near: [yard_gate, barracks], gate: true }
     - { id: assembly, name: "체육관 강당", indoor: true, map: { x: 16, y: 28 }, kinds: [hall], description: "농구 골대가 녹슨 옛 체육관. 비 오는 날 훈련과 모임이 여기로 들어온다", aliases: ["강당", "체육관"], near: [infirmary, mess] }
     - { id: roof_watch, name: "본관 옥상 감시대", indoor: false, map: { x: 42, y: 14 }, kinds: [watch], description: "본관 옥상 물탱크 옆에 모래주머니를 두른 감시대. 고가와 초소 쪽이 멀리 보인다", aliases: ["옥상 감시대", "본관 옥상"], near: [staff_room] }
   cover: 7

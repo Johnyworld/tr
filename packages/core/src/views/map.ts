@@ -56,7 +56,7 @@ export function buildMapView(state: GameState, content: Content): MapView | null
     return {
       id,
       // 가 보지 않은 곳은 이름도 싣지 않는다
-      name: known ? l.name : "",
+      name: known ? (l.map!.label ?? l.name) : "",
       label: known ? (l.map!.label ?? l.name) : "",
       x: l.map!.x,
       y: l.map!.y,
@@ -128,7 +128,7 @@ export function buildPlaceMapView(state: GameState, content: Content): PlaceMapV
       state: kind,
       indoor: p.indoor,
       inside: walled && kind !== "door" && (depthAt(state, content, p.id, zone) ?? 0) >= 1,
-      roads: kind === "door" || !p.road ? [] : p.to.map((z) => ({ name: content.locations[z]?.name ?? z, known: knowsZone(state, content, z) })),
+      roads: kind === "door" || !p.road ? [] : p.to.map((z) => ({ name: content.locations[z]?.map?.label ?? content.locations[z]?.name ?? z, known: knowsZone(state, content, z) })),
       direction: here && p.id !== here.id ? directionTo(state, content, here.id, p.id, zone) : null,
     };
   };
@@ -148,7 +148,7 @@ export function buildPlaceMapView(state: GameState, content: Content): PlaceMapV
       edges.push([a, b]);
     }
   }
-  return { zone, zoneName: content.locations[zone]?.name ?? zone, nodes, edges };
+  return { zone, zoneName: content.locations[zone]?.map?.label ?? content.locations[zone]?.name ?? zone, nodes, edges };
 }
 
 /** ?지도의 구역 안 글 목록 (12-304): ★ 지금 자리 — 이웃들, 담 깊이 이름(GM 장소 줄과 같게), 길은 이어지는 구역. 글자 그림은 쓰지 않는다 */

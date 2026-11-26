@@ -85,6 +85,7 @@ if (process.env.TRPG_STATUS !== "off") {
     get frozenStatus() {
       return app.frozenStatus;
     },
+    debug: process.env.TRPG_DEBUG === "1",
   };
   startStatusServer(source, Number(process.env.TRPG_STATUS_PORT ?? 8790), (packId) => packDirs.get(packId))
     .then((s) => {

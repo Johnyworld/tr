@@ -55,4 +55,32 @@ describe("지도 (12-201)", () => {
     expect(text).not.toContain(art);
     expect(text).toContain("가 본 곳 (주인은 본 대로 · 맞닿은 곳)");
   });
+
+  it("가 본 곳에는 아는 주인: 지금 있는 곳은 지금 것, 떠난 곳은 마지막으로 보거나 들은 것 (12-336)", () => {
+    const w = make();
+    const start = w.state().playerZone!;
+    const next = buildMapView(w.state(), content)!.nodes.find((n) => n.state === "seen")!.id;
+    w.ctx().store.append({ type: "zone_moved", from: start, to: next });
+    // 떠난 뒤 다른 무리가 차지했다는 소문을 들었다 (진짜 주인은 그대로)
+    w.ctx().store.append({ type: "zone_heard", zone: start, owner: "faction_c" });
+    const view = buildMapView(w.state(), content)!;
+    const left = view.nodes.find((n) => n.id === start)!;
+    expect([left.owner, left.ownerNow]).toEqual(["faction_c", false]);
+    expect(w.state().zones[start]?.owner ?? null).not.toBe("faction_c");
+    const here = view.nodes.find((n) => n.id === next)!;
+    expect([here.owner, here.ownerNow]).toEqual([w.state().zones[next]?.owner ?? null, true]);
+    // 가 보지 않은 곳은 주인을 싣지 않는다
+    for (const n of view.nodes) if (n.state === "seen") expect(n.owner).toBeUndefined();
+    expect(view.factions.map((f) => f.id)).toContain("faction_c");
+  });
+
+  it("본·들은 부대는 그곳에 하루 동안, 목표는 싣지 않는다 (12-336)", () => {
+    const w = make();
+    const state = w.state();
+    const zone = state.playerZone!;
+    const intel = { faction: "faction_c", kind: "raid", goal: "secret_goal", plan: null, size: 12, at: state.time - 60, zone };
+    const view = buildMapView({ ...state, partyIntel: { p1: intel, old: { ...intel, at: state.time - 2 * 24 * 60 }, nozone: { ...intel, zone: undefined } } }, content)!;
+    expect(view.parties.map((p) => [p.key, p.zone, p.force])).toEqual([["p1", zone, "열 명 남짓"]]);
+    expect(JSON.stringify(view)).not.toContain("secret_goal");
+  });
 });

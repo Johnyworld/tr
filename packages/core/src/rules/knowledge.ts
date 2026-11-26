@@ -2,7 +2,7 @@
  * 공통 규칙 7: 주인공은 본 것만 안다 (docs/design.md "공통 규칙", 원칙 4).
  *
  * 화면·GM 상태에 싣는 "주인공이 아는 대로"의 판단은 여기서만 한다:
- * 땅 주인(state.zoneSeen은 rules/knowledge.test.ts가 이 모듈 밖에서 읽지 못하게 막는다), 처음 보는 사람의 인간관계, 들어서 아는 건너는 길.
+ * 땅 주인(state.zoneSeen은 rules/knowledge.test.ts가 이 모듈 밖에서 읽지 못하게 막는다), 본·들은 부대, 처음 보는 사람의 인간관계, 들어서 아는 건너는 길.
  */
 import type { Content } from "../content/schemas.ts";
 import { hasMet, knowsName } from "../game/acquaintance.ts";
@@ -17,6 +17,33 @@ export function knownOwner(state: GameState, content: Content, zone: string): st
   const seen = zone in (state.zoneSeen ?? {}) ? state.zoneSeen[zone]! : (content.locations[zone]?.owner ?? null);
   const mine = state.characters[state.playerId]?.factionId ?? null;
   return zone === state.playerZone || (!!mine && (now === mine || seen === mine)) ? now : seen;
+}
+
+/**
+ * 주인공이 아는 땅 주인이 지금 것인가 (지도, 12-336): 지금 있는 곳과 우리 무리가 낀 땅은 늘 지금 주인을 안다.
+ * 나머지는 마지막으로 보거나 들은 때의 주인이라 지금과 다를 수 있다
+ */
+export function knowsOwnerNow(state: GameState, zone: string): boolean {
+  if (zone === state.playerZone) return true;
+  const mine = state.characters[state.playerId]?.factionId ?? null;
+  if (!mine) return false;
+  const now = state.zones[zone]?.owner ?? null;
+  const seen = zone in (state.zoneSeen ?? {}) ? state.zoneSeen[zone]! : null;
+  return now === mine || seen === mine;
+}
+
+/** 본·전해 들은 부대를 지도에 남기는 시간 (알리기와 같이 하루, 12-327) */
+export const KNOWN_PARTY_MINUTES = 24 * 60;
+
+/**
+ * 주인공이 본·전해 들은 부대 (지도, 12-336): 그때 본 곳·무리·종류·인원. 목표와 지금 자리는 모른다 (원칙 4).
+ * 하루가 지나면 지도에서 뺀다
+ */
+export function knownParties(state: GameState): { id: string; faction: string; kind: string; size: number; zone: string; at: number }[] {
+  return Object.entries(state.partyIntel ?? {})
+    .filter(([, i]) => !!i.zone && state.time - i.at <= KNOWN_PARTY_MINUTES)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, i]) => ({ id, faction: i.faction, kind: i.kind, size: i.size, zone: i.zone!, at: i.at }));
 }
 
 /**

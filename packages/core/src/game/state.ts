@@ -55,7 +55,8 @@ import { startingSkills } from "./creation.ts";
 // 120: PT34 고침 (12-325). garrisonSeen, 이벤트 party_reported
 // 121: PT35 고침 (12-326). partyAlerts.closed, party_reported.gone, 할 일 occupy.credits, war_day_simulated 클락 target
 // 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
-export const SAVE_SCHEMA_VERSION = 125;
+// 126: 지도에 아는 전황 (12-336). partyIntel.zone (본·전해 들은 곳)
+export const SAVE_SCHEMA_VERSION = 126;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -712,7 +713,7 @@ export function createGameSchemas(s: Scenario) {
     /** 주인공이 본 부대와 마지막으로 본 때 (구역을 떠나도 남는다: 알리기 5-3) */
     partiesSeen: z.record(z.string(), z.number().int()).default({}),
     /** 본·전해 안 부대의 기록 (알리기, 12-327): 그 부대가 돌아가 사라져도 하루 동안 알릴 수 있게 무리·종류·목표·계획을 남긴다 */
-    partyIntel: z.record(z.string(), z.strictObject({ faction: z.string(), kind: z.string(), goal: z.string(), plan: z.string().nullable(), size: z.number().int(), at: z.number().int() })).default({}),
+    partyIntel: z.record(z.string(), z.strictObject({ faction: z.string(), kind: z.string(), goal: z.string(), plan: z.string().nullable(), size: z.number().int(), at: z.number().int(), /** 본 곳·전해 들은 곳 (지도, 12-336). 이전 세이브는 없다 */ zone: z.string().optional() })).default({}),
     /** 우리 땅을 지키는 사람이 이미 알아챈 적 부대 (PT34 사용자 결정, 한 부대에 한 번) */
     garrisonSeen: z.array(z.string()).default([]),
     /** 주인공이 무리에 알린 부대 (5-3): 같은 부대로 다시 조르지 못하고, 그 부대가 막히면 공적 */
@@ -1660,11 +1661,11 @@ function swapGround(next: GameState, from: string | null, to: string) {
 }
 
 /** 본·전해 안 부대를 기록한다 (알리기, 12-327) */
-function rememberParty(next: GameState, id: string, at: number) {
+function rememberParty(next: GameState, id: string, at: number, zone: string | null) {
   const p = next.parties.find((x) => x.id === id);
   if (!p) return;
   const plan = p.task.kind === "clash" || p.task.kind === "occupy" || p.task.kind === "watch" ? (p.task.plan ?? null) : null;
-  next.partyIntel = { ...next.partyIntel, [id]: { faction: p.faction, kind: p.kind, goal: p.goal, plan, size: p.size, at } };
+  next.partyIntel = { ...next.partyIntel, [id]: { faction: p.faction, kind: p.kind, goal: p.goal, plan, size: p.size, at, ...(zone ? { zone } : {}) } };
 }
 
 /** 주인공이 있는 구역의 주인이 그 자리에서 바뀌었으면 본 대로 안다 (PT32 졸병: 붉은 다리를 차지하는 것을 봤는데 떠난 뒤 지도는 "주인 없음") */
@@ -2696,12 +2697,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.player) {
         const id = event.key.split("@")[0]!;
         next.partiesSeen = { ...next.partiesSeen, [id]: state.time };
-        rememberParty(next, id, state.time);
+        // 마주침은 주인공이 있는 구역에서만 굴린다 (열쇠의 둘째 칸)
+        rememberParty(next, id, state.time, event.key.split("@")[1] ?? next.playerZone);
       }
       break;
     case "party_reported": {
       // 왔다 간 뒤에 안 무리도 하루 동안은 알릴 수 있다 (12-327: 정찰은 공세의 예고)
-      rememberParty(next, event.partyId, state.time);
+      rememberParty(next, event.partyId, state.time, event.zone);
       if (event.gone) {
         next.garrisonSeen = [...next.garrisonSeen, event.partyId];
         break;

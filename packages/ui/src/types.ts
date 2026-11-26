@@ -193,8 +193,23 @@ export type PersonProfile = {
 };
 
 /** 지도 (12-201) */
-export type MapNode = { id: string; name: string; label: string; x: number; y: number; state: "here" | "visited" | "seen"; base: boolean; isolated: boolean };
-export type MapView = { nodes: MapNode[]; edges: [string, string][] };
+export type MapNode = { id: string; name: string; label: string; x: number; y: number; state: "here" | "visited" | "seen"; base: boolean; isolated: boolean; owner?: string | null; ownerNow?: boolean };
+export type MapFaction = { id: string; name: string; color: number };
+export type MapParty = { key: string; faction: string; label: string; force: string; zone: string; timeLabel: string };
+export type MapView = { title?: string; nodes: MapNode[]; edges: [string, string][]; factions?: MapFaction[]; parties?: MapParty[] };
 /** 구역 안 지도 (12-304) */
 export type PlaceMapNode = { id: string; name: string; x: number; y: number; state: "here" | "known" | "door"; indoor: boolean; inside: boolean; roads: { name: string; known: boolean }[]; direction: string | null };
 export type PlaceMapView = { zone: string; zoneName: string; nodes: PlaceMapNode[]; edges: [string, string][] };
+
+/** 전황 지도 (디버그 전용, core debug/warView.ts). 진짜 전쟁 상태라 TRPG_DEBUG=1일 때만 온다 */
+export type WarZoneView = { id: string; name: string; label: string; x: number; y: number; owner: string | null; base: boolean; isolated: boolean; fort: number; alerted: boolean; here: boolean };
+export type WarPartyView = { id: string; faction: string; kind: string; label: string; size: number; zone: string; goal: string; task: string; returning: boolean; leader: string | null };
+export type WarMapView = {
+  time: number;
+  factions: { id: string; name: string; color: number; combatants: number; population: number; morale: number; zones: number }[];
+  zones: WarZoneView[];
+  edges: [string, string][];
+  parties: WarPartyView[];
+  plans: { id: string; faction: string; label: string; target: string; filled: number; max: number }[];
+  clashes: { zone: string; kind: string; attacker: string; defender: string | null; success: boolean; at: number }[];
+};

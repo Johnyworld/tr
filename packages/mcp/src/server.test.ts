@@ -333,6 +333,9 @@ describe("상태 화면", () => {
     expect(status.open).toBe(true);
     expect(status.player.name).toBe("신병");
     expect(Object.keys(status)).toEqual(["open", "scenarioName", "worldId", "player"]); // 시트만 (서술은 채팅에)
+    // 디버그 모드에서만 진짜 전황이 함께 간다
+    const debugStatus = statusPayload({ get world() { return app.world; }, scenarioName: "테스트", debug: true }) as { war?: { zones: unknown[]; factions: unknown[] } };
+    expect(debugStatus.war?.factions.length).toBeGreaterThan(0);
   });
 });
 

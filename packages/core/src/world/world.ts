@@ -7,6 +7,7 @@ import { moveStash } from "../engine/stash.ts";
 import { parseMemoCommand, writeMemo, type MemoResult } from "../game/memo.ts";
 import { basename } from "node:path";
 import { runCheat } from "../debug/cheats.ts";
+import { buildWarMapView, type WarMapView } from "../debug/warView.ts";
 import type { CharacterChoice } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import type { Content } from "../content/schemas.ts";
@@ -661,6 +662,11 @@ ${this.sceneForGm()}` };
       .map((s, i) => ({ key: `${i}:${s.turn}:${s.kind}`, timeLabel: formatTime(s.time), scene: s.kind === "scene", text: s.text.replace(/\s+/g, " ") }))
       .reverse();
     return { ...buildPlayerView(this.state(), this.content), journal };
+  }
+
+  /** 전황 지도 (디버그 전용): 정보 필터를 거치지 않은 진짜 전쟁 상태. 상태 화면의 TRPG_DEBUG=1에서만 쓴다 */
+  warMapView(): WarMapView {
+    return buildWarMapView(this.state(), this.content);
   }
 
   /** 화면 머리: 시나리오 이름과 시작 장면 */

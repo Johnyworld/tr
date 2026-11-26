@@ -1,4 +1,7 @@
-import type { MapView, PlaceMapView } from "./types.ts";
+import { useState } from "react";
+import type { MapNode, MapParty, MapView, PlaceMapView, WarMapView } from "./types.ts";
+import { FACTION_COLORS, NO_OWNER, factionColorAt } from "./factionColors.ts";
+import { WarMap } from "./WarMap.tsx";
 
 /** 지도 탭 (12-201): 가 본 곳과 맞닿은 곳만. 지금 있는 곳은 강조, 맞닿기만 한 곳은 흐리게 */
 /** 시트 폭(약 460px)에 1:1로 맞춘 좌표. 구역은 점, 이름은 점 아래 */
@@ -7,13 +10,77 @@ const H = 440;
 const PAD_X = 46;
 const PAD_Y = 14;
 
-export function MapPanel({ map, placeMap }: { map: MapView | null; placeMap?: PlaceMapView | null }) {
+const VIEW_KEY = "trpg.map.view";
+type MapTab = "place" | "zone" | "war";
+
+/**
+ * 지도 탭의 서브 탭 (segmented control): [지금 구역 안 | 도시 전체 | 전황 (디버그)].
+ * 구역 안 지도가 없는 구역이면 첫 칸이, 디버그가 아니면 전황 칸이 빠진다. 고른 것은 이 브라우저에만 기억한다
+ */
+export function MapPanel({ map, placeMap, war }: { map: MapView | null; placeMap?: PlaceMapView | null; war?: WarMapView | null }) {
+  const [chosen, setChosen] = useState<MapTab>(() => {
+    try {
+      const v = localStorage.getItem(VIEW_KEY);
+      return v === "place" || v === "zone" || v === "war" ? v : "place";
+    } catch {
+      return "place";
+    }
+  });
+  const hasPlace = !!placeMap && placeMap.nodes.length > 0;
+  const tabs: { id: MapTab; label: string }[] = [
+    ...(hasPlace ? [{ id: "place" as const, label: placeMap!.zoneName }] : []),
+    { id: "zone", label: map?.title ? `${map.title} 전체` : "전체 지도" },
+    ...(war ? [{ id: "war" as const, label: "전황 (디버그)" }] : []),
+  ];
+  const tab = tabs.some((t) => t.id === chosen) ? chosen : tabs[0]!.id;
+  const pick = (v: MapTab) => {
+    setChosen(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* 저장 못 해도 고른 것은 이번에만 */
+    }
+  };
+  return (
+    <div className="map-tabs">
+      {tabs.length > 1 && (
+        <div className="segmented" role="tablist" aria-label="지도 고르기">
+          {tabs.map((t) => (
+            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""} onClick={() => pick(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === "war" && war ? <WarMap war={war} /> : tab === "place" && hasPlace ? <PlaceMap view={placeMap!} /> : <PlayerMap map={map} />}
+    </div>
+  );
+}
+
+/**
+ * 내 지도: 가 본 곳과 맞닿은 곳. 가 본 곳은 주인공이 아는 주인의 색으로 (12-336).
+ * 지금 것이 아닐 수 있는 주인(마지막으로 보거나 들은 때)은 흐리게, 본·전해 들은 부대는 그곳에 마름모로 하루 동안
+ */
+function PlayerMap({ map }: { map: MapView | null }) {
   if (!map || !map.nodes.length) return <p className="muted">아직 지도에 그릴 곳이 없습니다.</p>;
   const pos = new Map(map.nodes.map((n) => [n.id, { x: PAD_X + (n.x / 100) * (W - PAD_X * 2), y: PAD_Y + (n.y / 100) * (H - PAD_Y - 34) }]));
   const byId = new Map(map.nodes.map((n) => [n.id, n]));
+  const factions = map.factions ?? [];
+  const parties = map.parties ?? [];
+  const fcolor = new Map(factions.map((f) => [f.id, factionColorAt(f.color)]));
+  const fname = new Map(factions.map((f) => [f.id, f.name]));
+  const ownerColor = (owner: string | null | undefined) => (owner ? (fcolor.get(owner) ?? NO_OWNER) : NO_OWNER);
+  const ownerText = (n: MapNode) => (n.owner === undefined ? "" : ` · ${n.owner ? (fname.get(n.owner) ?? "") : "주인 없음"}${n.ownerNow ? "" : " (마지막으로 보거나 들은 때)"}`);
+  const zoneParties = new Map<string, MapParty[]>();
+  for (const p of parties) zoneParties.set(p.zone, [...(zoneParties.get(p.zone) ?? []), p]);
+  const partyPos = (p: MapParty) => {
+    const at = pos.get(p.zone)!;
+    const list = zoneParties.get(p.zone)!;
+    const a = -Math.PI / 4 + (list.indexOf(p) * 2 * Math.PI) / list.length;
+    return { x: at.x + Math.cos(a) * 14, y: at.y + Math.sin(a) * 14 };
+  };
+  const stale = map.nodes.some((n) => n.owner !== undefined && !n.ownerNow);
   return (
-    <>
-    {placeMap && placeMap.nodes.length ? <PlaceMap view={placeMap} /> : null}
     <section className="map-panel">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="가 본 곳의 지도">
         {map.edges.map(([a, b]) => {
@@ -26,24 +93,83 @@ export function MapPanel({ map, placeMap }: { map: MapView | null; placeMap?: Pl
         })}
         {map.nodes.map((n) => {
           const p = pos.get(n.id)!;
+          const known = n.owner !== undefined;
+          const fill = known ? ownerColor(n.owner) : undefined;
+          const cls = `map-node ${n.state}${n.base ? " base" : ""}${known && !n.ownerNow ? " stale" : ""}`;
+          const r = n.state === "here" ? 7 : 6;
           return (
-            <g key={n.id} className={`map-node ${n.state}${n.base ? " base" : ""}`}>
-              <circle cx={p.x} cy={p.y} r={n.state === "here" ? 7 : 5} />
+            <g key={n.id} className={cls}>
+              {known && n.base ? (
+                <rect x={p.x - r} y={p.y - r} width={r * 2} height={r * 2} rx={2} style={{ fill }} />
+              ) : (
+                <circle cx={p.x} cy={p.y} r={known ? r : 5} style={fill ? { fill } : undefined} />
+              )}
               {n.label && (
-                <text x={p.x} y={p.y + 17} textAnchor="middle">
+                <text x={p.x} y={p.y + 19} textAnchor="middle">
                   {n.label}
                 </text>
               )}
-              <title>{n.state === "here" ? `${n.name} (지금 여기)` : n.state === "seen" ? "가 보지 않은 곳" : n.name}</title>
+              <title>{n.state === "seen" ? "가 보지 않은 곳" : `${n.name}${n.state === "here" ? " (지금 여기)" : ""}${ownerText(n)}`}</title>
+            </g>
+          );
+        })}
+        {parties.map((p) => {
+          const at = partyPos(p);
+          return (
+            <g key={p.key} className="map-party">
+              <rect x={at.x - 5} y={at.y - 5} width={10} height={10} transform={`rotate(45 ${at.x} ${at.y})`} style={{ fill: ownerColor(p.faction) }} />
+              <title>{`${fname.get(p.faction) ?? ""} ${p.label} ${p.force} · ${p.timeLabel}께 보거나 들었다`}</title>
             </g>
           );
         })}
       </svg>
-      <p className="map-legend muted">
-        <span className="map-key here" /> 지금 여기 <span className="map-key visited" /> 가 본 곳 <span className="map-key seen" /> 가 보지 않은 곳
-      </p>
+      <ul className="war-legend">
+        <li>
+          <svg viewBox="0 0 28 18" width={28} height={18} aria-hidden="true"><circle cx={14} cy={9} r={6} className="map-legend-here" style={{ fill: NO_OWNER }} /></svg>지금 여기
+        </li>
+        <li>
+          <svg viewBox="0 0 28 18" width={28} height={18} aria-hidden="true"><rect x={8} y={3} width={12} height={12} rx={2} style={{ fill: FACTION_COLORS[0] }} /></svg>거점 (색은 아는 주인)
+        </li>
+        <li>
+          <svg viewBox="0 0 28 18" width={28} height={18} aria-hidden="true"><circle cx={14} cy={9} r={6} style={{ fill: NO_OWNER }} /></svg>주인 없는 땅
+        </li>
+        {stale && (
+          <li>
+            <svg viewBox="0 0 28 18" width={28} height={18} aria-hidden="true"><g className="map-node stale"><circle cx={14} cy={9} r={6} style={{ fill: FACTION_COLORS[0] }} /></g></svg>예전에 본 주인 (지금은 다를 수 있다)
+          </li>
+        )}
+        <li>
+          <svg viewBox="0 0 28 18" width={28} height={18} aria-hidden="true"><circle cx={14} cy={9} r={4} className="map-legend-seen" /></svg>가 보지 않은 곳
+        </li>
+        {parties.length > 0 && (
+          <li>
+            <svg viewBox="0 0 28 18" width={28} height={18} aria-hidden="true"><rect x={9} y={4} width={10} height={10} transform="rotate(45 14 9)" style={{ fill: FACTION_COLORS[2] }} /></svg>보거나 들은 부대 (하루)
+          </li>
+        )}
+      </ul>
+      {factions.length > 0 && (
+        <ul className="war-factions">
+          {factions.map((f) => (
+            <li key={f.id}>
+              <span className="map-key" style={{ background: factionColorAt(f.color) }} /> {f.name}
+            </li>
+          ))}
+        </ul>
+      )}
+      {parties.length > 0 && (
+        <>
+          <h4 className="war-h">보거나 들은 부대</h4>
+          <ul className="war-list">
+            {parties.map((p) => (
+              <li key={p.key}>
+                <span style={{ color: ownerColor(p.faction) }}>◆</span> {fname.get(p.faction) ?? ""} {p.label} {p.force} · {byId.get(p.zone)?.name || "모르는 곳"} <span className="muted">({p.timeLabel}께)</span>
+              </li>
+            ))}
+          </ul>
+          <p className="map-legend muted">본 그때의 모습입니다. 지금은 다른 곳에 있을 수 있습니다.</p>
+        </>
+      )}
     </section>
-    </>
   );
 }
 
@@ -62,7 +188,6 @@ function PlaceMap({ view }: { view: PlaceMapView }) {
     : null;
   return (
     <section className="map-panel place-map">
-      <h4 className="place-map-title">{view.zoneName} 안</h4>
       <svg viewBox={`0 0 ${PW} ${PH}`} width="100%" role="img" aria-label={`${view.zoneName} 안의 지도`}>
         {box && <rect className="place-wall" x={box.x} y={box.y} width={box.x2 - box.x} height={box.y2 - box.y} rx={10} />}
         {view.edges.map(([a, b]) => {

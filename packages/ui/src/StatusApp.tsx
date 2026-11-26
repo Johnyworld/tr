@@ -4,7 +4,7 @@ import { SettingsButton } from "./Settings.tsx";
 import { Icon } from "./Icon.tsx";
 import { canGoBack, canGoMenu, CreatedToast, NewGame, newGameTitle, postCreation } from "./NewGame.tsx";
 import { MainMenu } from "./MainMenu.tsx";
-import type { CreationStatus, GmLink, PlayerView } from "./types.ts";
+import type { CreationStatus, GmLink, PlayerView, WarMapView } from "./types.ts";
 
 /** MCP 상태 API 응답 (packages/mcp/src/statusServer.ts 와 맞춘다) */
 /** 아직 닫지 않은 시나리오 해금 알림 (기획서 12.4.1) */
@@ -12,7 +12,7 @@ type UnlockNotice = { pack: string; roleId: string; title: string; particle?: st
 
 type StatusView = (
   | { open: false; scenarioName: string; creating?: boolean; creation?: CreationStatus | null }
-  | { open: true; scenarioName: string; worldId: string; player: PlayerView }
+  | { open: true; scenarioName: string; worldId: string; player: PlayerView; war?: WarMapView }
 ) & { unlockNotices?: UnlockNotice[]; gm?: GmLink };
 
 /**
@@ -167,7 +167,7 @@ export function StatusApp() {
       ) : (
         <div key="sheet" className="status-sheet">
           {created && <CreatedToast onClose={closeToast} />}
-          <CharacterSheet player={status.player} onStatus={applyStatus} />
+          <CharacterSheet player={status.player} war={status.war ?? null} onStatus={applyStatus} />
         </div>
       )}
     </div>

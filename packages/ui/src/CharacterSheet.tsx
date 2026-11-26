@@ -6,7 +6,7 @@ import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
 import { MapPanel } from "./MapPanel.tsx";
-import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView } from "./types.ts";
+import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView, WarMapView } from "./types.ts";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
 const SLOTS = ["손", "몸", "머리", "팔"];
@@ -16,7 +16,7 @@ const TRAIT_KIND_LABELS: Record<PlayerView["traits"][number]["kind"], string> = 
  * 캐릭터 시트 (12-64): 위에 고정한 HUD(누구, 경험치, 몸 상태, 전투, 임무)와
  * 그 아래 블록(능력, 스킬, 장비, 소지품, 복무, 무리, 사람, 기록)
  */
-export function CharacterSheet({ player, onStatus }: { player: PlayerView; onStatus?: (status: unknown) => void }) {
+export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; war?: WarMapView | null; onStatus?: (status: unknown) => void }) {
   return (
     <aside className={player.dead ? "sheet dead" : "sheet"} aria-label="캐릭터 시트">
       <SheetTabs
@@ -361,7 +361,7 @@ export function CharacterSheet({ player, onStatus }: { player: PlayerView; onSta
           </section>
             </>
           ),
-          map: <MapPanel map={player.map ?? null} placeMap={player.placeMap ?? null} />,
+          map: <MapPanel map={player.map ?? null} placeMap={player.placeMap ?? null} war={war ?? null} />,
           memo: player.memo ? <MemoPanel text={player.memo.text} /> : null,
         }}
       </SheetTabs>

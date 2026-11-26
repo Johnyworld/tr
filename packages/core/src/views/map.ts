@@ -1,6 +1,10 @@
 import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { neighbors } from "../sim/war.ts";
+import { knownOwner, knownParties, knowsOwnerNow } from "../rules/knowledge.ts";
+import { partyLabel } from "../sim/parties.ts";
+import { forceWords } from "../engine/battleTools.ts";
+import { formatTime } from "../rules/time.ts";
 import { currentPlace, depthAt, directionTo, knowsPlace, knowsZone, placeCoord, placesIn, unknownDoors, doorNumber } from "../rules/place.ts";
 
 /**
@@ -9,9 +13,31 @@ import { currentPlace, depthAt, directionTo, knowsPlace, knowsZone, placeCoord, 
  * - 가 본 곳과 맞닿은 곳(seen): 길이 이어진 것만 안다. 이름도 모른다 (빈 점)
  * - 그 밖은 싣지 않는다 (원칙 4: 가 보지 않은 곳의 주인·사정은 모른다)
  * 좌표는 월드 팩 location.map (0~100). 좌표가 없는 구역은 그리지 않는다
+ * 아는 전황 (12-336, 공통 규칙 7): 가 본 곳에는 주인공이 아는 주인(지금 것이 아닐 수 있다)을, 본·전해 들은 부대는 그곳에 하루 동안.
+ * 무리 색은 월드 팩의 무리 순서(color)로 정해 디버그 전황 지도와 같게 한다
  */
-export type MapNode = { id: string; name: string; label: string; x: number; y: number; state: "here" | "visited" | "seen"; base: boolean; isolated: boolean };
-export type MapView = { nodes: MapNode[]; edges: [string, string][] };
+export type MapNode = {
+  id: string;
+  name: string;
+  label: string;
+  x: number;
+  y: number;
+  state: "here" | "visited" | "seen";
+  base: boolean;
+  isolated: boolean;
+  /** 주인공이 아는 주인 (가 본 곳만). null은 주인 없음으로 안다 */
+  owner?: string | null;
+  /** 아는 주인이 지금 것이다 (지금 있는 곳, 우리 무리가 낀 땅). 아니면 마지막으로 보거나 들은 때의 주인 */
+  ownerNow?: boolean;
+};
+export type MapFaction = { id: string; name: string; color: number };
+export type MapParty = { key: string; faction: string; label: string; force: string; zone: string; timeLabel: string };
+export type MapView = { title: string; nodes: MapNode[]; edges: [string, string][]; factions: MapFaction[]; parties: MapParty[] };
+
+/** 무리 색 번호: 월드 팩의 무리 순서 (지도와 디버그 전황 지도가 같은 색을 쓴다) */
+export function factionColor(content: Content, factionId: string): number {
+  return Object.keys(content.factions).indexOf(factionId);
+}
 
 export function visitedZones(state: GameState): string[] {
   const seen = new Set(state.visited?.[state.playerId] ?? []);
@@ -37,6 +63,7 @@ export function buildMapView(state: GameState, content: Content): MapView | null
       state: id === state.playerZone ? "here" : known ? "visited" : "seen",
       base: known && l.kind === "base",
       isolated: !!l.isolated,
+      ...(known ? { owner: knownOwner(state, content, id), ownerNow: knowsOwnerNow(state, id) } : {}),
     };
   });
   const edges: [string, string][] = [];
@@ -50,7 +77,15 @@ export function buildMapView(state: GameState, content: Content): MapView | null
       edges.push([id, n]);
     }
   }
-  return { nodes, edges };
+  const onMap = new Set(nodes.map((n) => n.id));
+  const parties: MapParty[] = knownParties(state)
+    .filter((p) => onMap.has(p.zone))
+    .map((p) => ({ key: p.id, faction: p.faction, label: partyLabel(content, { faction: p.faction, kind: p.kind as "raid" }), force: forceWords(p.size), zone: p.zone, timeLabel: formatTime(p.at) }));
+  const used = new Set([...nodes.map((n) => n.owner), ...parties.map((p) => p.faction)].filter((f): f is string => !!f));
+  const factions: MapFaction[] = Object.values(content.factions)
+    .filter((f) => used.has(f.id))
+    .map((f) => ({ id: f.id, name: f.name, color: factionColor(content, f.id) }));
+  return { title: content.scenario.world?.map_name ?? "", nodes, edges, factions, parties };
 }
 
 /**

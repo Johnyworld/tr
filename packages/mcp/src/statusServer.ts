@@ -6,7 +6,7 @@ import type { GameWorld } from "@trpg/core";
 
 /**
  * MCP 모드의 상태 화면 서버 (127.0.0.1만). Claude 앱의 브라우저 패널에 띄워 두는 캐릭터 시트.
- * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만)
+ * - GET /api/status: 지금 이 MCP 세션이 연 게임의 플레이어 시트 (정보 필터를 거친 core 뷰만. 디버그 모드면 진짜 전황 war도 함께)
  * - GET /api/status/stream: 같은 내용을 SSE로. 바뀔 때마다 밀어 준다
  * - GET·POST /api/options: 세계 설정(수위, 대화 형식, 12-63). 바꾸는 규칙은 core(GameWorld.setOptions)에 있다
  * - POST /api/stash: 소지품을 창고로 넣고 꺼낸다 (12-149). 규칙은 core(GameWorld.moveStash)
@@ -50,6 +50,8 @@ export type StatusSource = {
   /** 아직 닫지 않은 시나리오 해금 알림 (기획서 12.4.1). ×를 누를 때까지 화면 위에 남는다 */
   unlockNotices?(): { pack: string; roleId: string; title: string; particle?: string }[];
   dismissUnlockNotice?(pack: string, roleId: string): boolean;
+  /** 디버그 모드 (TRPG_DEBUG=1): 지도 탭에 진짜 전황을 함께 싣는다. 상태 화면에만, GM에게는 가지 않는다 */
+  readonly debug?: boolean;
 };
 
 type Done = { ok: true } | { ok: false; error: string };
@@ -76,7 +78,7 @@ function baseStatus(source: StatusSource): unknown {
   if (!w) return { open: false, scenarioName: source.scenarioName };
   // GM이 아직 서술하는 중이면 그 턴 전의 모습 (훅의 턴 문, 또는 사망 직후)
   if (source.frozenStatus) return source.frozenStatus;
-  return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView() };
+  return { open: true, scenarioName: source.scenarioName, worldId: w.id, player: w.playerView(), ...(source.debug ? { war: w.warMapView() } : {}) };
 }
 
 /** 턴 문이 풀리지 않아도 이만큼 지나면 푼다 (훅의 끝 신호를 놓쳤을 때) */

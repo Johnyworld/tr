@@ -692,6 +692,8 @@ export const scenarioFileSchema = z
         description: z.string().min(1),
         /** 1일차의 달력 날짜 (YYYY-MM-DD). 있으면 상태 화면 머리에 날짜로 보여 준다 */
         calendar_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        /** 지도 전체의 이름 (상태 화면 지도 탭, 예: 가람시). 없으면 "전체" */
+        map_name: z.string().min(1).max(10).optional(),
       })
       .optional(),
     /**

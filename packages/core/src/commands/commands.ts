@@ -18,7 +18,7 @@ import type { GameState } from "../game/state.ts";
 import type { TurnSummary } from "../engine/log.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { admissionOf } from "../rules/admission.ts";
-import { activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS, missionStatusLabel, serviceStart } from "../game/missions.ts";
+import { offerStillOpen, activeMissionOf, commanderOf, daysServed, MISSION_CHECK_TRIES, MISSION_STATUS_LABELS, missionStatusLabel, serviceStart } from "../game/missions.ts";
 import { NEUTRAL_RELATION, RELATION_MAX, RELATION_MIN, relationLabel } from "../game/reputation.ts";
 import { dayOf, formatAgo, formatTime, minuteOfDay, SEGMENT_LABELS, segmentOf } from "../rules/time.ts";
 import { conditionPenalty, shownLevel, visibleSymptoms } from "../scenario/scenario.ts";
@@ -368,7 +368,7 @@ const mission: CommandDef = {
     } else {
       lines.push(state.characters[state.playerId]?.factionId && commanderOf(state, content) ? "수행 중인 임무가 없습니다. 상관에게 물어보세요." : "수행 중인 임무가 없습니다. 임무를 내릴 상관이 없습니다.");
       // 오늘 받을 수 있는 일감 (플레이 테스트 12)
-      const offers = state.offers?.day === dayOf(state.time) && !heldOf(state.characters[state.playerId]) ? state.offers.templateIds.map((id) => content.missions[id]).filter((m) => !!m) : [];
+      const offers = state.offers?.day === dayOf(state.time) && !heldOf(state.characters[state.playerId]) ? state.offers.templateIds.filter((id) => offerStillOpen(content, id, state.characters[state.playerId]?.factionId, state.zones)).map((id) => content.missions[id]).filter((m) => !!m) : [];
       if (offers.length) lines.push("", "오늘 받을 수 있는 임무", ...offers.map((m) => `  ${maskUnknownNames(state, content, m!.title)}`));
     }
     // 진급까지 남은 것 (플레이 테스트 12: 진급이 막힌 까닭이 보이지 않았다)

@@ -69,7 +69,7 @@ function enteredLine(ctx: ToolContext): string[] {
   return id ? [`(같은 장소에 있던 ${josa(playerCalls(ctx.store.getState(), ctx.content, id), "을/를")} 장면에 들였다)`] : [];
 }
 import type { GameState } from "../game/state.ts";
-import {
+import { offerStillOpen,
   activeMissionOf,
   atMissionPlace,
   evaluateMission,
@@ -202,6 +202,9 @@ const assignMission = defineTool({
     if (current) return { ok: false, error: `이미 수행 중인 임무가 있습니다: ${current.title}` };
     if (state.offers?.day !== dayOf(state.time) || !state.offers.templateIds.includes(input.template_id)) {
       return { ok: false, error: `오늘 받을 수 있는 임무가 아닙니다: ${input.template_id}` };
+    }
+    if (!offerStillOpen(ctx.content, input.template_id, player.factionId, state.zones)) {
+      return { ok: false, error: "그 일은 오늘 사이 땅이 바뀌어 더는 맞지 않는다 (빼앗긴 곳이거나 이미 우리 땅이 된 곳)." };
     }
     const template = ctx.content.missions[input.template_id];
     if (!template) return { ok: false, error: `알 수 없는 임무: ${input.template_id}` };
@@ -742,6 +745,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
     lines.push("갇혀 있어 임무를 받을 수 없다");
   } else if (state.offers?.day === dayOf(state.time) && state.offers.templateIds.length > 0) {
     const offers = state.offers.templateIds
+      .filter((id) => offerStillOpen(ctx.content, id, player.factionId, state.zones))
       .map((id) => ctx.content.missions[id])
       .filter((m) => m !== undefined)
       .map((m) => {

@@ -84,6 +84,8 @@ export function onSpottedAtHome(ctx: ToolContext): string[] {
   if (!me?.factionId || !state.playerZone || !ownedBy(state, state.playerZone, me.factionId)) return [];
   // 우리 땅에 든 적대 무리 앞에서 몸을 숨긴 것은 우리 사람에게 수상한 짓이 아니다 (PT37 졸병: 망루에서 붉은 완장들을 지켜보다 빗나가 "명령 불복종")
   const zone = state.playerZone;
+  // 전투 장면 중에 적 앞에서 몸을 숨기다 빗나간 것도 그렇다 (PT38 졸병: 전투 중 sneak 실패가 "명령 불복종"으로 남아 진급이 막혔다)
+  if (state.battle) return [];
   if (state.parties.some((p) => p.size > 0 && partyZoneAt(p, state.time) === zone && hostileFaction(state, ctx.content, p.faction))) return ["몸을 숨기는 데 서툴렀다. 저쪽이 눈치챘는지는 모른다."];
   // 본 사람이 있을 때만 들킨 것이다 (PT15 졸병: 아무도 없는 창고에서 "들켰다"가 남았다)
   const { deed, visible } = recordDeedIfSeen(ctx, { summary: "우리 땅에서 수상한 짓을 하다 들켰다", tags: ["disobedience"], severity: 1, privacy: "semi_private", noisy: true });

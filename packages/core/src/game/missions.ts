@@ -246,6 +246,19 @@ export function riskyMission(m: { armed?: boolean | undefined; where?: string | 
   return !!m.armed || m.where === "enemy";
 }
 
+/**
+ * 아침에 낸 일감이 아직 맞는가 (PT38 분대장: 동쪽 초소가 넘어간 뒤에도 그날의 "초소 증원"을 받아 적 땅에서 기한이 지났다).
+ * 우리 땅이던 임무 자리를 빼앗겼거나, 노리던 구역(target)이 이미 우리 땅이면 그날의 일감에서 빠진다
+ */
+export function offerStillOpen(content: Content, templateId: string, factionId: string | null | undefined, owners: Record<string, { owner: string | null } | undefined>): boolean {
+  const m = content.missions[templateId];
+  if (!m || !factionId) return !!m;
+  if (m.target && owners[m.target]?.owner === factionId) return false;
+  const where = m.where;
+  if (!where || where === "outside" || where === "near" || where === "enemy") return true;
+  return (Array.isArray(where) ? where : [where]).every((z) => content.locations[z]?.owner !== factionId || owners[z]?.owner === factionId);
+}
+
 /** 전쟁에 닿는 임무: 정찰(scouts)·파괴공작(sabotages)·계획 앞당김(advances) (움직이는 부대 파트 11) */
 export function warMission(m: { scouts?: boolean | undefined; sabotages?: unknown; advances?: unknown }): boolean {
   return !!m.scouts || !!m.sabotages || !!m.advances;

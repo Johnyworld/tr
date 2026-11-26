@@ -194,3 +194,26 @@ describe("PT37 고침", () => {
     expect(w.clocks.c_plan?.credits).toBeUndefined();
   });
 });
+
+describe("PT38 고침", () => {
+  it("지키는 사람 수: 전투원이 없으면 0, 숨어 기다리던 부대도 든다", async () => {
+    const { garrisonAt, clashForces } = await import("./war.ts");
+    const w = initialWarWorld(TEST_CONTENT);
+    const spec = { kind: "raid" as const, attacker: "faction_c", defender: "faction_a", zone: "a_post" };
+    w.factions.faction_a!.combatants = 0;
+    expect(garrisonAt(w, spec, TEST_CONTENT)).toBe(0);
+    expect(clashForces(w, spec, TEST_CONTENT).defenders).toBe(1);
+    expect(garrisonAt(w, { ...spec, guard: 5 }, TEST_CONTENT)).toBe(5);
+  });
+
+  it("아침에 낸 일감은 그 자리를 빼앗기거나 노리던 구역이 우리 땅이 되면 빠진다", async () => {
+    const { offerStillOpen } = await import("../game/missions.ts");
+    const { loadRealContent } = await import("../testing.ts");
+    const real = loadRealContent();
+    const owners = Object.fromEntries(Object.entries(real.locations).map(([id, l]) => [id, { owner: l.owner ?? null }]));
+    expect(offerStillOpen(real, "a_sl_east_reinforce", "faction_a", owners)).toBe(true);
+    expect(offerStillOpen(real, "a_sl_east_reinforce", "faction_a", { ...owners, a_east_post: { owner: "faction_c" } })).toBe(false);
+    expect(offerStillOpen(real, "c_east_probe", "faction_c", owners)).toBe(true);
+    expect(offerStillOpen(real, "c_east_probe", "faction_c", { ...owners, a_east_post: { owner: "faction_c" } })).toBe(false);
+  });
+});

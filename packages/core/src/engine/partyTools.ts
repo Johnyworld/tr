@@ -135,8 +135,10 @@ export function startPartyFight(ctx: ToolContext, party: Party, opts: { byParty?
     const world = worldOf(state);
     const held = holdParty(party, state.time, 60);
     world.parties = (world.parties ?? []).map((p) => (p.id === party.id ? held : p));
-    // 큰 무리와 무리에 속한 주인공: 전투 장면 (5-1)
-    if (party.size > SMALL_MAX && me.factionId && content.scenario.battle) {
+    // 큰 무리와 무리에 속한 주인공: 전투 장면 (5-1). 우리 땅이거나 그 구역에 우리 무리 부대가 있을 때만:
+    // 빈 땅·남의 땅에서 주인공 일행뿐이면 맞붙음(보이는 사람만 장면에)으로 (PT37·38 졸병, 사용자 결정: 둑에서 일행 둘이 22명과 "방어" 전투, 물러나자 무리 병력이 줄었다)
+    const backed = !!me.factionId && (ownedBy(state, zone, me.factionId) || alliedPartiesHere(state).length > 0);
+    if (party.size > SMALL_MAX && me.factionId && content.scenario.battle && backed) {
       saveWorld(ctx, world);
       // 그 구역의 우리 무리 부대도 함께 맞선다 (PT37 사용자 결정)
       const group = 1 + companyHere(state, content).length + alliedPartiesHere(state).reduce((n, p) => n + p.size, 0);

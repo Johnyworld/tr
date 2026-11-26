@@ -699,12 +699,16 @@ export const FORT_BONUS = 0.2;
 
 export function clashForces(world: WarWorld, spec: ClashSpec, content?: Content): { attackers: number; defenders: number } {
   const a = world.factions[spec.attacker]!;
-  const d = world.factions[spec.defender]!;
   return {
     attackers: spec.force ?? Math.max(1, Math.round(a.combatants * (spec.plan ? PLAN_COMMIT : COMMIT[spec.kind]))),
-    // 보강된 구역(담·망루)은 지키는 쪽이 더 버틴다 (12-48)
-    defenders: Math.max(1, Math.round(d.combatants * commitAt(world, spec.zone, spec.defender) * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0)))) + (spec.guard ?? 0),
+    defenders: Math.max(1, garrisonAt(world, spec, content)),
   };
+}
+
+/** 그 구역을 지키는 사람 수 (0이면 지키는 사람이 없다). 보강된 구역(담·망루)은 지키는 쪽이 더 버틴다 (12-48), 숨어 기다리던 부대(guard)도 든다 */
+export function garrisonAt(world: WarWorld, spec: ClashSpec, content?: Content): number {
+  const d = world.factions[spec.defender]!;
+  return Math.round(d.combatants * commitAt(world, spec.zone, spec.defender) * (content ? defenseOf(content, d) : 1) * (1 + FORT_BONUS * (world.zones[spec.zone]?.fort ?? 0))) + (spec.guard ?? 0);
 }
 
 /**

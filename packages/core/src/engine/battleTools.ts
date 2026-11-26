@@ -21,7 +21,7 @@ import {
   wonBy,
   type BattleEffect,
 } from "../sim/battle.ts";
-import { applyBattleOutcome, changedTargets, clashForces, clockValues, neighbors, resolveClash, type ClashSpec } from "../sim/war.ts";
+import { applyBattleOutcome, changedTargets, clockValues, garrisonAt, neighbors, resolveClash, type ClashSpec } from "../sim/war.ts";
 import { facilitiesAt } from "./facilities.ts";
 import { josa } from "../text.ts";
 import { recordDeed } from "./reputationTools.ts";
@@ -59,10 +59,10 @@ export function playerInvolvement(state: GameState, content: Content, spec: Clas
   const zone = state.playerZone;
   // 갇혀 있으면 싸움에 끼지 않는다 (12-55)
   if (!player || player.dead || heldOf(player) || !zone || state.battle) return null;
-  if (spec.defender === player.factionId && zone === spec.zone) {
-    // 지키는 우리 사람이 주인공 일행뿐이면 전투 장면이 아니다: 화면 밖에서 계산하고, 남은 부대와는 마주침(공통 규칙 23)으로 (PT37 졸병, 사용자 결정: 둑에 혼자 있다 우리 1 대 적 22 "방어" 전투)
-    const { defenders } = clashForces(state, spec, content);
-    if (defenders <= 1 + companyHere(state, content).length) return null;
+  if (spec.defender === player.factionId && zone === spec.zone && ownedBy(state, zone, player.factionId)) {
+    // 지키는 우리 사람이 없고 주인공 일행뿐이면 전투 장면이 아니다: 화면 밖에서 계산하고, 남은 부대와는 마주침(공통 규칙 23)으로 (PT37 졸병, 사용자 결정: 둑에 혼자 있다 우리 1 대 적 22 "방어" 전투)
+    // 지키는 사람이 있는 우리 초소면 일행이 많아도 전투 장면이다 (PT38 분대장: 분대와 함께 있던 초소에 공세가 왔는데 장면 없이 함락됐다)
+    if (garrisonAt(state, spec, content) <= 0) return null;
     return "defense";
   }
   if (spec.attacker === player.factionId && ownedBy(state, zone, player.factionId) && neighbors(content, spec.zone).includes(zone)) {
@@ -256,6 +256,8 @@ export function endBattle(ctx: ToolContext, withdrew: boolean): BattleTurn {
     { type: "battle", event: "ended", title: battleTitle(ctx.content, battle), detail: lines[0]! },
     ...reportClash(ctx, clash),
     ...afterFall,
+    // 전투 장면으로 치른 교전도 알린 무리를 정산한다 (PT38 졸병: 공세를 치른 뒤에도 알림이 닫히지 않고 "알린 덕에"도 보지 않았다)
+    ...settlePartyAlerts(ctx, [clash]),
   ];
   // 공이 크면 용기 있는 행적으로 남는다 (소문이 된다)
   if (!ctx.store.getState().characters[player.id]!.dead && battle.contribution >= 3) {

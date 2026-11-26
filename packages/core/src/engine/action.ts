@@ -1004,7 +1004,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           alarmCut = true;
         }
         // 경보 이야기 없이 들킨 일도 결과 줄로 (PT35 졸병: 화면 표시에만 있어 결과 글엔 "실패한다"뿐이었다)
-        else if (d.type === "belief" && d.fact) lines.push(`${d.fact}.${d.note ? ` ${d.note}` : ""}`);
+        else if (d.type === "belief" && d.fact) {
+          lines.push(`${d.fact}.${d.note ? ` ${d.note}` : ""}`);
+          // 경보 이야기 없이 들켜도 하던 일은 끊긴다 (PT38 분대장: 함락된 초소에서 들키고도 보초가 다섯 시간 반 이어졌다)
+          alarmCut = true;
+        }
       }
     }
     lines.push(...roll.ambushNotes);

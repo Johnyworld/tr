@@ -54,28 +54,35 @@ export function MainMenu({ gm, page, onPage, onStatus }: { gm: GmLink | undefine
         <h1>가람</h1>
         <p>생존자들의 도시</p>
       </div>
-      <div className="mainmenu-buttons">
-        <button type="button" className="mainmenu-button primary" disabled={busy || !ready} onClick={() => void run({ action: "new" })}>
-          새로운 게임
-        </button>
-        <button type="button" className="mainmenu-button" disabled={busy || saveCount === 0} title={saveCount === 0 ? "저장된 게임이 없습니다" : undefined} onClick={() => onPage("continue")}>
-          이어서 하기
-        </button>
-      </div>
+      {ready ? (
+        <div className="mainmenu-buttons">
+          <button type="button" className="mainmenu-button primary" disabled={busy} onClick={() => void run({ action: "new" })}>
+            새로운 게임
+          </button>
+          <button type="button" className="mainmenu-button" disabled={busy || saveCount === 0} title={saveCount === 0 ? "저장된 게임이 없습니다" : undefined} onClick={() => onPage("continue")}>
+            이어서 하기
+          </button>
+        </div>
+      ) : (
+        <PlayHint />
+      )}
       <p className="mainmenu-desc">도망. 생존. 전쟁.<br/>멸망한 도시에서 누군가의 마지막을 경험하세요.</p>
       {error && (
         <p className="newgame-error" role="alert">
           {error}
         </p>
       )}
-      {!ready && <PlayHint />}
     </div>
   );
 }
 
-/** GM이 기다리고 있지 않을 때: 게임을 열거나 시작하려면 채팅에 /play */
+/** GM이 기다리고 있지 않을 때: 단추 자리에 보이는 안내 상자 (게임을 열거나 시작하려면 채팅에 /play) */
 function PlayHint() {
-  return <p className="mainmenu-hint">게임을 열거나 시작하려면 Claude 채팅에 /play 를 입력해 주세요.</p>;
+  return (
+    <div className="mainmenu-hint">
+      게임을 열거나 시작하려면 Claude 채팅에 <code>/play</code> 를 입력해 주세요.
+    </div>
+  );
 }
 
 /** 이어서 하기: 세이브 목록. 줄마다 열기(GM이 기다릴 때만)와 삭제(확인 창) */

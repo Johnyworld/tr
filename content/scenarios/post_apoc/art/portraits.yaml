@@ -67,332 +67,21 @@ styles:
       Colorize this black-and-white ink comic illustration with flat comic-book colours in a muted, desaturated post-apocalyptic palette: natural warm skin tones, dusty olive, khaki, tan, faded denim blue, rust brown and grey-brown for the clothes, and a hazy dull grey-blue or dusty orange sky behind the ruined city. Keep every ink line, shape, shadow, the face, expression, hair and the composition exactly the same; only add colour.
 
 faces:
-  
-  # D 미국 애니메이션: 남 2, 여 2
-  d_m1:
-    style: D
-    gender: male
-    seed: 2101
-    zoom: 1.1
-    # 원본에 종이 액자 테두리가 그려져 있다: 정리로 지운다
-    cleanup: true
-    subject: >-
-      a 42 year old korean man, grizzled survivor, square jaw, short graying hair, heavy stubble, worn trench coat with upturned collar
-  d_m2:
-    style: D
-    gender: male
-    seed: 2102
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.36
-    colorize: true
-    subject: >-
-      a 23 year old korean young man, scavenger, spiky black hair, determined look, bandana around his neck, torn bomber jacket
-  d_f1:
-    style: D
-    gender: female
-    seed: 2103
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.23
-    colorize: true
-    subject: >-
-      a 30 year old korean woman, scout, long black hair in a high ponytail, confident smirk, dark tactical vest
-  d_f2:
-    style: D
-    gender: female
-    seed: 2104
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.34
-    # 컬러 그림이지만 얼굴이 흰 면으로 그려졌다: 색을 입힌다
-    colorize: true
-    subject: >-
-      a 21 year old korean young woman, runner, short pixie cut hair, freckles, fierce eyes, hooded sweatshirt under a scuffed vest
-
-  # D 미국 애니메이션
-  d_m3:
-    style: D
-    gender: male
-    seed: 2111
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.31
-    colorize: true
-    subject: >-
-      a 60 year old korean man, veteran survivor, bald head, heavy brow, crooked broken nose, thick grey beard, deep forehead lines, worn military field jacket
-  d_m4:
-    style: D
-    gender: male
-    seed: 2112
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.25
-    colorize: true
-    subject: >-
-      a 30 year old korean man, heavy-set brawler, long black hair tied in a topknot, angular face, a scar across his upper lip, sleeveless padded vest over a dark shirt
-  d_f3:
-    style: D
-    gender: female
-    seed: 2113
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.27
-    colorize: true
-    subject: >-
-      a 45 year old korean woman, militia commander, short cropped silver hair, hard square jaw, crow's feet, stern stare, high-collared military coat
-  d_f4:
-    style: D
-    gender: female
-    seed: 2114
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.17
-    colorize: true
-    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
-    cleanup: true
-    subject: >-
-      a 24 year old korean young woman, smuggler, wavy shoulder-length hair under a bandana, round face, a small mole under one eye, sly half smile, patched denim jacket
-
-  # D 미국 애니메이션: 아이돌처럼 잘생기고 예쁜 한국인 남녀 (무표정)
-  d_m5:
-    style: D
-    gender: male
-    seed: 2124
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.34
-    subject: >-
-      a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face, smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips, neat black hair with soft bangs falling over his forehead, blank expressionless face, tall slim build, worn dark bomber jacket over a grey hoodie
-  d_f5:
-    style: D
-    gender: female
-    seed: 2123
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.33
-    colorize: true
-    subject: >-
-      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face, short chin, soft rounded jawline, full cheeks, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face, long dusty trench coat over a black turtleneck
-  d_f6:
-    style: D
-    gender: female
-    seed: 2131
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.35
-    colorize: true
-    # d_f5와 같은 느낌을 살짝 옆으로 돌린 각도로 (돌린 얼굴은 너비가 좁게 재진다)
-    crop_scale: 1.1
-    subject: >-
-      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face, three-quarter view portrait, her face and shoulders angled about thirty degrees to the right, one cheek turned away from the viewer, both eyes visible and glancing toward the viewer, long dusty trench coat over a black turtleneck
-
-  # 아이돌형 후보 중 살린 것들 (d_f5와 같은 묘사 / d_f6과 같은 옆 각도 묘사 / d_m5와 같은 묘사)
-  d_f7:
-    style: D
-    gender: female
-    seed: 2134
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.43
-    crop_scale: 1.1
-    subject: >-
-      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face, three-quarter view portrait, her face and shoulders angled about thirty degrees to the right, one cheek turned away from the viewer, both eyes visible and glancing toward the viewer, long dusty trench coat over a black turtleneck
-  d_f8:
-    style: D
-    gender: female
-    seed: 2122
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.26
-    # 처음 그린 d_f5 (얼굴이 긴 버전). 그 원본을 그대로 쓴다
-    source: sources/d_f8.png
-    subject: >-
-      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, long straight black hair
-  d_m6:
-    style: D
-    gender: male
-    seed: 2122
-    zoom: 1.1
-    subject: >-
-      a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face, smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips, neat black hair with soft bangs falling over his forehead, blank expressionless face, tall slim build, worn dark bomber jacket over a grey hoodie
-
-  # 사진을 참고한 얼굴 (각도·헤어·얼굴형·나이만 따르고 옷은 바꾼다. 실존 인물과 똑같지 않게 글 묘사로만 그린다)
-  d_m7:
-    style: D
-    gender: male
-    seed: 2141
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.8
-    colorize: true
-    subject: >-
-      a korean man in his mid thirties, short cropped dark hair, long angular face, high cheekbones, strong square jaw, intense straight stare, wearing a faded navy henley t-shirt
-  d_m8:
-    style: D
-    gender: male
-    seed: 2142
-    colorize: true
-    subject: >-
-      a korean man in his mid twenties, textured black hair swept back and up, sharp jawline, defined cheekbones, calm slightly raised chin, wearing a worn grey t-shirt with a stretched collar
-  d_m9:
-    style: D
-    gender: male
-    seed: 2143
-    colorize: true
-    subject: >-
-      a korean man in his early thirties, buzzed head, short full beard and mustache, broad face, faint confident smirk, wearing a dirty white tank top
-  d_m10:
-    style: D
-    gender: male
-    seed: 2144
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.8
-    colorize: true
-    subject: >-
-      a korean man in his late sixties, short grey buzz cut, heavily wrinkled weathered face, droopy heavy-lidded eyes, large ears, stern mouth, wearing a faded collared shirt with a worn grey wool scarf
-  d_m11:
-    style: D
-    gender: male
-    seed: 2145
-    colorize: true
-    subject: >-
-      a korean man in his late twenties, shoulder-length wavy black hair parted in the middle, soft gentle face, slight warm smile, wearing a washed-out black t-shirt
-  d_m12:
-    style: D
-    gender: male
-    seed: 2146
-    colorize: true
-    crop_scale: 1.1
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes visible and looking toward the viewer, a korean man in his mid twenties, very short buzzed hair, sharp cheekbones, lean face, cool sideways glance, wearing a ripped grey sleeveless tank top
-  d_m13:
-    style: D
-    gender: male
-    seed: 2147
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.89
-    colorize: true
-    subject: >-
-      a korean man in his late twenties, slicked-back black hair, narrow monolid eyes, long narrow face, serious flat expression, wearing a torn charcoal t-shirt
-  d_m14:
-    style: D
-    gender: male
-    seed: 2148
-    colorize: true
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.93
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes visible and looking toward the viewer, a korean young man in his early twenties, thick straight bowl-cut hair with heavy bangs, angular face, freckles, fierce glare, wearing a plain sleeveless undershirt
-  d_m15:
-    style: D
-    gender: male
-    seed: 2149
-    colorize: true
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.83
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean man in his mid twenties, tousled wet-look black hair, very sharp jawline and cheekbones, chin slightly lowered, intense stare, wearing a thin white tank top
-  d_m16:
-    style: D
-    gender: male
-    seed: 2150
-    colorize: true
-    subject: >-
-      a korean young man around twenty, messy windswept wavy hair covering his ears, soft youthful face, calm look, wearing a ragged white sleeveless shirt
-  d_m17:
-    style: D
-    gender: male
-    seed: 2151
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.78
-    colorize: true
-    subject: >-
-      a korean man in his late forties, hair tied back in a small knot, salt-and-pepper beard and mustache, deep facial lines, a wooden bead necklace, wearing a worn white t-shirt
-  d_m18:
-    style: D
-    gender: male
-    seed: 2152
-    # 원본에 네모 틀이 그려졌다: 정리로 지운다
-    cleanup: true
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.83
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean man in his late fifties, grey hair swept back, hard stern face, deep nasolabial lines, watchful eyes, wearing a faded dark collarless work shirt
-  d_f9:
-    style: D
-    gender: female
-    seed: 2161
-    zoom: 1.1
-    colorize: true
-    subject: >-
-      a korean woman in her early twenties, long straight black hair parted in the middle, doll-like features, almond eyes with winged eyeliner, full lips, cool expression, wearing a faded grey tank top
-  d_f10:
-    style: D
-    gender: female
-    seed: 2162
-    colorize: true
-    subject: >-
-      a korean young woman around nineteen, messy shoulder-length curly black hair with curtain bangs, freckles, round soft face, head slightly tilted, blank look, wearing a thin white tank top with a small pendant necklace
-  d_f11:
-    style: D
-    gender: female
-    seed: 2163
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.95
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean woman in her mid twenties, long straight black hair tucked behind one ear, round thin wire-frame glasses, calm gaze, wearing a worn green t-shirt
-  d_f12:
-    style: D
-    gender: female
-    seed: 2164
-    colorize: true
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.93
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean young woman around twenty, chin-length bob with full blunt bangs, big eyes, small mouth, quiet expression, wearing a faded checked shirt
-  d_f13:
-    style: D
-    gender: female
-    seed: 2165
-    colorize: true
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.83
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes visible and looking toward the viewer, a korean young woman in her early twenties, long voluminous wavy curly black hair with bangs, soft features, glancing to the side, wearing an oversized worn white shirt with rolled sleeves
-  d_f14:
-    style: D
-    gender: female
-    seed: 2166
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.19
-    colorize: true
-    subject: >-
-      a korean woman in her early twenties, long hair pulled back with face-framing bangs, round face, rosy cheeks, slightly looking up at the viewer, wearing a frayed cream knit top
-  d_f15:
-    style: D
-    gender: female
-    seed: 2167
-    colorize: true
-    subject: >-
-      a korean woman in her late twenties, long wavy black hair parted in the middle, high cheekbones, faint confident smile, wearing a black tank top
-  d_f16:
-    style: D
-    gender: female
-    seed: 2168
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.17
-    subject: >-
-      a plus-size korean woman around thirty with light warm east asian skin, round full face, small eyes, black hair pulled straight back into a low ponytail, no earrings, plain neutral expression, wearing a faded yellow tank top
-  d_f17:
-    style: D
-    gender: female
-    seed: 2169
-    zoom: 1.08
-    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.84
-    colorize: true
-    subject: >-
-      a korean young woman around twenty, long straight hair parted in the middle, round full face, rosy cheeks, puffy tired eyes, plain look, wearing an old stained white t-shirt
-  d_f18:
-    style: D
-    gender: female
-    seed: 2170
-    zoom: 1.08
-    colorize: true
-    subject: >-
-      a korean woman around fifty, long straight brown hair, rimless glasses, gentle mature face with fine lines, calm faint smile, wearing a worn grey t-shirt
+  # 순서는 한 번 섞었다 (2026-11-26, 비슷한 얼굴이 뭉치지 않게. 화면은 이 순서대로 보인다). 만들 때의 묶음:
+  #   - D 미국 애니메이션: 남 2, 여 2
+  #   - D 미국 애니메이션
+  #   - D 미국 애니메이션: 아이돌처럼 잘생기고 예쁜 한국인 남녀 (무표정)
+  #   - 아이돌형 후보 중 살린 것들 (d_f5와 같은 묘사 / d_f6과 같은 옆 각도 묘사 / d_m5와 같은 묘사)
+  #   - 사진을 참고한 얼굴 (각도·헤어·얼굴형·나이만 따르고 옷은 바꾼다. 실존 인물과 똑같지 않게 글 묘사로만 그린다)
+  #   - D 다양성 보강: 나이(10대~60대), 체형, 흉터, 외국 출신 생존자 (모두 색 입히기)
+  #   - 10대 여성 다시 뽑기 (d_f21·d_f29가 20대처럼 나와 더 앳되게 새로 추가)
+  #   - 10대 여성 머리 모양 다양하게 (긴 생머리, 웨이브, 포니테일, 단발, 똥머리 등. 짧은 머리는 빼고 단발 이상)
+  #   - 10대 여자 아이돌처럼 예쁜 얼굴
+  #   - 머리 모양 다시 뽑기에서 나온 후보를 그대로 살린 얼굴 (--adopt)
+  #   - 젊은 남성 (10~30대) 12명: 뚱뚱한 셋, 10대 넷
+  #   - 5:5 가르마 웨이브 여신머리 미인 한 사람을 구도만 바꿔 여러 장 (사진을 참고했지만 실존 인물과 똑같지 않게 글 묘사로만 그린다)
+  #     같은 묘사로 후보를 뽑아 사진과 가까운 것을 살렸다 (--adopt). 처음 묘사(나이 들어 보이고 올림머리가 섞였다)와
+  #     더 앳되고 머리를 풀어 내린 묘사 두 가지다
   d_f19:
     style: D
     gender: female
@@ -404,172 +93,48 @@ faces:
     colorize: true
     subject: >-
       a korean woman in her mid twenties, black hair tied tightly back, round flat face, light freckles, neutral steady gaze, wearing a beige collarless wrap shirt
-  d_f20:
+  d_f40:
     style: D
     gender: female
-    seed: 2172
-    zoom: 1.1
-    colorize: true
-    crop_scale: 1.1
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean woman in her early twenties, long straight black hair falling over one shoulder, sharp cheekbones, monolid eyes, cold stare, wearing a black tank top
-
-  # D 다양성 보강: 나이(10대~60대), 체형, 흉터, 외국 출신 생존자 (모두 색 입히기)
-  d_m19:
-    style: D
-    gender: male
-    seed: 2181
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.8
+    seed: 2311
+    zoom: 1.4
     colorize: true
     subject: >-
-      a skinny 16 year old korean boy, thin face, messy black hair, scared wide eyes, wearing an oversized ragged t-shirt
-  d_m20:
+      a young korean teenage girl of about fifteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, medium-length layered dark hair tucked behind one ear with a plain hair clip, shy small smile, wearing a faded yellow raincoat
+  d_f12:
     style: D
-    gender: male
-    seed: 2182
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.82
+    gender: female
+    seed: 2164
     colorize: true
-    subject: >-
-      an 18 year old korean young man, faint acne marks, spiky black hair, rebellious scowl, wearing a stretched black tank top
-  d_m21:
-    style: D
-    gender: male
-    seed: 2183
-    colorize: true
-    subject: >-
-      a big heavy-set korean man in his late thirties with a round belly and broad thick neck, short buzz cut, kind gentle expression, wearing a sweat-stained grey t-shirt
-  d_m22:
-    style: D
-    gender: male
-    seed: 2184
-    colorize: true
-    # 원본에서 얼굴이 너무 크게 그려져 자르기로는 맞출 수 없다: 미디엄 샷으로 다시 그린다
-    subject: >-
-      medium shot showing his head, shoulders and upper body with the ruined city around him, an emaciated korean man in his mid forties, hollow sunken cheeks from hunger, gaunt bony face, dark- ringed tired eyes, stubble, wearing a loose threadbare shirt
-  d_m23:
-    style: D
-    gender: male
-    seed: 2185
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.86
-    colorize: true
-    subject: >-
-      a korean man in his mid thirties, a bandage wrapped around his forehead, a scar across the bridge of his nose, short beard, wearing a dirty olive tank top
-  d_m24:
-    style: D
-    gender: male
-    seed: 2186
-    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.84
-    colorize: true
-    subject: >-
-      a korean man in his early fifties who looks like a former schoolteacher, balding head, thin wire glasses, mild tired eyes, wearing a faded button-up shirt
-  d_m25:
-    style: D
-    gender: male
-    seed: 2187
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.91
-    colorize: true
-    subject: >-
-      a south asian man around forty living in korea, warm brown skin, full black beard, sturdy build, steady eyes, wearing a worn dark t-shirt
-  d_m26:
-    style: D
-    gender: male
-    seed: 2188
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.85
-    colorize: true
-    subject: >-
-      a white western man in his late twenties stranded in korea, short light brown hair, sun-burnt weathered face, light stubble, wearing a grimy white t-shirt
-  d_m27:
-    style: D
-    gender: male
-    seed: 2189
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
     crop_scale: 0.93
-    colorize: true
     subject: >-
-      an old korean farmer in his mid sixties, sparse grey beard, sun-darkened deeply lined face, a gap from a missing front tooth in a lopsided grin, wearing a faded work shirt
-  d_m28:
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean young woman around twenty, chin-length bob with full blunt bangs, big eyes, small mouth, quiet expression, wearing a faded checked shirt
+  d_m36:
     style: D
     gender: male
-    seed: 2190
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 1.09
+    seed: 2471
+    zoom: 1.34
     colorize: true
     subject: >-
-      a korean man in his early thirties, long black hair tied back, tattoos climbing up his neck, sharp cold eyes, wearing a black sleeveless shirt
-  d_f21:
+      a handsome korean man in his mid twenties, sharp jawline, short textured black hair swept up, confident calm eyes, light stubble, wearing a black tactical jacket
+  d_m39:
     style: D
-    gender: female
-    seed: 2201
+    gender: male
+    seed: 2501
+    zoom: 1.31
     colorize: true
     subject: >-
-      a 17 year old korean girl, youthful face, short choppy self-cut hair, wary eyes, wearing an oversized faded hoodie
-  d_f22:
+      a rugged muscular korean man in his early thirties, square jaw, very short cropped hair, a small scar through one eyebrow, stern hard eyes, wearing a sleeveless work vest over a dark t-shirt
+  d_m1:
     style: D
-    gender: female
-    seed: 2202
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.83
-    colorize: true
-    subject: >-
-      a muscular korean woman around thirty-five, broad shoulders and strong arms, nearly shaved buzz cut, an old scar on her upper arm, hard stare, wearing a grey tank top
-  d_f23:
-    style: D
-    gender: female
-    seed: 2203
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.86
-    colorize: true
-    subject: >-
-      a tired korean woman in her late thirties, motherly face, hair carelessly tied up with loose strands, dark circles under her eyes, wearing a stretched-out beige t-shirt
-  d_f24:
-    style: D
-    gender: female
-    seed: 2204
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.8
-    colorize: true
-    subject: >-
-      a sturdy stocky korean woman in her mid forties, short permed hair, sun-tanned skin, square face, no-nonsense look, wearing a faded floral work blouse
-  d_f25:
-    style: D
-    gender: female
-    seed: 2205
+    gender: male
+    seed: 2101
     zoom: 1.1
-    colorize: true
+    # 원본에 종이 액자 테두리가 그려져 있다: 정리로 지운다
+    cleanup: true
     subject: >-
-      a korean woman in her mid fifties, greying chin-length bob, thin-framed glasses, sharp intelligent eyes, wearing a worn cardigan over a t-shirt
-  d_f26:
-    style: D
-    gender: female
-    seed: 2206
-    zoom: 1.1
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.83
-    colorize: true
-    subject: >-
-      an elderly korean woman in her early sixties, white hair pulled into a low bun, deep wrinkles, gentle but unbreakable expression, wearing a faded padded vest
-  d_f27:
-    style: D
-    gender: female
-    seed: 2207
-    zoom: 1.19
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.89
-    colorize: true
-    subject: >-
-      a korean woman around twenty-nine, a large old burn scar across one cheek and jaw, short tousled hair, steady defiant look, wearing a black t-shirt
+      a 42 year old korean man, grizzled survivor, square jaw, short graying hair, heavy stubble, worn trench coat with upturned collar
   d_f28:
     style: D
     gender: female
@@ -580,63 +145,13 @@ faces:
       Remove the solid black shape covering her cheek and jaw on the left side of the image, and show her bare cheek there in the same skin tone as the other cheek, with a light flat shadow under the cheekbone.
     subject: >-
       a southeast asian woman in her early thirties living in korea, warm brown skin, long black hair tied back, calm resilient expression, wearing a washed-out green t-shirt
-  d_f29:
+  d_f48:
     style: D
     gender: female
-    seed: 2209
-    zoom: 1.08
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.93
+    seed: 2601
     colorize: true
     subject: >-
-      a shy 16 year old korean girl, black hair in two braided pigtails, freckles, small round face, nervous look, wearing a too-big grey t-shirt
-  d_f30:
-    style: D
-    gender: female
-    seed: 2210
-    colorize: true
-    subject: >-
-      a rebellious 18 year old korean girl, faded dyed red hair in a messy shoulder-length cut, a bandage across her nose, smirking, wearing a torn band t-shirt
-
-  # 10대 여성 다시 뽑기 (d_f21·d_f29가 20대처럼 나와 더 앳되게 새로 추가)
-  d_f31:
-    style: D
-    gender: female
-    seed: 2223
-    zoom: 1.1
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, slim small frame, short choppy self-cut black hair with uneven bangs, wary big eyes, wearing an oversized faded hoodie that swallows her shoulders
-  d_f32:
-    style: D
-    gender: female
-    seed: 2231
-    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
-    crop_scale: 0.8
-    colorize: true
-    # 눈이 사시처럼 서로 다른 곳을 본다: 눈만 다시 그린다
-    touchup: >-
-      Fix her cross-eyed look. In each of her two eyes, place the dark iris exactly in the middle of the eye, with equal white showing on both sides of each iris, so both eyes look straight ahead at the viewer. Change only the irises; keep the eye shapes, eyelids and everything else exactly the same.
-    subject: >-
-      a young korean teenage girl of about sixteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, slim small frame, black hair in two long braided pigtails hanging over her shoulders, freckles across her nose, shy nervous look, wearing a too-big grey t-shirt
-
-  # 10대 여성 머리 모양 다양하게 (긴 생머리, 웨이브, 포니테일, 단발, 똥머리 등. 짧은 머리는 빼고 단발 이상)
-  d_f33:
-    style: D
-    gender: female
-    seed: 2321
-    zoom: 1.14
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, bare head with very long straight glossy black hair parted in the middle flowing down past her chest on both sides, calm quiet eyes, wearing a faded collared school blazer over a white shirt
-  d_f34:
-    style: D
-    gender: female
-    seed: 2251
-    zoom: 1.15
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, long loose wavy light brown hair spilling over her shoulders, gentle hopeful smile, wearing a patched denim jacket
+      a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, serene faint closed-lip smile, wearing a worn cobalt blue wrap jacket
   # 완성본은 사용자가 직접 손본 그림이다 (2026-11-19). 이 얼굴을 다시 그리면 그 손질이 사라진다
   d_f35:
     style: D
@@ -656,25 +171,243 @@ faces:
         Keep her hair, ponytail, bangs, clothes and background exactly the same, and change only her face to look younger and cuter, like a girl of about fifteen: rounder softer face with full chubby cheeks, a shorter chin, bigger round sparkling eyes, a small button nose and small soft lips, with a sweet innocent expression. Her skin is smooth, clean and clear, with no freckles, spots, dots, scratches or stray lines anywhere on her face.
     subject: >-
       a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, head turned three-quarters to the side, black hair with soft wispy see-through bangs pulled up into a high ponytail, the long wavy ponytail clearly visible hanging down behind her over her shoulder, bright eyes and a small smile, wearing a worn track jacket zipped to the collar
-  d_f36:
+  d_f50:
     style: D
     gender: female
-    seed: 2343
+    seed: 2634
+    colorize: true
+    subject: >-
+      chin slightly lowered, eyes looking up at the viewer, head tilted slightly to one side, a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, calm gentle expression, wearing a worn cobalt blue wrap jacket
+  d_f31:
+    style: D
+    gender: female
+    seed: 2223
+    zoom: 1.1
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, slim small frame, short choppy self-cut black hair with uneven bangs, wary big eyes, wearing an oversized faded hoodie that swallows her shoulders
+  d_m4:
+    style: D
+    gender: male
+    seed: 2112
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.25
+    colorize: true
+    subject: >-
+      a 30 year old korean man, heavy-set brawler, long black hair tied in a topknot, angular face, a scar across his upper lip, sleeveless padded vest over a dark shirt
+  d_m18:
+    style: D
+    gender: male
+    seed: 2152
+    # 원본에 네모 틀이 그려졌다: 정리로 지운다
+    cleanup: true
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean man in his late fifties, grey hair swept back, hard stern face, deep nasolabial lines, watchful eyes, wearing a faded dark collarless work shirt
+  d_f1:
+    style: D
+    gender: female
+    seed: 2103
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.23
+    colorize: true
+    subject: >-
+      a 30 year old korean woman, scout, long black hair in a high ponytail, confident smirk, dark tactical vest
+  d_f26:
+    style: D
+    gender: female
+    seed: 2206
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
+    colorize: true
+    subject: >-
+      an elderly korean woman in her early sixties, white hair pulled into a low bun, deep wrinkles, gentle but unbreakable expression, wearing a faded padded vest
+  d_f9:
+    style: D
+    gender: female
+    seed: 2161
+    zoom: 1.1
+    colorize: true
+    subject: >-
+      a korean woman in her early twenties, long straight black hair parted in the middle, doll-like features, almond eyes with winged eyeliner, full lips, cool expression, wearing a faded grey tank top
+  d_m31:
+    style: D
+    gender: male
+    seed: 2532
+    zoom: 1.32
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+  d_f32:
+    style: D
+    gender: female
+    seed: 2231
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
+    colorize: true
+    # 눈이 사시처럼 서로 다른 곳을 본다: 눈만 다시 그린다
+    touchup: >-
+      Fix her cross-eyed look. In each of her two eyes, place the dark iris exactly in the middle of the eye, with equal white showing on both sides of each iris, so both eyes look straight ahead at the viewer. Change only the irises; keep the eye shapes, eyelids and everything else exactly the same.
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, slim small frame, black hair in two long braided pigtails hanging over her shoulders, freckles across her nose, shy nervous look, wearing a too-big grey t-shirt
+  d_f30:
+    style: D
+    gender: female
+    seed: 2210
+    colorize: true
+    subject: >-
+      a rebellious 18 year old korean girl, faded dyed red hair in a messy shoulder-length cut, a bandage across her nose, smirking, wearing a torn band t-shirt
+  # d_f38 후보 2353 (긴 생머리)
+  d_f46:
+    style: D
+    gender: female
+    seed: 2353
     zoom: 1.08
     colorize: true
     subject: >-
-      a young korean teenage girl of about fifteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, dark brown hair in a soft layered bob that falls just above her shoulders with the ends flicking outward, long wispy curtain bangs parted in the middle framing her eyes, calm curious eyes, wearing a too-big khaki field jacket
-  d_f37:
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
+  d_m6:
+    style: D
+    gender: male
+    seed: 2122
+    zoom: 1.1
+    subject: >-
+      a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face, smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips, neat black hair with soft bangs falling over his forehead, blank expressionless face, tall slim build, worn dark bomber jacket over a grey hoodie
+  d_m10:
+    style: D
+    gender: male
+    seed: 2144
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
+    colorize: true
+    subject: >-
+      a korean man in his late sixties, short grey buzz cut, heavily wrinkled weathered face, droopy heavy-lidded eyes, large ears, stern mouth, wearing a faded collared shirt with a worn grey wool scarf
+  d_f29:
     style: D
     gender: female
-    seed: 2281
-    zoom: 1.17
+    seed: 2209
+    zoom: 1.08
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.93
     colorize: true
-    # 똥머리가 양쪽 두 개로 나왔다: 정수리 가운데 하나로 합친다
-    touchup: >-
-      She has two hair buns, one on each side of her head. Change this to a single large round hair bun placed at the top center of her head, and fill the places where the two side buns were with her smooth dark brown hair. Keep her face, the loose wisps around her face and everything else exactly the same.
     subject: >-
-      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, dark brown hair tied up in a messy round bun on top of her head with loose wisps around her face, cheeky grin, wearing a stained oversized sweatshirt
+      a shy 16 year old korean girl, black hair in two braided pigtails, freckles, small round face, nervous look, wearing a too-big grey t-shirt
+  d_m35:
+    style: D
+    gender: male
+    seed: 2461
+    zoom: 1.11
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about fourteen with a clearly childlike youthful face, chubby round cheeks, small nose, short tousled brown hair, big curious eyes, wearing a patched oversized denim jacket
+  d_m13:
+    style: D
+    gender: male
+    seed: 2147
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.89
+    colorize: true
+    subject: >-
+      a korean man in his late twenties, slicked-back black hair, narrow monolid eyes, long narrow face, serious flat expression, wearing a torn charcoal t-shirt
+  d_f14:
+    style: D
+    gender: female
+    seed: 2166
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.19
+    colorize: true
+    subject: >-
+      a korean woman in her early twenties, long hair pulled back with face-framing bangs, round face, rosy cheeks, slightly looking up at the viewer, wearing a frayed cream knit top
+  d_f49:
+    style: D
+    gender: female
+    seed: 2661
+    zoom: 1.1
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and glancing toward the viewer, a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
+  d_f11:
+    style: D
+    gender: female
+    seed: 2163
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.95
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean woman in her mid twenties, long straight black hair tucked behind one ear, round thin wire-frame glasses, calm gaze, wearing a worn green t-shirt
+  d_f23:
+    style: D
+    gender: female
+    seed: 2203
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.86
+    colorize: true
+    subject: >-
+      a tired korean woman in her late thirties, motherly face, hair carelessly tied up with loose strands, dark circles under her eyes, wearing a stretched-out beige t-shirt
+  d_m37:
+    style: D
+    gender: male
+    seed: 2481
+    zoom: 1.23
+    colorize: true
+    subject: >-
+      a lean korean man in his late twenties, narrow face, shoulder-length black hair tied back in a small low ponytail, tired cynical eyes, wearing a long dusty coat with a scarf
+  d_m28:
+    style: D
+    gender: male
+    seed: 2190
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 1.09
+    colorize: true
+    subject: >-
+      a korean man in his early thirties, long black hair tied back, tattoos climbing up his neck, sharp cold eyes, wearing a black sleeveless shirt
+  d_f18:
+    style: D
+    gender: female
+    seed: 2170
+    zoom: 1.08
+    colorize: true
+    subject: >-
+      a korean woman around fifty, long straight brown hair, rimless glasses, gentle mature face with fine lines, calm faint smile, wearing a worn grey t-shirt
+  d_f7:
+    style: D
+    gender: female
+    seed: 2134
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.43
+    crop_scale: 1.1
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face, three-quarter view portrait, her face and shoulders angled about thirty degrees to the right, one cheek turned away from the viewer, both eyes visible and glancing toward the viewer, long dusty trench coat over a black turtleneck
+  d_m9:
+    style: D
+    gender: male
+    seed: 2143
+    colorize: true
+    subject: >-
+      a korean man in his early thirties, buzzed head, short full beard and mustache, broad face, faint confident smirk, wearing a dirty white tank top
+  d_m5:
+    style: D
+    gender: male
+    seed: 2124
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.34
+    subject: >-
+      a strikingly handsome korean man in his early twenties with a k-pop idol look, slim oval face, smooth clear skin, gentle double-lidded eyes, high straight nose bridge, soft full lips, neat black hair with soft bangs falling over his forehead, blank expressionless face, tall slim build, worn dark bomber jacket over a grey hoodie
+  d_m7:
+    style: D
+    gender: male
+    seed: 2141
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
+    colorize: true
+    subject: >-
+      a korean man in his mid thirties, short cropped dark hair, long angular face, high cheekbones, strong square jaw, intense straight stare, wearing a faded navy henley t-shirt
   d_f38:
     style: D
     gender: female
@@ -686,42 +419,6 @@ faces:
       Change her loose hair into one thick braided plait: gather her black hair to one side and draw a single thick woven braid that hangs forward over her left shoulder down onto her chest, with the criss-cross braid pattern clearly drawn in the same flat ink style. Keep her face, bangs, clothes and the background exactly the same.
     subject: >-
       a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
-  d_f39:
-    style: D
-    gender: female
-    seed: 2301
-    zoom: 1.15
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, shoulder-length black hair in a half-up style with the top section tied back, wary sharp eyes, wearing a dusty utility vest over a long-sleeve shirt
-  d_f40:
-    style: D
-    gender: female
-    seed: 2311
-    zoom: 1.4
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about fifteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, medium-length layered dark hair tucked behind one ear with a plain hair clip, shy small smile, wearing a faded yellow raincoat
-
-  # 10대 여자 아이돌처럼 예쁜 얼굴
-  d_f41:
-    style: D
-    gender: female
-    seed: 2361
-    zoom: 1.23
-    colorize: true
-    subject: >-
-      a strikingly beautiful young korean teenage girl of about seventeen with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, soft faint smile, wearing a worn white cardigan over a grey t-shirt
-  d_f42:
-    style: D
-    gender: female
-    seed: 2371
-    zoom: 1.15
-    colorize: true
-    subject: >-
-      a strikingly beautiful young korean teenage girl of about sixteen with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large bright eyes, defined double eyelids, delicate small nose, small full lips, long soft wavy dark brown hair with wispy bangs, cheerful sweet smile, wearing a faded pastel windbreaker
-
-  # 머리 모양 다시 뽑기에서 나온 후보를 그대로 살린 얼굴 (--adopt)
   # d_f33 후보 2323 (긴 생머리)
   d_f43:
     style: D
@@ -731,67 +428,6 @@ faces:
     colorize: true
     subject: >-
       a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, bare head with very long straight glossy black hair parted in the middle flowing down past her chest on both sides, calm quiet eyes, wearing a faded collared school blazer over a white shirt
-  # d_f35 후보 2333 (포니테일 묘사로 나온 긴 웨이브)
-  d_f44:
-    style: D
-    gender: female
-    seed: 2333
-    zoom: 1.29
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, head turned three-quarters to the side, black hair with soft wispy see-through bangs pulled up into a high ponytail, the long wavy ponytail clearly visible hanging down behind her over her shoulder, bright eyes and a small smile, wearing a worn track jacket zipped to the collar
-  # d_f38 후보 2351 (뒤로 묶은 머리)
-  d_f45:
-    style: D
-    gender: female
-    seed: 2351
-    zoom: 1.19
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
-  # d_f38 후보 2353 (긴 생머리)
-  d_f46:
-    style: D
-    gender: female
-    seed: 2353
-    zoom: 1.08
-    colorize: true
-    subject: >-
-      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
-
-  # 젊은 남성 (10~30대) 12명: 뚱뚱한 셋, 10대 넷
-  d_m29:
-    style: D
-    gender: male
-    seed: 2401
-    zoom: 1.26
-    colorize: true
-    subject: >-
-      a chubby overweight korean man in his early twenties with a nerdy otaku look, round double-chinned face, thick black-rimmed glasses, shaggy unkempt black hair, awkward shy expression, wearing a stretched anime-print t-shirt under an open checked flannel shirt
-  d_m30:
-    style: D
-    gender: male
-    seed: 2523
-    zoom: 1.18
-    colorize: true
-    subject: >-
-      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
-  d_m31:
-    style: D
-    gender: male
-    seed: 2532
-    zoom: 1.32
-    colorize: true
-    subject: >-
-      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
-  d_m32:
-    style: D
-    gender: male
-    seed: 2431
-    zoom: 1.45
-    colorize: true
-    subject: >-
-      a young korean teenage boy of about fifteen with a clearly boyish childlike youthful face, soft round cheeks, slim small frame, messy black hair with long bangs over his eyes, wary guarded look, wearing a too-big faded hoodie
   d_m33:
     style: D
     gender: male
@@ -800,63 +436,150 @@ faces:
     colorize: true
     subject: >-
       a young korean teenage boy of about sixteen with a clearly boyish youthful face, smooth skin, slim frame, short buzz-cut black hair, a small scrape on his cheek, bold cocky grin, wearing a dirty school uniform jacket over a t-shirt
-  d_m34:
+  # d_m31 후보 2531
+  d_m43:
     style: D
     gender: male
-    seed: 2451
-    zoom: 1.44
-    colorize: true
-    subject: >-
-      a young korean teenage boy of about seventeen with a clearly boyish youthful face, smooth skin, slim lanky frame, neat side-parted black hair, earnest serious eyes, wearing a worn windbreaker zipped up
-  d_m35:
-    style: D
-    gender: male
-    seed: 2461
-    zoom: 1.11
-    colorize: true
-    subject: >-
-      a young korean teenage boy of about fourteen with a clearly childlike youthful face, chubby round cheeks, small nose, short tousled brown hair, big curious eyes, wearing a patched oversized denim jacket
-  d_m36:
-    style: D
-    gender: male
-    seed: 2471
-    zoom: 1.34
-    colorize: true
-    subject: >-
-      a handsome korean man in his mid twenties, sharp jawline, short textured black hair swept up, confident calm eyes, light stubble, wearing a black tactical jacket
-  d_m37:
-    style: D
-    gender: male
-    seed: 2481
+    seed: 2531
     zoom: 1.23
     colorize: true
     subject: >-
-      a lean korean man in his late twenties, narrow face, shoulder-length black hair tied back in a small low ponytail, tired cynical eyes, wearing a long dusty coat with a scarf
-  d_m38:
+      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+  d_m21:
     style: D
     gender: male
-    seed: 2491
-    zoom: 1.24
+    seed: 2183
     colorize: true
     subject: >-
-      a gentle-looking korean man in his early twenties with soft features, wavy dyed light brown hair, round wire glasses, a faint kind smile, wearing a beige cardigan over a hoodie
-  d_m39:
+      a big heavy-set korean man in his late thirties with a round belly and broad thick neck, short buzz cut, kind gentle expression, wearing a sweat-stained grey t-shirt
+  d_m11:
     style: D
     gender: male
-    seed: 2501
-    zoom: 1.31
+    seed: 2145
     colorize: true
     subject: >-
-      a rugged muscular korean man in his early thirties, square jaw, very short cropped hair, a small scar through one eyebrow, stern hard eyes, wearing a sleeveless work vest over a dark t-shirt
-  d_m40:
+      a korean man in his late twenties, shoulder-length wavy black hair parted in the middle, soft gentle face, slight warm smile, wearing a washed-out black t-shirt
+  d_f47:
+    style: D
+    gender: female
+    seed: 2654
+    zoom: 1.12
+    colorize: true
+    subject: >-
+      a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
+  d_f13:
+    style: D
+    gender: female
+    seed: 2165
+    colorize: true
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes visible and looking toward the viewer, a korean young woman in her early twenties, long voluminous wavy curly black hair with bangs, soft features, glancing to the side, wearing an oversized worn white shirt with rolled sleeves
+  d_f25:
+    style: D
+    gender: female
+    seed: 2205
+    zoom: 1.1
+    colorize: true
+    subject: >-
+      a korean woman in her mid fifties, greying chin-length bob, thin-framed glasses, sharp intelligent eyes, wearing a worn cardigan over a t-shirt
+  d_f52:
+    style: D
+    gender: female
+    seed: 2644
+    colorize: true
+    subject: >-
+      medium shot showing her head, shoulders and upper body with the ruined city around her, a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves, the waves swept forward over one shoulder, small silver hoop earrings, soft warm smile, wearing a worn cobalt blue wrap jacket
+  d_m14:
     style: D
     gender: male
-    seed: 2511
-    zoom: 1.2
+    seed: 2148
+    colorize: true
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.93
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes visible and looking toward the viewer, a korean young man in his early twenties, thick straight bowl-cut hair with heavy bangs, angular face, freckles, fierce glare, wearing a plain sleeveless undershirt
+  d_m27:
+    style: D
+    gender: male
+    seed: 2189
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.93
     colorize: true
     subject: >-
-      a korean man in his mid thirties with a weary but warm face, slightly messy medium-length black hair, short neat beard, thoughtful eyes, wearing a faded military field jacket
-
+      an old korean farmer in his mid sixties, sparse grey beard, sun-darkened deeply lined face, a gap from a missing front tooth in a lopsided grin, wearing a faded work shirt
+  d_m8:
+    style: D
+    gender: male
+    seed: 2142
+    colorize: true
+    subject: >-
+      a korean man in his mid twenties, textured black hair swept back and up, sharp jawline, defined cheekbones, calm slightly raised chin, wearing a worn grey t-shirt with a stretched collar
+  d_f34:
+    style: D
+    gender: female
+    seed: 2251
+    zoom: 1.15
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, long loose wavy light brown hair spilling over her shoulders, gentle hopeful smile, wearing a patched denim jacket
+  d_f17:
+    style: D
+    gender: female
+    seed: 2169
+    zoom: 1.08
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.84
+    colorize: true
+    subject: >-
+      a korean young woman around twenty, long straight hair parted in the middle, round full face, rosy cheeks, puffy tired eyes, plain look, wearing an old stained white t-shirt
+  d_m23:
+    style: D
+    gender: male
+    seed: 2185
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.86
+    colorize: true
+    subject: >-
+      a korean man in his mid thirties, a bandage wrapped around his forehead, a scar across the bridge of his nose, short beard, wearing a dirty olive tank top
+  d_f20:
+    style: D
+    gender: female
+    seed: 2172
+    zoom: 1.1
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean woman in her early twenties, long straight black hair falling over one shoulder, sharp cheekbones, monolid eyes, cold stare, wearing a black tank top
+  d_m17:
+    style: D
+    gender: male
+    seed: 2151
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.78
+    colorize: true
+    subject: >-
+      a korean man in his late forties, hair tied back in a small knot, salt-and-pepper beard and mustache, deep facial lines, a wooden bead necklace, wearing a worn white t-shirt
+  d_f36:
+    style: D
+    gender: female
+    seed: 2343
+    zoom: 1.08
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about fifteen with a clearly childlike youthful face, chubby round cheeks, small nose and mouth, dark brown hair in a soft layered bob that falls just above her shoulders with the ends flicking outward, long wispy curtain bangs parted in the middle framing her eyes, calm curious eyes, wearing a too-big khaki field jacket
+  d_f22:
+    style: D
+    gender: female
+    seed: 2202
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
+    colorize: true
+    subject: >-
+      a muscular korean woman around thirty-five, broad shoulders and strong arms, nearly shaved buzz cut, an old scar on her upper arm, hard stare, wearing a grey tank top
   # d_m30·d_m31 다시 뽑기에서 나온 나머지 후보를 그대로 살린 얼굴 (--adopt)
   # d_m30 후보 2521이 얼굴이 너무 커서 같은 묘사로 다시 뽑았다
   d_m41:
@@ -867,33 +590,158 @@ faces:
     colorize: true
     subject: >-
       medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
-  # d_m30 후보 2522
-  d_m42:
+  d_f5:
+    style: D
+    gender: female
+    seed: 2123
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.33
+    colorize: true
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face, short chin, soft rounded jawline, full cheeks, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face, long dusty trench coat over a black turtleneck
+  d_m29:
     style: D
     gender: male
-    seed: 2522
+    seed: 2401
+    zoom: 1.26
+    colorize: true
+    subject: >-
+      a chubby overweight korean man in his early twenties with a nerdy otaku look, round double-chinned face, thick black-rimmed glasses, shaggy unkempt black hair, awkward shy expression, wearing a stretched anime-print t-shirt under an open checked flannel shirt
+  d_m38:
+    style: D
+    gender: male
+    seed: 2491
+    zoom: 1.24
+    colorize: true
+    subject: >-
+      a gentle-looking korean man in his early twenties with soft features, wavy dyed light brown hair, round wire glasses, a faint kind smile, wearing a beige cardigan over a hoodie
+  d_f2:
+    style: D
+    gender: female
+    seed: 2104
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.34
+    # 컬러 그림이지만 얼굴이 흰 면으로 그려졌다: 색을 입힌다
+    colorize: true
+    subject: >-
+      a 21 year old korean young woman, runner, short pixie cut hair, freckles, fierce eyes, hooded sweatshirt under a scuffed vest
+  d_f4:
+    style: D
+    gender: female
+    seed: 2114
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.17
+    colorize: true
+    # 원본 덮어쓰기 경계·테두리가 남는다: 전체를 정리한다
+    cleanup: true
+    subject: >-
+      a 24 year old korean young woman, smuggler, wavy shoulder-length hair under a bandana, round face, a small mole under one eye, sly half smile, patched denim jacket
+  d_m15:
+    style: D
+    gender: male
+    seed: 2149
+    colorize: true
+    # 얼굴 크기감을 m21·f21·f28·f31에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.83
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and looking toward the viewer, a korean man in his mid twenties, tousled wet-look black hair, very sharp jawline and cheekbones, chin slightly lowered, intense stare, wearing a thin white tank top
+  d_m46:
+    style: D
+    gender: male
+    seed: 2411
     zoom: 1.29
     colorize: true
     subject: >-
-      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
-  # d_m31 후보 2531
-  d_m43:
+      a big heavyset stout korean man in his early thirties with a calm dignified gentle look, broad round face, neatly combed short black hair, kind steady eyes, composed serious expression, wearing a clean but worn dark wool coat over a buttoned shirt
+  d_m25:
     style: D
     gender: male
-    seed: 2531
+    seed: 2187
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.91
+    colorize: true
+    subject: >-
+      a south asian man around forty living in korea, warm brown skin, full black beard, sturdy build, steady eyes, wearing a worn dark t-shirt
+  d_f8:
+    style: D
+    gender: female
+    seed: 2122
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.26
+    # 처음 그린 d_f5 (얼굴이 긴 버전). 그 원본을 그대로 쓴다
+    source: sources/d_f8.png
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, long straight black hair
+  d_m12:
+    style: D
+    gender: male
+    seed: 2146
+    colorize: true
+    crop_scale: 1.1
+    subject: >-
+      three-quarter view portrait, face and shoulders angled about thirty degrees to the left, both eyes visible and looking toward the viewer, a korean man in his mid twenties, very short buzzed hair, sharp cheekbones, lean face, cool sideways glance, wearing a ripped grey sleeveless tank top
+  d_m3:
+    style: D
+    gender: male
+    seed: 2111
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.31
+    colorize: true
+    subject: >-
+      a 60 year old korean man, veteran survivor, bald head, heavy brow, crooked broken nose, thick grey beard, deep forehead lines, worn military field jacket
+  # d_f38 후보 2351 (뒤로 묶은 머리)
+  d_f45:
+    style: D
+    gender: female
+    seed: 2351
+    zoom: 1.19
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, black hair neatly gathered into one thick plaited braid that hangs forward over her right shoulder down onto her chest, the woven braid clearly visible, thoughtful sad eyes, wearing a worn wool coat with an open collar
+  d_f24:
+    style: D
+    gender: female
+    seed: 2204
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
+    colorize: true
+    subject: >-
+      a sturdy stocky korean woman in her mid forties, short permed hair, sun-tanned skin, square face, no-nonsense look, wearing a faded floral work blouse
+  d_f37:
+    style: D
+    gender: female
+    seed: 2281
+    zoom: 1.17
+    colorize: true
+    # 똥머리가 양쪽 두 개로 나왔다: 정수리 가운데 하나로 합친다
+    touchup: >-
+      She has two hair buns, one on each side of her head. Change this to a single large round hair bun placed at the top center of her head, and fill the places where the two side buns were with her smooth dark brown hair. Keep her face, the loose wisps around her face and everything else exactly the same.
+    subject: >-
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, dark brown hair tied up in a messy round bun on top of her head with loose wisps around her face, cheeky grin, wearing a stained oversized sweatshirt
+  d_f41:
+    style: D
+    gender: female
+    seed: 2361
     zoom: 1.23
     colorize: true
     subject: >-
-      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
-  # d_m31 후보 2533
-  d_m44:
+      a strikingly beautiful young korean teenage girl of about seventeen with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, soft faint smile, wearing a worn white cardigan over a grey t-shirt
+  d_m22:
     style: D
     gender: male
-    seed: 2533
-    zoom: 1.45
+    seed: 2184
+    colorize: true
+    # 원본에서 얼굴이 너무 크게 그려져 자르기로는 맞출 수 없다: 미디엄 샷으로 다시 그린다
+    subject: >-
+      medium shot showing his head, shoulders and upper body with the ruined city around him, an emaciated korean man in his mid forties, hollow sunken cheeks from hunger, gaunt bony face, dark- ringed tired eyes, stubble, wearing a loose threadbare shirt
+  d_f53:
+    style: D
+    gender: female
+    seed: 2653
+    zoom: 1.15
     colorize: true
     subject: >-
-      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+      a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
   # d_m30·d_m31을 고치기 전 그림도 그대로 살린다 (완성본은 zoom까지 적용된 그림)
   d_m45:
     style: D
@@ -903,49 +751,143 @@ faces:
     colorize: true
     subject: >-
       a cute chubby korean young man of about twenty with a round baby face, full puffy cheeks, small friendly eyes, soft fluffy black hair with bangs, warm cheerful grin, wearing an oversized padded jacket
-  d_m46:
+  d_m32:
     style: D
     gender: male
-    seed: 2411
+    seed: 2431
+    zoom: 1.45
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about fifteen with a clearly boyish childlike youthful face, soft round cheeks, slim small frame, messy black hair with long bangs over his eyes, wary guarded look, wearing a too-big faded hoodie
+  d_f10:
+    style: D
+    gender: female
+    seed: 2162
+    colorize: true
+    subject: >-
+      a korean young woman around nineteen, messy shoulder-length curly black hair with curtain bangs, freckles, round soft face, head slightly tilted, blank look, wearing a thin white tank top with a small pendant necklace
+  d_f27:
+    style: D
+    gender: female
+    seed: 2207
+    zoom: 1.19
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.89
+    colorize: true
+    subject: >-
+      a korean woman around twenty-nine, a large old burn scar across one cheek and jaw, short tousled hair, steady defiant look, wearing a black t-shirt
+  d_f6:
+    style: D
+    gender: female
+    seed: 2131
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.35
+    colorize: true
+    # d_f5와 같은 느낌을 살짝 옆으로 돌린 각도로 (돌린 얼굴은 너비가 좁게 재진다)
+    crop_scale: 1.1
+    subject: >-
+      a strikingly beautiful korean woman in her early twenties with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large clear eyes, defined double eyelids, delicate small nose, small full lips, long straight black hair with see-through bangs, blank expressionless face, three-quarter view portrait, her face and shoulders angled about thirty degrees to the right, one cheek turned away from the viewer, both eyes visible and glancing toward the viewer, long dusty trench coat over a black turtleneck
+  d_f33:
+    style: D
+    gender: female
+    seed: 2321
+    zoom: 1.14
+    colorize: true
+    subject: >-
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, bare head with very long straight glossy black hair parted in the middle flowing down past her chest on both sides, calm quiet eyes, wearing a faded collared school blazer over a white shirt
+  d_f3:
+    style: D
+    gender: female
+    seed: 2113
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.27
+    colorize: true
+    subject: >-
+      a 45 year old korean woman, militia commander, short cropped silver hair, hard square jaw, crow's feet, stern stare, high-collared military coat
+  d_m26:
+    style: D
+    gender: male
+    seed: 2188
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.85
+    colorize: true
+    subject: >-
+      a white western man in his late twenties stranded in korea, short light brown hair, sun-burnt weathered face, light stubble, wearing a grimy white t-shirt
+  d_m16:
+    style: D
+    gender: male
+    seed: 2150
+    colorize: true
+    subject: >-
+      a korean young man around twenty, messy windswept wavy hair covering his ears, soft youthful face, calm look, wearing a ragged white sleeveless shirt
+  d_f42:
+    style: D
+    gender: female
+    seed: 2371
+    zoom: 1.15
+    colorize: true
+    subject: >-
+      a strikingly beautiful young korean teenage girl of about sixteen with a k-pop idol look, small round oval face, short chin, soft rounded jawline, compact youthful facial proportions, large bright eyes, defined double eyelids, delicate small nose, small full lips, long soft wavy dark brown hair with wispy bangs, cheerful sweet smile, wearing a faded pastel windbreaker
+  d_f15:
+    style: D
+    gender: female
+    seed: 2167
+    colorize: true
+    subject: >-
+      a korean woman in her late twenties, long wavy black hair parted in the middle, high cheekbones, faint confident smile, wearing a black tank top
+  # d_m31 후보 2533
+  d_m44:
+    style: D
+    gender: male
+    seed: 2533
+    zoom: 1.45
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a cute chubby fat korean young man of about twenty, plump round body, round baby face with big puffy cheeks and a soft double chin, small crescent eyes squinting from a big happy smile, soft fluffy black hair with bangs, adorable cheerful look, wearing an oversized padded jacket
+  d_m19:
+    style: D
+    gender: male
+    seed: 2181
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.8
+    colorize: true
+    subject: >-
+      a skinny 16 year old korean boy, thin face, messy black hair, scared wide eyes, wearing an oversized ragged t-shirt
+  d_m30:
+    style: D
+    gender: male
+    seed: 2523
+    zoom: 1.18
+    colorize: true
+    subject: >-
+      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
+  d_m20:
+    style: D
+    gender: male
+    seed: 2182
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.82
+    colorize: true
+    subject: >-
+      an 18 year old korean young man, faint acne marks, spiky black hair, rebellious scowl, wearing a stretched black tank top
+  # d_m30 후보 2522
+  d_m42:
+    style: D
+    gender: male
+    seed: 2522
     zoom: 1.29
     colorize: true
     subject: >-
-      a big heavyset stout korean man in his early thirties with a calm dignified gentle look, broad round face, neatly combed short black hair, kind steady eyes, composed serious expression, wearing a clean but worn dark wool coat over a buttoned shirt
-
-  # 5:5 가르마 웨이브 여신머리 미인 한 사람을 구도만 바꿔 여러 장 (사진을 참고했지만 실존 인물과 똑같지 않게 글 묘사로만 그린다)
-  # 같은 묘사로 후보를 뽑아 사진과 가까운 것을 살렸다 (--adopt). 처음 묘사(나이 들어 보이고 올림머리가 섞였다)와
-  # 더 앳되고 머리를 풀어 내린 묘사 두 가지다
-  d_f47:
+      medium shot showing his head, shoulders and upper body, a big fat heavyset korean man in his early thirties, very large round body with a big belly and thick neck, wide full round face with a double chin, neatly combed short black hair, calm dignified gentle eyes, composed serious expression, wearing a clean but worn dark wool coat stretched over a buttoned shirt
+  d_f21:
     style: D
     gender: female
-    seed: 2654
-    zoom: 1.12
+    seed: 2201
     colorize: true
     subject: >-
-      a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
-  d_f48:
-    style: D
-    gender: female
-    seed: 2601
-    colorize: true
-    subject: >-
-      a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, serene faint closed-lip smile, wearing a worn cobalt blue wrap jacket
-  d_f49:
-    style: D
-    gender: female
-    seed: 2661
-    zoom: 1.1
-    colorize: true
-    crop_scale: 1.1
-    subject: >-
-      three-quarter view portrait, face and shoulders angled about thirty degrees to the right, both eyes visible and glancing toward the viewer, a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
-  d_f50:
-    style: D
-    gender: female
-    seed: 2634
-    colorize: true
-    subject: >-
-      chin slightly lowered, eyes looking up at the viewer, head tilted slightly to one side, a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, calm gentle expression, wearing a worn cobalt blue wrap jacket
+      a 17 year old korean girl, youthful face, short choppy self-cut hair, wary eyes, wearing an oversized faded hoodie
   d_f51:
     style: D
     gender: female
@@ -953,18 +895,64 @@ faces:
     colorize: true
     subject: >-
       a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves flowing down past her shoulders on both sides, small silver hoop earrings, serene faint closed-lip smile, wearing a worn cobalt blue wrap jacket
-  d_f52:
+  # d_f35 후보 2333 (포니테일 묘사로 나온 긴 웨이브)
+  d_f44:
     style: D
     gender: female
-    seed: 2644
+    seed: 2333
+    zoom: 1.29
     colorize: true
     subject: >-
-      medium shot showing her head, shoulders and upper body with the ruined city around her, a breathtakingly beautiful korean woman in her mid twenties with elegant goddess-like beauty, slim oval face with a delicate v-line chin, soft high cheekbones, almond-shaped double-lidded eyes with long lashes, gently arched brows, slim straight nose, full soft lips, flawless glowing skin, long glossy black hair parted exactly in the middle with soft loose s-shaped waves, the waves swept forward over one shoulder, small silver hoop earrings, soft warm smile, wearing a worn cobalt blue wrap jacket
-  d_f53:
+      a young korean teenage girl of about sixteen with a clearly childlike youthful face, soft round cheeks, small delicate features, head turned three-quarters to the side, black hair with soft wispy see-through bangs pulled up into a high ponytail, the long wavy ponytail clearly visible hanging down behind her over her shoulder, bright eyes and a small smile, wearing a worn track jacket zipped to the collar
+  d_m2:
+    style: D
+    gender: male
+    seed: 2102
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.36
+    colorize: true
+    subject: >-
+      a 23 year old korean young man, scavenger, spiky black hair, determined look, bandana around his neck, torn bomber jacket
+  d_m34:
+    style: D
+    gender: male
+    seed: 2451
+    zoom: 1.44
+    colorize: true
+    subject: >-
+      a young korean teenage boy of about seventeen with a clearly boyish youthful face, smooth skin, slim lanky frame, neat side-parted black hair, earnest serious eyes, wearing a worn windbreaker zipped up
+  d_f39:
     style: D
     gender: female
-    seed: 2653
+    seed: 2301
     zoom: 1.15
     colorize: true
     subject: >-
-      a stunningly beautiful young korean woman in her early twenties with a soft feminine korean actress look, smooth slim oval face with a small pointed v-line chin, soft youthful cheeks, large almond-shaped double-lidded eyes, softly arched brows, small slim nose, full soft lips in a gentle sweet closed-lip smile, flawless smooth skin, her long glossy black hair worn loose and down, parted exactly in the middle, falling in soft big loose waves past her shoulders on both sides, small silver hoop earrings, wearing a worn cobalt blue jacket with an open collar
+      a young korean teenage girl of about seventeen with a clearly childlike youthful face, soft round cheeks, small delicate features, shoulder-length black hair in a half-up style with the top section tied back, wary sharp eyes, wearing a dusty utility vest over a long-sleeve shirt
+  d_m24:
+    style: D
+    gender: male
+    seed: 2186
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.1
+    # 얼굴 크기감을 m21·f21·f28에 맞춘다 (완성본에서 잰 얼굴 상자 너비·높이 기준)
+    crop_scale: 0.84
+    colorize: true
+    subject: >-
+      a korean man in his early fifties who looks like a former schoolteacher, balding head, thin wire glasses, mild tired eyes, wearing a faded button-up shirt
+  d_f16:
+    style: D
+    gender: female
+    seed: 2168
+    # 완성본에서 얼굴을 재서 더 당겨 잘랐다
+    zoom: 1.17
+    subject: >-
+      a plus-size korean woman around thirty with light warm east asian skin, round full face, small eyes, black hair pulled straight back into a low ponytail, no earrings, plain neutral expression, wearing a faded yellow tank top
+  d_m40:
+    style: D
+    gender: male
+    seed: 2511
+    zoom: 1.2
+    colorize: true
+    subject: >-
+      a korean man in his mid thirties with a weary but warm face, slightly messy medium-length black hair, short neat beard, thoughtful eyes, wearing a faded military field jacket

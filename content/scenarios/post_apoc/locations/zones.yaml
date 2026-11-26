@@ -50,7 +50,7 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: watchtower, name: "망루", indoor: false, map: { x: 28, y: 35 }, kinds: [watch], description: "모래주머니를 쌓은 나무 망루. 바람이 그대로 들이친다", aliases: ["망루"], near: [bunker] }
+    - { id: watchtower, name: "망루", indoor: false, map: { x: 57, y: 51 }, kinds: [watch], description: "모래주머니를 쌓은 나무 망루. 바람이 그대로 들이친다", aliases: ["망루"], near: [bunker] }
     - { id: bunker, name: "초소 안·창고", indoor: true, map: { x: 72, y: 30 }, kinds: [sleep, store], description: "콘크리트 초소 안. 난로 하나와 탄 상자, 좁은 침상", aliases: ["동쪽 초소", "초소", "창고"], near: [cookpit] }
     - { id: to_base, name: "거점 가는 길", indoor: false, map: { x: 48, y: 94 }, description: "청솔형제단 거점으로 돌아가는 길. 초소에서 끝까지 내려다보인다", near: [trench, watchtower, gas_station], road: true, to: [a_base] }
     - { id: to_warehouse, name: "철길 둑 가는 비탈", indoor: false, map: { x: 55, y: 5 }, description: "철길 둑으로 올라가는 자갈 비탈. 둑 너머가 붉은연합 땅이다", near: [trench, rail_crossing], road: true, to: [rail_embankment] }
@@ -89,9 +89,9 @@
     - { id: to_west, name: "붉은연합 거점 가는 길", indoor: false, map: { x: 4, y: 52 }, description: "붉은연합 거점으로 가는 길. 트럭이 오가며 판 바퀴 자국", near: [checkpoint_3, rail_side], road: true, to: [c_base] }
     - { id: to_north, name: "발전소 가는 길", indoor: false, map: { x: 82, y: 4 }, description: "북쪽 발전소로 가는 길. 굴뚝이 길 끝에 섰다", near: [container_gap, east_fence], road: true, to: [power_plant] }
     - { id: checkpoint_3, name: "3번 초소", indoor: false, map: { x: 35, y: 76 }, kinds: [gate], description: "정문 앞 검문소. 붉은 완장들이 드나드는 짐을 센다", aliases: ["3번 초소", "정문 검문"], near: [yard] }
-    - { id: container_gap, name: "컨테이너 담 틈", indoor: false, map: { x: 82, y: 18 }, kinds: [gate], description: "쌓은 컨테이너 사이로 난 틈. 사람 하나가 겨우 빠진다", near: [wall] }
+    - { id: container_gap, name: "컨테이너 담 틈", indoor: false, map: { x: 80, y: 20 }, kinds: [gate], description: "쌓은 컨테이너 사이로 난 틈. 사람 하나가 겨우 빠진다", near: [wall] }
     - { id: overpass_shade, name: "고가도로 밑 기둥 그늘", indoor: false, map: { x: 85, y: 84 }, kinds: [street], description: "끊긴 고가도로 기둥이 줄지은 그늘. 버린 차와 깨진 콘크리트 사이로 길이 난다", aliases: ["고가도로 밑", "기둥 그늘"], near: [to_south] }
-    - { id: loading_bay, name: "하역장 창고", indoor: true, map: { x: 22, y: 58 }, kinds: [store], description: "트럭 문이 줄지은 하역장 창고. 약탈해 온 상자에 붉은 페인트로 숫자를 매겨 쌓았다", aliases: ["하역장", "약탈품 창고"], near: [barracks] }
+    - { id: loading_bay, name: "하역장 창고", indoor: true, map: { x: 22, y: 57 }, kinds: [store], description: "트럭 문이 줄지은 하역장 창고. 약탈해 온 상자에 붉은 페인트로 숫자를 매겨 쌓았다", aliases: ["하역장", "약탈품 창고"], near: [barracks] }
     - { id: fuel_drums, name: "연료 드럼 야적장", indoor: false, map: { x: 82, y: 58 }, kinds: [yard], description: "드럼통을 겹겹이 쌓은 담 안 공터. 기름 냄새가 진하고 담배를 물면 욕부터 날아온다", aliases: ["드럼 야적장", "연료 야적장"], near: [wall] }
     # 담 밖 둘레: 초소를 거치지 않고 길끼리 잇는다 (12-307, PT30 졸병: 길을 바꾸려면 3번 초소를 지나야 했다. content:check가 잡는다)
     - { id: rail_side, name: "창고 서쪽 담 밖 철로변", indoor: false, map: { x: 14, y: 86 }, kinds: [street], description: "녹슨 철로가 담을 따라 휘어 나간다. 침목 사이로 잡풀이 솟았다", aliases: ["철로변"], near: [to_west, to_south] }
@@ -138,12 +138,12 @@
     - { id: to_old_town, name: "붉은 다리 가는 길", indoor: false, map: { x: 48, y: 96 }, description: "남쪽 붉은 다리로 내려가는 길. 약탈조가 오가는 길이다", near: [checkpoint_1, south_fence], road: true, to: [red_bridge] }
     - { id: to_prison, name: "교도소 가는 길", indoor: false, map: { x: 50, y: 3 }, description: "북쪽 교도소로 가는 길. 높은 담이 멀리 보인다", near: [range_fence], road: true, to: [prison] }
     - { id: checkpoint_1, name: "1번 초소", indoor: false, map: { x: 74, y: 80 }, kinds: [gate], description: "철조망 정문 앞 초소. 규율반이 드나드는 사람을 적는다", aliases: ["1번 초소"], near: [yard] }
-    - { id: range_fence, name: "사격장 철조망 밖", indoor: false, map: { x: 36, y: 12 }, kinds: [field], description: "사격장 철조망 바깥 둔덕. 총소리가 가까이서 울린다", near: [wall, north_fence] }
+    - { id: range_fence, name: "사격장 철조망 밖", indoor: false, map: { x: 36, y: 13 }, kinds: [field], description: "사격장 철조망 바깥 둔덕. 총소리가 가까이서 울린다", near: [wall, north_fence] }
     # 담 밖 둘레: 초소를 거치지 않고 길끼리 잇는다 (12-305, PT29 졸병 [막힘]: 다리 쪽 길의 이웃이 1번 초소뿐이었다)
     - { id: south_fence, name: "공단 남쪽 담 밖 배수로", indoor: false, map: { x: 82, y: 94 }, kinds: [street], description: "담 밖을 따라 난 마른 배수로. 철조망 너머로 초소 불빛이 보인다", aliases: ["배수로", "담 밖 둘레"], near: [to_old_town, to_warehouse] }
     - { id: east_fence, name: "공단 동쪽 담 밖 둘레길", indoor: false, map: { x: 96, y: 36 }, kinds: [street], description: "공장 담 바깥을 도는 좁은 흙길. 정비 공장 굴뚝이 담 너머로 보인다", aliases: ["둘레길"], near: [to_warehouse, north_fence] }
     - { id: north_fence, name: "공단 북쪽 담 밖 둔덕", indoor: false, map: { x: 72, y: 6 }, kinds: [field], description: "담 북쪽 바깥의 잡풀 둔덕. 감시탑 그림자가 길게 눕는다", near: [east_fence, range_fence] }
-    - { id: workshop, name: "정비 공장", indoor: true, map: { x: 88, y: 22 }, kinds: [work], description: "녹슨 선반과 용접기가 남은 옛 공장동. 트럭과 총을 여기서 고친다", aliases: ["정비 공장", "용접"], near: [armory] }
+    - { id: workshop, name: "정비 공장", indoor: true, map: { x: 79, y: 26 }, kinds: [work], description: "녹슨 선반과 용접기가 남은 옛 공장동. 트럭과 총을 여기서 고친다", aliases: ["정비 공장", "용접"], near: [armory] }
     - { id: sick_bay, name: "공단 의무실", indoor: true, map: { x: 10, y: 22 }, kinds: [care], description: "기숙사 끝방을 비운 의무실. 침상 둘과 자물쇠 채운 약 상자", aliases: ["의무실"], near: [barracks] }
     - { id: assembly, name: "공장 강당", indoor: true, map: { x: 12, y: 82 }, kinds: [hall], description: "공장 식당을 비운 강당. 위원회 집회와 자아비판이 여기서 열린다", aliases: ["강당", "자아비판"], near: [office_block, kitchen] }
   cover: 7
@@ -170,11 +170,11 @@
     - { id: pumphouse_cellar, name: "옛 양수장 지하", indoor: true, map: { x: 90, y: 40 }, kinds: [ruin], description: "발목까지 물이 찬 양수장 지하. 어둡고 울린다", aliases: ["양수장"] }
     - { id: to_west, name: "배수로·환승역·고가 가는 공단 길", indoor: false, map: { x: 4, y: 52 }, description: "공장 담 사이로 난 서쪽 길. 녹슨 지게차가 길가에 섰다", near: [factory_gate], road: true, to: [drain_canal, subway_hub, overpass] }
     - { id: to_north, name: "강둑 북길·발전소 가는 둑길", indoor: false, map: { x: 72, y: 4 }, description: "강을 끼고 북쪽으로 가는 둑길. 멀리 굴뚝이 보인다", near: [factory_gate, bank, crane_yard], road: true, to: [north_levee, power_plant] }
-    - { id: to_south, name: "나루길·정수장 가는 강둑길", indoor: false, map: { x: 68, y: 95 }, description: "하류로 내려가는 강둑길. 갈대가 길을 덮는다", near: [bank, reed_bed], road: true, to: [ferry_levee, water_plant] }
+    - { id: to_south, name: "나루길·정수장 가는 강둑길", indoor: false, map: { x: 66, y: 94 }, description: "하류로 내려가는 강둑길. 갈대가 길을 덮는다", near: [bank, reed_bed], road: true, to: [ferry_levee, water_plant] }
     - { id: ferry, name: "여울섬 나룻배 대는 곳", indoor: false, map: { x: 92, y: 92 }, description: "말뚝에 밧줄 자국이 남은 물가. 섬으로 건너는 배가 여기 닿는다", near: [bank], road: true, to: [yeoul_isle], wade: true }
     - { id: factory_gate, name: "공장 정문·트럭 차고", indoor: false, map: { x: 32, y: 50 }, kinds: [street], description: "공장 정문과 지붕만 남은 트럭 차고. 기름통이 굴러다닌다", near: [factory, dormitory] }
     - { id: dormitory, name: "공장 기숙사 폐건물", indoor: true, map: { x: 38, y: 78 }, kinds: [ruin], description: "노동자 기숙사였던 3층 건물. 창마다 판자가 덧대졌고 복도에 젖은 매트리스가 쌓였다", aliases: ["기숙사"], near: [factory_gate, canteen_ruin] }
-    - { id: crane_yard, name: "녹슨 크레인 부두", indoor: false, map: { x: 70, y: 28 }, kinds: [yard], description: "강가로 팔을 뻗은 크레인이 녹슬어 멈춘 부두 마당. 컨테이너 몇 개가 문이 열린 채 섰다", aliases: ["크레인", "부두"], near: [to_north] }
+    - { id: crane_yard, name: "녹슨 크레인 부두", indoor: false, map: { x: 69, y: 28 }, kinds: [yard], description: "강가로 팔을 뻗은 크레인이 녹슬어 멈춘 부두 마당. 컨테이너 몇 개가 문이 열린 채 섰다", aliases: ["크레인", "부두"], near: [to_north] }
     - { id: canteen_ruin, name: "공장 구내식당", indoor: true, map: { x: 52, y: 88 }, kinds: [ruin], description: "식판이 바닥에 흩어진 구내식당. 배식대 철판이 녹슬었고 창문은 모두 깨졌다", aliases: ["구내식당"], near: [dormitory] }
     - { id: reed_bed, name: "하류 갈대밭", indoor: false, map: { x: 80, y: 82 }, kinds: [field], description: "사람 키를 넘는 갈대가 빽빽한 강가. 몸을 숨기기 좋지만 발밑이 질다", aliases: ["갈대밭"], near: [to_south], wade: true }
   cover: 4
@@ -268,7 +268,7 @@
     - { id: to_east, name: "징검다리·마트 가는 길", indoor: false, map: { x: 96, y: 58 }, description: "동쪽 냇가 징검다리와 마트로 가는 길. 수레바퀴 자국이 났다", near: [gate_front, side_lane, north_alley], road: true, to: [stepping_stones, mall_ruins] }
     - { id: gate_front, name: "정문 앞 검문 줄", indoor: false, map: { x: 64, y: 24 }, kinds: [gate, street], description: "정문 앞에 줄을 세우는 자리. 경비가 짐과 얼굴을 본다", near: [gate] }
     - { id: side_lane, name: "쪽문 밖 골목", indoor: false, map: { x: 84, y: 80 }, kinds: [street], description: "단지 담과 상가 사이 좁은 골목. 쪽문이 텃밭으로 열린다", near: [yard] }
-    - { id: commons, name: "노인정 공동 부엌", indoor: true, map: { x: 80, y: 44 }, kinds: [mess, hall], description: "옛 경로당을 튼 공동 부엌. 큰 솥과 밥상 여럿, 저녁이면 마을 사람이 모여 앉는다", aliases: ["노인정", "공동 부엌"], near: [yard] }
+    - { id: commons, name: "노인정 공동 부엌", indoor: true, map: { x: 76, y: 47 }, kinds: [mess, hall], description: "옛 경로당을 튼 공동 부엌. 큰 솥과 밥상 여럿, 저녁이면 마을 사람이 모여 앉는다", aliases: ["노인정", "공동 부엌"], near: [yard] }
     - { id: garage, name: "지하 주차장 창고", indoor: true, map: { x: 40, y: 84 }, kinds: [store, work], description: "물을 퍼낸 지하 주차장. 나무 상자와 연장, 고쳐 쓰는 자전거가 줄지었다", aliases: ["지하 주차장", "주차장 창고"], near: [blocks] }
     - { id: herb_room, name: "1층 약초방", indoor: true, map: { x: 32, y: 10 }, kinds: [care], description: "볕 드는 1층 집을 비운 약초방. 말린 풀 냄새가 배고 침상 둘이 놓였다", aliases: ["약초방"], near: [office] }
     # 담 밖 둘레 (12-307, content:check: 길끼리는 담 문·검문을 지나지 않고 이어진다)
@@ -297,7 +297,7 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: ward, name: "치료실·수술실", indoor: true, map: { x: 18, y: 55 }, kinds: [care], description: "침상과 수술대가 있는 치료실. 등불 아래 기구가 번쩍인다", aliases: ["치료실", "수술실", "진료", "문진"] }
-    - { id: pharmacy, name: "약제실", indoor: true, map: { x: 38, y: 60 }, kinds: [store, care], description: "잠긴 약장과 장부가 있는 약제실", aliases: ["약제실", "장부", "약 나누기"] }
+    - { id: pharmacy, name: "약제실", indoor: true, map: { x: 45, y: 60 }, kinds: [store, care], description: "잠긴 약장과 장부가 있는 약제실", aliases: ["약제실", "장부", "약 나누기"] }
     - { id: quarantine, name: "격리실", indoor: true, map: { x: 12, y: 78 }, kinds: [care], description: "비닐 막을 친 격리실. 안쪽 기침 소리가 새어 나온다", aliases: ["격리실"], quarantine_room: true }
     - { id: lodging, name: "숙소·부엌", indoor: true, map: { x: 62, y: 65 }, near: [laundry], kinds: [sleep, mess], description: "식구들이 자고 먹는 숙소와 부엌", aliases: ["숙소", "자기 방", "진료소 부엌", "뒷방"] }
     - { id: director_room, name: "대표의 방", indoor: true, map: { x: 40, y: 82 }, near: [roof_watch], kinds: [command], description: "대표의 방. 서류와 지도가 책상을 덮었다", aliases: ["대표의 방"] }
@@ -476,7 +476,7 @@
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
     - { id: council_hall, name: "의회 회관·식당", indoor: true, map: { x: 42, y: 62 }, near: [granary], kinds: [hall, mess], description: "의회 회관과 식당. 긴 탁자와 저장고로 통하는 뒷문", aliases: ["의회", "식당", "부엌", "저장고", "학당", "약방"] }
-    - { id: quarters, name: "관사·숙소", indoor: true, map: { x: 66, y: 56 }, near: [clinic_room], kinds: [sleep], description: "관사와 숙소. 돌담 안쪽이라 바람이 덜하다", aliases: ["관사", "숙소", "경비 막사", "침상"] }
+    - { id: quarters, name: "관사·숙소", indoor: true, map: { x: 59, y: 61 }, near: [clinic_room], kinds: [sleep], description: "관사와 숙소. 돌담 안쪽이라 바람이 덜하다", aliases: ["관사", "숙소", "경비 막사", "침상"] }
     - { id: dock, name: "부두·검역 막사", indoor: false, map: { x: 40, y: 5 }, description: "부두와 검역 막사. 뭍에서 온 사람은 여기서 멈춘다", aliases: ["부두", "검역", "등대"], near: [farm_shore, stone_wall], road: true, to: [riverside, water_plant], wade: true }
     - { id: farm_shore, name: "양식장·텃밭·바닷가", indoor: false, map: { x: 82, y: 18 }, kinds: [field, work], description: "양식장과 텃밭, 갯바위가 이어진 바닷가", aliases: ["양식장", "텃밭", "바닷가", "해안 순찰", "그물 창고", "움막"], wade: true }
     - { id: lockup, name: "등대 밑 창고", indoor: true, map: { x: 88, y: 88 }, description: "등대 밑 돌 창고. 파도 소리만 들린다", aliases: ["등대 창고", "등대 밑"], jail: true }

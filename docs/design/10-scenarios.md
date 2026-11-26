@@ -194,13 +194,14 @@ repeatable: false
 
 ### 10.7 큰 이야기 (12-344, 공통 규칙 24)
 
-월드 공통 장편 줄기. 짧은 줄기 여럿과 다짐만으로는 "이번 판은 이 이야기였다"는 한 줄이 약해서 둔다. 기획 전문과 첫 큰 이야기 「남쪽의 배」의 콘텐츠 세부는 `docs/saga-plan.md`.
+월드 공통 장편 줄기 (첫 큰 이야기 「남쪽의 배」 12-345: `sagas/south_ship.yaml`, `storylets/saga_south_1~3.yaml`, 구역 가람항 북부두). 짧은 줄기 여럿과 다짐만으로는 "이번 판은 이 이야기였다"는 한 줄이 약해서 둔다. 기획 전문과 첫 큰 이야기 「남쪽의 배」의 콘텐츠 세부는 `docs/saga-plan.md`.
 
 - **문**: 오픈월드 RPG의 DLC처럼 `sagas/<id>.yaml`의 `opens`(날짜 `day_gte`, 시나리오 이야기 수 `role_stories_gte`, `flags_all`, 하지 않는 시나리오 `roles_none`, 앞 큰 이야기의 결말 `saga_ended`)가 모두 차면 열린다. 진행 중인 큰 이야기가 있으면 기다린다. 열리면 `act: open`이고, 꼭 열리는 시작 사건(`when.saga.acts: [open]`)이 `saga_advance`로 첫 막에 넘긴다. 모른 척(`rush`)이면 첫 막 기한이 절반
 - **막**: 제목, 실마리 한 줄 `line`, GM 지침 `gm`, 기한 `days`, 다음 막 `next`, 세계 쪽 사건 `lapse { effects, news, note, ending }`. 기한을 넘기면 효과를 적용하고 소식(공통 규칙 14)을 남기고 넘긴다. 마지막 막이면 결말로
 - **결말**: `endings { id, title, chronicle, lapsed_chronicle, effects, market }`. 이야기 효과 `saga_end`, 또는 마지막 막의 기한. 결말 뒤 이야기는 `when.saga.ending`. 상인의 귀한 물건 확률에 `market` 배율을 곱한다
 - **이야기**: 태그 `saga`(어느 시나리오에서나, 등급은 시나리오), 조건 `when.saga`. `spine`이면 기한 이틀 전부터 꼭 등급, `successor`면 앞 주인공이 발을 들였고 지금 주인공은 아직일 때(계승자의 다시 잇는 이야기), `marked`는 곁의 R이 정해졌는지. 배역 `saga_marked`는 곁의 R
 - **실마리**: 퀘스트 줄 설명. 막의 `line`, 효과 `saga_note { text, zone }`, 세계 쪽 사건의 `note`, 플래그 실마리 표 `notes { flag, text, zone, acts }`(기존 줄기를 고치지 않고 걸음마다 다음 길을 보인다). 주인공이 들은 말로, 때와 자리를 담는다
+- **들어오는 사람**: 큰 이야기의 인물은 `offstage: true`로 처음에는 도시에 없고, 큰 이야기의 `arrive`(문이 열릴 때)·막의 `arrive`(그 막이 시작될 때)가 들인다 (떠났던 사람도 돌아온다, 이벤트 `npc_arrived`)
 - **곁의 R** (`mark { at, fallback }`): 그 막이 시작될 때 함께 다니는 사람, 가까운 사이, 믿거나 아끼는 사람(6 이상) 가운데 고르고, 없으면 `cast`의 fallback, 그도 없으면 비워 두고 이야기가 `saga_mark`로 들인다. 뒤 막에 들어설 때 죽었으면 다시 고른다
 - **보이는 곳**: 상태 화면 퀘스트 칸(제목, 막, 지난 막과 지금 막의 체크 목록, 실마리와 → 구역, 남은 날), `?임무`·`?퀘스트`, GM 상태(막·지침·실마리·지난 장면 세 줄, 곁의 R은 싣지 않는다), 연대기 맨 위
 - **검사** (`checkSagas`): 참조, 시작 사건은 꼭 열리는 이야기, 마지막이 아닌 막마다 다음 막으로 넘기는 이야기 둘 이상과 그중 사람을 정해 두지 않은 길 하나, 마지막 막의 결말 이야기

@@ -155,6 +155,18 @@ function markOnEntry(ctx: ToolContext, saga: SagaContent, act: string): void {
   ctx.store.append({ type: "saga_marked", sagaId: saga.id, characterId: pickMarked(ctx, saga) });
 }
 
+/** 떠나 있던 사람이 도시에 들어온다 (문이 열릴 때·막이 시작될 때) */
+function arrive(ctx: ToolContext, saga: SagaContent, keys: readonly string[]): void {
+  const state = ctx.store.getState();
+  const g = sagaState(state, saga.id);
+  if (!g) return;
+  const cast = sagaCast(saga, g);
+  for (const key of keys) {
+    const c = cast[key] ? state.characters[cast[key]!] : undefined;
+    if (c && c.away && !c.dead) ctx.store.append({ type: "npc_arrived", npcId: c.id });
+  }
+}
+
 /** 막을 넘긴다 (이야기 효과 saga_advance, 세계 쪽 사건). GM에게 알릴 줄 */
 export function advanceSaga(ctx: ToolContext, id: string, to: string, options: { rush?: boolean; lapsed?: boolean } = {}): string | null {
   const saga = ctx.content.sagas[id];
@@ -163,6 +175,7 @@ export function advanceSaga(ctx: ToolContext, id: string, to: string, options: {
   if (!saga || !g || !act || !inProgress(g) || g.act === to) return null;
   ctx.store.append({ type: "saga_advanced", sagaId: id, act: to, days: act.days * (options.rush ? 0.5 : 1), lapsed: !!options.lapsed });
   ctx.store.append({ type: "saga_noted", sagaId: id, text: act.line, zone: null });
+  arrive(ctx, saga, act.arrive);
   markOnEntry(ctx, saga, to);
   return `큰 이야기 「${saga.title}」: ${act.title}`;
 }
@@ -258,7 +271,9 @@ export function runSagas(ctx: ToolContext, apply: SagaEffectApplier): ToolDispla
   if (!me || me.dead) return [];
   const displays: ToolDisplayEvent[] = [];
   for (const saga of Object.values(ctx.content.sagas).sort((a, b) => a.id.localeCompare(b.id))) {
-    if (doorOpens(ctx.store.getState(), ctx.content, saga)) ctx.store.append({ type: "saga_opened", sagaId: saga.id });
+    if (!doorOpens(ctx.store.getState(), ctx.content, saga)) continue;
+    ctx.store.append({ type: "saga_opened", sagaId: saga.id });
+    arrive(ctx, saga, saga.arrive);
   }
   const a = activeSaga(ctx.store.getState(), ctx.content);
   if (!a) return displays;
@@ -336,7 +351,10 @@ export function sagaChronicle(state: GameState, content: Content): string[] {
 /** 치트 (~saga): 문을 조건 없이 열고, 막을 정하거나 결말로 끝낸다. 진행 중인 다른 큰 이야기는 건드리지 않는다 */
 export function cheatSaga(ctx: ToolContext, apply: SagaEffectApplier, id: string, act: string | null, ending: string | null): { ok: boolean; text: string } {
   const saga = ctx.content.sagas[id]!;
-  if (!sagaState(ctx.store.getState(), id)) ctx.store.append({ type: "saga_opened", sagaId: id });
+  if (!sagaState(ctx.store.getState(), id)) {
+    ctx.store.append({ type: "saga_opened", sagaId: id });
+    arrive(ctx, saga, saga.arrive);
+  }
   if (!act) return { ok: true, text: `큰 이야기 「${saga.title}」의 문이 열렸다 (시작 사건을 기다린다)` };
   if (act === "end") {
     if (!ending || !saga.endings.some((e) => e.id === ending)) return { ok: false, text: `결말: ${saga.endings.map((e) => e.id).join(", ")}` };

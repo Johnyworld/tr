@@ -57,7 +57,8 @@ import { startingSkills } from "./creation.ts";
 // 122: 알리기 구조 (12-327). partyIntel, partyAlerts.until, party_alerted.until
 // 126: 지도에 아는 전황 (12-336). partyIntel.zone (본·전해 들은 곳)
 // 127: 큰 이야기 (공통 규칙 24, docs/saga-plan.md). sagas, 이벤트 saga_*
-export const SAVE_SCHEMA_VERSION = 127;
+// 128: 큰 이야기 인물 (offstage, 이벤트 npc_arrived)
+export const SAVE_SCHEMA_VERSION = 128;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -931,6 +932,8 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("saga_marked"), sagaId: z.string(), characterId: z.string().nullable() }),
     z.strictObject({ type: z.literal("saga_engaged"), sagaId: z.string(), characterId: z.string() }),
     z.strictObject({ type: z.literal("saga_scene"), sagaId: z.string(), line: z.string() }),
+    /** 떠나 있던 사람이 도시에 들어온다 (큰 이야기의 arrive) */
+    z.strictObject({ type: z.literal("npc_arrived"), npcId: z.string() }),
     // 탐험할 곳 (12-162)
     z.strictObject({ type: z.literal("ruin_found"), characterId: z.string(), ruin: z.string() }),
     z.strictObject({ type: z.literal("exploration_started"), ruin: z.string() }),
@@ -2234,6 +2237,11 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (g && !g.engaged.includes(event.characterId)) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, engaged: [...g.engaged, event.characterId] } };
       return next;
     }
+    case "npc_arrived": {
+      const c = next.characters[event.npcId];
+      if (c && !c.dead) c.away = false;
+      return next;
+    }
     case "saga_scene": {
       const g = next.sagas?.[event.sagaId];
       if (g) next.sagas = { ...next.sagas, [event.sagaId]: { ...g, scenes: [...g.scenes, event.line].slice(-3) } };
@@ -3450,6 +3458,7 @@ export function createCharacterFromNpc(s: Scenario, npc: NpcContent): Character 
     conditions: { ...initialConditions(s), ...(npc.starts ?? {}) },
     inventory: toInventory(npc.start_inventory),
     captive: npc.start_captive ?? null,
+    away: npc.offstage ?? false,
   });
 }
 

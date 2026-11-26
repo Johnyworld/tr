@@ -335,6 +335,7 @@
     - { id: bunkhouse, name: "호위·짐꾼 막사", indoor: true, map: { x: 88, y: 44 }, kinds: [sleep], description: "호위와 짐꾼이 자는 막사. 짐 냄새와 담배 연기", aliases: ["호위 막사", "짐꾼 막사"] }
     - { id: wagon_yard, name: "짐마차 마당", indoor: false, map: { x: 76, y: 26 }, kinds: [yard], description: "짐마차와 수레가 서는 마당. 바퀴 자국이 깊다", aliases: ["짐 싣기", "짐마차", "출발 준비", "호위조 점검", "마구간", "화살 손질"], near: [bunkhouse, smithy] }
     - { id: landing, name: "선착장", indoor: false, map: { x: 16, y: 48 }, kinds: [field], description: "나룻배가 닿는 선착장. 밧줄과 물통이 쌓였다", aliases: ["선착장", "나루"], wade: true }
+    - { id: to_port, name: "북부두 가는 방파제 길", indoor: false, map: { x: 6, y: 80 }, description: "선착장 아래로 이어지는 방파제 길. 옛 항구의 크레인이 멀리 보인다", near: [landing], road: true, to: [south_port] }
     - { id: lockup, name: "전당포 지하실", indoor: true, map: { x: 62, y: 86 }, description: "전당포 지하실. 빚진 사람을 가두기도 한다", aliases: ["전당포 지하", "빚쟁이 방"], jail: true }
     - { id: to_north, name: "나루길·휴게소 가는 큰길", indoor: false, map: { x: 60, y: 4 }, description: "장터에서 북쪽으로 나가는 큰길. 짐마차가 줄지어 나간다", near: [stalls, wagon_yard], road: true, to: [ferry_levee, rest_stop] }
     - { id: to_water_plant, name: "정수장 가는 강둑 오솔길", indoor: false, map: { x: 4, y: 22 }, description: "강둑을 따라 정수장으로 가는 오솔길. 물지게꾼이 다닌다", near: [landing], road: true, to: [water_plant] }
@@ -442,6 +443,7 @@
     - { id: greenhouse, name: "찢긴 비닐하우스", indoor: true, map: { x: 82, y: 36 }, kinds: [ruin], description: "비닐이 찢겨 뼈대만 남은 하우스 단지. 마른 덩굴이 철골을 감았다", aliases: ["비닐하우스"], near: [to_base] }
     - { id: well, name: "우물가", indoor: false, map: { x: 44, y: 76 }, kinds: [yard], description: "두레박이 걸린 돌 우물. 밭일하던 사람들이 물을 긷고 잠깐 앉아 쉰다", aliases: ["우물", "두레박"], near: [hut] }
     - { id: orchard, name: "사과나무 과수원", indoor: false, map: { x: 76, y: 90 }, kinds: [field], description: "가지치기를 못 해 웃자란 사과나무 몇 줄. 철이 되면 누가 먼저 따느냐로 말이 난다", aliases: ["과수원", "사과나무"], near: [hut] }
+    - { id: to_port, name: "옛 항구 가는 해안 둑길", indoor: false, map: { x: 62, y: 96 }, description: "과수원 끝에서 바다 쪽으로 이어지는 둑길. 짠 바람이 분다", near: [orchard, south_wall], road: true, to: [south_port] }
   cover: 2
   danger: 1
   # 끓이지 않은 물을 뜰 곳 (12-251)

@@ -561,3 +561,37 @@
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 1] }
       - { item: planks, weight: 2, qty: [1, 1] }
+
+# 큰 이야기 「남쪽의 배」의 무대 (docs/saga-plan.md 11-1). 큰 이야기 전에는 조용한 폐항. 집결지는 지도 밖(해안길 남쪽 끝 너머)
+- id: south_port
+  name: 가람항 북부두
+  map: { x: 68, y: 94, label: 북부두 }
+  description: 강 하구 남쪽의 옛 가람항 북쪽 부두. 녹슨 크레인과 쓰러진 컨테이너가 바다를 향해 늘어섰다. 해안길을 따라 더 남쪽으로 가면 옛 항구의 본 부두지만, 그 길 끝에는 철조망 불빛이 있다.
+  kind: zone
+  crossing_minutes: 60
+  places:
+    - { id: to_fields, name: "남쪽 텃밭 가는 해안 둑길", indoor: false, map: { x: 10, y: 10 }, description: "북쪽 텃밭으로 올라가는 둑길. 둑 너머로 과수원 나무가 보인다", near: [container_yard], road: true, to: [south_fields] }
+    - { id: to_market, name: "장터 가는 방파제 길", indoor: false, map: { x: 92, y: 10 }, description: "동쪽 장터 선착장으로 이어지는 방파제 길. 밀물이면 발목까지 찬다", near: [breakwater, terminal], road: true, to: [e_market] }
+    - { id: container_yard, name: "컨테이너 야적장", indoor: false, map: { x: 30, y: 40 }, kinds: [yard], description: "쓰러지고 겹쳐 쌓인 컨테이너들 사이로 미로 같은 길이 났다. 문이 열린 것도, 용접된 것도 있다", aliases: ["야적장", "컨테이너"], near: [crane, cold_store, customs] }
+    - { id: terminal, name: "무너진 여객 터미널", indoor: true, map: { x: 70, y: 35 }, kinds: [ruin], description: "유리 지붕이 내려앉은 여객 터미널. 대합실 의자 위에 바닷새 똥이 하얗다. 전광판에 마지막 출항 시각이 멈춰 있다", aliases: ["터미널", "대합실"], near: [seamen_rest, breakwater] }
+    - { id: crane, name: "녹슨 갠트리 크레인", indoor: false, map: { x: 45, y: 65 }, kinds: [watch], description: "부두 끝에 선 거대한 크레인. 사다리를 오르면 남쪽 해안이 멀리까지 보인다", aliases: ["크레인"], near: [quay] }
+    - { id: breakwater, name: "방파제와 빨간 등대", indoor: false, map: { x: 85, y: 70 }, kinds: [watch], description: "바다로 길게 뻗은 방파제 끝에 빨간 등대. 등대 문은 녹슨 자물쇠로 잠겼다", aliases: ["방파제", "등대"], near: [quay] }
+    - { id: quay, name: "배 대는 부두 끝", indoor: false, map: { x: 62, y: 85 }, kinds: [field], description: "큰 배가 대던 부두 끝. 계선주에 끊어진 밧줄이 감겨 있다. 물이 깊다", aliases: ["부두 끝", "부두", "계선주"], near: [crane, breakwater] }
+    - { id: customs, name: "세관 창고", indoor: true, map: { x: 15, y: 60 }, kinds: [store], description: "셔터가 찌그러진 세관 창고. 압수품 선반은 털렸지만 서류함은 그대로 쓰러져 있다", aliases: ["세관", "세관 창고"], near: [coast_end] }
+    - { id: cold_store, name: "냉동 창고", indoor: true, map: { x: 30, y: 78 }, kinds: [ruin], description: "전기가 끊긴 지 오래인 냉동 창고. 두꺼운 문을 닫으면 빛도 소리도 새지 않는다. 안은 늘 차다", aliases: ["냉동 창고", "냉동고"] }
+    - { id: seamen_rest, name: "선원 쉼터", indoor: true, map: { x: 85, y: 40 }, kinds: [sleep], description: "터미널 옆 선원 쉼터. 이층 침대 몇 개와 녹슨 난로가 남았다", aliases: ["쉼터", "선원 쉼터"] }
+    - { id: coast_end, name: "해안길 남쪽 끝", indoor: false, map: { x: 5, y: 95 }, kinds: [street], description: "남쪽으로 이어지는 해안길이 바리케이드로 막힌 곳. 그 너머 멀리, 밤이면 철조망을 따라 불빛이 늘어선다", aliases: ["해안길", "해안길 끝", "바리케이드"] }
+  cover: 3
+  owner: null
+  danger: 1
+  stream: "부두 뒤 빗물 수조"
+  adjacent: [south_fields, e_market]
+  loot:
+    modifier: 0
+    items:
+      - { item: scrap_metal, weight: 3, qty: [1, 2] }
+      - { item: cloth, weight: 2, qty: [1, 1] }
+      - { item: dried_fish, weight: 2, qty: [1, 1] }
+      - { item: water_bottle, weight: 1, qty: [1, 1] }
+      - { item: firewood, weight: 2, qty: [1, 2] }
+

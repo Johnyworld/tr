@@ -1,0 +1,132 @@
+# 큰 이야기 「남쪽의 배」 (docs/saga-plan.md 파트 9·11·12·13, 공통 규칙 24)
+# 버티는 사람(R)·남쪽 집결지·섬의 혈청·군의 철수를 하나로 엮는다. 이야기는 storylets/saga_south_*.yaml
+# 플래그 (주인공의 플래그):
+#   1막 출발점: sb_daon_kept(곁에) · sb_daon_jailed(무리에 갇힘) · sb_hunter_side(사냥꾼 편) · sb_daon_gone(사라짐)
+#   1막 끝: sb_daon_stayed · sb_daon_handed · sb_daon_lost
+#   3막: sb_own_accept · sb_own_refuse (우리 무리의 결정), sb_medic_secret (경도현의 지운 기록), sb_ledger_torn
+#   4막: sb_marked_hidden · sb_marked_handed · sb_hunter_turned (딸 소식을 걸고 물러섬)
+#   5막 패: sb_card_lighthouse · sb_card_crane · sb_card_mijin · sb_card_hunter
+#   결말: sb_truth (lore/saga_south_ship.md), sb_end_blocked · sb_end_handed, 반쪽 sb_half_saved
+
+id: south_ship
+title: 남쪽의 배
+summary: 팔뚝에 R 도장이 찍힌 탈출자가 남쪽 집결지에서 올라오며 시작한다. 혈청이 버티는 사람(R)의 피라는 것, 집결지가 무리들에게 R을 사겠다고 거래를 거는 것, 도시의 R 사냥, 조명탄이 오르는 밤 북부두의 배까지. 집결지는 무리가 아니고 군대는 장면에 세우지 않는다 (조명탄, 배, 부두의 불빛으로만)
+opens:
+  day_gte: 7
+  role_stories_gte: 3
+  roles_none: [role_t_visitor]
+cast:
+  daon: sb_daon
+  hunter: sb_myeongcheol
+  medic: sb_dohyeon
+  sergeant: sb_mijin
+  jisu: sb_jisu
+  broker: rs_pansu
+arrive: [daon, hunter]
+mark: { at: act_offer, fallback: daon }
+
+acts:
+  - id: act_stamp
+    title: R 도장
+    line: 팔뚝에 R 도장이 찍힌 여자가 남쪽에서 올라왔다. 정중한 사냥꾼이 그를 쫓는다
+    gm: 계다온(탈출자)과 함명철(사냥꾼)의 막이다. 다온은 잘 믿지 않고 먹을 것을 숨긴다. 함명철은 정중하고 집요하다. 둘 다 악당이 아니다. 주인공이 다온을 숨기든 넘기든 놓치든 서두르게 하지도 말리지도 않는다. 집결지와 군대는 말과 흔적으로만 드러난다.
+    days: 10
+    next: act_blood
+    lapse:
+      effects:
+        - npc_depart: { who: daon }
+        - set_flag: sb_daon_handed
+      news: 팔뚝에 도장 찍힌 여자가 사냥꾼에게 끌려 남쪽으로 갔다고 한다
+      note: 도장 찍힌 여자는 끌려갔다. 남쪽 집결지가 피로 사람을 가른다는 말이 남았다
+
+  - id: act_blood
+    title: 피의 값
+    line: 혈청은 어디서 오는가. 앰플의 번호, 병원의 명부, 남쪽에서 온 사람의 말을 맞춰 본다
+    gm: 진실을 맞추는 막이다. 혈청의 출처(앰플 번호·장터 밤배·하류 배), 열병의 기원(시립병원 명부·교도소 장부·휴게소 트럭), 집결지의 막사 가운데 둘을 알면 다음 막으로 간다. 함명철이 한 번 더 찾아온다. 진실은 이야기와 lore로만 드러내고 GM이 먼저 말하지 않는다. 플레이어가 길을 잃으면 실마리(들은 말)로 이끈다.
+    days: 10
+    next: act_offer
+    lapse:
+      effects:
+        - set_flag: sb_lapse_blood
+        - belief: { fact: "장터에서 혈청이 사람 피로 만든 거라는 말을 들었다. 누가 처음 한 말인지는 모른다", source: rumor }
+      news: 혈청이 사람 피로 만든 거라는 소문이 장터에 돈다
+      note: 남쪽 군의관이 장터에 올라와 무리마다 거래를 건다고 한다 → 나루상단의 장터
+
+  - id: act_offer
+    title: 집결지가 손을 내민다
+    line: 남쪽 군의관이 장터에 올라와 무리마다 거래를 건다. R을 넘기면 혈청과 탄을 준다고 한다 → 나루상단의 장터
+    gm: 군의관 경도현과 하사 편미진이 나루상단 장터에 머문다. 경도현은 숫자로 말하고, 혈청이 사람을 살린다는 것은 거짓이 아니다. 무리들의 기본 성향은 붉은연합·나루상단·버들마을은 받는 쪽, 청솔형제단·하얀매는 거절하는 쪽이다 (주인공의 무리는 주인공이 끼면 그 결과대로). 거간꾼 길판수가 R의 이름을 사 모은다. 넘기는 쪽이 늘 악이 아니게, 물린 사람 앞의 혈청을 보여 준다.
+    days: 10
+    next: act_hunt
+    arrive: [medic, sergeant]
+    lapse:
+      effects:
+        - set_flag: sb_lapse_offer
+        - faction_resource: { faction: faction_c, resource: ammo, delta: 20 }
+        - faction_resource: { faction: faction_e, resource: medicine, delta: 6 }
+        - faction_resource: { faction: faction_b, resource: medicine, delta: 4 }
+        - faction_relation: { from: faction_a, to: faction_c, delta: -1 }
+        - faction_relation: { from: faction_d, to: faction_e, delta: -1 }
+      news: 붉은연합과 나루상단, 버들마을이 남쪽 군의관과 손을 잡았고, 청솔형제단과 하얀매는 문을 닫았다고 한다
+      note: 거래를 받은 무리들이 R을 찾기 시작했다
+
+  - id: act_hunt
+    title: 사냥
+    line: 도시에서 R 사냥이 시작됐다. 곁의 누군가가 R일지 모른다
+    gm: 사냥하는 쪽은 함명철, 거래를 받은 무리들, 길판수의 사람들이다. 주인공의 무리가 받았다면 우리 무리가 사냥하는 쪽이다. 곁의 R은 시스템이 정해 두었고 이야기가 드러낸다 (GM이 먼저 말하지 않는다). 곁의 R 본인도 모를 수 있다. 이야기는 사람을 죽이지 않는다. 싸움은 전투 장치로.
+    days: 7
+    next: act_ship
+    lapse:
+      effects:
+        - npc_depart: { who: marked }
+        - set_flag: sb_marked_taken
+      news: 사냥꾼들이 곁에 있던 사람 하나를 남쪽 부두로 끌고 갔다고 한다
+      note: 끌려간 사람은 사흘 뒤 밤 배에 실린다고 한다 → 가람항 북부두
+
+  - id: act_ship
+    title: 배가 오는 밤
+    line: 사흘 뒤 밤, 남쪽 하늘에 조명탄이 오르면 배가 북부두에 닿는다 → 가람항 북부두
+    gm: 세 박자다. 전날의 행렬에서 패를 모으고(등대 열쇠, 크레인 연료, 편미진의 약속, 함명철), 조명탄이 오를 때 함명철이 행렬 안에서 딸 함지수를 본다, 배가 닿을 때 막을지가 갈린다. 군대는 배의 불빛과 확성기 소리로만. 대가 있는 성공은 반쪽 결말이다 (배는 떠났지만 곁의 R은 구했다 같은). 끝나면 배가 어디로 가는지(섬 진료동과 더 남쪽) 드러난다.
+    days: 3
+    arrive: [jisu, daon, marked]
+    lapse:
+      ending: handed
+      effects: []
+      news: 남쪽 하늘에 조명탄이 올랐고, 아침엔 북부두가 비어 있었다고 한다
+
+endings:
+  - id: blocked
+    title: 배를 막았다
+    chronicle: 조명탄이 오른 밤, 북부두에서 배를 막았다
+    effects:
+      - set_flag: sb_end_blocked
+      - set_flag: sb_truth
+      - npc_release: { who: marked }
+      - faction_morale: { faction: faction_c, delta: -1 }
+      - faction_morale: { faction: faction_e, delta: -1 }
+      - belief: { fact: "배는 R을 싣고 하구에서 둘로 갈린다고 했다. 반은 여울섬 진료동으로, 반은 더 남쪽으로. 섬의 혈청은 그렇게 만들어진다", source: report }
+      - belief: { fact: "배가 돌아간 뒤 무전에서 숫자를 읽던 여자의 목소리를 다시 들었다는 사람이 있다. 하류 쪽에서", source: rumor }
+    market: { serum: 0, mil_serum: 0 }
+  - id: handed
+    title: R을 넘겼다
+    chronicle: R들을 실은 배가 북부두를 떠났다
+    lapsed_chronicle: 배는 떠났다
+    effects:
+      - set_flag: sb_end_handed
+      - set_flag: sb_truth
+      - npc_depart: { who: marked }
+      - npc_depart: { who: jisu }
+      - faction_resource: { faction: faction_c, resource: ammo, delta: 30 }
+      - faction_resource: { faction: faction_e, resource: medicine, delta: 10 }
+      - faction_morale: { faction: faction_b, delta: -1 }
+      - belief: { fact: "배는 R을 싣고 하구에서 둘로 갈린다고 했다. 반은 여울섬 진료동으로, 반은 더 남쪽으로. 장터에 흔해질 혈청은 그 사람들의 피다", source: report }
+    market: { mil_serum: 3 }
+
+# 플래그 실마리 표: 기존 떡밥 줄기(mystery_serum·mystery_origin·outside_world)의 걸음마다 다음 길
+notes:
+  - { flag: ms_lot, acts: [act_blood], text: "앰플 바닥 번호는 R의 침대 번호다. 장터에 밤배가 닿는다고 한다. 밤에 장터 좌판 쪽에서", zone: e_market }
+  - { flag: ms_theory, acts: [act_blood], text: "명서진은 혈청이 버티는 사람의 피에서 나온다고 했다. 장터에 밤배가 닿는다고 한다. 밤에 장터 좌판 쪽에서", zone: e_market }
+  - { flag: ms_island, acts: [act_blood], text: "밤배는 하류 다리 밑에서 물건을 옮겨 싣는다고 한다. 저녁이나 밤에 강가에서", zone: riverside }
+  - { flag: og_ships, acts: [act_blood], text: "첫 환자는 남쪽 항구 화물선 선원들이었다. 교도소 행정동에 군의 이송 장부가 있다고 한다. 담을 넘어야 한다", zone: prison }
+  - { flag: og_quarantine, acts: [act_blood], text: "교도소가 군의 격리동이었다. 행정동 교도소장실에 장부가 남았을지 모른다. 담 안에서", zone: prison }
+  - { flag: og_ledger, acts: [act_blood], text: "장부는 R을 남쪽 집결지로 보냈다고 적었다. R을 실은 군용 트럭이 고속도로 휴게소 남쪽 갓길에 멈춰 있다고 한다. 낮에", zone: rest_stop }

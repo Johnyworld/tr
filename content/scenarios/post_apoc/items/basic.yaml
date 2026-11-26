@@ -327,3 +327,17 @@
   kind: misc
   weight: 0.01
   value: 0
+
+# 큰 이야기 「남쪽의 배」의 기념품 (docs/saga-plan.md 파트 12)
+- id: sb_flare_pistol
+  name: 조명탄 권총
+  description: 편미진이 차고 있던 조명탄 권총. 조명탄은 한 발도 남지 않았다. 배를 막은 밤의 것이다.
+  kind: misc
+  weight: 0.8
+  value: 0
+- id: sb_r_roster
+  name: R 명부 한 장
+  description: 집결지 막사의 침대 번호와 이름이 적힌 종이 한 장. 넘겨진 이름들이다.
+  kind: misc
+  weight: 0.01
+  value: 0

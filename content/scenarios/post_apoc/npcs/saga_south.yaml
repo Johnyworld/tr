@@ -1,0 +1,202 @@
+# 큰 이야기 「남쪽의 배」의 사람들 (docs/saga-plan.md 11-2, 공통 규칙 24). 모두 무소속, 처음에는 도시에 없다(offstage)
+# 큰 이야기가 들인다: 계다온·함명철은 문이 열릴 때, 경도현·편미진은 3막, 함지수는 5막 (sagas/south_ship.yaml)
+# 집결지는 무리가 아니다. 군대는 장면에 세우지 않는다 (9-1). 사자 둘만 장면에 선다
+
+- id: sb_daon
+  name: 계다온
+  alias: 팔뚝을 소매로 감싼 젊은 여자
+  faction: null
+  rank: loner
+  age: 24
+  gender: female
+  look: 마른 어깨에 남의 군용 점퍼를 걸쳤다. 오른 팔뚝 안쪽을 늘 소매로 감싸고, 말할 때도 그 자리를 엄지로 문지른다. 손바닥에 굳은살이 두껍다.
+  reputation: 남쪽에서 올라왔다는 낯선 여자. 아무도 이름을 모른다.
+  want: 먼저 배에 탄 동생이 어디로 갔는지 아는 것
+  fear: 다시 철조망 안으로 끌려가는 것
+  values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 1, self_interest: 0 }
+  traits: [guarded, cautious, light_eater]
+  voice:
+    style: 짧게 끊는 말. 묻는 말에 질문으로 되묻는다. 믿기 시작하면 존댓말이 반말로 풀린다
+    samples:
+      - "왜 물어요. 나 팔면 얼마 받는데요."
+      - "밥은 남겨 두는 거야. 내일도 있을지 모르니까."
+      - "주마다 바늘이 들어왔어. 세다 말았어."
+  routine: { dawn: 냉동 창고, morning: 컨테이너 야적장, day: 컨테이너 야적장, evening: 냉동 창고, night: 냉동 창고 }
+  rules:
+    - 팔뚝의 도장을 먼저 보여 주지 않는다
+    - 먹을 것을 받으면 반은 어딘가에 숨겨 둔다
+  knows:
+    - 남쪽 가람항 집결지는 손가락 피 한 방울로 사람을 가른다. 오른쪽 줄(R)은 철조망 안 막사로 간다
+    - 막사의 R은 주마다 군의관에게 피를 뽑힌다. 앰플 바닥 번호는 막사 침대 번호와 같다
+    - 배가 오는 날 밤에는 남쪽 하늘에 조명탄이 오르고, 배에는 R만 탄다
+    - 배에 탄 사람은 돌아온 적이 없다
+  keeps:
+    - 남동생 계솔이 한 달 먼저 배에 탔다는 것
+  doesnt_know:
+    - 배가 어디로 가는지
+  secret:
+    content: 같은 막사의 남동생 계솔이 한 달 먼저 배에 탔다. 도망쳐 나왔으면서도 남쪽을 떠나지 못하는 까닭이다
+    reveal_when: 배가 어디로 가는지 함께 알아보자는 말을 들었을 때, 또는 밤에 둘만 남았을 때
+    min_trust: 5
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 0, charm: 0, intellect: 0 }
+  skills: { endure: 2, stealth: 1, scavenge: 1, mechanics: 1, survival: 1 }
+  start_inventory: [blanket, dry_ration]
+  playable: true
+  zone: south_port
+  offstage: true
+
+- id: sb_myeongcheol
+  name: 함명철
+  alias: 반듯한 외투에 사진을 품은 사냥꾼
+  faction: null
+  rank: loner
+  age: 46
+  gender: male
+  look: 다림질 자국이 남은 낡은 경찰 외투. 머리를 짧게 깎았고, 말하기 전에 꼭 모자를 벗는다. 가슴 주머니에 손바닥만 한 사진을 넣고 다니며 자꾸 만진다.
+  reputation: 남쪽에서 올라와 사람을 찾는다는 정중한 사내. 값을 탄으로 치른다.
+  want: 집결지에 맡긴 딸의 소식을 듣는 것
+  fear: 딸이 이미 배에 탔다는 말
+  values: { discipline: 2, loyalty: 1, mercy: 0, honesty: 1, self_interest: 1 }
+  traits: [formal, patient, principled]
+  voice:
+    style: 또박또박한 존댓말. 상대가 거칠어도 말씨를 바꾸지 않는다. 화가 나면 말이 더 느려진다
+    samples:
+      - "실례지만, 팔뚝 안쪽에 도장이 있는 젊은 여자를 보셨습니까. 사례는 하겠습니다."
+      - "저도 이 일이 좋아서 하는 게 아닙니다."
+      - "총은 마지막입니다. 그 전에 할 말이 많아요."
+  routine: { dawn: 선원 쉼터, morning: 길 위, day: 길 위, evening: 장터 국밥집, night: 선원 쉼터 }
+  rules:
+    - 거래를 먼저 건다. 총은 마지막에 꺼낸다
+    - 아이와 다친 사람에게는 손대지 않는다
+  knows:
+    - 집결지는 도망친 R을 데려오는 사람에게 탄과 혈청을 준다
+    - 남쪽 가람항 집결지의 철조망과 막사, 군의관 경도현의 이름
+  keeps:
+    - 딸 함지수가 R이라 집결지에 맡겼다는 것
+  doesnt_know:
+    - 딸이 이미 배에 실릴 R 명단에 올라 있다는 것
+  secret:
+    content: 딸 함지수가 R이라 집결지에 맡겼다. 도망친 R을 데려가는 값으로 딸의 소식을 받는다
+    reveal_when: 사진을 물었을 때, 또는 왜 이런 일을 하느냐고 다그쳤을 때
+    min_trust: 4
+  stats: { strength: 1, agility: 0, vitality: 1, senses: 2, nerve: 2, charm: 1, intellect: 1 }
+  skills: { shoot: 2, insight: 2, persuade: 1, intimidate: 1, survival: 1, fight: 1 }
+  start_inventory: [pistol, pistol_rounds, faded_photo, cigarettes]
+  playable: true
+  roams: [south_port, south_fields, e_market]
+  offstage: true
+  ties:
+    - { to: sb_jisu, kind: child }
+
+- id: sb_dohyeon
+  name: 경도현
+  alias: 숫자로 말하는 남쪽 군의관
+  faction: null
+  rank: loner
+  occupation: doctor
+  age: 52
+  gender: male
+  look: 흰머리를 단정히 빗어 넘겼다. 소매를 걷은 팔뚝이 깨끗하고, 손톱이 짧다. 안경을 닦으며 상대를 오래 본다.
+  reputation: 남쪽 집결지에서 올라온 군의관. 열 오른 사람에게 혈청을 놓아 살렸다는 말이 돈다.
+  want: 혈청을 더 많이 만들어 더 많은 사람을 살리는 것
+  fear: 집결지가 닫히는 것
+  values: { discipline: 2, loyalty: 1, mercy: 1, honesty: -1, self_interest: 0 }
+  traits: [calculating, meticulous, cold]
+  voice:
+    style: 낮고 차분한 존댓말. 감정 대신 숫자를 댄다
+    samples:
+      - "열에 넷이 돌아왔습니다. 혈청이 없으면 열에 하나도 안 돌아옵니다."
+      - "R 한 사람이면 한 달에 앰플 여섯 개. 셈은 그렇게 합니다."
+      - "선택은 여러분이 하십시오. 저는 숫자를 말씀드릴 뿐입니다."
+  routine: { morning: 장터 좌판·천막, day: 장터 좌판·천막, evening: 국밥집, night: 상단 본채 }
+  rules:
+    - 거래 조건을 바꾸지 않는다. 값을 올리는 것은 위에 묻는다
+    - 막사 이야기는 숫자로만 한다
+  knows:
+    - 혈청은 R의 피를 굳혀 맑은 물만 걸러 만든다
+    - 집결지 배는 R을 실어 간다
+  keeps:
+    - 배가 R을 섬 진료동과 더 남쪽으로 나눠 싣는다는 것
+  doesnt_know:
+    - 함명철의 딸이 이미 명단에 올랐다는 것을 함명철이 모른다는 것
+  secret:
+    content: 피를 너무 많이 뽑혀 죽은 R이 있었고, 그 기록을 지웠다
+    reveal_when: 혼자 술을 마시는 밤에, 막사에서 죽은 사람이 없었느냐고 물었을 때
+    min_trust: 3
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 2, charm: 1, intellect: 2 }
+  skills: { surgery: 2, first_aid: 2, persuade: 2, insight: 1, infected_lore: 2 }
+  start_inventory: [mil_serum, mil_serum, medkit, notebook]
+  playable: false
+  zone: e_market
+  offstage: true
+  ties:
+    - { to: sb_mijin, kind: friend }
+
+- id: sb_mijin
+  name: 편미진
+  alias: 군화 끈을 두 번 묶는 하사
+  faction: null
+  rank: loner
+  age: 34
+  gender: female
+  look: 낡은 전투복에 계급장만 새것이다. 군화 끈을 두 번씩 묶고, 허리에 조명탄 권총을 찼다. 말할 때 상대의 눈이 아니라 손을 본다.
+  reputation: 남쪽 군의관을 호위하는 하사. 거래 조건을 읽는 사람이다.
+  want: 명령을 끝까지 지키고 집에 가는 것
+  fear: 자기가 쏜 조명탄 아래에서 사람이 죽는 것
+  values: { discipline: 2, loyalty: 2, mercy: 1, honesty: 1, self_interest: -1 }
+  traits: [principled, cautious, protective]
+  voice:
+    style: 군대식 짧은 존댓말. R을 번호가 아니라 이름으로 부른다
+    samples:
+      - "조건 읽겠습니다. 한 번만 읽습니다."
+      - "그 사람 이름이 뭡니까. 번호 말고."
+      - "명령입니다. 좋아서 하는 거 아닙니다."
+  routine: { morning: 장터 좌판·천막, day: 장터 좌판·천막, evening: 호위·짐꾼 막사, night: 호위·짐꾼 막사 }
+  rules:
+    - 군의관 곁을 떠나지 않는다
+    - 묶인 사람에게 손찌검하는 것을 그냥 두지 않는다
+  knows:
+    - 배가 오는 밤에는 조명탄으로 부두 위치를 알린다
+    - 거래를 받은 무리가 R을 북부두로 데려오면 배가 싣는다
+  doesnt_know:
+    - 배가 어디로 가는지 (그는 물은 적이 없다)
+  stats: { strength: 1, agility: 1, vitality: 1, senses: 1, nerve: 2, charm: 0, intellect: 0 }
+  skills: { shoot: 2, fight: 2, tactics: 1, leadership: 1, first_aid: 1 }
+  start_inventory: [pistol, pistol_rounds, mil_ration]
+  playable: true
+  zone: e_market
+  offstage: true
+
+- id: sb_jisu
+  name: 함지수
+  alias: 아버지를 닮은 눈썹의 앳된 여자
+  faction: null
+  rank: loner
+  age: 19
+  gender: female
+  look: 짧게 자른 머리에 아버지를 닮은 짙은 눈썹. 팔뚝 안쪽에 R 도장이 있고, 손목에 묶였던 자국이 있다.
+  reputation: 집결지 막사에서 온 R. 이름보다 번호로 불려 왔다.
+  want: 아버지를 다시 보는 것
+  fear: 배에 실려 돌아오지 못하는 것
+  values: { discipline: 0, loyalty: 2, mercy: 1, honesty: 2, self_interest: -1 }
+  traits: [timid, warm]
+  voice:
+    style: 작고 또렷한 존댓말. 아버지 이야기에서만 목소리가 커진다
+    samples:
+      - "우리 아빠 경찰이었어요. 지금도 그런 줄 알아요."
+      - "번호 말고 이름으로 불러 주세요. 함지수예요."
+  routine: { dawn: 배 대는 부두 끝, morning: 배 대는 부두 끝, day: 배 대는 부두 끝, evening: 배 대는 부두 끝, night: 배 대는 부두 끝 }
+  rules:
+    - 묶인 줄에서 먼저 도망치지 않는다 (다른 사람이 맞을까 봐)
+  knows:
+    - 막사에서 아버지 소식을 전해 준다는 말은 한 번도 지켜지지 않았다
+  doesnt_know:
+    - 아버지가 자기 소식을 받는 값으로 R을 쫓아 왔다는 것
+  stats: { strength: 0, agility: 1, vitality: 0, senses: 1, nerve: -1, charm: 1, intellect: 1 }
+  skills: { endure: 1, first_aid: 1 }
+  start_inventory: []
+  playable: true
+  zone: south_port
+  offstage: true
+  ties:
+    - { to: sb_myeongcheol, kind: parent }

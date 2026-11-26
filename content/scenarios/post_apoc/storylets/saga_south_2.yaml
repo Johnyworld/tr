@@ -1,0 +1,509 @@
+# 큰 이야기 「남쪽의 배」: 2막 「피의 값」·3막 「집결지가 손을 내민다」 (docs/saga-plan.md 11-4·12·13, sagas/south_ship.yaml)
+# 2막: 기존 떡밥 줄기(mystery_serum·mystery_origin·outside_world)의 첫 문을 대신 열고, 진실 셋 중 둘이면 넘어간다 (sb2_pieces_*)
+#   진실: ms_truth(섬이 R의 피로 혈청을 만든다) · og_truth(군이 R만 남쪽으로) · ow_south_truth(집결지가 피로 사람을 가른다)
+# 3막: 사자(경도현·편미진)는 나루상단 장터. 무리 기본 성향은 붉은연합·나루상단·버들마을 받음, 청솔형제단·하얀매 거절
+#   우리 무리의 결정: sb_own_accept · sb_own_refuse. 곁의 R은 3막이 시작될 때 시스템이 고른다 (배역 saga_marked)
+
+# ── 2막 「피의 값」 ─────────────────────────────
+- id: sb2_number
+  title: 같은 번호
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_blood] }
+    indoor: false
+    place_kinds: [road, street, yard]
+    flags_none: [ms_lot, ms_theory, sb2_number]
+  setup: 길가 덤불에 군용 의약 상자 하나가 엎어져 있다. 뚜껑이 뜯겼고 안에는 앰플 하나만 남았다. 바닥에 기계로 찍힌 숫자가 보인다.
+  ai_direction: 집결지 쪽 사람이 흘린 상자다. 앰플은 혈청이다. 계다온이 곁에 있으면 숫자를 보고 얼굴이 굳는다 ("침대 번호야. 막사 침대"). 없으면 숫자의 뜻은 주인공이 짐작할 몫이다. 장터 밤배 이야기는 하지 않는다 (실마리가 알려 준다).
+  choices:
+    - id: take
+      label: 앰플을 챙기고 번호를 적어 둔다
+      effects:
+        - set_flag: sb2_number
+        - set_flag: ms_lot
+        - give_item: { item: mil_serum, quantity: 1 }
+        - belief: { fact: "길가에 버려진 군용 의약 상자에서 혈청 앰플 하나를 주웠다. 바닥에 기계로 찍힌 번호가 있었다. 막사 침대 번호라는 말을 들은 적이 있다", source: seen }
+    - id: leave
+      label: 손대지 않고 지나간다
+      effects:
+        - set_flag: sb2_number
+
+- id: sb2_hospital
+  title: 병원부터 가 보라는 말
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_blood] }
+    indoor: "any"
+    segments: [day, evening]
+    flags_none: [og_ships, og_quarantine, sb2_hospital]
+  setup: 쉬는 자리 곁에서 늙은 남자가 혼잣말처럼 말을 건다. "열병 말이야, 처음엔 다 시립병원 응급실로 실려 갔어. 거기 접수대에 명부가 있었지. 이름이 줄줄이."
+  ai_direction: 지나가는 늙은 떠돌이다. 붕괴 첫 주에 시립병원 근처에 살았다. 명부가 아직 있는지는 모른다. 하얀매의 명서진을 아는 사람이면 "그 의사 선생도 거길 뒤졌다더라"를 붙인다.
+  choices:
+    - id: ask
+      label: 어디서 무엇을 봤는지 더 묻는다
+      effects:
+        - set_flag: sb2_hospital
+        - belief: { fact: "붕괴 첫 주 열병 환자들은 옛 시립병원 응급실로 실려 갔고, 접수대에 명부가 있었다고 한다", source: report }
+        - saga_note: { text: "열병이 어디서 왔는지는 옛 시립병원 응급실 접수대에 남아 있을지 모른다. 낮에", zone: hospital_ruins }
+    - id: nod
+      label: 고개만 끄덕인다
+      effects:
+        - set_flag: sb2_hospital
+        - saga_note: { text: "옛 시립병원 응급실에 첫 환자들의 명부가 있었다는 말을 들었다", zone: hospital_ruins }
+
+- id: sb2_fence
+  title: 철조망 밑에서 본 것
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_blood] }
+    zones: [south_port, e_market, south_fields]
+    indoor: "any"
+    flags_none: [ow_south_truth, sb2_fence]
+  setup: 젖은 담요를 뒤집어쓴 남자가 손가락 끝의 피딱지를 뜯고 있다. 팔뚝 안쪽에 지워지다 만 잉크 자국. 눈이 마주치자 소매를 끌어내린다.
+  ai_direction: 이름 없는 R 피난민이다. 계다온과는 다른 탈출자다. 경계하지만 먹을 것이나 말벗이 되어 주면 막사 이야기를 한다 (손가락 피 한 방울로 줄을 나눈다, 오른쪽 줄 R은 철조망 안 막사, 주마다 피, 배가 오는 밤 조명탄, 배에는 R만). 이름은 말하지 않는다.
+  choices:
+    - id: share
+      label: 먹을 것을 나누고 이야기를 듣는다
+      effects:
+        - set_flag: sb2_fence
+        - set_flag: ow_south_truth
+        - belief: { fact: "남쪽에서 도망친 남자가 말했다: 가람항 집결지는 손가락 피 한 방울로 R을 가려 철조망 안 막사에 두고 주마다 피를 뽑는다. 배가 오는 밤 조명탄이 오르고 배에는 R만 탄다", source: report }
+        - saga_note: { text: "집결지는 피로 사람을 가르고, R만 배에 태운다고 한다" }
+    - id: leave
+      label: 못 본 척 지나간다
+      effects:
+        - set_flag: sb2_fence
+
+- id: sb2_hunter_again
+  title: 다시 온 사냥꾼
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_blood] }
+    indoor: "any"
+    flags_none: [sb2_hunter_met]
+    flags_any: [sb_daon_stayed, sb_daon_kept, sb_hunter_side, sb_daon_handed]
+  cast:
+    hunter: { ids: [sb_myeongcheol], afar: true }
+  setup: "{hunter:이/가} 담뱃불을 붙이다 말고 고개를 든다. 외투 어깨에 남쪽 바닷바람의 소금기가 하얗다. \"또 뵙는군요.\""
+  ai_direction: 함명철이 다시 왔다. 앞 막의 일에 따라 태도가 다르다. 주인공이 도장 찍힌 여자를 지켰으면, 그 여자가 어디 있는지 안다는 말로 조용히 압박한다 (오늘 데려가지는 않는다). 주인공이 사냥꾼 편이었으면 "집결지 일을 더 하자, 남쪽 군의관이 곧 올라온다"며 끌어들인다. 그는 지쳐 있고, 사진을 더 자주 만진다.
+  choices:
+    - id: talk
+      label: 담배 한 개비를 얻어 같이 피운다
+      effects:
+        - set_flag: sb2_hunter_met
+        - relation: { who: hunter, axis: affection, delta: 1 }
+        - belief: { fact: "함명철이 말했다: 남쪽 군의관이 곧 장터로 올라와 무리마다 거래를 건다. 그 전에 일을 끝내고 싶다고 했다", source: report }
+    - id: ask_daughter
+      label: 사진 속 사람을 묻는다
+      check: insight
+      outcomes:
+        success:
+          - set_flag: sb2_hunter_met
+          - set_flag: sb_hunter_secret
+          - belief: { fact: "함명철의 딸 함지수는 R이라 남쪽 집결지에 맡겨졌다. 함명철은 도망친 R을 데려가는 값으로 딸의 소식을 받는다", source: report }
+        partial:
+          - set_flag: sb2_hunter_met
+          - belief: { fact: "함명철은 사진 속 사람이 딸이라고만 했다", source: seen }
+        miss:
+          - set_flag: sb2_hunter_met
+          - relation: { who: hunter, axis: trust, delta: -1 }
+    - id: warn
+      label: 다시는 오지 말라고 한다
+      effects:
+        - set_flag: sb2_hunter_met
+        - relation: { who: hunter, axis: trust, delta: -1 }
+
+- id: sb2_coming
+  title: 남쪽에서 올라오는 군의관
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_blood] }
+    indoor: "any"
+    place_kinds: [mess, street, yard]
+    flags_any: [ms_truth, og_truth, ow_south_truth]
+    flags_none: [sb2_coming]
+  setup: 밥 짓는 연기 사이로 낮은 말소리. "남쪽에서 군의관이 올라온대. 혈청을 한 상자씩 들고. 대신 뭘 달라는지는 아무도 몰라." 다른 목소리가 끼어든다. "휴게소 거간꾼 길판수가 벌써 사람 이름을 사 모은다던데."
+  ai_direction: 소문이다. 군의관 이름(경도현)까지 나온다. 무엇을 달라는지는 아직 모른다. 길판수가 "도장 찍힌 사람" 이름을 산다는 말이 붙는다.
+  choices:
+    - id: listen
+      label: 귀를 기울인다
+      effects:
+        - set_flag: sb2_coming
+        - belief: { fact: "경도현이라는 남쪽 군의관이 혈청을 들고 장터로 올라온다는 소문이다. 휴게소 거간꾼 길판수가 R의 이름을 사 모은다고 한다", source: rumor }
+
+- id: sb2_pieces_a
+  title: 맞춰진 조각
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_blood], spine: true }
+    indoor: "any"
+    flags_all: [ms_truth, og_truth]
+  setup: 혈청 앰플의 번호, 하류 다리 밑의 배, 교도소 장부와 갓길 트럭의 녹음이 머릿속에서 한 줄로 이어진다. 군은 R만 남쪽으로 데려갔고, 섬은 R의 피로 혈청을 만든다.
+  ai_direction: 주인공이 혼자 맞춰 본 순간이다. 아직 집결지가 지금 무엇을 하는지는 모른다. 이 생각을 끝으로 다음 막(장터에 군의관이 올라온다)으로 넘어간다.
+  choices:
+    - id: piece
+      label: 조각을 맞춰 본다
+      effects:
+        - belief: { fact: "혈청은 버티는 사람(R)의 피로 만든다. 군은 R만 남쪽 집결지로 데려갔고, 섬은 R의 피로 혈청을 만든다", source: seen }
+        - saga_advance: { id: south_ship, to: act_offer }
+
+- id: sb2_pieces_b
+  title: 맞춰진 조각
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_blood], spine: true }
+    indoor: "any"
+    flags_all: [ms_truth, ow_south_truth]
+    flags_none: [og_truth]
+  setup: 앰플 바닥의 번호와 막사의 침대 번호, 밤배와 하류 다리 밑의 배가 한 줄로 이어진다. 집결지가 피를 뽑고, 그 피가 혈청이 되어 장터에 온다.
+  ai_direction: 주인공이 혼자 맞춰 본 순간이다. 이 생각을 끝으로 다음 막(장터에 군의관이 올라온다)으로 넘어간다.
+  choices:
+    - id: piece
+      label: 조각을 맞춰 본다
+      effects:
+        - belief: { fact: "장터의 혈청은 집결지 막사 R들의 피에서 나온다. 앰플 바닥 번호는 피를 뽑힌 사람의 침대 번호다", source: seen }
+        - saga_advance: { id: south_ship, to: act_offer }
+
+- id: sb2_pieces_c
+  title: 맞춰진 조각
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_blood], spine: true }
+    indoor: "any"
+    flags_all: [og_truth, ow_south_truth]
+    flags_none: [ms_truth]
+  setup: 교도소 장부의 F와 R, 갓길 트럭의 녹음, 철조망 밑에서 들은 막사 이야기가 한 줄로 이어진다. 군은 그때도 지금도 R만 가려낸다.
+  ai_direction: 주인공이 혼자 맞춰 본 순간이다. 혈청이 어디서 만들어지는지는 아직 반쯤 짐작이다. 이 생각을 끝으로 다음 막으로 넘어간다.
+  choices:
+    - id: piece
+      label: 조각을 맞춰 본다
+      effects:
+        - belief: { fact: "군은 붕괴 때부터 지금까지 R만 가려 남쪽으로 데려간다. 집결지는 다시 열렸고 R의 피를 뽑는다", source: seen }
+        - saga_advance: { id: south_ship, to: act_offer }
+
+# ── 3막 「집결지가 손을 내민다」 ─────────────────────────────
+- id: sb3_market
+  title: 장터에 선 군의관
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer] }
+    zones: [e_market]
+    indoor: false
+    place_kinds: [street]
+    segments: [morning, day]
+    flags_none: [sb3_seen]
+  cast:
+    medic: { ids: [sb_dohyeon] }
+    sergeant: { ids: [sb_mijin], optional: true }
+  setup: 좌판 사이에 사람들이 둥글게 모였다. 들것 위에서 열에 들뜬 사내가 떨고 있다. 흰머리를 빗어 넘긴 {medic:이/가} 소매를 걷고 앰플을 꺾는다. 주사를 놓고 한참 뒤, 사내의 떨림이 잦아든다. 웅성거림이 퍼진다.
+  ai_direction: 경도현이 혈청이 진짜라는 것을 보여 준다. 그다음 편미진이 조건을 읽는다 ("R 한 사람에 혈청 다섯, 탄 한 상자. 거래를 받는 무리는 R을 북부두로 데려오면 됩니다"). 값은 시스템의 일이라 그대로만 읽는다. 사람들은 반은 홀리고 반은 얼어붙는다. 이 장면은 넘기는 쪽이 늘 악이 아니라는 것을 보여 준다.
+  choices:
+    - id: watch
+      label: 사람들 틈에서 끝까지 본다
+      effects:
+        - set_flag: sb3_seen
+        - belief: { fact: "남쪽 군의관 경도현이 장터에서 열 오른 사람에게 혈청을 놓아 떨림을 멈추게 했다. 거래 조건은 R 한 사람에 혈청과 탄. 받는 무리는 R을 북부두로 데려오면 된다", source: seen }
+        - saga_note: { text: "집결지가 무리마다 거래를 건다. 곧 우리 무리도 정해야 한다" }
+    - id: ask
+      label: 앞으로 나서서 R은 어디로 가느냐고 묻는다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb3_seen
+          - relation: { who: medic, axis: respect, delta: 1 }
+          - belief: { fact: "경도현은 R이 '혈청을 만드는 곳'으로 간다고 했다. 어디냐고 다시 묻자 숫자 이야기로 돌렸다: 열에 넷이 돌아온다고", source: report }
+          - saga_note: { text: "집결지가 무리마다 거래를 건다. 경도현은 R이 어디로 가는지 숨긴다" }
+        partial:
+          - set_flag: sb3_seen
+          - saga_note: { text: "집결지가 무리마다 거래를 건다. 경도현은 대답 대신 숫자를 댔다" }
+        miss:
+          - set_flag: sb3_seen
+          - relation: { who: medic, axis: trust, delta: -1 }
+          - saga_note: { text: "집결지가 무리마다 거래를 건다. 군의관의 호위가 내 얼굴을 기억했다" }
+
+- id: sb3_council
+  title: 거래의 조건
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer], spine: true }
+    ranks: [officer, leader]
+    in_faction: true
+    own_territory: true
+    indoor: true
+    flags_none: [sb_own_accept, sb_own_refuse]
+  setup: 간부들이 둘러앉은 자리. 탁자 위에 남쪽 군의관이 두고 간 앰플 하나가 놓여 있다. 누군가 말한다. "R 하나에 혈청 다섯. 겨울이 오는데." 다른 누군가가 앰플을 밀어낸다. "사람을 파는 거야."
+  ai_direction: 우리 무리의 회의다. 간부들이 엇갈린다. 주인공의 말이 무리의 결정이 된다 (교섭 판정). 열병의 기원 진실(군이 R만 데려갔다)을 알면 그 말이 무게를 갖는다. 무리의 원칙(청솔은 버리지 않는다, 하얀매는 규칙에 예외가 없다, 붉은연합은 할당량, 나루상단은 셈, 버들마을은 이웃)을 떠올리게 한다.
+  choices:
+    - id: accept
+      label: 받자고 한다
+      effects:
+        - set_flag: sb_own_accept
+        - faction_resource: { faction: own, resource: medicine, delta: 4 }
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "우리 무리는 거래를 받았다. 이제 R을 찾아 북부두로 데려가야 한다" }
+    - id: refuse
+      label: 거절하자고 한다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb_own_refuse
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "우리 무리는 거래를 거절했다. 받은 무리들이 R을 찾기 시작한다" }
+        partial:
+          - set_flag: sb_own_refuse
+          - faction_morale: { faction: own, delta: -1 }
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "우리 무리는 가까스로 거래를 거절했다. 불만이 남았다" }
+        miss:
+          - set_flag: sb_own_accept
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "말이 먹히지 않았다. 우리 무리는 거래를 받았다" }
+    - id: serum_only
+      label: R 없이 혈청 만드는 법만 사자고 한다
+      effects:
+        - set_flag: sb_own_refuse
+        - set_flag: sb3_method
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "우리 무리는 사람 대신 방법을 사자고 했다. 군의관은 웃었다. 거래는 없던 일이 됐다" }
+
+- id: sb3_guard_lean_accept
+  title: 회담장의 보초
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer], spine: true }
+    ranks: [grunt, squad_leader, resident]
+    factions: [faction_c, faction_e, faction_b]
+    own_territory: true
+    indoor: "any"
+    flags_none: [sb_own_accept, sb_own_refuse]
+  cast:
+    sergeant: { ids: [sb_mijin], afar: true }
+  setup: 회담장 문 앞, 남쪽에서 온 하사 {sergeant:과/와} 나란히 보초를 선다. 안에서 간부들의 목소리가 오르내린다. 하사가 군화 끈을 다시 묶으며 묻는다. "여기 R 있습니까. 번호 말고, 이름으로."
+  ai_direction: 우리 무리는 받는 쪽으로 기울어 있다. 편미진은 군율대로 움직이지만 R을 이름으로 부른다. 말을 트면 그는 "명령이라서"를 되풀이한다. 상관과의 관계가 충분하면 의견을 올릴 수 있다 (판정).
+  choices:
+    - id: talk
+      label: 하사와 말을 튼다
+      effects:
+        - set_flag: sb3_mijin_talk
+        - relation: { who: sergeant, axis: trust, delta: 2 }
+        - set_flag: sb_own_accept
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "우리 무리는 거래를 받았다. 남쪽 하사 편미진과 말을 텄다" }
+    - id: object
+      label: 상관에게 거래를 거절하자고 말을 올린다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb_own_refuse
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "올린 말이 먹혔다. 우리 무리는 거래를 거절했다" }
+        partial:
+          - set_flag: sb_own_accept
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "말은 들었지만 우리 무리는 거래를 받았다" }
+        miss:
+          - set_flag: sb_own_accept
+          - merit: -1
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "보초가 회의에 끼어들었다는 꾸지람만 들었다. 우리 무리는 거래를 받았다" }
+    - id: stand
+      label: 시킨 일만 한다
+      effects:
+        - set_flag: sb_own_accept
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "우리 무리는 거래를 받았다" }
+
+- id: sb3_guard_lean_refuse
+  title: 회담장의 보초
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer], spine: true }
+    ranks: [grunt, squad_leader, resident]
+    factions: [faction_a, faction_d]
+    own_territory: true
+    indoor: "any"
+    flags_none: [sb_own_accept, sb_own_refuse]
+  cast:
+    sergeant: { ids: [sb_mijin], afar: true }
+  setup: 회담장 문 앞, 남쪽에서 온 하사 {sergeant:과/와} 나란히 보초를 선다. 안에서 누가 탁자를 친다. "우린 사람 안 판다." 하사가 작게 웃는다. "다들 처음엔 그러십니다."
+  ai_direction: 우리 무리는 거절하는 쪽으로 기울어 있다. 편미진은 탓하지 않는다. 겨울과 물린 사람 이야기를 꺼내면 흔들리는 간부도 있다. 상관과의 관계가 충분하면 받자는 의견을 올릴 수도 있다 (판정).
+  choices:
+    - id: talk
+      label: 하사와 말을 튼다
+      effects:
+        - set_flag: sb3_mijin_talk
+        - relation: { who: sergeant, axis: trust, delta: 2 }
+        - set_flag: sb_own_refuse
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "우리 무리는 거래를 거절했다. 남쪽 하사 편미진과 말을 텄다" }
+    - id: support
+      label: 상관에게 거래를 받자고 말을 올린다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb_own_accept
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "올린 말이 먹혔다. 우리 무리는 거래를 받았다" }
+        partial:
+          - set_flag: sb_own_refuse
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "말은 들었지만 우리 무리는 거래를 거절했다" }
+        miss:
+          - set_flag: sb_own_refuse
+          - merit: -1
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "보초가 회의에 끼어들었다는 꾸지람만 들었다. 우리 무리는 거래를 거절했다" }
+    - id: stand
+      label: 시킨 일만 한다
+      effects:
+        - set_flag: sb_own_refuse
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "우리 무리는 거래를 거절했다" }
+
+- id: sb3_ledger
+  title: 길판수의 장부
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer] }
+    zones: [e_market, rest_stop]
+    indoor: "any"
+    flags_none: [sb3_ledger]
+  cast:
+    broker: { ids: [rs_pansu], afar: true }
+    marked: { saga_marked: true, enter: false, optional: true }
+  setup: "{broker:이/가} 장부를 펼쳐 손가락으로 줄을 짚는다. \"도장 찍힌 사람, 아니면 물려도 멀쩡했던 사람. 이름만 주시면 됩니다. 값은 남쪽에서 넉넉히 쳐줘요.\" 펼친 장에 아는 이름이 하나 보인다."
+  ai_direction: 거간꾼 길판수다. 장부의 아는 이름은 시스템이 정해 둔 곁의 R이다 (배역 marked, 그 배역이 없으면 이름 대신 "물려도 열이 안 오른 사람"이라는 낯익은 이야기가 적혀 있다). 길판수는 이 이름을 이미 누군가에게서 샀다. 무소속 주인공에게는 이것이 3막의 가장 큰 자리다. 지킬 선 — 사람 매매에서 성적 착취 갈래는 내밀지 않는다.
+  choices:
+    - id: sell
+      label: 아는 이름을 더 판다
+      effects:
+        - set_flag: sb3_ledger
+        - set_flag: sb_marked_sold
+        - give_item: { item: pistol_rounds, quantity: 4 }
+        - deed: { summary: "거간꾼에게 아는 사람의 이름을 팔았다", tags: [betrayal], severity: 2, privacy: private }
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "길판수에게 이름을 팔았다. 사냥이 시작될 것이다" }
+    - id: refuse
+      label: 거절하고 장부를 덮게 한다
+      effects:
+        - set_flag: sb3_ledger
+        - relation: { who: broker, axis: trust, delta: -1 }
+        - saga_advance: { id: south_ship, to: act_hunt }
+        - saga_note: { text: "길판수의 장부에 아는 사람의 이름이 있었다. 사냥이 시작될 것이다" }
+    - id: tear
+      label: 그 장을 찢어 낸다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: sb3_ledger
+          - set_flag: sb_ledger_torn
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "길판수의 장부에서 아는 이름을 찢어 냈다. 그래도 사냥은 시작될 것이다" }
+        partial:
+          - set_flag: sb3_ledger
+          - set_flag: sb_ledger_torn
+          - grudge: { who: broker, why: "장부를 찢었다" }
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "장부를 찢었지만 길판수가 보았다. 사냥이 시작될 것이다" }
+        miss:
+          - set_flag: sb3_ledger
+          - grudge: { who: broker, why: "장부를 찢으려 했다" }
+          - wound: { steps: 1, cause: "거간꾼의 사람들에게 맞았다" }
+          - saga_advance: { id: south_ship, to: act_hunt }
+          - saga_note: { text: "장부를 찢으려다 맞았다. 사냥이 시작될 것이다" }
+
+- id: sb3_bitten
+  title: 물린 사람
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer] }
+    indoor: "any"
+    flags_none: [sb3_bitten]
+  cast:
+    close: { known: true, here: true, trust_gte: 4, starts: { infection: fever }, not_squad: false }
+  setup: "{close:이/가} 땀에 젖은 채 팔을 감싸 쥐고 있다. 붕대 아래가 검붉다. 이마가 불덩이다. \"괜찮아. 물린 거 아니야. 긁힌 거야.\""
+  ai_direction: 가까운 사람이 물려 열이 오른다 (시스템이 몸 상태를 올려 두었다). 혈청은 지금 장터의 남쪽 군의관에게 있다. 하얀매 진료소에 가면 있을 수도, 없을 수도 있다. 경도현의 혈청을 받으면 거래의 빚이 된다. 이 장면은 "넘기는 쪽이 늘 악이 아니다"를 몸으로 느끼게 한다. 혈청을 손에 넣으면 주인공이 직접 놓아야 낫는다.
+  choices:
+    - id: medic
+      label: 장터의 군의관에게 혈청을 받으러 간다
+      effects:
+        - set_flag: sb3_bitten
+        - set_flag: sb_owe_medic
+        - give_item: { item: mil_serum, quantity: 1 }
+        - saga_note: { text: "군의관에게 혈청을 받았다. 그 값은 언젠가 치러야 한다" }
+    - id: clinic
+      label: 하얀매 진료소로 데려간다
+      effects:
+        - set_flag: sb3_bitten
+        - saga_note: { text: "물린 사람을 하얀매 진료소로 데려가야 한다", zone: d_clinic }
+    - id: wait
+      label: 열이 내리기를 기다린다
+      effects:
+        - set_flag: sb3_bitten
+
+- id: sb3_named_r
+  title: 이름을 붙인 R
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer], marked: false }
+    indoor: false
+    flags_none: [sb3_named]
+  cast:
+    r: { extra: refugee, label: 팔뚝을 감싼 늙은 피난민 }
+  setup: "{r:이/가} 길가에 주저앉아 있다. 소매 아래로 잉크 자국이 비친다. 주인공을 올려다보며 쉰 목소리로 말한다. \"전에 물 한 모금 얻어먹었지. 기억 안 나? 나는 기억하는데.\""
+  ai_direction: 이름 없는 R 피난민이다. 주인공에게 작은 은혜를 입은 적이 있다고 믿는다 (사실인지는 중요하지 않다). 사냥이 시작되면 이 사람이 쫓긴다. 며칠 함께 지내며 이름을 묻게 하고, 정이 붙게 한다.
+  choices:
+    - id: keep
+      label: 이름을 묻고 곁에 둔다
+      effects:
+        - set_flag: sb3_named
+        - saga_mark: { who: r }
+        - companion_join: { who: r, kind: purpose }
+        - relation: { who: r, axis: affection, delta: 2 }
+        - saga_note: { text: "{r:이/가} 곁에 있다. 팔뚝에 R 도장이 있다" }
+    - id: water
+      label: 물만 건네고 간다
+      effects:
+        - set_flag: sb3_named
+        - saga_mark: { who: r }
+        - relation: { who: r, axis: affection, delta: 1 }
+
+- id: sb3_medic_night
+  title: 군의관의 밤
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_offer, act_hunt] }
+    zones: [e_market]
+    indoor: true
+    place_kinds: [mess]
+    segments: [evening, night]
+    flags_all: [sb3_seen]
+    flags_none: [sb3_medic_night]
+  cast:
+    medic: { ids: [sb_dohyeon] }
+  setup: 국밥집 구석, {medic:이/가} 혼자 소주를 따른다. 안경을 벗어 탁자에 내려놓고, 한참 동안 손바닥을 들여다본다.
+  ai_direction: "경도현이 혼자다. 숫자로 말하는 사람이 숫자를 잃는 밤이다. 막사에서 죽은 사람이 없었느냐고 물으면, 판정이 성공했을 때만 털어놓는다: 피를 너무 많이 뽑혀 죽은 R이 있었고, 그 기록을 지웠다. 이것은 5막에서 그를 흔드는 지렛대가 된다."
+  choices:
+    - id: ask
+      label: 막사에서 죽은 사람이 없었느냐고 묻는다
+      check: insight
+      outcomes:
+        success:
+          - set_flag: sb3_medic_night
+          - set_flag: sb_medic_secret
+          - belief: { fact: "경도현이 털어놓았다: 집결지 막사에서 피를 너무 많이 뽑힌 R이 죽은 적이 있고, 그는 그 기록을 지웠다", source: report }
+          - saga_note: { text: "경도현은 지운 기록이 있다. 배가 오는 밤에 쓸 수 있을지 모른다" }
+        partial:
+          - set_flag: sb3_medic_night
+          - belief: { fact: "경도현은 막사 이야기에 대답하지 않고 술잔을 비웠다. 손이 떨렸다", source: seen }
+        miss:
+          - set_flag: sb3_medic_night
+          - relation: { who: medic, axis: trust, delta: -1 }
+    - id: drink
+      label: 말없이 한 잔 받는다
+      effects:
+        - set_flag: sb3_medic_night
+        - relation: { who: medic, axis: affection, delta: 1 }

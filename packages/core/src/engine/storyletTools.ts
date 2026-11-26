@@ -19,7 +19,7 @@ import { prepareDisaster } from "./disasters.ts";
 import { nudgeAgenda } from "./agenda.ts";
 import { recentlyDeadComrade } from "./legacy.ts";
 import { setResolve, stepResolve } from "./resolve.ts";
-import { advanceSaga, endSaga, engageSaga, markSaga, noteSaga, recordSagaScene, type SagaEffectApplier } from "../rules/saga.ts";
+import { advanceSaga, endSaga, engageSaga, markSaga, noteSaga, recordSagaScene, SAGA_TAG, type SagaEffectApplier } from "../rules/saga.ts";
 import { captureNpc, capturePlayer, releasePlayer } from "./captivity.ts";
 import { onSpotted, ownOffense, threatStaysOnMiss } from "../rules/consequence.ts";
 import { rankName } from "../game/ranks.ts";
@@ -34,7 +34,7 @@ import { changeCondition, shakeNerves } from "./body.ts";
 import { disposition, neighbors } from "../sim/war.ts";
 import { createExtraCharacter } from "./extras.ts";
 import { EXTRA_CAST_PREFIX, dedupeAlias, storyletAllowed, inCrisis, isMature, storyletOf, WORLD_TAG } from "../story/storylets.ts";
-import { justHadStory, storyText } from "../rules/storySlot.ts";
+import { isMust, justHadStory, storyText } from "../rules/storySlot.ts";
 import {hereWithMe, placeById, storyIndoor, storySummonsTo, movePlayer, STEP_MINUTES, stepsBetween, whereIs, whereLabel, currentPlace, arrivalPlace, nearestRoad, knowsPlace, placeHint, PLACE_HINT_RUMOR_CHANCE } from "../rules/place.ts";
 import { improviseStorylet, lapseImprovSlot, openImprovSlot, shouldImprovise } from "./improvStory.ts";
 import { joinRole } from "../game/customStart.ts";
@@ -128,7 +128,8 @@ export function runStorylets(ctx: ToolContext, options: { urgentOnly?: boolean; 
   const eligible = eligibleStorylets(state, content).filter((s) => storyletAllowed(state, content, s, window, state.time, options));
   // 고르는 차례 (PT36 사용자 결정, 세 판 모두 새 길목 이야기 0번: 한 번뿐인 공통 이야기가 길목에서도 늘 먼저 뽑혔다):
   // ① 꼭 열려야 하는 이야기·시나리오(역할)의 한 번뿐인 이야기 → ② 지금 자리에 묶인 이야기(장소 종류·구역·임무 자리, 한 번뿐이든 되풀이든) → ③ 어디서나 열리는 공통 이야기(한 번뿐인 것 먼저)
-  const roleFixed = eligible.filter((s) => s.essential || (!s.repeatable && !s.tags.includes(WORLD_TAG)));
+  // 큰 이야기의 이야기(공통 규칙 24)는 꼭 열려야 할 때(시작 사건·기한 이틀 안의 등뼈)만 맨 앞 묶음에: 시나리오 이야기를 밀어내지 않게 (자동 플레이: 약탈조원 시나리오 이야기가 하나만 열렸다)
+  const roleFixed = eligible.filter((s) => isMust(state, s) || (!s.repeatable && !s.tags.includes(WORLD_TAG) && !s.tags.includes(SAGA_TAG)));
   const placed = eligible.filter((s) => !!s.when.place_kinds?.length || !!s.when.zones?.length || !!s.when.mission?.length);
   const worldFixed = eligible.filter((s) => !s.repeatable);
   const fixed = roleFixed.length ? roleFixed : placed.length ? placed : worldFixed;

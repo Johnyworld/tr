@@ -1,0 +1,776 @@
+# 큰 이야기 「남쪽의 배」: 4막 「사냥」·5막 「배가 오는 밤」·결말 뒤·계승자 (docs/saga-plan.md 11-4·11-6·12·13, sagas/south_ship.yaml)
+# 곁의 R은 배역 saga_marked. 4막 끝: sb_marked_hidden(지켜 냈다) · sb_marked_handed(넘겼다)
+# 5막 패: sb_card_lighthouse · sb_card_crane · sb_card_mijin · sb_card_hunter. 넘기는 쪽(sb_marked_handed·sb_daon_handed와 사냥꾼 편)은 「배를 지키는 자리」
+# 반쪽 결말: 대가 있는 성공이면 결말은 그대로 두고 무엇을 건졌는지(sb_half_saved)가 갈린다
+# 이야기는 사람을 죽이지 않는다 (원칙 3). 싸움은 전투 장치로
+
+# ── 4막 「사냥」 ─────────────────────────────
+- id: sb4_arm
+  title: 아는 사람의 팔뚝
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_hunt], marked: true }
+    indoor: "any"
+    flags_none: [sb4_arm]
+  cast:
+    marked: { saga_marked: true, afar: true }
+  setup: "{marked:이/가} 소매를 걷어 오래된 흉터를 보여 준다. \"작년 겨울에 물렸어. 다들 끝났다고 했는데, 열이 안 오르더라. 그게… 그거야? 다들 찾는다는 거.\""
+  ai_direction: 곁의 R이 자기가 R이라는 것을 이제야 짐작한다 (본인이 이미 알고 있었다면 오래 숨겨 온 것을 털어놓는 장면으로). 물리고도 열이 오르지 않은 사람이다. 사냥이 시작됐다는 소식이 돈다. 집결지의 막사 이야기를 알면 그 말로 이 사람을 설득하기 쉽다. 다짐이 없으면 이 사람을 지키겠다는 다짐이 생길 수 있다.
+  choices:
+    - id: tell
+      label: 사냥이 시작됐다고, 숨어야 한다고 말해 준다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb4_arm
+          - relation: { who: marked, axis: trust, delta: 2 }
+          - saga_note: { text: "{marked:이/가} R이다. 사냥이 시작됐다. 숨길 곳을 찾아야 한다" }
+        partial:
+          - set_flag: sb4_arm
+          - saga_note: { text: "{marked:이/가} R이다. 아직 믿지 못한다. 숨길 곳을 찾아야 한다" }
+        miss:
+          - set_flag: sb4_arm
+          - relation: { who: marked, axis: trust, delta: -1 }
+          - saga_note: { text: "{marked:은/는} 자기가 R이라는 말을 믿지 않는다. 사냥꾼들은 믿는다" }
+    - id: hide_truth
+      label: 아무 일 아니라고 감춘다
+      effects:
+        - set_flag: sb4_arm
+        - saga_note: { text: "{marked:이/가} R이다. 본인은 아직 모른다. 사냥이 시작됐다" }
+    - id: vow
+      label: 무슨 일이 있어도 지키겠다고 한다
+      effects:
+        - set_flag: sb4_arm
+        - relation: { who: marked, axis: affection, delta: 2 }
+        - resolve: { kind: protect, target: marked, n: 10, text: "{marked:을/를} 사냥에서 지킨다" }
+        - saga_note: { text: "{marked:을/를} 지키기로 했다. 숨길 곳을 찾아야 한다" }
+
+- id: sb4_needle
+  title: R을 가리는 바늘
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_hunt], spine: true, marked: true }
+    factions: [faction_c, faction_e, faction_b]
+    own_territory: true
+    indoor: "any"
+    flags_none: [sb_own_refuse, sb_marked_hidden, sb_marked_handed]
+  cast:
+    marked: { saga_marked: true, afar: true, enter: false }
+  setup: 거점 마당에 탁자가 놓이고, 남쪽 하사가 두고 간 바늘 상자가 열려 있다. 내일 아침 무리 전체가 손가락 피를 한 방울씩 낸다는 공고가 붙었다.
+  ai_direction: 우리 무리가 거래를 받았다. 내일 검사에서 곁의 R({marked})이 걸린다. 오늘 밤 안에 빼돌리거나, 바늘 상자를 바꿔치기하거나, 지켜볼 수 있다. 들키면 무리의 규율대로다.
+  choices:
+    - id: smuggle
+      label: 밤에 빼돌린다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: sb_marked_hidden
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "{marked:을/를} 빼돌렸다. 사냥은 끝나지 않았다. 배가 오는 밤이 다가온다" }
+        partial:
+          - set_flag: sb_marked_hidden
+          - deed: { summary: "무리의 검사를 앞두고 사람을 빼돌렸다", tags: [disobedience, mercy], severity: 2, privacy: semi_private }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "{marked:을/를} 빼돌렸지만 누군가 보았다. 배가 오는 밤이 다가온다" }
+        miss:
+          - set_flag: sb_marked_handed
+          - npc_depart: { who: marked }
+          - deed: { summary: "검사를 앞두고 사람을 빼돌리려다 들켰다", tags: [disobedience], severity: 2, privacy: public }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "빼돌리려다 들켰다. {marked:은/는} 북부두로 끌려갔다" }
+    - id: swap
+      label: 바늘 상자를 바꿔치기한다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: sb_marked_hidden
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "검사를 속였다. {marked:은/는} 무리 안에 남았다. 배가 오는 밤이 다가온다" }
+        partial:
+          - set_flag: sb_marked_hidden
+          - relation: { who: marked, axis: trust, delta: 1 }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "검사를 겨우 넘겼다. 의심하는 눈이 있다" }
+        miss:
+          - set_flag: sb_marked_handed
+          - npc_depart: { who: marked }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "바꿔치기가 들통났다. {marked:은/는} 북부두로 끌려갔다" }
+    - id: watch
+      label: 검사를 지켜본다
+      effects:
+        - set_flag: sb_marked_handed
+        - npc_depart: { who: marked }
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:은/는} 검사에 걸려 북부두로 끌려갔다. 배가 오는 밤에 실린다" }
+
+- id: sb4_needle_turned
+  title: R을 가리는 바늘
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_hunt], spine: true, marked: true }
+    factions: [faction_a, faction_d]
+    flags_all: [sb_own_accept]
+    flags_none: [sb_marked_hidden, sb_marked_handed]
+    own_territory: true
+    indoor: "any"
+  cast:
+    marked: { saga_marked: true, afar: true, enter: false }
+  setup: 버리지 않는다던 거점 마당에 탁자가 놓이고, 남쪽 하사가 두고 간 바늘 상자가 열려 있다. 내일 아침 무리 전체가 손가락 피를 낸다. 마당이 조용하다.
+  ai_direction: 원래는 거절했을 무리가 거래를 받았다 (주인공이 그렇게 말했거나 회의가 그렇게 갔다). 사람들은 서로 눈을 피한다. 곁의 R({marked})이 내일 걸린다.
+  choices:
+    - id: smuggle
+      label: 밤에 빼돌린다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: sb_marked_hidden
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "{marked:을/를} 빼돌렸다. 배가 오는 밤이 다가온다" }
+        partial:
+          - set_flag: sb_marked_hidden
+          - deed: { summary: "무리의 검사를 앞두고 사람을 빼돌렸다", tags: [disobedience, mercy], severity: 2, privacy: semi_private }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "{marked:을/를} 빼돌렸지만 누군가 보았다" }
+        miss:
+          - set_flag: sb_marked_handed
+          - npc_depart: { who: marked }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "빼돌리려다 들켰다. {marked:은/는} 북부두로 끌려갔다" }
+    - id: watch
+      label: 검사를 지켜본다
+      effects:
+        - set_flag: sb_marked_handed
+        - npc_depart: { who: marked }
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:은/는} 검사에 걸려 북부두로 끌려갔다" }
+
+- id: sb4_order
+  title: 넘기면 내 몫
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_hunt], marked: true }
+    in_faction: true
+    flags_all: [sb_own_accept]
+    flags_none: [sb_marked_hidden, sb_marked_handed, sb4_order]
+    indoor: "any"
+  cast:
+    boss: { commander: true, comes: true }
+    marked: { saga_marked: true, afar: true, enter: false }
+  setup: "{boss:이/가} 목소리를 낮춘다. \"네 곁에 하나 있다는 말이 있더라. 네가 데려오면 공은 네 거다. 남이 데려오면, 그땐 너도 같이 곤란해진다.\""
+  ai_direction: 상관이 곁의 R({marked})을 넘기라고 넌지시 명한다. 넘기면 공적이 오른다. 거부하면 불복종이 되고 관계가 무너진다. 시간을 버는 거짓말은 하루 이틀 통한다.
+  choices:
+    - id: hand
+      label: 데려가겠다고 한다
+      effects:
+        - set_flag: sb4_order
+        - set_flag: sb_marked_handed
+        - npc_depart: { who: marked }
+        - merit: 2
+        - deed: { summary: "곁의 사람을 집결지에 넘겼다", tags: [betrayal], severity: 3, privacy: semi_private }
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:을/를} 넘겼다. 배가 오는 밤에 실린다" }
+    - id: refuse
+      label: 못 하겠다고 한다
+      effects:
+        - set_flag: sb4_order
+        - relation: { who: boss, axis: trust, delta: -2 }
+        - deed: { summary: "곁의 R을 넘기라는 상관의 말을 거부했다", tags: [disobedience, loyalty], severity: 2, privacy: semi_private }
+        - saga_note: { text: "상관의 말을 거부했다. 사냥꾼들이 직접 올 것이다" }
+    - id: stall
+      label: 아직 찾는 중이라고 둘러댄다
+      check: deceive
+      outcomes:
+        success:
+          - set_flag: sb4_order
+          - saga_note: { text: "상관에게 시간을 벌었다. 그 사이 숨길 곳을 찾아야 한다" }
+        partial:
+          - set_flag: sb4_order
+          - relation: { who: boss, axis: trust, delta: -1 }
+          - saga_note: { text: "상관은 오래 기다려 주지 않을 것이다" }
+        miss:
+          - set_flag: sb4_order
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - saga_note: { text: "거짓말이 들통났다. 상관이 사람을 보낼 것이다" }
+
+- id: sb4_broker_offer
+  title: 넘기면 네 몫
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_hunt], marked: true }
+    in_faction: false
+    flags_none: [sb_marked_hidden, sb_marked_handed, sb4_order]
+    indoor: "any"
+  cast:
+    broker: { ids: [rs_pansu], afar: true }
+    marked: { saga_marked: true, afar: true, enter: false }
+  setup: "{broker:이/가} 장부를 탁 덮는다. \"곁에 하나 데리고 다니시죠. 북부두까지만 데려오세요. 무리 없는 분한테 이만한 벌이가 또 없어요.\""
+  ai_direction: 거간꾼이 곁의 R({marked})을 넘기면 탄을 주겠다고 한다. 무소속 주인공에게 사냥꾼 쪽의 문이 열리는 장면이다. 지킬 선 — 성적 착취 갈래는 내밀지 않는다.
+  choices:
+    - id: hand
+      label: 데려가겠다고 한다
+      effects:
+        - set_flag: sb4_order
+        - set_flag: sb_marked_handed
+        - npc_depart: { who: marked }
+        - give_item: { item: pistol_rounds, quantity: 6 }
+        - deed: { summary: "곁의 사람을 거간꾼에게 넘겼다", tags: [betrayal], severity: 3, privacy: private }
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:을/를} 넘겼다. 배가 오는 밤에 실린다" }
+    - id: refuse
+      label: 거절한다
+      effects:
+        - set_flag: sb4_order
+        - relation: { who: broker, axis: trust, delta: -1 }
+        - saga_note: { text: "거간꾼을 거절했다. 사냥꾼들이 직접 올 것이다" }
+
+- id: sb4_hunter_door
+  title: 사냥꾼이 문 앞에
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_hunt], spine: true, marked: true }
+    indoor: "any"
+    flags_none: [sb_marked_hidden, sb_marked_handed, sb4_door]
+    after_storylet: { id: sb4_arm, hours: 60 }
+  cast:
+    hunter: { ids: [sb_myeongcheol], afar: true }
+    marked: { saga_marked: true, afar: true, enter: false }
+  setup: "{hunter:이/가} 이번에는 혼자가 아니다. 뒤에 장대를 든 사람 둘. 모자를 벗지 않은 채 말한다. \"곁에 계신 분을 모셔 가야겠습니다. 저도 이게 마지막이었으면 합니다.\""
+  ai_direction: 함명철이 곁의 R({marked})을 데리러 왔다. 딸의 비밀을 알면(주인공의 믿음에 있으면) "딸 소식을 내가 알아봐 주겠다"는 말로 물러서게 할 수 있다 (교섭). 내쫓으면 싸움이 될 수 있다 (전투 장치). 이야기는 사람을 죽이지 않는다.
+  choices:
+    - id: hand
+      label: 넘긴다
+      effects:
+        - set_flag: sb4_door
+        - set_flag: sb_marked_handed
+        - npc_depart: { who: marked }
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:을/를} 넘겼다. 배가 오는 밤에 실린다" }
+    - id: daughter
+      label: 딸 소식을 대신 알아봐 주겠다고 한다
+      when: { flags_all: [sb_hunter_secret] }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb4_door
+          - set_flag: sb_hunter_turned
+          - set_flag: sb_marked_hidden
+          - relation: { who: hunter, axis: trust, delta: 2 }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "함명철이 물러섰다. 딸 소식을 알아봐 주기로 했다. 배가 오는 밤이 다가온다" }
+        partial:
+          - set_flag: sb4_door
+          - set_flag: sb_hunter_turned
+          - saga_note: { text: "함명철이 오늘은 물러섰다. 숨길 곳을 찾아야 한다" }
+        miss:
+          - set_flag: sb4_door
+          - relation: { who: hunter, axis: trust, delta: -1 }
+          - saga_note: { text: "함명철은 듣지 않았다. 다음엔 사람을 더 데려온다고 했다" }
+    - id: drive
+      label: 막아선다
+      check: intimidate
+      outcomes:
+        success:
+          - set_flag: sb4_door
+          - saga_note: { text: "사냥꾼들을 돌려보냈다. 숨길 곳을 찾아야 한다" }
+        partial:
+          - set_flag: sb4_door
+          - wound: { steps: 1, cause: "사냥꾼들과 몸싸움" }
+          - saga_note: { text: "몸싸움 끝에 사냥꾼들이 물러났다. 다음엔 더 많이 온다" }
+        miss:
+          - set_flag: sb4_door
+          - set_flag: sb_marked_handed
+          - npc_depart: { who: marked }
+          - wound: { steps: 1, cause: "사냥꾼들과 몸싸움" }
+          - saga_advance: { id: south_ship, to: act_ship }
+          - saga_note: { text: "막지 못했다. {marked:은/는} 북부두로 끌려갔다" }
+
+- id: sb4_hide
+  title: 숨을 곳
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_hunt], spine: true, marked: true }
+    indoor: "any"
+    flags_all: [sb4_arm]
+    flags_none: [sb_marked_hidden, sb_marked_handed]
+    after_storylet: { id: sb4_arm, hours: 4 }
+  cast:
+    marked: { saga_marked: true, afar: true }
+  setup: "{marked:이/가} 짐을 꾸린 채 묻는다. \"어디로 가?\""
+  ai_direction: 숨길 곳을 정하는 장면이다. 하얀매 진료소는 거래를 거절했다 (사람을 팔지 않는다). 북부두 냉동 창고는 문을 닫으면 빛도 소리도 새지 않는다. 장터 밤배로 섬에 보내는 길도 있다 (섬이 R을 어떻게 쓰는지 아는 사람에게는 끔찍한 선택이다). 고른 곳으로 데려가는 길은 GM이 장면으로 연출한다.
+  choices:
+    - id: clinic
+      label: 하얀매 진료소에 맡긴다
+      effects:
+        - set_flag: sb_marked_hidden
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:을/를} 하얀매 진료소에 숨겼다. 배가 오는 밤이 다가온다", zone: d_clinic }
+    - id: cold_store
+      label: 북부두 냉동 창고에 숨긴다
+      effects:
+        - set_flag: sb_marked_hidden
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:을/를} 북부두 냉동 창고에 숨겼다. 배가 그 부두에 닿는다", zone: south_port }
+    - id: isle
+      label: 장터 밤배로 섬에 보낸다
+      effects:
+        - set_flag: sb_marked_hidden
+        - set_flag: sb_marked_isle
+        - npc_depart: { who: marked }
+        - saga_advance: { id: south_ship, to: act_ship }
+        - saga_note: { text: "{marked:을/를} 밤배로 섬에 보냈다. 배가 오는 밤이 다가온다" }
+
+# ── 5막 「배가 오는 밤」 ─────────────────────────────
+- id: sb5_notice
+  title: 조명탄 예고
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_ship] }
+    indoor: "any"
+    flags_none: [sb5_notice]
+  setup: 해가 질 무렵, 남쪽에서 붉은 조명탄 하나가 올라 오래 떠 있다가 떨어진다. 사람들이 수군댄다. "사흘 뒤래. 북부두. 받은 데들은 벌써 사람을 묶어서 내려보낸다더라."
+  ai_direction: 배가 사흘 뒤 밤 북부두에 닿는다는 신호와 소문이다. 거래를 받은 무리들이 R을 호송하기 시작했다. 막으려는 사람에게는 준비할 시간이, 넘기려는 사람에게는 지킬 자리가 있다.
+  choices:
+    - id: note
+      label: 남쪽 하늘을 오래 본다
+      effects:
+        - set_flag: sb5_notice
+        - belief: { fact: "남쪽 하늘에 조명탄이 올랐다. 사흘 뒤 밤 배가 가람항 북부두에 닿고, 받은 무리들이 R을 묶어 내려보낸다고 한다", source: rumor }
+        - saga_note: { text: "사흘 뒤 밤, 배가 닿는다. 전날 행렬이 북부두로 내려간다 → 가람항 북부두", zone: south_port }
+
+- id: sb5_column
+  title: 부두로 가는 행렬
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_ship] }
+    zones: [south_fields, south_port, e_market]
+    indoor: false
+    flags_all: [sb5_notice]
+    flags_none: [sb5_column]
+    after_storylet: { id: sb5_notice, hours: 24 }
+  cast:
+    hunter: { ids: [sb_myeongcheol], afar: true, optional: true }
+    sergeant: { ids: [sb_mijin], afar: true, optional: true }
+  setup: 손목이 한 줄로 묶인 사람들이 둑길을 따라 남쪽으로 걷는다. 소매가 걷힌 팔뚝마다 잉크 자국. 앞장선 사람이 손전등으로 길을 비춘다. 행렬 끝에서 남쪽 하사가 묶인 줄을 느슨하게 고쳐 맨다.
+  ai_direction: 전날의 행렬이다. 함명철이 있으면 앞장서 있다. 편미진이 있으면 끝에서 묶인 사람들을 챙긴다. 끌려간 곁의 R이나 계다온이 행렬에 있을 수 있다 (상태의 사람들). 오늘 할 수 있는 일은 하나다. 내일 밤에 쓸 패를 하나 얻는 것이다.
+  choices:
+    - id: mijin
+      label: 하사에게 다가가 내일 밤 일을 묻는다
+      when: { flags_all: [sb3_mijin_talk] }
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: sb5_column
+          - set_flag: sb_card_mijin
+          - saga_note: { text: "편미진이 내일 밤 조명탄을 늦게 쏘겠다고 했다. 패 하나" }
+        partial:
+          - set_flag: sb5_column
+          - saga_note: { text: "편미진은 대답하지 않았지만 고개를 끄덕였다" }
+        miss:
+          - set_flag: sb5_column
+    - id: hunter
+      label: 함명철에게 행렬 안의 얼굴들을 보라고 한다
+      when: { flags_any: [sb_hunter_secret, sb_hunter_turned] }
+      effects:
+        - set_flag: sb5_column
+        - set_flag: sb_card_hunter
+        - saga_note: { text: "함명철이 행렬 안의 얼굴을 하나씩 보기 시작했다. 패 하나" }
+    - id: follow
+      label: 행렬을 따라가 부두의 길을 익힌다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: sb5_column
+          - set_flag: sb_card_crane
+          - saga_note: { text: "부두의 길을 익혔다. 녹슨 크레인으로 배 대는 자리를 막을 수 있겠다. 패 하나" }
+        partial:
+          - set_flag: sb5_column
+          - saga_note: { text: "부두 가까이까지 따라갔다. 내일 밤 그 길로 간다" }
+        miss:
+          - set_flag: sb5_column
+          - wound: { steps: 1, cause: "행렬의 감시에게 걸려 맞았다" }
+    - id: watch
+      label: 멀리서 지켜본다
+      effects:
+        - set_flag: sb5_column
+
+- id: sb5_lighthouse
+  title: 빨간 등대의 자물쇠
+  tags: [saga]
+  when:
+    saga: { id: south_ship, acts: [act_ship] }
+    zones: [south_port]
+    indoor: false
+    place_kinds: [watch]
+    flags_none: [sb_card_lighthouse, sb5_lighthouse]
+  setup: 방파제 끝 빨간 등대. 녹슨 자물쇠가 걸린 문 너머로 계단이 보인다. 등대 꼭대기의 반사경은 깨지지 않았다.
+  ai_direction: 배가 닿는 밤, 등대에 불을 켜거나 반사경을 돌리면 배의 눈을 흐릴 수 있다. 자물쇠를 따는 것은 판정이다. 연료가 있으면 불을 지필 수 있다.
+  choices:
+    - id: pick
+      label: 자물쇠를 딴다
+      check: improvise
+      outcomes:
+        success:
+          - set_flag: sb5_lighthouse
+          - set_flag: sb_card_lighthouse
+          - saga_note: { text: "빨간 등대 문을 열어 두었다. 배가 닿는 밤에 불을 켤 수 있다. 패 하나" }
+        partial:
+          - set_flag: sb5_lighthouse
+          - set_flag: sb_card_lighthouse
+          - zone_noise: 1
+          - saga_note: { text: "등대 문을 열었지만 소리가 컸다. 패 하나" }
+        miss:
+          - set_flag: sb5_lighthouse
+    - id: leave
+      label: 그냥 둔다
+      effects:
+        - set_flag: sb5_lighthouse
+
+- id: sb5_flares
+  title: 조명탄이 오를 때
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_ship], spine: true }
+    zones: [south_port]
+    indoor: false
+    segments: [night]
+    flags_none: [sb5_flares]
+    after_storylet: { id: sb5_notice, hours: 48 }
+  cast:
+    hunter: { ids: [sb_myeongcheol], optional: true }
+    jisu: { ids: [sb_jisu], optional: true }
+  setup: 남쪽 하늘에 조명탄이 오른다. 붉은 빛 아래 부두가 환하게 드러난다. 묶인 사람들이 계선주 곁에 무릎 꿇려 있다. 바다 쪽 어둠에서 배의 엔진 소리가 커진다.
+  ai_direction: 첫 박자다. 함명철이 있으면, 묶인 줄 안에서 짙은 눈썹의 앳된 여자(함지수)를 보고 굳는다. 딸이다. 집결지는 딸 소식을 미끼로 그를 부렸다. 그는 그 자리에서 편을 바꾸거나 무너진다 (함명철의 패가 있으면 바꾼다). 끌려온 곁의 R이나 계다온이 줄 안에 있으면 지금이 빼낼 첫 기회다. 군대는 배의 불빛과 확성기 소리로만.
+  choices:
+    - id: pull_out
+      label: 배가 닿기 전에 아는 얼굴을 줄에서 빼낸다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: sb5_flares
+          - set_flag: sb_half_saved
+          - saga_note: { text: "줄에서 아는 얼굴을 빼냈다. 배의 불빛이 부두에 닿는다" }
+        partial:
+          - set_flag: sb5_flares
+          - set_flag: sb_half_saved
+          - wound: { steps: 1, cause: "부두의 감시에게 걸렸다" }
+          - saga_note: { text: "빼냈지만 다쳤다. 배의 불빛이 부두에 닿는다" }
+        miss:
+          - set_flag: sb5_flares
+          - saga_note: { text: "가까이 가지 못했다. 배의 불빛이 부두에 닿는다" }
+    - id: wait
+      label: 배가 닿을 때를 기다린다
+      effects:
+        - set_flag: sb5_flares
+        - saga_note: { text: "배의 불빛이 부두에 닿는다" }
+
+- id: sb5_ship
+  title: 배가 닿을 때
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_ship], spine: true }
+    zones: [south_port]
+    indoor: false
+    flags_all: [sb5_flares]
+    flags_none: [sb_marked_handed, sb5_guard]
+  cast:
+    medic: { ids: [sb_dohyeon], afar: true, optional: true }
+    sergeant: { ids: [sb_mijin], afar: true, optional: true }
+  setup: 배가 부두 끝에 옆구리를 댄다. 확성기에서 영어와 한국어가 번갈아 나온다. "승선 인원, 줄 서." 경도현이 명단을 들고 계선주 옆에 섰다. 하사가 조명탄 권총을 다시 장전한다.
+  ai_direction: "둘째 박자, 결말이 갈린다. 막는 방법은 넷: 등대 불과 크레인으로 배의 접안을 흐린다 (등대·크레인 패가 있으면 쉽다), 경도현의 지운 기록으로 흔든다 (그 비밀을 알면), 편미진을 설득한다 (관계와 패), 힘으로 (전투 장치). 성공하면 배를 막는다. 대가 있는 성공이면 반쪽이다: 결말은 정해진 대로 두고 무엇을 건졌는지가 갈린다. 지켜보거나 실패하면 배는 R을 싣고 떠난다. 결말에서 배가 어디로 가는지(섬 진료동과 더 남쪽) 경도현이나 편미진의 입으로 드러난다."
+  choices:
+    - id: lighthouse
+      label: 등대 불을 켜고 크레인을 돌려 접안을 흐린다
+      when: { flags_any: [sb_card_lighthouse, sb_card_crane] }
+      check: improvise
+      outcomes:
+        success:
+          - give_item: { item: sb_flare_pistol, quantity: 1 }
+          - saga_end: { id: south_ship, ending: blocked }
+        partial:
+          - set_flag: sb_half_saved
+          - wound: { steps: 1, cause: "부두에서 쏟아진 총탄" }
+          - saga_end: { id: south_ship, ending: blocked }
+        miss:
+          - saga_end: { id: south_ship, ending: handed }
+    - id: lever
+      label: 경도현에게 지운 기록을 꺼낸다
+      when: { flags_all: [sb_medic_secret] }
+      check: intimidate
+      outcomes:
+        success:
+          - give_item: { item: sb_flare_pistol, quantity: 1 }
+          - saga_end: { id: south_ship, ending: blocked }
+        partial:
+          - set_flag: sb_half_saved
+          - saga_end: { id: south_ship, ending: handed }
+        miss:
+          - saga_end: { id: south_ship, ending: handed }
+    - id: sergeant
+      label: 하사에게 조명탄을 쏘지 말라고 한다
+      when: { flags_any: [sb_card_mijin, sb3_mijin_talk] }
+      check: persuade
+      outcomes:
+        success:
+          - give_item: { item: sb_flare_pistol, quantity: 1 }
+          - saga_end: { id: south_ship, ending: blocked }
+        partial:
+          - set_flag: sb_half_saved
+          - saga_end: { id: south_ship, ending: handed }
+        miss:
+          - saga_end: { id: south_ship, ending: handed }
+    - id: force
+      label: 계선주의 밧줄을 끊고 싸운다
+      check: fight
+      outcomes:
+        success:
+          - saga_end: { id: south_ship, ending: blocked }
+        partial:
+          - set_flag: sb_half_saved
+          - wound: { steps: 2, cause: "부두에서 쏟아진 총탄" }
+          - saga_end: { id: south_ship, ending: handed }
+        miss:
+          - wound: { steps: 2, cause: "부두에서 쏟아진 총탄" }
+          - saga_end: { id: south_ship, ending: handed }
+    - id: watch
+      label: 지켜본다
+      effects:
+        - saga_end: { id: south_ship, ending: handed }
+
+- id: sb5_guard
+  title: 배를 지키는 자리
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_ship], spine: true }
+    zones: [south_port]
+    indoor: false
+    flags_all: [sb5_flares]
+    flags_any: [sb_marked_handed]
+    flags_none: [sb5_guard]
+  setup: 배가 부두 끝에 옆구리를 댄다. 부두 입구 쪽에서 고함과 함께 불빛이 몰려온다. 배를 막으러 온 사람들이다. 주인공은 묶인 줄과 배 사이, 지키는 쪽에 서 있다.
+  ai_direction: 넘기는 쪽 주인공의 클라이맥스다. 막으러 온 사람들은 거래를 거절한 무리의 사람들이거나, 풀려난 계다온과 그를 따르는 사람들이다. 지키면 배는 떠난다. 막판에 돌아서면 막는 쪽에 선다. 이야기는 사람을 죽이지 않는다. 싸움은 전투 장치로.
+  choices:
+    - id: hold
+      label: 줄을 지킨다
+      check: fight
+      outcomes:
+        success:
+          - set_flag: sb5_guard
+          - give_item: { item: sb_r_roster, quantity: 1 }
+          - saga_end: { id: south_ship, ending: handed }
+        partial:
+          - set_flag: sb5_guard
+          - wound: { steps: 1, cause: "부두의 몸싸움" }
+          - give_item: { item: sb_r_roster, quantity: 1 }
+          - saga_end: { id: south_ship, ending: handed }
+        miss:
+          - set_flag: sb5_guard
+          - wound: { steps: 2, cause: "부두의 몸싸움" }
+          - saga_end: { id: south_ship, ending: blocked }
+    - id: turn
+      label: 막판에 돌아서서 밧줄을 끊는다
+      check: improvise
+      outcomes:
+        success:
+          - set_flag: sb5_guard
+          - deed: { summary: "배를 지키다 돌아서서 R들을 풀었다", tags: [betrayal, mercy], severity: 2, privacy: public }
+          - saga_end: { id: south_ship, ending: blocked }
+        partial:
+          - set_flag: sb5_guard
+          - set_flag: sb_half_saved
+          - wound: { steps: 1, cause: "부두에서 쏟아진 총탄" }
+          - saga_end: { id: south_ship, ending: handed }
+        miss:
+          - set_flag: sb5_guard
+          - wound: { steps: 2, cause: "부두에서 쏟아진 총탄" }
+          - saga_end: { id: south_ship, ending: handed }
+    - id: step_back
+      label: 물러선다
+      effects:
+        - set_flag: sb5_guard
+        - saga_end: { id: south_ship, ending: handed }
+
+- id: sb5_daon
+  title: 다온의 선택
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, ending: [blocked, handed] }
+    zones: [south_port]
+    indoor: false
+    flags_none: [sb5_daon]
+  cast:
+    daon: { ids: [sb_daon], afar: true }
+  setup: "부두 끝에서 {daon:이/가} 떠나는 배를, 또는 멈춘 배를 본다. \"솔이가 저 배를 탔어. 한 달 전에. 어디로 가는지 이제 알았으니까…\" 발이 물가로 한 걸음 나간다."
+  ai_direction: 계다온의 선택이다. 동생을 따라 배에 오르려 한다 (막은 결말이면 다음 배를 기다리겠다고, 떠난 결말이면 마지막 줄에 서겠다고). 붙잡으면 남는다. 보내 주면 세계에서 떠나고, 다음 큰 이야기의 씨앗이 된다. 주인공은 따라가지 않는다.
+  choices:
+    - id: hold
+      label: 붙잡는다
+      effects:
+        - set_flag: sb5_daon
+        - relation: { who: daon, axis: affection, delta: 2 }
+    - id: let_go
+      label: 보내 준다
+      effects:
+        - set_flag: sb5_daon
+        - set_flag: sb_daon_sailed
+        - npc_depart: { who: daon }
+        - belief: { fact: "계다온이 동생을 찾아 배에 올랐다. 배는 섬 진료동과 더 남쪽으로 갈린다고 했다", source: seen }
+
+# ── 결말 뒤 ─────────────────────────────
+- id: sbe_port_people
+  title: 부두에 남은 사람들
+  tags: [saga]
+  when:
+    saga: { id: south_ship, ending: [blocked] }
+    zones: [south_port, e_market, south_fields]
+    indoor: "any"
+    flags_none: [sbe_port_people]
+  cast:
+    r: { extra: refugee, label: 손목에 묶였던 자국이 있는 남자 }
+  setup: "{r:이/가} 부두 쪽에서 올라와 길을 묻는다. 손목에 묶였던 자국이 아직 붉다. \"여기서 어디로 가야 사람이 받아 줍니까. 우리 같은 사람도.\""
+  ai_direction: 배를 막은 밤에 풀려난 R이다. 갈 곳이 없다. 받아 줄 무리를 알려 주거나, 함께 다니거나, 먹을 것을 나눠 줄 수 있다. 배를 막은 세계의 얼굴이다.
+  choices:
+    - id: guide
+      label: 받아 줄 만한 곳을 알려 준다
+      effects:
+        - set_flag: sbe_port_people
+        - relation: { who: r, axis: trust, delta: 2 }
+    - id: share
+      label: 먹을 것을 나눠 준다
+      effects:
+        - set_flag: sbe_port_people
+        - relation: { who: r, axis: affection, delta: 2 }
+
+- id: sbe_no_serum
+  title: 혈청이 끊긴 겨울
+  tags: [saga]
+  when:
+    saga: { id: south_ship, ending: [blocked] }
+    zones: [e_market, d_clinic]
+    indoor: "any"
+    flags_none: [sbe_no_serum]
+  setup: 좌판의 약장 칸이 비어 있다. 물린 아들을 업은 여자가 상인 앞에서 운다. "혈청 말이에요. 한 달 전엔 있었잖아요."
+  ai_direction: 배를 막은 값이다. 장터에 혈청이 끊겼다 (시스템이 상인의 물건을 바꾸었다). 탓하지도 위로하지도 않는다. 주인공이 지닌 혈청이 있으면 내줄 수 있다.
+  choices:
+    - id: give
+      label: 지닌 혈청을 내준다
+      when: { has_items_any: [serum, mil_serum] }
+      effects:
+        - set_flag: sbe_no_serum
+        - take_item: { item: mil_serum, quantity: 1 }
+        - deed: { summary: "물린 아이에게 혈청을 내주었다", tags: [mercy], severity: 1, privacy: public }
+    - id: walk
+      label: 지나간다
+      effects:
+        - set_flag: sbe_no_serum
+        - body: { track: nerves, delta: 1 }
+
+- id: sbe_empty_bed
+  title: 빈 침상
+  tags: [saga]
+  when:
+    saga: { id: south_ship, ending: [handed] }
+    indoor: true
+    place_kinds: [sleep]
+    flags_none: [sbe_empty_bed]
+  setup: 누군가 쓰던 침상이 비어 있다. 개켜 둔 담요 위에 숨겨 둔 비상식량 한 봉지. 먹을 것을 숨겨 두던 버릇이 남긴 것이다.
+  ai_direction: 배가 떠난 뒤의 장면이다. 넘겨진 사람(곁의 R 또는 계다온)의 자리다. 담담하게, 늘어놓지 않는다.
+  choices:
+    - id: keep
+      label: 비상식량을 챙긴다
+      effects:
+        - set_flag: sbe_empty_bed
+        - give_item: { item: dry_ration, quantity: 1 }
+    - id: leave
+      label: 그대로 둔다
+      effects:
+        - set_flag: sbe_empty_bed
+        - body: { track: nerves, delta: 1 }
+
+- id: sbe_cheap_serum
+  title: 싸진 혈청
+  tags: [saga]
+  when:
+    saga: { id: south_ship, ending: [handed] }
+    zones: [e_market]
+    indoor: false
+    flags_none: [sbe_cheap_serum]
+  setup: 좌판마다 군용 앰플이 줄지어 놓였다. 상인이 웃는다. "남쪽에서 한 상자씩 들어와요. 이제 물려도 걱정 없지." 앰플 바닥마다 기계로 찍힌 번호.
+  ai_direction: 배가 떠난 값이다. 장터에 군용 혈청이 흔해졌다. 번호의 뜻을 아는 사람에게만 무겁다.
+  choices:
+    - id: look
+      label: 앰플 바닥의 번호를 하나씩 읽는다
+      effects:
+        - set_flag: sbe_cheap_serum
+        - belief: { fact: "장터에 군용 혈청이 흔해졌다. 앰플 바닥마다 막사 침대 번호가 찍혀 있다", source: seen }
+    - id: walk
+      label: 지나간다
+      effects:
+        - set_flag: sbe_cheap_serum
+
+# ── 계승자 (2~5막) ─────────────────────────────
+- id: sbh_blood
+  title: 앞사람의 수첩
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_blood], successor: true }
+    indoor: "any"
+  setup: 짐 속에서 낯선 손글씨의 쪽지가 나온다. 누가 끼워 둔 것인지 모른다. "혈청은 어디서 오나. 앰플 번호, 시립병원 명부, 남쪽에서 온 사람." 그 아래 지워진 줄들.
+  ai_direction: 앞 주인공이 맞춰 보던 조각들이 계승자에게 닿는 장면이다 (쪽지는 앞사람을 알던 누군가가 건넸다). 계승자는 이 일을 모른다.
+  choices:
+    - id: read
+      label: 쪽지를 읽는다
+      effects:
+        - saga_note: { text: "앞사람이 쫓던 일: 혈청이 어디서 오는가. 옛 시립병원 명부와 장터의 밤배를 보라고 적혀 있다", zone: hospital_ruins }
+
+- id: sbh_offer
+  title: 앞사람이 듣던 소문
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_offer], successor: true }
+    indoor: "any"
+  setup: 지나가는 사람들이 남쪽 군의관 이야기를 한다. 그중 하나가 주인공을 보고 말을 멈춘다. "그 일 말이야, 전에 당신 같은 사람이 캐고 다녔는데."
+  ai_direction: 계승자에게 3막을 잇는 장면이다. 군의관이 장터에서 무리마다 거래를 건다는 것, 앞사람이 그 일을 캐고 다녔다는 것까지만.
+  choices:
+    - id: listen
+      label: 듣는다
+      effects:
+        - saga_note: { text: "남쪽 군의관이 장터에서 무리마다 R을 사겠다고 거래를 건다. 앞사람이 그 일을 캐고 다녔다", zone: e_market }
+
+- id: sbh_hunt
+  title: 앞사람이 숨기던 사람
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_hunt], successor: true }
+    indoor: "any"
+  setup: 누군가 문틈으로 쪽지를 밀어 넣는다. "그 사람이 지키던 사람이 쫓기고 있어요. 도와줄 사람이 이제 없어요."
+  ai_direction: 계승자에게 4막을 잇는 장면이다. 앞 주인공이 지키던 곁의 R이 쫓기고 있다. 누가 그 사람인지는 이야기가 드러낸다.
+  choices:
+    - id: read
+      label: 쪽지를 읽는다
+      effects:
+        - saga_note: { text: "앞사람이 지키던 R이 사냥꾼들에게 쫓기고 있다고 한다" }
+
+- id: sbh_ship
+  title: 앞사람이 기다리던 밤
+  tags: [saga]
+  essential: true
+  when:
+    saga: { id: south_ship, acts: [act_ship], successor: true }
+    indoor: "any"
+  setup: 남쪽 하늘에 조명탄 하나가 오른다. 곁의 누군가 중얼거린다. "그 사람이 기다리던 게 저거였지. 북부두에 배가 온다고."
+  ai_direction: 계승자에게 5막을 잇는 장면이다. 사흘 뒤 밤 배가 북부두에 닿는다는 것, 앞 주인공이 그 밤을 기다렸다는 것.
+  choices:
+    - id: look
+      label: 남쪽을 본다
+      effects:
+        - saga_note: { text: "사흘 뒤 밤, 배가 북부두에 닿는다. 앞사람이 기다리던 밤이다 → 가람항 북부두", zone: south_port }

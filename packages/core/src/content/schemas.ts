@@ -322,6 +322,8 @@ export function createContentSchemas(s: Scenario) {
     start_inventory: z.array(contentIdSchema).default([]),
     /** 사망 후 이 인물로 이어서 플레이할 수 있는지 */
     playable: z.boolean().default(false),
+    /** 처음에는 도시에 없다 (큰 이야기의 사람, 공통 규칙 24): 큰 이야기가 그 막에서 들인다 (saga arrive) */
+    offstage: z.boolean().optional(),
     /** 상인 (기획서 4.8): 날마다 이만큼까지 다시 채운다, 흥정할 때 값에 곱한다 */
     merchant: z
       .strictObject({
@@ -1375,6 +1377,8 @@ export function createContentSchemas(s: Scenario) {
     }),
     /** 정해 둔 사람 (배역 key → 인물 id). 세계 쪽 사건·결말의 효과가 who로 부른다 */
     cast: z.record(contentIdSchema, contentIdSchema).default({}),
+    /** 문이 열릴 때 도시에 들어오는 사람 (cast key, offstage였던 사람) */
+    arrive: z.array(contentIdSchema).default([]),
     /** 곁의 R을 고르는 막 (그 막이 시작될 때), 가까운 사람이 없을 때 대신할 배역 key */
     mark: z.strictObject({ at: contentIdSchema, fallback: contentIdSchema.optional() }).optional(),
     acts: z
@@ -1387,6 +1391,8 @@ export function createContentSchemas(s: Scenario) {
           /** 이 막의 GM 지침 한 단락 */
           gm: z.string().min(1),
           days: z.number().positive(),
+          /** 이 막이 시작될 때 도시에 들어오는(돌아오는) 사람 (cast key 또는 marked). 떠나 있던 사람만, 죽은 사람은 아니다 */
+          arrive: z.array(contentIdSchema).default([]),
           /** 다음 막 (없으면 마지막 막) */
           next: contentIdSchema.optional(),
           /** 기한을 넘기면 일어나는 세계 쪽 사건. 마지막 막이면 ending으로 끝난다 */

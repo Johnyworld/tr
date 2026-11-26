@@ -912,6 +912,8 @@ export function checkSagas(content: Content): string[] {
     }
     for (const [key, id] of Object.entries(saga.cast)) if (!content.npcs[id]) problems.push(`${at}.cast.${key}: 없는 인물 ${id}`);
     if (saga.mark && !acts.includes(saga.mark.at)) problems.push(`${at}.mark.at: 없는 막 ${saga.mark.at}`);
+    for (const key of [...saga.arrive, ...saga.acts.flatMap((a) => a.arrive)]) if (key !== "marked" && !saga.cast[key]) problems.push(`${at}: arrive의 배역 ${key}가 cast에 없다`);
+    for (const [key, id] of Object.entries(saga.cast)) if (content.npcs[id]?.offstage && !saga.arrive.includes(key) && !saga.acts.some((a) => a.arrive.includes(key))) problems.push(`${at}.cast.${key}: offstage인 사람은 arrive로 들인다`);
     if (saga.mark?.fallback && !saga.cast[saga.mark.fallback]) problems.push(`${at}.mark.fallback: cast에 없는 배역 ${saga.mark.fallback}`);
     for (const n of saga.notes) {
       if (n.zone && !content.locations[n.zone]) problems.push(`${at}.notes.${n.flag}: 없는 구역 ${n.zone}`);

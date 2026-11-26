@@ -217,3 +217,34 @@ describe("PT38 고침", () => {
     expect(offerStillOpen(real, "c_east_probe", "faction_c", { ...owners, a_east_post: { owner: "faction_c" } })).toBe(false);
   });
 });
+
+describe("PT39 고침", () => {
+  it("거점을 잃으면 자리 없는 일감이 빠지고, 붙잡아 둔 사람이 없으면 심문 일감이 빠진다", async () => {
+    const { offerStillOpen } = await import("../game/missions.ts");
+    const { loadRealContent } = await import("../testing.ts");
+    const real = loadRealContent();
+    const owners = Object.fromEntries(Object.entries(real.locations).map(([id, l]) => [id, { owner: l.owner ?? null }]));
+    const noWhere = Object.values(real.missions).find((m) => !m.where && real.roles.role_a_squad_leader!.missions.includes(m.id))!.id;
+    expect(offerStillOpen(real, noWhere, "faction_a", owners)).toBe(true);
+    expect(offerStillOpen(real, noWhere, "faction_a", { ...owners, a_base: { owner: null } })).toBe(false);
+    expect(offerStillOpen(real, "a_of_prisoner", "faction_a", owners, 0)).toBe(false);
+    expect(offerStillOpen(real, "a_of_prisoner", "faction_a", owners, 1)).toBe(true);
+  });
+
+  it("정해진 상관이 죽으면 같은 무리에서 바로 위 계급인 사람이 상관이 된다", async () => {
+    const { commanderOf } = await import("../game/missions.ts");
+    const { loadRealContent } = await import("../testing.ts");
+    const real = loadRealContent();
+    const role = real.roles.role_c_raider!;
+    const boss = role.commander!;
+    const characters: Record<string, { dead: boolean; rank?: string; factionId?: string | null }> = { me: { dead: false, rank: role.rank, factionId: role.faction } };
+    for (const [id, n] of Object.entries(real.npcs)) characters[id] = { dead: false, rank: n.rank, factionId: n.faction };
+    const state = { playerId: "me", roleId: "role_c_raider", characters };
+    expect(commanderOf(state, real)).toBe(boss);
+    characters[boss]!.dead = true;
+    const next = commanderOf(state, real);
+    expect(next).not.toBeNull();
+    expect(next).not.toBe(boss);
+    expect(characters[next!]!.factionId).toBe(role.faction);
+  });
+});

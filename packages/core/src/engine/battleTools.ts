@@ -65,7 +65,8 @@ export function playerInvolvement(state: GameState, content: Content, spec: Clas
     if (garrisonAt(state, spec, content) <= 0) return null;
     return "defense";
   }
-  if (spec.attacker === player.factionId && ownedBy(state, zone, player.factionId) && neighbors(content, spec.zone).includes(zone)) {
+  // 공격 쪽: 그 구역과 맞닿은 우리 땅에 있거나, 공세 대상 구역 안에 이미 들어가 있으면 (PT37·39 약탈조원: 대상 구역에서 우리 22명과 함께 있었는데 화면 밖에서 끝났다)
+  if (spec.attacker === player.factionId && (zone === spec.zone || (ownedBy(state, zone, player.factionId) && neighbors(content, spec.zone).includes(zone)))) {
     return "attack";
   }
   return null;

@@ -250,12 +250,21 @@ export function riskyMission(m: { armed?: boolean | undefined; where?: string | 
  * 아침에 낸 일감이 아직 맞는가 (PT38 분대장: 동쪽 초소가 넘어간 뒤에도 그날의 "초소 증원"을 받아 적 땅에서 기한이 지났다).
  * 우리 땅이던 임무 자리를 빼앗겼거나, 노리던 구역(target)이 이미 우리 땅이면 그날의 일감에서 빠진다
  */
-export function offerStillOpen(content: Content, templateId: string, factionId: string | null | undefined, owners: Record<string, { owner: string | null } | undefined>): boolean {
+/** 그 무리가 붙잡아 둔 산 사람 수 */
+export function captivesOf(state: { characters: Record<string, { dead: boolean; captive?: Held | null }> }, factionId: string | null | undefined): number {
+  if (!factionId) return 0;
+  return Object.values(state.characters).filter((c) => !c.dead && heldOf(c)?.by === factionId).length;
+}
+
+export function offerStillOpen(content: Content, templateId: string, factionId: string | null | undefined, owners: Record<string, { owner: string | null } | undefined>, captives = 0): boolean {
   const m = content.missions[templateId];
   if (!m || !factionId) return !!m;
+  if (m.needs_captive && captives <= 0) return false;
   if (m.target && owners[m.target]?.owner === factionId) return false;
   const where = m.where;
-  if (!where || where === "outside" || where === "near" || where === "enemy") return true;
+  // 자리가 없는 일은 거점의 일이다: 거점을 잃었으면(불타 무너짐 등) 낼 수 없다 (PT39 분대장: 불탄 거점의 보급 창고 경비가 편성됐다)
+  if (!where) return Object.values(content.locations).some((l) => l.kind === "base" && owners[l.id]?.owner === factionId);
+  if (where === "outside" || where === "near" || where === "enemy") return true;
   return (Array.isArray(where) ? where : [where]).every((z) => content.locations[z]?.owner !== factionId || owners[z]?.owner === factionId);
 }
 
@@ -366,14 +375,18 @@ export function commanderOf(
 ): string | null {
   const id = content.roles[state.roleId]?.commander;
   const usable = (cid: string) => cid !== state.playerId && !!state.characters[cid] && !state.characters[cid]!.dead && !state.characters[cid]!.away && !heldOf(state.characters[cid]!);
-  if (!id || !usable(id)) return null;
+  if (!id) return null;
+  // 정해진 상관이 죽었으면 같은 무리에서 바로 위 계급인 사람이 상관이 된다 (PT39 약탈조원 [막힘]: 상관이 공세에서 죽은 뒤 사흘 동안 임무·진급이 막혔다). 잠깐 비운 것(나가 있음·붙잡힘)은 돌아올 때까지 없다
+  const fallen = !!state.characters[id]?.dead;
+  if (!fallen && !usable(id)) return null;
   // 진급해서 상관과 같은 계급이 되면, 같은 무리에서 바로 위 계급인 사람이 상관이다 (플레이 테스트 4)
   const ladder = content.scenario?.rank_ladder;
   const me = state.characters[state.playerId];
+  if (fallen && !ladder) return null;
   if (ladder && me) {
     const level = (rank?: string) => ladder.find((r) => r.id === rank)?.level ?? 0;
     const mine = level(me.rank);
-    if (level(state.characters[id]!.rank) <= mine) {
+    if (fallen || level(state.characters[id]!.rank) <= mine) {
       // 그 계급으로 시작하는 역할에 정해진 상관이 먼저다 (플레이 테스트 11: 이름순으로 고르다 비리를 알린 사람이 상관이 됐다)
       const byRole = Object.values(content.roles).find((r) => r.faction === me.factionId && r.rank === me.rank && r.commander)?.commander;
       if (byRole && usable(byRole) && level(state.characters[byRole]!.rank) > mine) return byRole;

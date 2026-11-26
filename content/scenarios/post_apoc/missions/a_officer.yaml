@@ -89,6 +89,8 @@
 
 - id: a_of_prisoner
   title: 붉은 완장 포로 심문
+  # 우리가 붙잡아 둔 사람이 있을 때만 (PT39)
+  needs_captive: true
   briefing: 어제 동쪽 초소에서 잡힌 붉은연합 보초를 만나 보세요. 물류창고에 몇 명이 있고 언제 움직이는지. 때리지 말라는 건 아닙니다만, 죽으면 아무것도 못 듣습니다.
   giver_rank: leader
   deadline_hours: 12

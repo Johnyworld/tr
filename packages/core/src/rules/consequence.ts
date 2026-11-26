@@ -47,8 +47,9 @@ export function onSpotted(ctx: ToolContext, owner: string | null): string[] {
 }
 
 /** 붙잡혔다 (by: 붙잡은 무리). 알릴 줄 */
-export function onCaptured(ctx: ToolContext, by: string): string[] {
-  const lines = onSpotted(ctx, by);
+export function onCaptured(ctx: ToolContext, by: string, opts: { trespass?: boolean } = {}): string[] {
+  // 싸움에 져서 끌려간 것은 남의 땅에 몰래 든 것이 아니다 (PT39 졸병: 우리 초소 방어 전투에서 붙잡힌 것이 침입 행적으로 남았다)
+  const lines = opts.trespass === false ? [] : onSpotted(ctx, by);
   const state = ctx.store.getState();
   const own = state.characters[state.playerId]?.factionId;
   if (own && own !== by && state.factions[by] && ctx.content.factions[own]) {
@@ -129,7 +130,7 @@ export function ownOffense(state: GameState, content: Content, at: number = stat
   if (badlyHurt(content, me)) return null;
   const handled = Math.max(-Infinity, ...Object.entries(state.storyletLog).filter(([id]) => content.storylets[id]?.when.own_offense).map(([, log]) => log.lastFiredAt));
   const deed = Object.values(state.deeds)
-    .filter((d) => d.actorId === me.id && d.severity >= rule.min_severity && d.tags.some((t) => rule.tags.includes(t)))
+    .filter((d) => d.actorId === me.id && d.severity >= rule.min_severity && d.tags.some((t) => rule.tags.includes(t)) && !d.tags.some((t) => rule.excuse_tags.includes(t)))
     // 상관 귀에 닿는 시간은 짓이 끝난 때부터 센다 (설계 목록 2-1: 두 시간 걸린 도둑질이 끝나자마자 회의가 열렸다)
     .filter((d) => d.at > handled && at - d.at <= rule.within_days * 24 * 60 && at - (d.endedAt ?? d.at) >= rule.notice_minutes)
     .find((d) => d.witnesses.some((w) => {

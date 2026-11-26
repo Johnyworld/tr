@@ -690,6 +690,7 @@ function checkReferences(content: Content): string[] {
   problems.push(...checkStoryWhereWhen(content));
   problems.push(...checkResolveSpine(content));
   // 무리 안의 무거운 짓 태그는 행적 태그여야 한다 (12-257: 틀리면 규율 회의가 말없이 열리지 않는다)
+  for (const t of content.scenario.offense?.excuse_tags ?? []) if (!(DEED_TAGS as readonly string[]).includes(t)) problems.push(`scenario.offense.excuse_tags: 행적 태그가 아니다: ${t}`);
   for (const t of content.scenario.offense?.tags ?? []) if (!(DEED_TAGS as readonly string[]).includes(t)) problems.push(`scenario.offense.tags: 행적 태그가 아니다: ${t} (있는 것: ${DEED_TAGS.join(", ")})`);
   // 장소마다 묘사 한 줄 (12-251)
   for (const loc of Object.values(content.locations)) for (const p of loc.places) if (!p.description) problems.push(`locations.${loc.id}.places.${p.id}: 묘사(description)가 없다`);

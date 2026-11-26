@@ -150,6 +150,8 @@ export function startPartyFight(ctx: ToolContext, party: Party, opts: { byParty?
         attacker: party.faction,
         defender: me.factionId,
         zone,
+        // 공세 부대와의 맞붙음이면 그 계획을 싣는다: 끝난 뒤 알린 무리를 정산할 때 그 공세가 끝난 줄 안다 (PT39 졸병: 계획이 없어 알림이 일곱 시간 뒤에야 거둬졌다)
+        ...((party.task.kind === "clash" || party.task.kind === "occupy") && party.task.plan ? { plan: party.task.plan } : {}),
         side: "defense",
         ours: { faction: me.factionId, committed: group + defenders, losses: 0 },
         theirs: { faction: party.faction, committed: party.size, losses: 0 },
@@ -328,12 +330,16 @@ export const alertParty = defineTool({
         const party = live!;
         const world = worldOf(store.getState());
         const size = persuaded === "success" ? party.size : Math.max(1, Math.ceil(party.size / 2));
-        const enemyAt = arrivalOf(party);
-        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal: party.goal, size, at: store.getState().time, until: Math.max(enemyAt, store.getState().time) + 120, by: state.playerId }) : null;
+        // 할 일을 마치고 돌아가는 무리는 목표가 아니라 돌아가는 길에서 아직 우리 땅인 마지막 칸을 막는다 (PT39 졸병: 숨은 부대가 이미 떠난 목표에 늦게 닿아 아무 일도 없었다)
+        const now = store.getState().time;
+        const exit = party.done ? [...party.back].reverse().find((l) => l.to > now && ownedBy(state, l.zone, me.factionId!)) : undefined;
+        const goal = exit?.zone ?? party.goal;
+        const enemyAt = exit ? exit.from : arrivalOf(party);
+        const sent = cfg && base && canSend(world, cfg, me.factionId, size, "raid") ? spawnIntercept(world, content, { faction: me.factionId, from: base, goal, size, at: now, until: Math.max(exit?.to ?? enemyAt, now) + 120, by: state.playerId }) : null;
         if (!sent) lines.push(`${josa(bossName, "은/는")} 맞받아칠 뜻은 있지만 지금 내보낼 사람이 없다고 한다. 지키기만 한다.`);
         else {
           saveWorld(ctx, world);
-          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(content.locations[party.goal]?.name ?? party.goal, "으로/로")} 내보내 숨어 기다리게 한다 (${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
+          lines.push(`${josa(bossName, "이/가")} 맞받아치자는 말을 받아들였다${persuaded === "partial" ? " (다만 작게)" : ""}. 무리가 ${forceWords(size)}을 ${josa(content.locations[goal]?.name ?? goal, "으로/로")} 내보내 숨어 기다리게 한다 (${formatTime(sent.task.kind === "intercept" ? sent.task.until : enemyAt)}까지). 결과는 코드가 정하고 소식으로 돌아온다.`);
         }
       }
     }
@@ -390,6 +396,18 @@ export function settlePartyAlerts(ctx: ToolContext, clashes: readonly Clash[]): 
       if (state.characters[state.playerId]?.factionId === alert.faction) {
         store.append({ type: "merit_awarded", characterId: state.playerId, delta: 1, reason: "알린 덕에 막아 냈다" });
         out.push(...hearNews(ctx, { fact: `당신이 알린 덕에 ${content.locations[alert.zone]?.name ?? alert.zone}에서 ${content.factions[blocked.attacker]?.name ?? "적"} 쪽을 막아 냈다고 한다 (공적 +1).`, factions: [alert.faction] }));
+      }
+      continue;
+    }
+    // 알린 무리가 그 뒤 꺾였다(맞붙음·가로막기에서 쫓기거나 모두 쓰러짐): 막아 낸 것이다 (PT39 분대장: 공세가 맞붙음으로 무너졌는데 알림이 끝까지 남았다)
+    const p = state.parties.find((x) => x.id === alert.partyId);
+    if (p && ((p.routedAt !== null && p.routedAt >= alert.at) || p.size <= 0)) {
+      // 계획의 정찰이 꺾였어도 그 계획의 공세는 아직 온다: 공세 부대가 꺾였을 때만 더 지키던 것을 거둔다
+      const clear = (!alert.plan || p.kind === "assault") && !!alert.zone && state.zones[alert.zone]?.alerted === alert.faction;
+      store.append({ type: "party_alert_settled", partyId: alert.partyId, zone: alert.zone, credited: true, clear });
+      if (state.characters[state.playerId]?.factionId === alert.faction) {
+        store.append({ type: "merit_awarded", characterId: state.playerId, delta: 1, reason: "알린 무리를 막아 냈다" });
+        out.push(...hearNews(ctx, { fact: `당신이 알린 ${content.factions[p.faction]?.name ?? "적"} 쪽 무리를 막아 냈다고 한다 (공적 +1).`, factions: [alert.faction] }));
       }
       continue;
     }

@@ -49,7 +49,7 @@ export const baseOf = (state: GameState, content: Content, faction: string | nul
  * 주인공이 붙잡힌다. 갇히는 곳은 zone이 있으면 그 구역(가두는 장소가 있으면 그 장소),
  * 없으면 공통 규칙 15의 jailFor: 붙잡힌 구역에 그 무리의 가두는 장소가 있으면 그곳, 아니면 가두는 장소가 있는 그 무리 땅(거점 먼저). 돌려줄 한 줄
  */
-export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause = "붙잡혔다"): string | null {
+export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause = "붙잡혔다", opts: { inBattle?: boolean } = {}): string | null {
   const { store, content } = ctx;
   const c = rules(content);
   const state = store.getState();
@@ -84,7 +84,7 @@ export function capturePlayer(ctx: ToolContext, by: string, zone?: string, cause
   const held = Object.fromEntries(Object.entries(me.inventory).filter(([id, n]) => n > 0 && (c.confiscate.includes(content.items[id]?.kind ?? "") || c.confiscate_items.includes(id))));
   const taken = Object.entries(held).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`);
   // 붙잡힌 결과는 공통 규칙 3 (rules/consequence.ts): 들키지 않기 임무, 침입 행적, 그 무리의 태도
-  const spotted = onCaptured(ctx, by).join(" ");
+  const spotted = onCaptured(ctx, by, { trespass: !opts.inBattle }).join(" ");
   // 다른 구역으로 끌려가면 그 길의 이동 시간이 흐른다 (사용자 결정, 플레이 테스트 14: 물류창고에서 붙잡혔는데 0분 만에 거점에 갇혔다)
   const dragged = state.playerZone && where !== state.playerZone ? routeMinutes(state.playerZone, where, ctx.content) : 0;
   if (dragged > 0) {
@@ -149,14 +149,14 @@ export function maybeCaptureAfterDefeat(ctx: ToolContext, enemy: string): { line
   const down = !!incapacitatingSymptom(ctx.content.scenario, me);
   const flee = down ? null : bestFlee(ctx.content, me, c.flee_moves);
   if (!flee) {
-    const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 쓰러진 채로 끌려갔다");
+    const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 쓰러진 채로 끌려갔다", { inBattle: true });
     return { lines: caught ? [caught] : [], displays: [] };
   }
   const roll = rollPlayerCheck({ move: flee.move, stat: flee.stat, difficulty: "normal", intent: "진 싸움터에서 빠져나간다" }, ctx, { stakes: stakesOf({ battle: true }) });
   if (!roll.ok) return none;
   const displays: ToolDisplayEvent[] = [roll.display];
   if (roll.outcome === "miss") {
-    const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 빠져나가지 못해 붙잡혔다");
+    const caught = capturePlayer(ctx, enemy, undefined, "싸움에 지고 빠져나가지 못해 붙잡혔다", { inBattle: true });
     return { lines: caught ? [caught] : [], displays };
   }
   if (roll.outcome === "success") return { lines: ["진 싸움터에서 붙잡히지 않고 빠져나왔다. 빠져나오는 장면을 서술한다."], displays };

@@ -154,7 +154,7 @@ access_labels:
   treatment_room: 치료실 출입 (치료 도구와 약제실 앞까지)
 
 # 우리 무리 안의 무거운 짓 (12-257, 공통 규칙 3): 우리 무리 사람이 본 도둑질·잔혹·배신(무게 2 이상)은 사흘 안에 규율 회의 이야기를 연다 (storylets/discipline.yaml)
-offense: { tags: [theft, cruelty, betrayal], min_severity: 2, within_days: 3, notice_minutes: 60 }
+offense: { tags: [theft, cruelty, betrayal], min_severity: 2, within_days: 3, notice_minutes: 60, excuse_tags: [diligence, loyalty] }
 
 # 이야기 글 검사 (content:check, 12-261): 바깥을 말하는 글은 바깥에서만, 잠에서 깨는 글은 잠·쉬는 중에만
 # 같은 틀 엑스트라의 겉모습을 다 썼을 때 덧붙이는 표시 (12-265, PT17·PT18: 둘·셋이 똑같이 보였다)

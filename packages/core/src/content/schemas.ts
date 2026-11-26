@@ -441,6 +441,8 @@ export function createContentSchemas(s: Scenario) {
     fortifies: z.number().int().min(1).max(2).optional(),
     /** 정찰 임무 (움직이는 부대 파트 11): 해내면 그 구역과 맞닿은 구역의 적 부대를 보고, 당긴 클락의 공세가 기습이 된다 */
     scouts: z.boolean().optional(),
+    /** 우리 무리가 붙잡아 둔 사람이 있어야 하는 일 (포로 심문 등, PT39 졸병: 잡은 포로가 없는데 "어제 잡힌 보초 심문"이 나왔다) */
+    needs_captive: z.boolean().optional(),
     /** 남의 땅을 노리는 일이면 그 구역 (PT37 약탈조원: 차지한 동쪽 초소의 "경계 재기"가 계속 나왔다). 받을 사람 무리의 땅이 되면 내지 않는다 */
     target: contentIdSchema.optional(),
     /** 파괴공작 (파트 11): 완수하면 그 무리 창고에서 이만큼 깎는다 (일부 완수는 절반). 우리 몫(supplies)과 따로 */

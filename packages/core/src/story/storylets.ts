@@ -500,6 +500,12 @@ export function conditionsMet(state: GameState, content: Content, storylet: Stor
     const since = at - w.party_trace_hours * 60;
     if (!(state.recentClashes ?? []).some((r) => r.party && r.clash.zone === state.playerZone && r.at >= since)) return false;
   }
+  // 이 구역에 사상자가 난 교전이 며칠 안에 있었다 (시체 수레, docs/cannibal-plan.md 4). 교전 기록(recentClashes)만 읽는다
+  if (w.battle_days_lte !== undefined) {
+    const since = at - w.battle_days_lte * MINUTES_PER_DAY;
+    const fought = (state.recentClashes ?? []).some((r) => r.clash.zone === state.playerZone && r.at >= since && r.at <= at && r.clash.attackerLosses + r.clash.defenderLosses > 0);
+    if (!fought) return false;
+  }
   if (w.war_news_within_hours !== undefined) {
     const since = at - w.war_news_within_hours * 60;
     if (!(state.beliefs[state.playerId] ?? []).some((b) => b.topic === "war" && b.learnedAt >= since)) return false;

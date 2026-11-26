@@ -1,0 +1,266 @@
+# 장터의 값싼 훈제육 (docs/cannibal-plan.md 3). 행상은 npcs/ranch.yaml(엄순례), 고기는 발전소 목장(storylets/ranch.yaml)에서 온다
+# 장터 사람들은 출처를 모르고(또는 묻지 않고) 먹는다. 국밥집 가마솥 고기도 같은 좌판에서 나간다.
+# 진실은 목장의 lore(secret:rn_truth)로만. 아이템 이름은 겉("값싼 훈제육")이고, 무엇인지는 믿음으로만 안다 (원칙 4)
+# 주인공도 가담할 수 있다 (사용자 결정 2026-11-26): 출처를 알고도 먹기, 입막음 값 받기, 목장 고기를 떼다 팔기(되풀이)
+# 목장이 끝나면(rn_closed) 좌판에 고기가 끊긴다: 새 이야기는 열리지 않는다 (깨달음은 그 뒤에도 온다)
+#
+# 이어지는 이야기 (플래그):
+#   좌판: mk_stall (사기·출처 묻기 → rn_lead) · mk_soup (국밥집) → mk_ate
+#   고기 속: (mk_ate) mk_tooth → mk_suspect
+#   깨달음: (rn_truth + mk_ate 또는 rn_ate) mk_realize
+#   장터 우두머리: (rn_truth, 좌판을 본 사람) mk_bongsu → 입막음 값 / 장터에 떠벌리기(mk_exposed) / 그냥 둠
+#   가담 되풀이: (rn_dealer) mk_peddle (4일 간격): 목장 고기를 좌판에 넘긴다
+# 지킬 선: 해체·도축은 그리지 않는다. 노골적인 글은 belief의 mature 칸에만 (렌즈, 공통 규칙 21)
+
+# ── 좌판 ───────────────────────────────
+
+- id: mk_stall
+  title: 담배 한 갑에 두 덩이
+  tags: [world, cannibal]
+  when:
+    zones: [e_market]
+    indoor: false
+    places: [stalls]
+    segments: [morning, day]
+    flags_none: [mk_stall_seen, rn_closed, mk_exposed]
+  cast:
+    vendor: { ids: [mk_sunrye] }
+  setup: 좌판 줄 끝, {vendor:이/가} 칼로 검게 그을린 고기를 얇게 저며 이쑤시개에 꽂아 내민다. "한 점 먹어 봐. 담배 한 갑에 두 덩이. 이 값에 이런 고기 없어." 짐꾼 셋이 줄을 섰다. 좌판 밑 상자에 숯으로 "발전소"라고 적혀 있다.
+  ai_direction: 엄순례의 훈제 고기는 발전소 회처리장 목장의 소두철에게서 온다. 그녀는 돼지고기가 아니라는 것을 짐작하지만 묻지 않는다. 고기는 결이 곱고 기름이 달다. 맛만으로는 무엇인지 모른다 (GM이 먼저 사람 고기라고 말하지 않는다. 진실은 목장의 이야기와 믿음이 정한다). 출처를 캐물으면 웃으며 한 점을 더 내밀고, 끝까지 물으면 "돼지 치는 데서"라고 한다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: buy
+      label: 담배 한 갑을 내고 훈제 고기 두 덩이를 받는다
+      when: { has_items: [cigarettes] }
+      effects:
+        - set_flag: mk_stall_seen
+        - set_flag: mk_bought
+        - take_item: { item: cigarettes }
+        - give_item: { item: cheap_smoked_meat, quantity: 2 }
+        - belief: { fact: "장터의 엄순례 좌판에서 담배 한 갑에 훈제 고기 두 덩이를 샀다. 고기 상자에 '발전소'라고 적혀 있었다", source: seen }
+    - id: taste
+      label: 내민 한 점을 받아 씹으며 짐꾼들 틈에 선다
+      effects:
+        - set_flag: mk_stall_seen
+        - set_flag: mk_ate
+        - belief: { fact: "장터 훈제 고기를 한 점 얻어먹었다. 돼지고기보다 결이 곱고 기름이 달았다. 짐꾼들은 이 값에 이런 고기가 없다고 했다", source: seen }
+    - id: ask
+      label: 이 값에 이런 고기가 어디서 나느냐고 끝까지 묻는다
+      check: insight
+      outcomes:
+        success:
+          - set_flag: mk_stall_seen
+          - set_flag: rn_lead
+          - learn_place: { place: ash_pens, zone: power_plant }
+          - belief: { fact: "엄순례는 웃다가 끝내 말했다: 고기는 사흘에 한 번 발전소 회처리장에서 '돼지 치는 소두철'이 수레로 보낸다. 국밥집 가마솥 고기도 거기서 나간다. 그녀는 그 돼지를 본 적이 없다", source: report }
+        partial:
+          - set_flag: mk_stall_seen
+          - set_flag: rn_lead
+          - relation: { who: vendor, axis: trust, delta: -1 }
+          - belief: { fact: "엄순례는 '돼지 치는 데서'라고만 했다. 상자의 '발전소'라는 글씨를 보는 내 눈을 보고 좌판 천을 덮었다", source: seen }
+        miss:
+          - set_flag: mk_stall_seen
+          - relation: { who: vendor, axis: trust, delta: -2 }
+          - belief: { fact: "엄순례는 한 점을 더 내밀며 웃었다. '많이 묻는 사람이 고기를 못 먹어.' 줄 선 짐꾼들이 나를 흘겨봤다", source: seen }
+    - id: leave
+      label: 고기 냄새만 맡고 지나간다
+      effects:
+        - set_flag: mk_stall_seen
+        - belief: { fact: "장터 끝 좌판에서 아주 싼 훈제 고기를 판다. 짐꾼들이 줄을 섰다", source: seen }
+
+- id: mk_soup
+  title: 고기가 듬뿍 든 국밥
+  tags: [world, cannibal]
+  when:
+    zones: [e_market]
+    indoor: true
+    places: [soup_house]
+    segments: [evening, night]
+    flags_none: [mk_soup_seen, rn_closed, mk_exposed]
+  setup: 국밥집 가마솥에서 김이 오른다. 오늘은 고기가 듬뿍 들었다. 긴 의자의 짐꾼들이 그릇에 얼굴을 묻고 말이 없다. 주인이 국자로 고기를 건져 올리며 소리친다. "오늘 엄 씨 할매 고기 들어왔어! 한 그릇에 고기 세 점!"
+  ai_direction: 국밥집 고기는 엄순례 좌판에서, 엄순례 좌판의 고기는 발전소 목장에서 온다. 국밥집 주인도 짐꾼들도 모른다. 그날 장터는 고기 들어온 날이라 다들 기분이 좋다. 진실을 아는 주인공이라면 그 기분 좋은 소란이 장면의 무게다. GM이 먼저 사람 고기라고 말하지 않는다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: eat
+      label: 긴 의자에 끼어 앉아 국밥 한 그릇을 비운다
+      effects:
+        - set_flag: mk_soup_seen
+        - set_flag: mk_ate
+        - body: { track: hunger, delta: -1 }
+        - belief: { fact: "장터 국밥집에서 고기 세 점 든 국밥을 먹었다. 고기는 엄순례 좌판에서 들어온다고 했다", source: seen }
+    - id: eat_knowing
+      label: 무엇인지 알면서 국밥을 받아 든다
+      when: { flags_all: [rn_truth] }
+      effects:
+        - set_flag: mk_soup_seen
+        - set_flag: mk_ate
+        - body: { track: hunger, delta: -1 }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: 장터 국밥의 고기가 무엇인지 알면서 먹었다, tags: [cruelty], severity: 1, privacy: private }
+        - belief:
+            fact: "국밥의 고기가 발전소 목장에서 온 것을 알면서 다 먹었다. 옆자리 짐꾼이 오늘 고기가 달다고 웃었다"
+            mature: "국밥 속 고기가 컨테이너에서 살을 찌운 사람이라는 것을 알면서 다 먹었다. 옆자리 짐꾼이 오늘 고기가 달다고 웃었다"
+            source: seen
+    - id: skip
+      label: 고기는 건져 내고 국물만 마신다
+      effects:
+        - set_flag: mk_soup_seen
+        - belief: { fact: "장터 국밥집에서 고기를 건져 내고 국물만 마셨다. 주인이 고기 아까운 줄 모른다고 혀를 찼다", source: seen }
+
+# ── 고기 속 ───────────────────────────────
+
+- id: mk_tooth
+  title: 고기 속의 딱딱한 것
+  tags: [world, cannibal]
+  when:
+    indoor: any
+    segments: [day, evening, night]
+    flags_any: [mk_ate, mk_bought]
+    flags_none: [mk_tooth_done, mk_exposed]
+  setup: 훈제 고기를 씹다가 이가 딱딱한 것에 걸린다. 뱉어 보니 기름에 전 작은 것이 손바닥에 떨어진다. 하얗고, 한쪽이 누렇게 빛난다.
+  ai_direction: 사람의 어금니다. 누런 것은 금니 씌운 자리다. 돼지에게 금니는 없다. 들여다보면 알 수 있지만 GM이 먼저 사람 이빨이라고 말하지 않는다 (판정과 믿음이 정한다). 엄순례는 첫 해 겨울 같은 것을 고기에서 찾고 그 뒤로 출처를 묻지 않았다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: look
+      label: 손바닥에 올려 불빛에 비춰 본다
+      check: insight
+      outcomes:
+        success:
+          - set_flag: mk_tooth_done
+          - set_flag: mk_suspect
+          - set_flag: rn_lead
+          - body: { track: nerves, delta: 1 }
+          - belief:
+              fact: "장터 훈제 고기에서 나온 것은 사람의 어금니였다. 금을 씌운 자리가 있었다. 돼지에게는 금니가 없다. 고기는 발전소 쪽에서 온다"
+              mature: "장터 훈제 고기에서 금니 씌운 사람 어금니가 나왔다. 누군가의 턱에서 고기와 함께 저며져 나온 것이다. 고기는 발전소 쪽에서 온다"
+              source: seen
+        partial:
+          - set_flag: mk_tooth_done
+          - set_flag: mk_suspect
+          - belief: { fact: "고기에서 나온 것은 이빨 같았다. 누런 쇠붙이가 박혀 있었다. 돼지 이빨치고는 작다", source: seen }
+        miss:
+          - set_flag: mk_tooth_done
+          - belief: { fact: "고기에서 작은 뼛조각이 나왔다. 뱉어 버리고 마저 먹었다", source: seen }
+    - id: spit
+      label: 뱉어 버리고 마저 씹는다
+      effects:
+        - set_flag: mk_tooth_done
+        - belief: { fact: "훈제 고기를 먹다 딱딱한 것이 씹혀 뱉어 버렸다. 누렇게 빛나는 것이 박혀 있었던 것 같다", source: seen }
+
+# ── 깨달음 ───────────────────────────────
+
+- id: mk_realize
+  title: 그동안 먹은 것
+  tags: [world, cannibal]
+  when:
+    indoor: any
+    segments: [evening, night]
+    flags_all: [rn_truth]
+    flags_any: [mk_ate, mk_bought]
+    flags_none: [mk_realize_done]
+  setup: 저녁 짐을 풀다 손이 멈춘다. 장터에서 산 고기, 국밥집의 고기 세 점, 짐꾼들이 달다고 웃던 얼굴이 하나씩 떠오른다. 회처리장 컨테이너의 사슬 소리가 그 위에 겹친다.
+  ai_direction: 주인공은 이제 장터 훈제 고기와 국밥 고기가 발전소 목장에서 온 사람 고기라는 것을 안다. 그동안 그것을 먹었다. 몸에 탈은 없다 (보통 고기와 같다). 무게는 마음에 있다. 어떻게 받아들일지는 플레이어가 정하고, 코드가 마음 트랙을 셈한다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: retch
+      label: 속을 게워 내고, 남은 고기를 땅에 묻는다
+      effects:
+        - set_flag: mk_realize_done
+        - lose_item: { item: cheap_smoked_meat, quantity: 20 }
+        - lose_item: { item: ranch_meat, quantity: 20 }
+        - body: { track: nerves, delta: 2 }
+        - belief: { fact: "그동안 먹은 장터 고기가 사람 고기였다. 속을 게워 내고 남은 고기를 땅에 묻었다. 그 맛이 혀에서 떠나지 않는다", source: seen }
+    - id: accept
+      label: 고기는 고기라고, 굶는 것보다 낫다고 되뇐다
+      effects:
+        - set_flag: mk_realize_done
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "그동안 먹은 장터 고기가 사람 고기였다. 고기는 고기라고, 굶는 것보다 낫다고 되뇌었다. 남은 고기는 짐에 그대로 두었다", source: seen }
+
+# ── 장터 우두머리 ───────────────────────────────
+
+- id: mk_bongsu
+  title: 자릿세만 내면 된다
+  tags: [world, cannibal]
+  when:
+    zones: [e_market]
+    indoor: true
+    places: [pawnshop, boss_house]
+    segments: [morning, day]
+    flags_all: [rn_truth]
+    flags_any: [mk_stall_seen, mk_ate, mk_bought, mk_soup_seen]
+    flags_none: [mk_bongsu_done, mk_exposed]
+  cast:
+    boss: { ids: [e_bongsu] }
+    vendor: { ids: [mk_sunrye], enter: false }
+  setup: 장부석 탁자 앞, {boss:이/가} 고개를 들지 않고 장부를 넘긴다. 당신이 발전소 회처리장 이야기를 꺼내자 펜이 멈춘다. "그래서." 한참 뒤에 펜이 다시 움직인다. "엄 씨 할매는 자릿세를 꼬박꼬박 내. 국밥집도. 그 고기 덕에 짐꾼들이 겨울을 나."
+  ai_direction: 탁봉수는 짐작하고 있었다. 장터는 싼 고기로 짐꾼과 호위를 붙잡아 두고, 그 고기의 출처를 묻지 않는 것이 장사다. 떠벌리면 장터에 사람이 끊긴다는 것이 그의 셈이다. 입을 다물면 값을 치르겠다고 한다. 주인공이 장터 사람들 앞에서 떠벌리면 사람들은 처음엔 믿지 않다가, 금니나 뼈 같은 증거가 있으면 좌판을 뒤엎는다 (엄순례는 장터를 떠난다). 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: hush
+      label: 입을 다무는 값을 받는다
+      effects:
+        - set_flag: mk_bongsu_done
+        - give_item: { item: pistol_rounds, quantity: 2 }
+        - relation: { who: boss, axis: trust, delta: 2 }
+        - deed: { summary: 장터 고기가 사람 고기인 줄 알고도 나루상단에게서 입막음 값을 받았다, tags: [selfishness, cruelty], severity: 2, privacy: private }
+        - belief: { fact: "탁봉수에게서 입막음 값으로 권총탄을 받았다. 장터의 고기 좌판은 그대로 열린다", source: seen }
+    - id: expose
+      label: 장부석을 나와 좌판 앞에서 장터 사람들에게 고기의 출처를 외친다
+      check: persuade
+      outcomes:
+        success:
+          - set_flag: mk_bongsu_done
+          - set_flag: mk_exposed
+          - npc_depart: { who: vendor }
+          - faction_morale: { faction: faction_e, delta: -1 }
+          - relation: { who: boss, axis: trust, delta: -3 }
+          - grudge: { who: boss, why: 장터 한복판에서 고기 좌판의 일을 떠벌렸다 }
+          - deed: { summary: 장터의 싼 훈제 고기가 발전소 목장의 사람 고기라고 장터 사람들 앞에서 밝혔다, tags: [honesty, bravery], severity: 3, privacy: public }
+          - belief: { fact: "장터 사람들이 엄순례 좌판을 뒤엎었다. 국밥집 가마솥도 엎어졌다. 엄순례는 그날 밤 장터를 떠났다. 탁봉수는 나를 장부에 따로 적었다", source: seen }
+        partial:
+          - set_flag: mk_bongsu_done
+          - relation: { who: boss, axis: trust, delta: -2 }
+          - deed: { summary: 장터 고기의 출처를 장터 사람들 앞에서 떠들었다, tags: [honesty], severity: 2, privacy: public }
+          - belief: { fact: "몇은 그릇을 내려놓았지만, 대부분은 미친 소리라며 웃었다. 엄순례 좌판은 다음 날도 열렸다. 탁봉수가 나를 오래 보았다", source: seen }
+        miss:
+          - set_flag: mk_bongsu_done
+          - relation: { who: boss, axis: trust, delta: -3 }
+          - grudge: { who: boss, why: 장터 장사를 망치려 들었다 }
+          - belief: { fact: "아무도 믿지 않았다. 짐꾼 하나가 고기 값 떨어지게 하지 말라며 내 멱살을 잡았다. 상단 호위가 나를 장터 밖으로 끌어냈다", source: seen }
+    - id: leave
+      label: 대답 없이 장부석을 나온다
+      effects:
+        - set_flag: mk_bongsu_done
+        - belief: { fact: "탁봉수는 장터 고기의 출처를 알고도 덮는다. 자릿세가 들어오는 동안은", source: seen }
+
+# ── 가담: 목장 고기를 좌판에 (되풀이) ───────────────────────────────
+
+- id: mk_peddle
+  title: 좌판 뒤의 거래
+  tags: [world, cannibal]
+  repeatable: true
+  cooldown_days: 4
+  when:
+    zones: [e_market]
+    indoor: false
+    places: [stalls]
+    segments: [morning, day]
+    flags_all: [rn_dealer]
+    flags_none: [rn_closed, mk_exposed]
+  cast:
+    vendor: { ids: [mk_sunrye] }
+  setup: 좌판 뒤 천막 그늘에서 {vendor:이/가} 손짓한다. "소두철 사장하고 거래한다며. 수레 기다리느니 그쪽 고기 나한테 넘겨. 값은 장터 값으로 쳐 줄게."
+  ai_direction: 목장과 거래를 튼 주인공에게 엄순례가 목장 고기를 사겠다고 한다. 넘긴 고기는 좌판과 국밥집으로 가고 장터 사람들이 모르고 먹는다. 값은 코드가 정한 만큼이다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: sell
+      label: 짐에서 목장 고기를 꺼내 넘기고 값을 받는다
+      when: { has_items: [ranch_meat] }
+      effects:
+        - take_item: { item: ranch_meat }
+        - give_item: { item: pistol_rounds }
+        - give_item: { item: cigarettes }
+        - deed: { summary: 발전소 목장의 사람 고기를 장터 좌판에 넘겨 팔았다, tags: [cruelty], severity: 2, privacy: private }
+        - belief:
+            fact: "엄순례에게 목장 고기를 넘기고 권총탄과 담배를 받았다. 그 고기는 내일 좌판과 국밥집 가마솥으로 간다"
+            mature: "사람 고기를 엄순례에게 팔았다. 내일 짐꾼들이 그것을 국밥에 말아 먹으며 달다고 웃을 것이다"
+            source: seen
+    - id: not_now
+      label: 넘길 고기가 없다며 지나간다
+      effects:
+        - belief: { fact: "엄순례가 목장 고기를 사겠다고 했다. 이번에는 넘기지 않았다", source: seen }

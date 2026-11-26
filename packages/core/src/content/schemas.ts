@@ -1189,6 +1189,8 @@ export function createContentSchemas(s: Scenario) {
           .optional(),
         /** 이 구역에서 N시간 안에 부대끼리 부딪친 일이 있었다 (흔적 이야기, 5-2) */
         party_trace_hours: z.number().positive().optional(),
+        /** 이 구역에서 N일 안에 사상자가 난 교전이 있었다 (어느 교전이든: 화면 밖 셈·움직이는 부대·주인공이 낀 전투. 시체 수레, docs/cannibal-plan.md 4) */
+        battle_days_lte: z.number().positive().optional(),
       })
       .default({}),
     cast: z.record(contentIdSchema, castRole).default({}),

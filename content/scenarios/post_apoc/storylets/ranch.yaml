@@ -1,0 +1,413 @@
+# 발전소 목장 (docs/cannibal-plan.md 2). 사람은 npcs/ranch.yaml, 이름 없는 사람은 extras/ranch.yaml, 진실은 lore/ranch_secret.md(secret:rn_truth)
+# 소두철이 길판수에게서 노역에 못 쓰는 머릿수를 사서 회처리장 컨테이너에 가두고, 살이 오르면 정비동에서 잡아 고기로 판다.
+# 붉은연합 인신매매 줄기(storylets/trafficking.yaml)의 열린 끝 "고속도로 바깥"을 닫는다. 장터 훈제육(②)이 이어 받는다.
+# 주인공도 가담할 수 있다 (사용자 결정 2026-11-26): 고기를 먹기, 목장과 거래를 트기, 우리 무리가 가둔 포로를 수레에 넘기기(되풀이).
+# 대가는 코드가 남긴다: 행적 잔혹(cruelty), 마음 트랙, 우리 무리의 눈(offense). 몸 효과는 보통 고기와 같다.
+# 무리가 발전소를 차지하면(zone_owner) 목장 이야기는 열리지 않고 빈 우리(rn_empty)만 열린다.
+#
+# 이어지는 이야기 (플래그):
+#   단서: rn_toll_turn (휴게소 톨게이트, 길판수 줄기를 본 사람) · rn_pond_bones (발전소 냉각수 못, 누구나) → rn_lead
+#   우리: rn_pens (회처리장 창고, 누구나) → rn_pens_seen, 진실 rn_truth (판정은 얼마나 아는가만: 돌아서기 말고는 모두. 구출·태우기·눈여겨보기도 rn_truth)
+#   목장주: (rn_pens_seen) rn_dosu_offer → 먹기(rn_ate) / 거래(rn_dealer) / 거절
+#   끝: (rn_pens_seen) rn_rescue (사슬 끊기·정비동 태우기) · (rn_truth) rn_report_hawk (하얀매에 알림) → rn_closed
+#   가담 되풀이: (rn_dealer) rn_sell (우리 땅 가두는 곳, 5일 간격): 포로를 목장 수레에 넘긴다
+#   빈 우리: (발전소에 주인이 생기면) rn_empty → rn_closed
+# 지킬 선: 해체·도축은 결과로만. 노골적인 글은 belief의 mature 칸에만 (렌즈, 공통 규칙 21). 모두 성인
+
+# ── 단서 ───────────────────────────────
+
+- id: rn_toll_turn
+  title: 톨게이트에서 꺾는 트럭
+  tags: [world, cannibal, trafficking]
+  when:
+    zones: [rest_stop]
+    indoor: false
+    places: [tollgate]
+    segments: [night, dawn]
+    flags_any: [tr_rumor, tr_convoy_known, tr_deal_seen, tr_slaver_lead]
+    flags_none: [rn_lead, rn_closed]
+  cast:
+    broker: { ids: [rs_pansu] }
+  setup: 톨게이트 부스 사이로 덮개 트럭 한 대가 불을 끄고 들어선다. 고속도로 쪽으로 나가지 않는다. 차단기 앞에서 핸들을 꺾어 발전소로 오르는 진입로로 머리를 돌린다. 짐칸 덮개가 들썩일 때 흰 머리 둘이 보인다. 운전석의 {broker:은/는} 담배를 문 채 뒤를 한 번 돌아본다.
+  ai_direction: 길판수는 노역에 못 쓰는 머릿수(늙고 다치고 병든 사람)를 고속도로로 내보내지 않고 발전소 회처리장의 소두철에게 판다. 짐칸의 사람들은 손이 묶였고 오래 굶지 않았다 (목장은 먹여서 받는다). 트럭은 발전소 진입로를 따라 굴뚝 쪽으로 간다. 길판수는 이 길을 들키는 것을 주차장 거래보다 싫어한다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다. 피해자를 탓하지 않는다.
+  choices:
+    - id: follow
+      label: 트럭 바퀴 자국을 따라 발전소 진입로를 오른다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: rn_lead
+          - learn_place: { place: ash_pens, zone: power_plant }
+          - belief: { fact: "길판수의 덮개 트럭은 고속도로로 나가지 않았다. 톨게이트에서 꺾어 발전소 서북쪽 끝 회처리장 컨테이너 창고 앞에 섰다. 흰 머리 둘이 컨테이너로 끌려 들어갔다. 고무 앞치마를 두른 늙은 남자가 머릿수를 받았다", source: seen }
+        partial:
+          - set_flag: rn_lead
+          - learn_place: { place: ash_pens, zone: power_plant }
+          - relation: { who: broker, axis: trust, delta: -1 }
+          - belief: { fact: "트럭은 발전소 회처리장 쪽으로 갔다. 진입로 난간에서 미끄러지는 소리에 트럭이 멈췄고, 길판수의 손전등이 한참 뒤를 훑었다", source: seen }
+        miss:
+          - set_flag: rn_lead
+          - relation: { who: broker, axis: trust, delta: -2 }
+          - belief: { fact: "진입로에서 트럭을 놓쳤다. 발전소 쪽으로 간 것만은 안다. 길판수가 톨게이트로 돌아와 내 얼굴을 손전등으로 비췄다", source: seen }
+    - id: note
+      label: 부스 뒤에 숨어 트럭이 꺾은 쪽만 눈에 담는다
+      effects:
+        - set_flag: rn_lead
+        - belief: { fact: "밤에 길판수의 덮개 트럭이 고속도로가 아니라 발전소 진입로로 꺾었다. 짐칸에 흰 머리가 보였다", source: seen }
+
+- id: rn_pond_bones
+  title: 냉각수 못가의 뼈
+  tags: [world, cannibal]
+  when:
+    zones: [power_plant]
+    zone_owner: [none]
+    places: [cooling_pond]
+    segments: [morning, day, evening]
+    flags_none: [rn_lead, rn_bones_seen, rn_closed]
+  setup: 녹조 낀 냉각수 못의 물이 빠진 가장자리에 하얀 것이 한 무더기 드러나 있다. 물새가 쪼다 날아간다. 굵은 뼈 마디마다 톱날 자국이 가지런하다. 바람이 서북쪽 회처리장 쪽에서 불어오고, 그 바람에 고기 굽는 것 같은 들큼한 냄새가 실려 온다.
+  ai_direction: 사람 뼈다. 넓적다리뼈와 갈비뼈가 섞여 있고, 짐승 뼈처럼 아무렇게나 버린 것이 아니라 고기를 바르고 버린 것이다. 들여다보면 알 수 있지만 GM이 먼저 사람 뼈라고 말하지 않는다 (판정과 믿음이 정한다). 회처리장 컨테이너에서는 돼지를 친다는 말이 돈다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: look
+      label: 못가로 내려가 뼈 하나를 뒤집어 본다
+      check: survival
+      outcomes:
+        success:
+          - set_flag: rn_bones_seen
+          - set_flag: rn_lead
+          - learn_place: { place: ash_pens, zone: power_plant }
+          - body: { track: nerves, delta: 1 }
+          - belief:
+              fact: "발전소 냉각수 못가의 뼈는 돼지 뼈가 아니다. 사람의 넓적다리뼈와 갈비뼈였다. 바람이 회처리장 컨테이너 창고 쪽에서 고기 냄새를 실어 왔다"
+              mature: "발전소 냉각수 못가의 뼈는 사람 뼈였다. 마디마다 고기를 바른 톱날 자국이 가지런했다. 누가 사람을 짐승처럼 잡아 살을 발라 냈다. 바람이 회처리장 컨테이너 쪽에서 고기 굽는 냄새를 실어 왔다"
+              source: seen
+        partial:
+          - set_flag: rn_bones_seen
+          - set_flag: rn_lead
+          - belief: { fact: "냉각수 못가에 톱날 자국이 난 뼈가 쌓여 있었다. 돼지치고는 뼈가 길다. 냄새는 서북쪽 회처리장에서 왔다", source: seen }
+        miss:
+          - set_flag: rn_bones_seen
+          - belief: { fact: "냉각수 못가에 짐승 뼈가 쌓여 있었다. 회처리장에서 돼지를 친다더니 그 뼈인 모양이다", source: seen }
+    - id: leave
+      label: 물새 쪼아 먹던 뼈 따위는 두고 지나간다
+      effects:
+        - set_flag: rn_bones_seen
+        - belief: { fact: "발전소 냉각수 못가에 뼈 무더기가 있었다. 들여다보지 않았다", source: seen }
+
+# ── 우리 ───────────────────────────────
+
+- id: rn_pens
+  title: 사슬 감긴 컨테이너
+  tags: [world, cannibal]
+  when:
+    zones: [power_plant]
+    zone_owner: [none]
+    indoor: true
+    places: [ash_pens]
+    segments: [evening, night, dawn]
+    flags_none: [rn_pens_seen, rn_closed]
+  cast:
+    penned: { extra: ranch_penned, label: 컨테이너 안의 사람, keep: rn_penned, adult: true }
+  setup: 회처리장 둑 밑 컨테이너 줄. 문마다 굵은 사슬이 감겼다. 끝에서 두 번째 칸 문 아래 틈으로 양재기 하나가 밀려 나와 있다. 밥이 수북하다. 그 틈 안쪽에서 {penned}의 손가락이 양재기를 도로 끌어당기다 멈춘다. "…사장님이에요?" 안쪽에서 사슬이 끌리는 소리가 여럿 난다.
+  ai_direction: 컨테이너 안에는 돼지가 없다. 길판수의 트럭에서 내린 사람들이 발목에 사슬을 차고 갇혀 있다. 하루 세 끼를 꼬박 받는다. 살이 오르면 한 사람씩 정비동으로 끌려 나가고 돌아오지 않는다. {penned:은/는} 그것을 알기에 받은 밥을 다 먹지 않는다. 목장 일꾼은 이 시각에 둑 위를 한 바퀴 돈다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 피해자를 탓하지 않는다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다. 노골적인 것은 믿음의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: talk
+      label: 문틈에 입을 대고 안의 사람에게 여기가 어디냐고 묻는다
+      check: insight
+      outcomes:
+        success:
+          - set_flag: rn_pens_seen
+          - set_flag: rn_truth
+          - relation: { who: penned, axis: trust, delta: 2 }
+          - body: { track: nerves, delta: 1 }
+          - belief:
+              fact: "회처리장 컨테이너에 갇힌 것은 돼지가 아니라 사람이다. 길판수의 트럭에서 내린 사람들이 사슬에 묶여 하루 세 끼를 받는다. 살이 오르면 한 사람씩 정비동으로 끌려 나가 돌아오지 않는다. 목장주는 소두철이다"
+              mature: "회처리장 컨테이너에 갇힌 것은 사람이다. 사슬에 묶여 살을 찌운다. 살이 오르면 정비동 크레인 갈고리로 끌려가 고기가 된다. 소두철의 훈제 고기는 사람 고기다"
+              source: report
+        partial:
+          - set_flag: rn_pens_seen
+          - set_flag: rn_truth
+          - zone_noise: 1
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "컨테이너 안에는 사슬에 묶인 사람들이 있었다. '살찌면 정비동으로 가요'라는 말까지 듣고 둑 위에서 발소리가 나 물러났다", source: report }
+        miss:
+          # 판정은 얼마나 아는가만 가른다 (PT41 [막힘]: miss에 rn_truth가 없어 거래·고발·깨달음이 영영 닫혔다)
+          - set_flag: rn_pens_seen
+          - set_flag: rn_truth
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "컨테이너 문틈의 손은 양재기를 끌어당기고 대답하지 않았다. 안에서 사슬 소리가 여럿 났다. 돼지가 아니라 사람이 갇혀 있다", source: seen }
+    - id: leave
+      label: 돼지우리라는 말을 믿기로 하고 둑 위로 돌아선다
+      effects:
+        - set_flag: rn_pens_seen
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "회처리장 컨테이너 문틈에서 사람 손이 밥 양재기를 끌어당겼다. 돼지우리라는 말을 믿기로 하고 돌아섰다", source: seen }
+
+# ── 목장주 ───────────────────────────────
+
+- id: rn_dosu_offer
+  title: 칼끝의 고기
+  tags: [world, cannibal]
+  when:
+    zones: [power_plant]
+    zone_owner: [none]
+    places: [ash_pens, workshop, coal_yard]
+    segments: [morning, day, evening]
+    # 컨테이너를 본 뒤에만 (PT41 [틀림]: rn_lead만으로 먼저 열려 거래 선택지 없이 한 번 쓰였다)
+    flags_all: [rn_pens_seen]
+    flags_none: [rn_offer_done, rn_closed]
+  cast:
+    owner: { ids: [rn_dosu] }
+  setup: 고무 앞치마를 두른 {owner:이/가} 드럼통 화덕 앞에서 고기를 굽다 당신을 본다. 서두르지 않는다. 칼끝으로 기름 오른 고기 한 점을 찍어 내민다. "멀리서 오셨네. 배고프죠. 드셔 보세요. 우리 목장 고기는 기름이 달아요." 눈은 당신 얼굴이 아니라 팔뚝을 본다.
+  ai_direction: 소두철은 처음 보는 사람에게 먼저 고기를 권하고 먹는지 본다. 먹으면 말이 통하는 사람으로 치고, 진실을 아는 눈치면 거래를 꺼낸다 ("사로잡은 사람이 있으면 넘기세요. 고기와 탄약으로 값을 칩니다. 밤에 수레가 거둬 가요"). 고기의 출처는 먼저 말하지 않는다. 주인공의 설정에 금기 "사람 고기는 먹지 않는다"가 있고 출처를 안다면, 먹기 전에 서술로 확인하고 그래도 먹으면 take_action.against_setting으로 굴린다. 염복만은 정비동 문 앞에 서서 나오지 않는다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다. 노골적인 것은 믿음의 글이 보여 주는 만큼만 말한다.
+  choices:
+    - id: eat
+      label: 칼끝의 고기를 받아 먹는다
+      when: { flags_none: [rn_truth] }
+      effects:
+        - set_flag: rn_offer_done
+        - set_flag: rn_ate
+        - body: { track: hunger, delta: -1 }
+        - relation: { who: owner, axis: trust, delta: 1 }
+        - belief: { fact: "발전소 목장주 소두철이 칼끝으로 건넨 고기를 먹었다. 돼지고기보다 기름이 달고 결이 고왔다. 그는 내가 다 먹을 때까지 내 팔뚝을 보았다", source: seen }
+    - id: eat_knowing
+      label: 무엇인지 알면서 칼끝의 고기를 받아 먹는다
+      when: { flags_all: [rn_truth] }
+      effects:
+        - set_flag: rn_offer_done
+        - set_flag: rn_ate
+        - body: { track: hunger, delta: -1 }
+        - body: { track: nerves, delta: 1 }
+        - relation: { who: owner, axis: trust, delta: 2 }
+        - deed: { summary: 발전소 목장에서 사람 고기인 줄 알고 먹었다, tags: [cruelty], severity: 1, privacy: private }
+        - belief:
+            fact: "소두철이 건넨 고기를 무엇인지 알면서 먹었다. 그는 처음으로 내 얼굴을 보고 웃었다"
+            mature: "컨테이너에서 살을 찌운 사람의 고기를 알면서 받아 먹었다. 기름이 달았다. 소두철은 처음으로 내 얼굴을 보고 웃었다"
+            source: seen
+    - id: deal
+      label: 고기를 받아 먹고, 사로잡은 사람을 넘기면 값을 치느냐고 묻는다
+      when: { flags_all: [rn_truth] }
+      effects:
+        - set_flag: rn_offer_done
+        - set_flag: rn_ate
+        - set_flag: rn_dealer
+        - body: { track: hunger, delta: -1 }
+        - relation: { who: owner, axis: trust, delta: 3 }
+        - give_item: { item: ranch_meat, quantity: 2 }
+        - deed: { summary: 발전소 목장과 사람을 넘기고 고기를 받는 거래를 텄다, tags: [cruelty], severity: 2, privacy: private }
+        - belief:
+            fact: "소두철과 거래를 텄다. 우리가 붙잡아 둔 사람을 넘기면 밤에 목장 수레가 와서 거둬 가고, 고기와 탄약으로 값을 친다. 첫 값으로 목장 고기 두 덩이를 받았다"
+            mature: "소두철과 거래를 텄다. 붙잡아 둔 사람을 넘기면 목장 수레가 밤에 거둬 가 살을 찌우고 잡는다. 값은 그 사람의 고기와 탄약이다. 첫 값으로 목장 고기 두 덩이를 받았다"
+            source: seen
+    - id: refuse
+      label: 고기를 밀어내고 어디서 난 고기냐고 묻는다
+      effects:
+        - set_flag: rn_offer_done
+        - relation: { who: owner, axis: trust, delta: -1 }
+        - belief: { fact: "소두철에게 어디서 난 고기냐고 물었다. 그는 '돼지죠'라고만 하고 칼끝의 고기를 제 입에 넣었다. 정비동 문 앞의 큰 사내가 나를 오래 보았다", source: seen }
+
+# ── 끝: 구출과 불 ───────────────────────────────
+
+- id: rn_rescue
+  title: 회처리장의 사슬
+  tags: [world, cannibal]
+  when:
+    zones: [power_plant]
+    zone_owner: [none]
+    indoor: true
+    places: [ash_pens]
+    segments: [night, dawn]
+    flags_all: [rn_pens_seen]
+    flags_none: [rn_rescue_done, rn_closed]
+  cast:
+    penned: { recall: rn_penned, adult: true }
+    hand: { extra: ranch_hand, label: 둑 위의 목장 일꾼 }
+    owner: { ids: [rn_dosu], enter: false, optional: true }
+    butcher: { ids: [rn_bokman], enter: false, optional: true }
+  setup: 회처리장 둑 위로 {hand}의 손전등이 한 바퀴 돌고 지나간다. 컨테이너 사슬은 녹이 슬어 굵기만 하다. 끝에서 두 번째 칸 문틈으로 {penned}의 눈이 보인다. 정비동 쪽에서 크레인 체인이 한 번 철컹 울리고 멎는다.
+  ai_direction: 사슬은 쇠지렛대로 비틀면 끊기지만 소리가 난다. 컨테이너 안에는 {penned:을/를} 포함해 여럿이 사슬에 묶여 있다. 꺼낸 사람들은 대부분 제 길로 흩어지고(이름 없는 사람들), {penned:은/는} 회처리장 밖까지 함께 간다. 정비동에 불을 지르면 목장은 끝나지만 불빛이 강 건너에서도 보인다. 소두철과 염복만은 불이 나면 남쪽으로 달아난다. 사람을 죽이고 살리는 일은 이야기가 아니라 판정과 전투가 정한다. 지킬 선 — 해체·도축은 그리지 않는다. 정비동 안은 결과(갈고리, 소금 자루, 냄새)로만 그린다. 피해자를 탓하지 않는다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: chains
+      label: 쇠지렛대로 사슬을 비틀어 끊고, 갇힌 사람들을 데리고 둑을 넘는다
+      check: stealth
+      outcomes:
+        success:
+          - set_flag: rn_rescue_done
+          - set_flag: rn_rescued
+          - set_flag: rn_truth
+          - relation: { who: penned, axis: trust, delta: 3 }
+          - deed: { summary: 발전소 목장 컨테이너에 갇힌 사람들을 꺼내 주었다, tags: [mercy, bravery], severity: 3, privacy: private }
+          - companion_join: { who: penned, kind: purpose, until: { hours: 48 } }
+          - belief: { fact: "회처리장 컨테이너의 사슬을 끊었다. 갇혀 있던 일곱이 둑을 넘어 흩어졌다. {penned}만 내 뒤를 따라왔다", source: seen }
+        partial:
+          - set_flag: rn_rescue_done
+          - set_flag: rn_rescued
+          - set_flag: rn_truth
+          - zone_noise: 2
+          - relation: { who: penned, axis: trust, delta: 2 }
+          - deed: { summary: 발전소 목장 컨테이너에 갇힌 사람들을 꺼내다 소란을 냈다, tags: [mercy, bravery], severity: 3, privacy: semi_private }
+          - companion_join: { who: penned, kind: purpose, until: { hours: 48 } }
+          - belief: { fact: "사슬 끊기는 소리에 둑 위의 손전등이 달려왔다. 몇은 흩어졌고 몇은 도로 붙잡혔다. {penned}의 손을 잡고 뛰었다", source: seen }
+        miss:
+          - zone_noise: 2
+          - wound: { steps: 1, cause: 목장 일꾼의 칼에 팔을 베였다, kind: cut }
+          - belief: { fact: "사슬이 끊기기 전에 목장 일꾼이 먼저 왔다. 칼에 팔을 베이고 물러났다. 컨테이너 안에서 누가 내 이름 대신 '가지 마'라고 했다", source: seen }
+    - id: burn
+      label: 기름병을 들고 정비동으로 가서 불을 놓고, 그 틈에 사슬을 끊는다
+      when: { has_items: [fuel_bottle], cast: [owner, butcher] }
+      check: improvise
+      outcomes:
+        success:
+          - take_item: { item: fuel_bottle }
+          - set_flag: rn_rescue_done
+          - set_flag: rn_rescued
+          - set_flag: rn_truth
+          - set_flag: rn_burned
+          - set_flag: rn_closed
+          - zone_noise: 3
+          - npc_depart: { who: owner }
+          - npc_depart: { who: butcher }
+          - relation: { who: penned, axis: trust, delta: 3 }
+          - deed: { summary: 발전소 목장의 정비동을 불태우고 갇힌 사람들을 풀어 주었다, tags: [mercy, bravery], severity: 3, privacy: semi_private }
+          - companion_join: { who: penned, kind: purpose, until: { hours: 48 } }
+          - belief:
+              fact: "발전소 정비동이 불탔다. 컨테이너 사람들은 불빛을 등지고 흩어졌다. 소두철과 큰 사내는 고속도로 남쪽으로 달아났다. 목장은 끝났다"
+              mature: "정비동이 불탔다. 크레인 갈고리에 걸린 것들이 불 속에서 오그라들었다. 컨테이너 사람들은 흩어졌고, 소두철과 염복만은 남쪽으로 달아났다. 목장은 끝났다"
+              source: seen
+        partial:
+          - take_item: { item: fuel_bottle }
+          - set_flag: rn_rescue_done
+          - set_flag: rn_truth
+          - set_flag: rn_burned
+          - set_flag: rn_closed
+          - zone_noise: 3
+          - npc_depart: { who: owner }
+          - npc_depart: { who: butcher }
+          - wound: { steps: 1, cause: 정비동 불길에 손을 데었다, kind: burn }
+          - deed: { summary: 발전소 목장의 정비동을 불태웠다, tags: [bravery], severity: 2, privacy: semi_private }
+          - belief: { fact: "정비동은 탔지만 사슬을 끊기 전에 불길이 컨테이너 쪽으로 번졌다. 몇은 빠져나왔고 몇은 못 나왔다. 소두철은 남쪽으로 달아났다", source: seen }
+        miss:
+          - take_item: { item: fuel_bottle }
+          - zone_noise: 2
+          - belief: { fact: "기름병에 불을 붙이기 전에 정비동 문 앞의 큰 사내에게 들켰다. 기름병은 깨졌고 나는 둑 너머로 달아났다", source: seen }
+    - id: mark
+      label: 사슬의 굵기와 일꾼이 도는 때만 눈에 담고 물러난다
+      effects:
+        - set_flag: rn_truth
+        - belief: { fact: "회처리장 컨테이너 사슬은 쇠지렛대로 비틀면 끊긴다. 목장 일꾼은 밤에 둑 위를 한 바퀴씩 돈다. 정비동은 기름 먹은 나무 선반이 많아 불이 잘 붙겠다", source: seen }
+
+# ── 끝: 고발 ───────────────────────────────
+
+- id: rn_report_hawk
+  title: 진료소에 들어온 훈제 고기
+  tags: [world, cannibal]
+  when:
+    zones: [d_clinic]
+    indoor: true
+    places: [director_room, pharmacy, ward]
+    segments: [morning, day]
+    flags_all: [rn_truth]
+    flags_none: [rn_closed, rn_reported]
+  cast:
+    doctor: { ids: [d_eunyoung], enter: false }
+    owner: { ids: [rn_dosu], enter: false }
+    butcher: { ids: [rn_bokman], enter: false }
+  setup: 하얀매 진료소 부엌 문 앞에 장터에서 들인 훈제 고기 상자가 놓여 있다. 환자 죽에 넣을 몫이다. 상자 옆구리에 숯으로 "발전소"라고 적혀 있다.
+  ai_direction: 서은영은 누구 편에도 서지 않지만, 환자에게 먹이는 것에는 물러서지 않는다. 회처리장의 일을 들으면 고기 상자를 치우게 하고, 하얀매 경비를 발전소로 보낸다. 무리 사이 전쟁이 아니라 무리 없는 사람들의 일이라 하얀매는 망설이지 않는다. 소두철과 염복만은 경비가 오기 전에 남쪽으로 달아난다. 주인공이 목장과 거래를 텄다면 그것은 서은영이 모르는 일이다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: tell
+      label: 서은영을 찾아가 회처리장 컨테이너에서 본 것을 말한다
+      meets: doctor
+      effects:
+        - set_flag: rn_reported
+        - set_flag: rn_closed
+        - npc_depart: { who: owner }
+        - npc_depart: { who: butcher }
+        - relation: { who: doctor, axis: trust, delta: 2 }
+        - deed: { summary: 발전소 목장이 사람을 잡아 고기로 판다는 것을 하얀매에 알렸다, tags: [honesty, bravery], severity: 2, privacy: semi_private }
+        - belief: { fact: "서은영은 고기 상자를 뒷마당에 묻게 했다. 하얀매 경비가 발전소 회처리장에 갔을 때 컨테이너는 열려 있었고 소두철은 남쪽으로 달아난 뒤였다. 목장은 끝났다", source: report }
+    - id: keep
+      label: 고기 상자만 한 번 보고 말없이 지나간다
+      effects:
+        - set_flag: rn_reported
+        - belief: { fact: "하얀매 진료소 부엌에 발전소에서 온 훈제 고기 상자가 들어와 있었다. 아무 말도 하지 않았다", source: seen }
+
+# ── 가담: 수레가 찾아온다 (되풀이) ───────────────────────────────
+
+- id: rn_sell
+  title: 담 밖의 목장 수레
+  tags: [world, cannibal]
+  repeatable: true
+  cooldown_days: 5
+  when:
+    own_territory: true
+    indoor: true
+    place_kinds: [jail]
+    segments: [night]
+    flags_all: [rn_dealer]
+    flags_none: [rn_closed]
+  cast:
+    carter: { extra: ranch_hand, label: 목장 수레꾼 }
+    prisoner: { captive: true, enter: false, adult: true }
+    owner: { ids: [rn_dosu], enter: false }
+  setup: 가두는 곳 뒷담 밖에서 손수레 바퀴 소리가 멎는다. {carter:이/가} 담 틈으로 소금 자루를 들어 보인다. "사장님이 보냈어. 넘길 거 있어?" 안쪽 칸에서 {prisoner:이/가} 잠을 못 이루고 뒤척인다.
+  ai_direction: 소두철과 거래를 튼 주인공에게 목장 수레가 며칠마다 온다. 넘기는 사람은 우리 무리가 가둔 포로다. 넘기면 포로는 수레에 실려 발전소로 가고 돌아오지 않는다. 우리 무리 사람이 보거나 포로가 사라진 것을 알면 무리가 따진다 (코드가 행적으로 셈한다). 값은 코드가 정한 만큼이다. 거절하면 수레꾼은 군말 없이 돌아간다. 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다 (노역이나 고기로 넘기는 것과 다르다). 피해자를 탓하지 않는다.
+  choices:
+    - id: sell
+      label: 안쪽 칸의 포로를 깨워 담 틈으로 수레에 넘기고 값을 받는다
+      effects:
+        - npc_depart: { who: prisoner }
+        - give_item: { item: ranch_meat, quantity: 2 }
+        - give_item: { item: pistol_rounds, quantity: 2 }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: "우리가 가둔 포로를 발전소 목장 수레에 넘기고 값을 받았다", tags: [cruelty], severity: 3, privacy: semi_private }
+        - belief:
+            fact: "{prisoner:을/를} 목장 수레에 넘겼다. 수레꾼은 머릿수를 두 번 세고 소금 자루 밑에서 고기 두 덩이와 권총탄을 꺼냈다. 바퀴 소리는 발전소 쪽으로 멀어졌다"
+            mature: "{prisoner:을/를} 목장 수레에 넘겼다. 살이 오르면 정비동 갈고리에 걸릴 것이다. 값으로 받은 고기 두 덩이는 먼저 넘긴 누군가의 살이다"
+            source: seen
+    - id: none
+      label: 오늘은 넘길 사람이 없다며 수레를 돌려보낸다
+      effects:
+        - belief: { fact: "목장 수레꾼을 빈손으로 돌려보냈다. 그는 다음에 또 온다고 했다", source: seen }
+    - id: cut
+      label: 다시는 오지 말라고, 소두철에게도 그렇게 전하라고 한다
+      effects:
+        - clear_flag: rn_dealer
+        - belief: { fact: "목장 수레꾼에게 다시는 오지 말라고 했다. 소두철과의 거래는 끝났다", source: seen }
+
+# ── 빈 우리 ───────────────────────────────
+
+- id: rn_empty
+  title: 빈 컨테이너
+  tags: [world, cannibal]
+  when:
+    zones: [power_plant]
+    zone_owner: [own, other]
+    indoor: true
+    places: [ash_pens]
+    flags_none: [rn_closed, rn_empty_seen]
+  cast:
+    owner: { ids: [rn_dosu], enter: false }
+    butcher: { ids: [rn_bokman], enter: false }
+  setup: 무리 완장을 찬 사람들이 발전소에 들어온 뒤로 회처리장 컨테이너 문은 모두 열려 있다. 사슬은 바닥에 늘어졌고, 양재기 몇 개가 뒤집혀 있다. 정비동 천장 크레인에는 빈 갈고리만 흔들린다. 바람에 아직 들큼한 냄새가 남았다.
+  ai_direction: 무리가 발전소를 차지하자 소두철과 염복만은 컨테이너에 남은 사람들을 수레에 싣고 남쪽으로 떠났다. 남은 것은 사슬, 양재기, 소금 자루, 크레인의 갈고리다. 이것이 무엇이었는지는 보는 사람이 짐작한다 (판정 없이 정황으로). 지킬 선 — 해체·도축은 그리지 않는다. 결과와 정황으로만 다룬다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: look
+      label: 컨테이너 안과 정비동을 하나씩 들여다본다
+      effects:
+        - set_flag: rn_empty_seen
+        - set_flag: rn_closed
+        - set_flag: rn_truth
+        - npc_depart: { who: owner }
+        - npc_depart: { who: butcher }
+        - body: { track: nerves, delta: 1 }
+        - belief:
+            fact: "회처리장 컨테이너에는 사람 발목에 맞춘 사슬이 칸마다 있었다. 정비동 크레인에는 갈고리가 걸려 있고 바닥에 소금 자루가 쌓였다. 돼지우리가 아니었다. 목장 사람들은 남쪽으로 떠났다"
+            mature: "컨테이너마다 사람 발목에 맞춘 사슬이 있었다. 정비동 바닥의 배수구가 검게 막혀 있고, 크레인 갈고리 아래 소금 자루가 쌓였다. 여기서 사람을 잡았다. 목장 사람들은 남쪽으로 떠났다"
+            source: seen
+    - id: leave
+      label: 냄새 나는 데는 들어가지 않고 돌아선다
+      effects:
+        - set_flag: rn_empty_seen
+        - set_flag: rn_closed
+        - npc_depart: { who: owner }
+        - npc_depart: { who: butcher }
+        - belief: { fact: "발전소 회처리장 컨테이너가 모두 열려 있었다. 돼지를 치던 사람들은 떠난 모양이다", source: seen }

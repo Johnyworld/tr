@@ -14,3 +14,19 @@
   kind: misc
   weight: 0.4
   value: 4
+
+# 목장 고기 (docs/cannibal-plan.md 2, storylets/ranch.yaml). 몸 효과는 보통 고기와 같다 (사용자 결정 2026-11-26)
+- id: ranch_meat
+  name: 목장 고기
+  description: 소금에 절여 기름종이에 싼 고깃덩이. 발전소 회처리장에서 나왔다. 어디서 온 고기인지 아는 사람은 안다.
+  kind: food
+  weight: 0.5
+  value: 4
+
+# 장터의 값싼 훈제육 (docs/cannibal-plan.md 3, storylets/market_meat.yaml). 겉은 보통 훈제 고기, 진실은 믿음으로만 (원칙 4)
+- id: cheap_smoked_meat
+  name: 값싼 훈제육
+  description: 장터 좌판에서 담배 한 갑에 두 덩이를 주는 훈제 고기. 돼지고기라는데 결이 곱고 기름이 달다.
+  kind: food
+  weight: 0.4
+  value: 2

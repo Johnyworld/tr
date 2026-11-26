@@ -21,6 +21,8 @@ import { personaOf } from "../engine/persona.ts";
 export const LINE_MARK = "지킬 선";
 /** 인신매매 줄기의 이야기 태그 */
 export const TRAFFICKING_TAG = "trafficking";
+/** 인육 이야기의 태그 (docs/cannibal-plan.md): 인신매매처럼 ai_direction에 지킬 선을 적는다 */
+export const CANNIBAL_TAG = "cannibal";
 
 export class ContentError extends Error {
   override name = "ContentError";
@@ -1231,8 +1233,8 @@ export function checkMatureLines(content: Content): string[] {
   }
   const tag = content.scenario.content_rating?.tag;
   for (const s of Object.values(content.storylets)) {
-    const lined = (!!tag && s.tags.includes(tag)) || s.tags.includes(TRAFFICKING_TAG);
-    if (lined && !(s.ai_direction ?? "").includes(LINE_MARK)) problems.push(`storylets.${s.id}.ai_direction: 성인·인신매매 이야기는 "${LINE_MARK} — 행위는 그리지 않는다…"를 적는다`);
+    const lined = (!!tag && s.tags.includes(tag)) || s.tags.includes(TRAFFICKING_TAG) || s.tags.includes(CANNIBAL_TAG);
+    if (lined && !(s.ai_direction ?? "").includes(LINE_MARK)) problems.push(`storylets.${s.id}.ai_direction: 성인·인신매매·인육 이야기는 "${LINE_MARK} — 행위는 그리지 않는다…"를 적는다`);
   }
   return problems;
 }

@@ -1,0 +1,124 @@
+# 발전소 회처리장의 목장 (docs/cannibal-plan.md 2, 이야기 storylets/ranch.yaml). 모두 무소속(faction: null)
+# 겉으로는 회처리장 컨테이너에서 돼지를 친다. 실은 사람을 가둬 먹이고, 잡아서 고기로 판다.
+# 거간꾼 길판수(npcs/trafficking.yaml)가 노역에 못 쓰는 머릿수(늙고 다치고 병든 사람)를 휴게소 톨게이트에서 발전소로 돌린다
+# 진실은 lore(secret:rn_truth)와 카드의 secret으로만. 카드의 겉 글(look·reputation·knows)은 "돼지 목장"까지
+
+- id: rn_dosu
+  name: 소두철
+  alias: 고무 앞치마를 두른 목장주
+  faction: null
+  rank: loner
+  occupation: cook
+  age: 57
+  gender: male
+  look: 머리가 하얗게 센 깡마른 남자. 늘 무릎까지 오는 고무 앞치마를 두르고 있다. 손을 자주 씻어 손등이 갈라졌다. 말할 때 상대의 팔뚝을 본다.
+  reputation: 발전소 회처리장 컨테이너에서 돼지를 친다는 사람. 장터에 훈제 고기를 대는 사람이 이 사람이라는 말이 있다. 첫 겨울에 발전소에 갇혔다 살아 나온 몇 안 되는 사람이다.
+  want: 목장을 남쪽 들판으로 옮겨 아무도 묻지 않는 곳에서 고기를 치는 것
+  fear: 굶는 것. 다시 그 겨울의 발전소 안에 갇히는 것
+  values: { discipline: 1, loyalty: -1, mercy: -3, honesty: -1, self_interest: 3 }
+  traits: [calculating, cold, patient]
+  voice:
+    style: 느릿하고 공손한 존댓말. 사람을 "그거", "한 마리"라고 부를 때가 있다
+    samples:
+      - "돼지는 먹인 만큼 나옵니다. 사람 일도 그래요."
+      - "배고파 본 사람은 고기 출처를 안 물어요. 안 물어서 산 거예요."
+  routine: { dawn: 회처리장 창고, morning: 회처리장 창고, day: 정비동, evening: 회처리장 창고, night: 회처리장 창고 }
+  rules:
+    - 컨테이너 문의 사슬은 자기 손으로만 푼다
+    - 처음 보는 사람에게는 먼저 고기를 권한다. 먹는지 본다
+  knows:
+    - 휴게소의 거간꾼 길판수가 사흘에 한 번 톨게이트 쪽에서 트럭을 돌려 발전소로 온다
+    - 장터의 훈제 고기 행상이 이 목장의 고기를 떼어 간다
+  keeps:
+    - 회처리장 컨테이너에 가둔 것은 돼지가 아니라 사람이라는 것
+  doesnt_know:
+    - 붉은연합 규율반 명부에 "야간 전출"이 적혀 있다는 것
+  secret:
+    content: 첫 겨울, 발전소 안에 갇힌 열두 사람 가운데 먼저 죽은 사람을 처음 먹자고 한 사람이 자신이다. 그 뒤로 죽기를 기다리지 않게 되었다. 지금 컨테이너에는 길판수에게서 산 사람들이 갇혀 있고, 살이 오르면 정비동으로 간다
+    reveal_when: 목장과 거래를 튼 뒤 신뢰가 쌓였거나, 컨테이너 안을 본 사람에게 목숨을 잡혔을 때
+    min_trust: 6
+  stats: { strength: 0, agility: 0, vitality: 1, senses: 1, nerve: 2, charm: 1, intellect: 1 }
+  skills: { persuade: 2, insight: 2, survival: 2, sense_danger: 1 }
+  start_inventory: [kitchen_knife, smoked_meat, cigarettes]
+  playable: false
+  zone: power_plant
+  ties:
+    - { to: rn_bokman, kind: friend }
+
+- id: rn_bokman
+  name: 염복만
+  alias: 정비동의 말 없는 사내
+  faction: null
+  rank: loner
+  occupation: mechanic
+  age: 41
+  gender: male
+  look: 어깨가 앞으로 굽은 큰 사내. 소매를 팔꿈치까지 걷어 올리고 다닌다. 정비동 천장 크레인의 체인을 손으로 감아 올리는 버릇이 있다.
+  reputation: 발전소 정비동에서 연장을 손보는 말 없는 사람. 소두철 밑에서 일한다. 누구와 말을 섞는 것을 본 사람이 없다.
+  want: 아무도 자기 이름을 부르지 않는 것
+  fear: 정비동 밖에서 혼자 밤을 보내는 것
+  values: { discipline: 2, loyalty: 2, mercy: -2, honesty: 0, self_interest: 0 }
+  traits: [blunt, cold, steel_nerves]
+  voice:
+    style: 거의 말하지 않는다. 하면 두세 마디의 반말
+    samples:
+      - "사장님한테 물어."
+      - "여긴 들어오는 데 아니야."
+  routine: { dawn: 정비동, morning: 정비동, day: 정비동, evening: 회처리장 창고, night: 정비동 }
+  rules:
+    - 소두철의 말이 없으면 아무에게도 문을 열지 않는다
+    - 정비동 안에는 아무도 들이지 않는다
+  knows:
+    - 소두철이 시키는 일은 군말 없이 한다
+  keeps:
+    - 정비동 크레인 갈고리에 무엇이 걸리는지
+  secret:
+    content: 정비동에서 고기를 잡는 사람이 자신이다. 첫 겨울 발전소에 함께 갇힌 동생을 먹고 살았다. 그 뒤로 소두철 곁을 떠나지 못한다
+    reveal_when: 정비동 안을 본 사람이 소두철 없이 그와 단둘이 마주했을 때
+    min_trust: 7
+  stats: { strength: 2, agility: 0, vitality: 2, senses: 0, nerve: 2, charm: -1, intellect: -1 }
+  skills: { fight: 2, endure: 2, mechanics: 1, intimidate: 1 }
+  start_inventory: [crowbar]
+  playable: false
+  zone: power_plant
+
+# ── 장터의 훈제 고기 행상 (docs/cannibal-plan.md 3, storylets/market_meat.yaml) ──
+- id: mk_sunrye
+  name: 엄순례
+  alias: 훈제 고기 좌판의 할머니
+  faction: faction_e
+  rank: resident
+  occupation: trader
+  age: 63
+  gender: female
+  look: 등이 굽은 작은 할머니. 털모자를 눌러쓰고, 좌판 앞에서 늘 칼로 고기를 얇게 저민다. 손님에게 한 점씩 맛보라고 내민다.
+  reputation: 장터에서 제일 싼 훈제 고기를 파는 할머니. 짐꾼과 호위들이 단골이고, 국밥집 가마솥 고기도 이 좌판에서 나간다. 고기를 어디서 떼 오는지 물으면 "돼지 치는 데서"라고 웃는다.
+  want: 좌판 자리를 장터 한가운데로 옮기고, 겨울마다 손주 몫의 고기를 쟁여 두는 것
+  fear: 손님이 고기 출처를 끝까지 캐묻는 것. 장터에서 쫓겨나 굶는 것
+  values: { discipline: 0, loyalty: 1, mercy: 0, honesty: -2, self_interest: 2 }
+  traits: [genial, calculating, talkative]
+  voice:
+    style: 정 많은 척하는 반말. 값 이야기만 나오면 말이 빨라진다
+    samples:
+      - "한 점 먹어 봐. 이 값에 이런 고기 없어."
+      - "어디서 오긴. 돼지 치는 데서 오지. 많이 묻는 사람이 고기를 못 먹어."
+  routine: { morning: 장터 좌판·천막, day: 장터 좌판·천막, evening: 국밥집, night: 장터 좌판·천막 }
+  rules:
+    - 고기 출처를 물으면 웃으며 다른 고기를 한 점 더 내민다
+    - 발전소 쪽에서 수레가 온 날은 좌판을 일찍 연다
+  knows:
+    - 훈제 고기는 사흘에 한 번 발전소 회처리장의 소두철에게서 떼 온다
+    - 국밥집 가마솥 고기도 자기 좌판에서 나간다
+  keeps:
+    - 소두철의 고기가 돼지고기가 아니라는 것을 짐작하면서 묻지 않는다는 것
+  doesnt_know:
+    - 소두철이 거간꾼 길판수에게서 사람을 산다는 것
+  secret:
+    content: 첫 해 겨울 고기 속에서 금니 하나가 나온 적이 있다. 그 뒤로 고기 출처를 묻지 않았다. 금니는 지금도 앞치마 주머니에 있다
+    reveal_when: 고기의 출처를 아는 사람이 금니 이야기를 꺼냈을 때
+    min_trust: 5
+  stats: { strength: -1, agility: 0, vitality: 0, senses: 1, nerve: 1, charm: 1, intellect: 1 }
+  skills: { persuade: 2, deceive: 2, insight: 1 }
+  start_inventory: [kitchen_knife, cheap_smoked_meat]
+  playable: false
+  zone: e_market

@@ -71,4 +71,16 @@ describe("수술", () => {
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().characters.a_chaewon!.conditions.harm).toBe("serious");
   });
+
+  it("수술을 못 하는 치료사는 손댈 것이 수술뿐이면 값을 받기 전에 돌려보낸다 (PT41 떠돌이)", () => {
+    const { w } = world();
+    expect(w.runCheat("~harm me critical").ok).toBe(true);
+    expect(w.runCheat("~set bleeding none me").ok).toBe(true);
+    expect(w.runCheat("~summon e_bonesetter").ok).toBe(true);
+    const before = structuredClone(me(w).inventory);
+    const r = treat(w);
+    expect(!r.ok && r.error).toContain("값은 받지 않았다");
+    expect(me(w).inventory).toEqual(before);
+    expect(me(w).conditions.harm).toBe("critical");
+  });
 });

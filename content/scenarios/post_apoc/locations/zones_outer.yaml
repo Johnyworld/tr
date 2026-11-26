@@ -50,8 +50,10 @@
     - { id: to_prison, name: "교도소 가는 길", indoor: false, map: { x: 4, y: 50 }, description: "서쪽 교도소로 가는 길", near: [chimney], road: true, to: [prison] }
     - { id: chimney, name: "굴뚝 밑", indoor: false, map: { x: 28, y: 45 }, kinds: [yard], description: "도시 어디서나 보이는 굴뚝 밑. 깃발 자국이 남았다", near: [cooling_pond] }
     - { id: workshop, name: "정비동", indoor: true, map: { x: 80, y: 28 }, kinds: [ruin], description: "공구 선반이 털린 정비동. 천장 크레인이 녹슬어 멈췄다", aliases: ["정비동", "정비 창고", "크레인"], near: [turbine_hall] }
-    - { id: cooling_pond, name: "냉각수 못", indoor: false, map: { x: 18, y: 80 }, kinds: [field], description: "녹조가 낀 넓은 냉각수 못. 물새가 앉았다 날아오른다", aliases: ["냉각수 못", "못"], near: [chimney], wade: true }
+    - { id: cooling_pond, name: "냉각수 못", indoor: false, map: { x: 18, y: 80 }, kinds: [field], description: "녹조가 낀 넓은 냉각수 못. 물새가 앉았다 날아오른다", aliases: ["냉각수 못", "못"], near: [chimney, ash_pens], wade: true }
     - { id: control_room, name: "중앙 제어실", indoor: true, map: { x: 40, y: 18 }, kinds: [ruin], description: "계기판이 벽을 두른 제어실. 바늘이 모두 0에 멈췄고 의자 하나만 바로 놓여 있다", aliases: ["제어실"], near: [turbine_hall] }
+    # 목장 (docs/cannibal-plan.md 2): 회처리장 끝의 컨테이너 창고. 겉으로는 돼지우리다
+    - { id: ash_pens, name: "회처리장 창고", indoor: true, map: { x: 10, y: 22 }, kinds: [store], description: "발전소 서북쪽 끝, 잿빛 회처리장 둑 밑에 컨테이너 창고가 한 줄로 섰다. 문마다 사슬이 감겼고, 바람이 불면 들큼한 냄새가 난다. 돼지를 친다는 말이 돈다", aliases: ["회처리장", "컨테이너 창고", "돼지우리", "목장"], near: [cooling_pond, workshop] }
   cover: 4
   owner: null
   danger: 2

@@ -72,6 +72,22 @@ function surgeonsNearby(ctx: ToolContext): string[] {
  * 치료사에게 자기 치료를 받을 수 없는 까닭 (물건 없이, 판정·시간 전에 본다, 플레이 테스트 11). 받을 수 있으면 null.
  * 피가 나는데 치료사가 없으면 맨손 지혈로 넘어가므로 막지 않는다
  */
+/**
+ * 수술을 못 하는 치료사가 손댈 것이 수술뿐이면 값을 받기 전에 돌려보낸다 (PT41 떠돌이: 담요·땔감을 받고 나서야 "수술을 할 줄 모른다").
+ * 피·병처럼 그 치료사가 볼 것이 함께 있으면 null (치료는 하고 상처만 못 본다)
+ */
+function surgeryOnlyRefusal(ctx: ToolContext, patientId: string, healer: string): string | null {
+  const recovery = ctx.content.scenario.recovery;
+  if (!recovery) return null;
+  const state = ctx.store.getState();
+  const again = careUsedToday(state, ctx.content, patientId, "healer");
+  if (again || !needsSurgery(ctx, patientId) || canOperate(ctx, healer)) return null;
+  const useful = Object.entries(recovery.healer).some(([t, steps]) => steps > 0 && t !== ctx.content.scenario.harm_track && shownIndex(ctx, state, patientId, t) > 0);
+  if (useful) return null;
+  const surgeons = surgeonsNearby(ctx);
+  return `${josa(playerCalls(state, ctx.content, healer), "은/는")} 수술을 할 줄 몰라 이 상처는 손대지 못한다고 한다 (값은 받지 않았다). ${surgeons.length ? `이 구역에서 수술할 줄 아는 사람: ${surgeons.join(", ")}.` : "이 구역에는 수술할 줄 아는 사람이 없다. 다른 곳의 치료사를 찾아야 한다."}`;
+}
+
 export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: FeeChoice = "default", chosen: string | null = null): string | null {
   const recovery = ctx.content.scenario.recovery;
   if (!recovery) return "이 시나리오에는 치료 규칙이 없다.";
@@ -95,6 +111,8 @@ export function selfTreatmentProblem(ctx: ToolContext, patientId?: string, pay: 
   const bleedTrack = ctx.content.scenario.wounds?.track;
   const freshBleed = !!bleedTrack && shownIndex(ctx, state, player.id, bleedTrack) > 0;
   if (needed && !freshBleed && careUsedToday(state, ctx.content, player.id, "healer")) return `${other ? `${josa(playerCalls(state, ctx.content, player.id), "은/는")} ` : ""}오늘은 이미 치료를 받았다. 내일 다시 받을 수 있다.`;
+  const surgeryOnly = surgeryOnlyRefusal(ctx, player.id, healer);
+  if (surgeryOnly) return surgeryOnly;
   if (needed) {
     const planned = planHealerPay(ctx, healer, pay);
     if (!planned.ok) return planned.error;

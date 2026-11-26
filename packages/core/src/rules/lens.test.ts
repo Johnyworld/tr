@@ -81,6 +81,14 @@ describe("보여 주기", () => {
     story.ai_direction = "아무 안내 없음";
     expect(checkMatureLines(content).join(" ")).toContain(`storylets.${story.id}.ai_direction`);
   });
+
+  it("검사: 인육 이야기(cannibal 태그)도 지킬 선을 적는다", () => {
+    const content = withMatureJob();
+    const story = Object.values(content.storylets).find((x) => x.tags.includes("cannibal"))!;
+    expect(story).toBeDefined();
+    story.ai_direction = "아무 안내 없음";
+    expect(checkMatureLines(content).join(" ")).toContain(`storylets.${story.id}.ai_direction`);
+  });
 });
 
 function content(c: { id: string }) {

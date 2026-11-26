@@ -1,0 +1,43 @@
+# 섬 거래선을 둘러싼 이름 없는 사람들 (docs/cannibal-plan.md 6, storylets/isle_cargo.yaml). 이야기에서만 들인다. 모두 성인
+
+- id: fled_debtor
+  label: 달아난 빚쟁이
+  rank: loner
+  age: [22, 58]
+  looks:
+    - { gender: male, text: "손목에 밧줄 자국이 벌겋게 남은 남자. 갈대에 긁힌 얼굴로 물가만 본다" }
+    - { gender: female, text: "젖은 치맛단을 움켜쥔 여자. 맨발이고, 전당포 꼬리표가 아직 옷깃에 꿰매져 있다" }
+  stats: { agility: [0, 1], vitality: [-1, 0], nerve: [-1, 0] }
+  skills: { stealth: 1, survival: 1 }
+  traits: [cautious, weary, guarded]
+  trait_count: 2
+  values: { self_interest: 1, loyalty: 0 }
+  profile:
+    wants: [거래선이 떠날 때까지 숨어 있는 것, 강 건너 아무도 모르는 데로 가는 것]
+    fears: [전당포 노파의 돋보기, 섬으로 가는 배, 편지가 한 장도 오지 않는 곳]
+    voices:
+      - { style: 숨죽인 존댓말, samples: ["못 봤다고 해 주세요. 제발요.", "섬에 간 사람한테서 편지 온 거 보셨어요? 한 장이라도요."] }
+    rules: [사람 발소리가 나면 물에 몸을 담근다]
+    reputations: [전당포 빚을 못 갚아 섬 거래선에 실릴 뻔한 사람]
+  appears: { zones: [riverside, water_plant] }
+
+- id: waiting_kin
+  label: 나루에서 기다리는 사람
+  rank: loner
+  age: [25, 65]
+  looks:
+    - { gender: female, text: "빛바랜 사진 한 장을 손에 쥔 여자. 배가 닿을 때마다 내리는 얼굴을 하나하나 본다" }
+    - { gender: male, text: "목도리를 두 겹 두른 남자. 나루 말뚝에 분필로 날짜를 적는다. 날짜가 스무 줄을 넘었다" }
+  stats: { nerve: [-1, 0], charm: [0, 1] }
+  skills: { endure: 1, persuade: 1 }
+  traits: [protective, weary, patient]
+  trait_count: 2
+  values: { loyalty: 2, mercy: 1 }
+  profile:
+    wants: [섬에 간 가족에게서 편지 한 장 받는 것, 다음 거래선에 실어 보낼 답장을 맡기는 것]
+    fears: [섬에는 아무도 없다는 말, 나루상단이 이 나루를 닫는 것]
+    voices:
+      - { style: 조심스러운 존댓말, samples: ["섬에 가 보신 적 있어요? 거기 정말 밥이 넉넉하대요?", "이번 배에도 편지는 없대요. 바빠서 그렇겠죠."] }
+    rules: [배가 닿을 때마다 나루 끝까지 나간다]
+    reputations: [빚 때문에 섬 거래선에 실려 간 사람의 가족]
+  appears: { zones: [water_plant] }

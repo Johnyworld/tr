@@ -1771,6 +1771,8 @@ consumables:
   raw_fish: { hunger: 1 }
   raw_meat: { hunger: 2 }
   smoked_meat: { hunger: 2, thirst: -1 }
+  ranch_meat: { hunger: 2, thirst: -1 }
+  cheap_smoked_meat: { hunger: 2, thirst: -1 }
   dirty_water: { thirst: 2 }
   wild_greens: { hunger: 1 }
   mushroom: { hunger: 1 }
@@ -2173,6 +2175,7 @@ settings:
     - { id: "taboo_no_lie_friend", slot: "taboo", name: "동료에게 거짓말하지 않는다", description: "바깥사람은 몰라도 우리끼리는", acting: "같은 편에게 둘러대지 못한다", confirm: "동료에게는 거짓말하지 않기로 한" }
     - { id: "taboo_no_abandon", slot: "taboo", name: "다친 동료를 두고 가지 않는다", description: "끌고 가다 같이 죽더라도", acting: "쓰러진 사람을 업으려 한다", opposites: ["ideal_survival"], confirm: "다친 동료를 두고 가지 않기로 한" }
     - { id: "taboo_no_infected_meat", slot: "taboo", name: "감염체 근처의 고기는 먹지 않는다", description: "굶는 게 낫다", acting: "출처 모를 고기를 밀어낸다", confirm: "수상한 고기는 먹지 않기로 한" }
+    - { id: "taboo_no_human_flesh", slot: "taboo", name: "사람 고기는 먹지 않는다", description: "굶어 죽더라도 그 선은 넘지 않는다", acting: "고기 출처를 묻고, 대답이 없으면 손대지 않는다", confirm: "사람 고기는 먹지 않기로 한" }
     - { id: "taboo_no_drink", slot: "taboo", name: "술에 손대지 않는다", description: "한 번 무너진 적이 있다", acting: "술잔을 사양하고, 술 냄새에 표정이 굳는다", trait_opposites: ["drinker"], confirm: "술을 끊은" }
     - { id: "taboo_no_betray", slot: "taboo", name: "무리를 팔지 않는다", description: "붙잡혀도, 매를 맞아도", acting: "심문에 입을 다문다", needs_faction: true, confirm: "무리를 팔지 않기로 한" }
     - { id: "taboo_no_kill_human", slot: "taboo", name: "사람은 죽이지 않는다", description: "감염체는 몰라도 사람은", acting: "사람을 겨눌 때 손이 떨린다", opposites: ["ideal_strength"], clashes_roles: ["role_c_raider", "role_c_comrades", "role_a_squad_leader", "role_b_squad_leader", "role_c_squad_leader", "role_d_squad_leader", "role_e_squad_leader"], confirm: "사람만은 죽이지 않기로 한" }

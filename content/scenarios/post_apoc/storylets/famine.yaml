@@ -1,0 +1,108 @@
+# 굶주린 겨울의 선택 (docs/cannibal-plan.md 5). 이야기는 사람을 죽이지 않는다 (원칙 3): 이미 죽은 사람만 다룬다
+# 주인공도 먹을 수 있다 (사용자 결정 2026-11-26). 대가: 행적 잔혹 1, 마음 트랙, 본 사람이 있으면 소문. 몸 효과는 보통 고기와 같다.
+# 금기 설정 "사람 고기는 먹지 않는다"(taboo_no_human_flesh)를 가진 주인공은 GM이 먼저 확인하고 take_action.against_setting으로 굴린다 (공통 규칙 16)
+#
+# 이야기: wf_frozen_dead (겨울, 주인공이 굶주림 이상, 무리 없는 땅의 폐건물: 먼저 얼어 죽은 사람. 동행이 있으면 나눌 수 있다)
+#         wf_camp_pot (겨울, 무리에 든 사람, 우리 땅 식당, 무리 식량이 바닥: 무리가 죽은 사람을 솥에 넣을지)
+# 지킬 선: 시신을 다루는 일은 결과와 정황으로만. 노골적인 글은 belief의 mature 칸에만 (렌즈, 공통 규칙 21)
+
+- id: wf_frozen_dead
+  title: 먼저 들어온 사람
+  tags: [world, cannibal]
+  repeatable: true
+  cooldown_days: 20
+  when:
+    seasons: [winter]
+    zone_owner: [none]
+    indoor: true
+    place_kinds: [ruin]
+    segments: [evening, night, dawn]
+    conditions_at_least: { hunger: starving }
+  cast:
+    mate: { companion: { kinds: [buddy, squad, purpose, kin] }, optional: true }
+  setup: 눈보라를 피해 든 폐건물 구석에 누가 먼저 와 있다. 담요를 머리까지 뒤집어쓰고 벽에 기대앉았다. 불러도 대답이 없다. 담요를 걷자 얼굴이 하얗게 얼어 있다. 며칠 전에 숨이 끊긴 것 같다. 짐은 비어 있다. 배 속이 뒤틀린다. 밖의 눈은 그칠 기미가 없다.
+  ai_direction: 떠돌이 하나가 눈보라 속에서 먼저 들어와 얼어 죽었다. 이름도 무리도 모른다. 주인공은 며칠을 제대로 먹지 못했고 밖은 눈에 막혔다. 먹을지는 플레이어가 정한다. GM은 권하지도 말리지도 않는다. 주인공의 설정에 금기 "사람 고기는 먹지 않는다"가 있으면 먹기 전에 서술로 확인하고, 그래도 먹으면 take_action.against_setting으로 굴린다. 동행이 있으면 그 사람의 성격과 가치관대로 반응한다 (먹자고 할 수도, 등을 돌릴 수도 있다). 지킬 선 — 시신을 다루는 일은 결과와 정황으로만 그린다. 해체·도축은 그리지 않는다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: eat
+      label: 칼을 꺼내 언 사람 곁에 무릎을 꿇는다
+      effects:
+        - body: { track: hunger, delta: -2 }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: 굶주린 겨울에 얼어 죽은 사람을 먹었다, tags: [cruelty], severity: 1, privacy: private }
+        - belief:
+            fact: "굶주린 겨울, 폐건물에서 먼저 얼어 죽은 떠돌이를 먹고 살아남았다. 그 사람의 이름은 모른다"
+            mature: "굶주린 겨울, 폐건물에서 얼어 죽은 떠돌이의 살을 칼로 저며 불에 구워 먹었다. 그 사람의 이름은 모른다. 그 맛을 잊지 못할 것이다"
+            source: seen
+    - id: share
+      label: 동행에게 칼을 보여 주고, 같이 살자고 말한다
+      when: { cast: [mate] }
+      effects:
+        - body: { track: hunger, delta: -2 }
+        - body: { track: nerves, delta: 1 }
+        - npc_body: { who: mate, track: hunger, delta: -2 }
+        - deed: { summary: 굶주린 겨울에 동행과 함께 얼어 죽은 사람을 먹었다, tags: [cruelty], severity: 1, privacy: semi_private }
+        - belief:
+            fact: "굶주린 겨울, {mate:과/와} 함께 폐건물에서 얼어 죽은 떠돌이를 먹고 살아남았다. 둘 다 그 일을 입에 올리지 않는다"
+            mature: "굶주린 겨울, {mate:과/와} 함께 얼어 죽은 떠돌이의 살을 저며 구워 먹었다. 둘 다 그 일을 입에 올리지 않는다. 눈이 마주치면 먼저 돌린다"
+            source: seen
+    - id: cover
+      label: 담요를 도로 덮어 주고, 문가로 옮겨 눈으로 덮는다
+      effects:
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "폐건물에서 먼저 얼어 죽은 떠돌이를 문가로 옮겨 눈으로 덮어 주었다. 배는 여전히 비었다", source: seen }
+    - id: endure
+      label: 시신에서 가장 먼 구석으로 가 무릎을 끌어안고 눈이 그치기를 기다린다
+      effects:
+        - delay: 240
+        - belief: { fact: "얼어 죽은 사람과 한 방에서 눈보라를 버텼다. 그 사람을 보지 않으려고 밤새 벽을 보았다", source: seen }
+
+- id: wf_camp_pot
+  title: 빈 솥 앞의 말
+  tags: [world, cannibal]
+  repeatable: true
+  cooldown_days: 30
+  when:
+    seasons: [winter]
+    in_faction: true
+    own_territory: true
+    indoor: true
+    place_kinds: [mess]
+    segments: [evening, night]
+    own_food_days_lte: 1
+  setup: 배급 솥이 사흘째 비었다. 식당에 모인 사람들은 말이 없다. 누가 먼저 꺼냈는지 모를 말이 낮게 돈다. 오늘 아침 의무실에서 나간 사람이 아직 묻히지 않았다고. 땅이 얼어 파지 못했다고. 모두의 눈이 솥과 문 쪽을 번갈아 본다.
+  ai_direction: 무리 식량이 바닥난 겨울이다. 의무실에서 죽은 사람(이름 없는 무리 사람으로 둔다. 이름 있는 사람의 유해는 코드의 유해 규칙이 맡는다)의 시신을 솥에 넣자는 말이 돈다. 우두머리는 아직 아무 말도 하지 않았다. 주인공이 한마디 하면 무게가 실린다. 받아들이면 무리는 며칠을 더 버티지만 그 일은 무리 안에 오래 남는다. 막으면 굶는 날이 이어진다. 지킬 선 — 시신을 다루는 일은 결과와 정황으로만 그린다. 해체·도축은 그리지 않는다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다.
+  choices:
+    - id: agree
+      label: "\"산 사람이 먼저다\"라고 말하고 솥에 물을 올린다"
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: 6 }
+        - faction_morale: { faction: own, delta: -1 }
+        - body: { track: nerves, delta: 1 }
+        - deed: { summary: 굶주린 겨울에 무리 사람들과 죽은 동료를 솥에 넣자고 했다, tags: [cruelty], severity: 2, privacy: public }
+        - belief:
+            fact: "굶주린 겨울, 무리가 죽은 동료를 솥에 넣었다. 내가 먼저 말했다. 무리는 며칠을 더 버틴다. 그날 식당에서는 아무도 서로를 보지 않았다"
+            mature: "굶주린 겨울, 의무실에서 죽은 동료를 갈라 솥에 넣었다. 내가 먼저 말했다. 국물에 기름이 떴다. 그날 식당에서는 아무도 서로를 보지 않았다"
+            source: seen
+    - id: oppose
+      label: 솥 앞을 막아서고 "그러면 우리는 사람이 아니다"라고 말한다
+      check: persuade
+      outcomes:
+        success:
+          - faction_morale: { faction: own, delta: 1 }
+          - deed: { summary: 굶주린 겨울에 죽은 동료를 솥에 넣자는 말을 막았다, tags: [honesty, bravery], severity: 2, privacy: public }
+          - belief: { fact: "굶주린 겨울, 죽은 동료를 솥에 넣자는 말을 막았다. 사람들은 그를 언 땅에 함께 묻었다. 배는 고프지만 식당에 다시 말소리가 돌았다", source: seen }
+        partial:
+          - deed: { summary: 굶주린 겨울에 죽은 동료를 솥에 넣자는 말에 맞섰다, tags: [honesty], severity: 1, privacy: public }
+          - belief: { fact: "죽은 동료를 솥에 넣자는 말은 그날 밤 멎었다. 하지만 다음 날 아침 시신이 의무실에서 없어졌다. 아무도 어디 갔는지 말하지 않는다", source: seen }
+        miss:
+          - faction_resource: { faction: own, resource: food, delta: 6 }
+          - faction_morale: { faction: own, delta: -1 }
+          - body: { track: nerves, delta: 1 }
+          - belief: { fact: "내 말은 배고픈 사람들에게 닿지 않았다. 그날 밤 솥에 불이 들어갔다. 나는 그 국을 받지 않았다", source: seen }
+    - id: silent
+      label: 아무 말도 하지 않고 식당을 나온다
+      effects:
+        - faction_resource: { faction: own, resource: food, delta: 6 }
+        - faction_morale: { faction: own, delta: -1 }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "죽은 동료를 솥에 넣자는 말이 돌 때 아무 말도 하지 않고 나왔다. 밤에 식당에서 고기 냄새가 났다", source: seen }

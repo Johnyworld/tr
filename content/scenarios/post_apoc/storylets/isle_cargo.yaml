@@ -1,0 +1,97 @@
+# 빚쟁이 섬 거래선을 뭍에서 (docs/cannibal-plan.md 6). 사람은 npcs/more_trader.yaml(감순덕·감태식), 이름 없는 사람은 extras/trafficking.yaml
+# 이미 있는 뭍 쪽 이야기(storylets/people_trader_isle.yaml): 겉봉이 한 번 뜯긴 편지, 손이 묶인 짐(거래선을 멈추기)
+# 여기서는 그 바깥: 달아난 빚쟁이를 잡아 넘기기(가담, 되풀이), 나루에서 기다리는 가족
+# 섬의 진실(인육, secret:y_feast_seen)은 드러내지 않는다. 섬사람 시나리오의 몫이고, 뭍에서 아는 것은 "편지가 오지 않는다"까지
+# 주인공도 가담할 수 있다 (사용자 결정 2026-11-26): 사람을 노역으로 넘기는 일. 성적 착취 갈래는 없다
+
+- id: ic_runaway
+  title: 갈대밭의 꼬리표
+  tags: [world, trafficking]
+  repeatable: true
+  cooldown_days: 7
+  when:
+    zones: [riverside, water_plant]
+    indoor: false
+    place_kinds: [field]
+    segments: [dawn, evening, night]
+    day_gte: 6
+  cast:
+    debtor: { extra: fled_debtor, label: 갈대 속의 사람, adult: true }
+    pawn: { ids: [pe_sundeok], enter: false }
+  setup: 갈대가 바람과 다르게 흔들린다. 물가에 쭈그린 {debtor:이/가} 당신을 보고 숨을 멈춘다. 옷깃에 꿰맨 천 쪼가리에 전당포 도장이 찍혀 있다. 나루 쪽에서 누가 외친다. "전당포 꼬리표 단 사람 보면 데려와! 감 할매가 소총탄 두 발 쳐 준대!"
+  ai_direction: 감순덕이 섬 거래선에 실으려던 빚쟁이 하나가 묶인 손을 풀고 달아났다. 데려가면 감순덕은 값을 치르고, 그 사람은 다음 물때에 섬으로 간다. 섬에서 어떻게 되는지는 뭍의 누구도 모른다 (편지가 오지 않는다). 숨겨 주면 감순덕은 모른다. 주인공이 데려가는 것은 그 사람을 노역으로 팔아넘기는 일이다. 붙잡고 풀어 주는 일은 판정이 정한다. 지킬 선 — 사람을 넘기는 일은 결과와 정황으로만 그린다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다. 피해자를 탓하지 않는다.
+  choices:
+    - id: drag
+      label: 갈대 속으로 들어가 빚쟁이의 팔을 꺾어 나루로 끌고 간다
+      check: intimidate
+      outcomes:
+        success:
+          - npc_depart: { who: debtor }
+          - give_item: { item: rifle_rounds, quantity: 2 }
+          - deed: { summary: 섬 거래선에서 달아난 빚쟁이를 잡아 전당포에 넘기고 값을 받았다, tags: [cruelty], severity: 2, privacy: semi_private }
+          - belief: { fact: "갈대밭에서 달아난 빚쟁이를 잡아 나루로 끌고 갔다. 감순덕이 돋보기로 꼬리표를 확인하고 소총탄 두 발을 내밀었다. 그 사람은 다음 물때에 섬으로 간다", source: seen }
+        partial:
+          - npc_depart: { who: debtor }
+          - give_item: { item: rifle_rounds }
+          - wound: { steps: 1, cause: 갈대밭에서 몸부림치는 빚쟁이와 뒹굴다 돌에 찧었다, kind: blunt }
+          - deed: { summary: 섬 거래선에서 달아난 빚쟁이를 잡아 넘겼다, tags: [cruelty], severity: 2, privacy: semi_private }
+          - belief: { fact: "빚쟁이는 물속까지 버텼다. 끌고 나왔을 때는 둘 다 진흙투성이였다. 감순덕은 '흠집 났네'라며 한 발만 쳐 주었다", source: seen }
+        miss:
+          - belief: { fact: "빚쟁이는 물에 뛰어들어 갈대 사이로 사라졌다. 나루 쪽 외침이 멀어졌다", source: seen }
+    - id: hide
+      label: 갈대를 덮어 주고, 나루 쪽 사람들에게 아무도 못 봤다고 한다
+      check: deceive
+      outcomes:
+        success:
+          - npc_depart: { who: debtor }
+          - deed: { summary: 섬 거래선에서 달아난 빚쟁이를 숨겨 보냈다, tags: [mercy], severity: 1, privacy: private }
+          - belief: { fact: "달아난 빚쟁이를 갈대 속에 숨겨 주었다. 밤이 되자 그 사람은 강 건너로 헤엄쳐 갔다", source: seen }
+        partial:
+          - npc_depart: { who: debtor }
+          - relation: { who: pawn, axis: trust, delta: -1 }
+          - deed: { summary: 섬 거래선에서 달아난 빚쟁이를 숨겨 주었다, tags: [mercy], severity: 1, privacy: semi_private }
+          - belief: { fact: "빚쟁이는 강 건너로 갔다. 나루의 상단 사람 하나가 내 얼굴을 오래 보았다. 감순덕의 귀에 들어갈 것이다", source: seen }
+        miss:
+          - relation: { who: pawn, axis: trust, delta: -2 }
+          - belief: { fact: "상단 사람들이 갈대를 헤집어 빚쟁이를 끌어냈다. 감순덕은 나를 장부에 적었다", source: seen }
+    - id: pass
+      label: 못 본 척 둑길로 올라간다
+      effects:
+        - belief: { fact: "강가 갈대밭에 전당포 꼬리표를 단 사람이 숨어 있었다. 섬 거래선에 실릴 사람이다. 못 본 척 지나왔다", source: seen }
+
+- id: ic_waiting
+  title: 말뚝의 분필 날짜
+  tags: [world, trafficking]
+  when:
+    zones: [water_plant]
+    indoor: false
+    places: [waterside, ferry]
+    segments: [morning, day, evening]
+    day_gte: 8
+    flags_none: [ic_waiting_done]
+  cast:
+    kin: { extra: waiting_kin, label: 나루에서 기다리는 사람, adult: true }
+  setup: 나루 말뚝에 분필 날짜가 스무 줄 넘게 적혀 있다. {kin:이/가} 새 줄을 긋다가 당신을 돌아본다. "섬 배 기다리세요? 저도요. 우리 집 사람이 빚 때문에 섬 일손으로 갔어요. 섬에 가면 밥이 넉넉하대요. 그런데 편지가… 한 장도 안 와요."
+  ai_direction: 이 사람의 가족은 전당포 감순덕의 빚 때문에 섬 거래선에 실려 갔다. 편지는 한 장도 오지 않았다. 주인공이 섬의 진실을 알더라도(여울섬 줄기, y_feast_seen) 이 사람은 그것을 받아들일 준비가 되어 있지 않다. 말해 주면 처음에는 화를 내고 믿지 않는다. 섬의 진실을 모르는 주인공이라면, 아는 것은 "편지가 오지 않는다"까지다. 지킬 선 — 사람을 넘기는 일은 결과와 정황으로만 그린다. 성적 착취에 주인공이 가담하는 길은 내밀지 않는다. 피해자를 탓하지 않는다.
+  choices:
+    - id: comfort
+      label: 바빠서 그럴 거라고, 다음 배에는 올 거라고 말해 준다
+      effects:
+        - set_flag: ic_waiting_done
+        - relation: { who: kin, axis: trust, delta: 1 }
+        - belief: { fact: "정수장 나루에 섬 거래선으로 간 가족을 기다리는 사람이 있다. 말뚝의 분필 날짜가 스무 줄을 넘었다. 섬에 간 사람에게서 편지는 한 장도 오지 않았다", source: report }
+    - id: truth
+      label: 섬에서 돌아온 사람도, 편지를 받은 사람도 본 적 없다고 말한다
+      effects:
+        - set_flag: ic_waiting_done
+        - set_flag: ic_doubt_spread
+        - relation: { who: kin, axis: trust, delta: -1 }
+        - body: { track: nerves, delta: 1 }
+        - belief: { fact: "나루에서 기다리던 사람에게 섬에서 돌아온 사람을 본 적 없다고 말했다. 그 사람은 분필을 떨어뜨리고 한참 말뚝만 보았다. 그날 나루에 섬 이야기가 다르게 돌았다", source: seen }
+    - id: letter
+      label: 답장을 써 주면 섬 배에 실어 주겠다며 종이를 받는다
+      effects:
+        - set_flag: ic_waiting_done
+        - relation: { who: kin, axis: trust, delta: 2 }
+        - relation: { who: kin, axis: affection, delta: 1 }
+        - belief: { fact: "나루에서 기다리는 사람이 섬에 간 가족에게 쓴 편지를 맡겼다. '밥 잘 먹어. 빚은 다 갚았어. 돌아와'라고 적혀 있다", source: seen }

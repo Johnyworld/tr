@@ -55,8 +55,8 @@ import { attractionOf, looksOf, oppositeSex, sameSex, traitLabels } from "./trai
 import { DIFFICULTY_MODIFIER } from "../rules/check.ts";
 import {
   conditionPenalty,
-  describeConditions,
   initialConditions,
+  shownLevel,
   speechLevel,
 } from "../scenario/scenario.ts";
 import { formatTime } from "../rules/time.ts";
@@ -130,6 +130,13 @@ export function describePlayerState(state: GameState, content: Content): string 
     .join("\n\n");
 }
 
+/** GM에게 보이는 상태 줄 (주인공·인물 카드): 처음 단계(이상 없음)가 아닌 트랙만 적는다 (토큰, 2026-11-26). 모두 처음 단계면 "이상 없음" */
+function describeConditionsShort(scenario: Content["scenario"], character: Pick<Character, "conditions">): string {
+  const off = scenario.condition_tracks.filter((t) => shownLevel(t, character.conditions[t.id]) !== t.levels[0]);
+  const listed = off.map((t) => `${t.label}: ${shownLevel(t, character.conditions[t.id]).label}`).join(", ");
+  return off.length === 0 ? "모두 이상 없음" : `${listed} (나머지 이상 없음)`;
+}
+
 /** 장면 정보의 이름 붙은 덩어리 (바뀐 것만 다시 보낼 때 쓴다, 기획서 11.6 토큰) */
 export type SceneSection = { key: string; text: string };
 
@@ -147,7 +154,7 @@ export function describePlayerSections(state: GameState, content: Content): Scen
     ["status", [
       `시각: ${formatTime(state.time)}${weatherLine(state, content)}`,
       ...(describeTemperature(content, state) ? [`기온: ${describeTemperature(content, state)}${coldHint(content, state)}`] : []),
-      `상태: ${describeConditions(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
+      `상태: ${describeConditionsShort(scenario, player)} (판정 보정 ${signed(conditionPenalty(scenario, player))})`,
       ...(describeFatigue(content, state) ? [describeFatigue(content, state)!] : []),
       ...(describeCamp(content, state) ? [describeCamp(content, state)!] : []),
       ...describeInfiltration(content, state),
@@ -159,15 +166,18 @@ export function describePlayerSections(state: GameState, content: Content): Scen
           ]
         : []),
       ...bleedingLine(content, player, state),
+      ...describeRemains(state, content),
+      ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),
+      ...(player.skillPoints > 0 ? [`스킬 포인트 ${player.skillPoints}점 (올리기: -1→0 1점, 0→+1 2점, +1→+2 3점). 적당한 때 플레이어에게 무엇을 올릴지(모아 둘지) 묻고 learn_skill로 올린다`] : []),
+    ].join("\n")],
+    // 소지품·장비는 바뀔 때만 다시 싣는다 (토큰, 2026-11-26: 시각이 바뀔 때마다 상태 덩어리와 함께 되풀이됐다)
+    ["carry", [
       `소지품: ${describeInventory(content, player.inventory)}`,
       ...depositLines(state, content),
       ...(describeStash(content, state) ? [describeStash(content, state)!] : []),
       ...(describeGear(content, player) ? [describeGear(content, player, state)] : []),
       ...(Object.keys(player.debts ?? {}).length ? [`빚 (장부에 적힌 양): ${Object.entries(player.debts).map(([f, n]) => `${content.factions[f]?.name ?? f} ${n}`).join(", ")}. 갚는 일감이나, 그 무리 사람에게 갚는다고 건넨 물건(transfer_item repay)으로만 준다`] : []),
       `장면에 놓인 물건: ${describeInventory(content, state.scene.items)}`,
-      ...describeRemains(state, content),
-      ...(describeCompanions(state, content) ? [describeCompanions(state, content)] : []),
-      ...(player.skillPoints > 0 ? [`스킬 포인트 ${player.skillPoints}점 (올리기: -1→0 1점, 0→+1 2점, +1→+2 3점). 적당한 때 플레이어에게 무엇을 올릴지(모아 둘지) 묻고 learn_skill로 올린다`] : []),
     ].join("\n")],
     ["sheet", [
       // 명성·무리 안의 눈·현상금은 자주 바뀌지 않아 시트에 둔다 (플레이 테스트 11: 상태 덩어리에 있어 매 턴 되풀이됐다)
@@ -276,7 +286,7 @@ function describeExtraCard(state: GameState, content: Content, c: Character, pla
       ? `### ${headingAs(state, content, player.id, c.id)} (${c.id})`
       : `### ${headingAs(state, content, player.id, c.id)} (${c.id}) · ${kinTitle(state, content, c.id)}${shownOccupationTitle(state, content, c) ? ` · ${shownOccupationTitle(state, content, c)}` : ""}${genderOf(content.scenario, c.gender)}${c.age ? ` · ${c.age}세` : ""}`,
     `겉모습: ${ex.look}`,
-    `상태: ${describeConditions(content.scenario, c)} / ${carriedLabel(state, player, c.id)}: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
+    `상태: ${describeConditionsShort(content.scenario, c)} / ${carriedLabel(state, player, c.id)}: ${describeInventory(content, c.inventory)}${isIncapacitated(content, c) ? " / 무력화됨 (판정 없이 뒤질 수 있다)" : ""}`,
     template?.kind === "infected"
       ? `[GM 전용] 감염체 (틀: ${template.label}). 말이 통하지 않고 산 사람을 보면 덤빈다. 맞서는 판정의 opponent·target으로 둔다 (다칠 위험에 감염이 저절로 붙는다)`
       : `[GM 전용: 연기에만 쓴다] ${animal ? KIND_LABELS[templateKind(template)] : c.profile ? "자란 인물" : "이름 없는 인물"} (틀: ${template?.label ?? ex.template}). 당신에 대한 태도: ${attitude}`,
@@ -383,7 +393,7 @@ function describeNpcCard(
   return [
     `### ${headingAs(state, content, player.id, npc.id)} (${npc.id}) · ${rankName(content, character.factionId, character.rank, character.occupation?.id)}${shownOccupationTitle(state, content, character) ? ` · ${shownOccupationTitle(state, content, character)}` : ""}${genderOf(content.scenario, character.gender ?? npc.gender ?? null)} · ${npc.age}세`,
     `외모: ${npc.look}${matureCard(state, content, npc.id)?.look ? ` ${matureCard(state, content, npc.id)!.look}` : ""}`,
-    `상태: ${describeConditions(content.scenario, character)} / ${carriedLabel(state, player, character.id)}: ${describeInventory(content, character.inventory)}`,
+    `상태: ${describeConditionsShort(content.scenario, character)} / ${carriedLabel(state, player, character.id)}: ${describeInventory(content, character.inventory)}`,
     `화법: 이 인물의 말투 — ${npc.voice.style} (말투 설명이 우선. 설명에 없는 경우의 기본: 이 인물은 당신에게 ${toPlayer}, 당신은 이 인물에게 ${fromPlayer})`,
     // 예시 대사도 모르는 이름은 호칭으로 (12-294, PT26 하얀매 [정보 누설]: 이름 모르는 경비의 예시 대사 "석유나요")
     `예시 대사: ${npc.voice.samples.map((s) => `"${m(s)}"`).join(" / ")}`,

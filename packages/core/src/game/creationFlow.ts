@@ -17,8 +17,6 @@ import {
   teachableExperts,
   type CreationSeat,
   pastOf,
-  randomAbilityBuy,
-  randomTraits,
   type CreationRules,
 } from "./creation.ts";
 import type { CharacterChoice } from "./state.ts";
@@ -38,11 +36,8 @@ export type CreationAnswer =
   | { step: "portrait"; value: string | null }
   | { step: "gender"; value: string }
   | { step: "age"; value: number }
-  | { step: "abilities"; value: "manual" | "random" | "past"; rolled?: Record<string, number> }
   | { step: "ability_set"; values: Record<string, number> }
-  | { step: "skills"; value: "manual" | "past"; values?: Record<string, number> }
   | { step: "skill_set"; values: Record<string, number> }
-  | { step: "traits"; value: "manual" | "random" | "none"; rolled?: string[] }
   | { step: "traits_pick" | "traits_personality"; value: string[] }
   | { step: "persona"; values: Record<string, number> }
   | { step: "settings"; value: string[] };
@@ -72,11 +67,8 @@ export type CreationStepId =
   | "portrait"
   | "gender"
   | "age"
-  | "abilities"
   | "ability_set"
-  | "skills"
   | "skill_set"
-  | "traits"
   | "traits_pick"
   | "traits_personality"
   | "persona"
@@ -114,47 +106,35 @@ export function collectDraft(draft: CreationDraft) {
   let gender: string | undefined = draft.presetGender;
   let portrait: string | null | undefined;
   let age: number | undefined = draft.presetAge;
-  let abilityMethod: "manual" | "random" | "past" | undefined;
   let abilitiesSet = false;
   const abilities: Record<string, number> = {};
-  let skillMethod: "manual" | "past" | undefined;
   let skillsSet = false;
   let skills: Record<string, number> = {};
-  let traitMethod: "manual" | "random" | "none" | undefined;
   const traits: string[] = [];
   const traitSteps = new Set<string>();
   let persona: Record<string, number> | undefined;
   let settings: string[] | undefined;
   for (const a of liveAnswers(draft)) {
     if (a.step === "past") past = a.value;
-    else if (a.step === "skills") {
-      skillMethod = a.value;
-      skills = { ...(a.values ?? {}) };
-    } else if (a.step === "skill_set") {
+    else if (a.step === "skill_set") {
       skillsSet = true;
       skills = { ...a.values };
     } else if (a.step === "name") name = a.value;
     else if (a.step === "gender") gender = a.value;
     else if (a.step === "portrait") portrait = a.value;
     else if (a.step === "age") age = a.value;
-    else if (a.step === "abilities") {
-      abilityMethod = a.value;
-      if (a.rolled) Object.assign(abilities, a.rolled);
-    } else if (a.step === "ability_set") {
+    else if (a.step === "ability_set") {
       abilitiesSet = true;
       Object.assign(abilities, a.values);
     }
     else if (a.step === "persona") persona = { ...a.values };
     else if (a.step === "settings") settings = [...a.value];
-    else if (a.step === "traits") {
-      traitMethod = a.value;
-      if (a.rolled) traits.push(...a.rolled);
-    } else {
+    else {
       traitSteps.add(a.step);
       traits.push(...a.value);
     }
   }
-  return { past, name, gender, portrait, age, abilityMethod, abilitiesSet, abilities, skillMethod, skillsSet, skills, traitMethod, traits, traitSteps, persona, settings };
+  return { past, name, gender, portrait, age, abilitiesSet, abilities, skillsSet, skills, traits, traitSteps, persona, settings };
 }
 
 /** 다음에 물을 단계 */
@@ -166,16 +146,12 @@ export function currentStep(s: Scenario, draft: CreationDraft): CreationStepId {
   // 얼굴은 성별 다음 (12-139): 고른 성별의 얼굴만 보인다. 월드에 그 성별 얼굴이 없으면 묻지 않는다 (실루엣)
   if (draft.withPortrait && d.portrait === undefined && (!s.portraits || portraitSections(s, d.gender).length > 0)) return "portrait";
   if (s.creation?.age && d.age === undefined) return "age";
-  if (d.abilityMethod === undefined) return "abilities";
-  if (d.abilityMethod === "manual" && !d.abilitiesSet) return "ability_set";
-  if (s.creation?.skills && d.skillMethod === undefined) return "skills";
-  if (d.skillMethod === "manual" && !d.skillsSet) return "skill_set";
-  if (d.traitMethod === undefined) return "traits";
-  if (d.traitMethod === "manual") {
-    // 성격 축이 있는 월드는 성격 트레잇을 고르지 않고 축으로 정한다 (12-99)
-    for (const step of s.persona ? (["traits_pick"] as const) : (["traits_pick", "traits_personality"] as const)) {
-      if (!d.traitSteps.has(step)) return step;
-    }
+  // 능력·스킬·트레잇은 늘 직접 고른다 (방식 고르기 없음): 과거 배경의 배치에서 시작하고, 그대로 넘기면 배경대로
+  if (!d.abilitiesSet) return "ability_set";
+  if (s.creation?.skills && !d.skillsSet) return "skill_set";
+  // 성격 축이 있는 월드는 성격 트레잇을 고르지 않고 축으로 정한다 (12-99)
+  for (const step of s.persona ? (["traits_pick"] as const) : (["traits_pick", "traits_personality"] as const)) {
+    if (!d.traitSteps.has(step)) return step;
   }
   if (s.persona && d.persona === undefined) return "persona";
   // 캐릭터 설정 (4.6.4): 성격 다음. 칸마다 고르거나 건너뛴다
@@ -196,7 +172,7 @@ export function draftChoice(draft: CreationDraft): CharacterChoice {
     ...(d.past !== undefined ? { past: d.past } : {}),
     ...(d.persona !== undefined ? { persona: d.persona } : {}),
     ...(d.settings !== undefined ? { settings: d.settings } : {}),
-    ...(d.skillMethod !== undefined ? { skills: d.skills } : {}),
+    ...(d.skillsSet ? { skills: d.skills } : {}),
   };
 }
 
@@ -286,6 +262,8 @@ export function parseAbilities(s: Scenario, text: string): { ok: true; values: R
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 const RANDOM_WORDS = ["random", "무작위", "알아서", "랜덤"];
 const NONE_WORDS = ["none", "없음", "없이", "안 고름", "고르지 않음", ""];
+/** 능력·스킬 배분에서 과거 배경의 배치 그대로 (채팅에서 고치지 않고 넘길 때) */
+const PAST_WORDS = ["past", "배경대로", "그대로", "기본"];
 
 /** 나이의 아래 끝: 월드의 범위, 계급의 최소 나이, 과거 배경의 최소 나이 중 큰 것 (12-87) */
 export function ageFloor(s: Scenario, draft: CreationDraft): number {
@@ -343,27 +321,6 @@ export function stepOptions(s: Scenario, draft: CreationDraft, step: CreationSte
   if (step === "gender") return (s.creation?.genders ?? []).map((g) => ({ value: g.id, label: g.label }));
   if (step === "past")
     return (s.creation?.pasts ?? []).map((p) => ({ value: p.id, label: p.label, description: `${p.summary}. ${pastGains(s, p, itemName)}${p.min_age ? ` (${p.min_age}세부터)` : ""}` }));
-  const past = pastOf(s, collectDraft(draft).past);
-  if (step === "skills") {
-    return [
-      { value: "past", label: "배경대로", description: past ? describeSkills(s, past.skills) : "스킬 없이" },
-      { value: "manual", label: "고치기", description: `과거 배경의 배치에서 시작해 ${s.creation?.skills?.points ?? 0}점을 다시 나눈다 (-1→0 1점, 0→+1 2점, +1→+2 3점)` },
-    ];
-  }
-  if (step === "abilities") {
-    return [
-      ...(past ? [{ value: "past", label: "배경대로", description: describeStats(s, past.stats) }] : []),
-      { value: "manual", label: past ? "고치기" : "직접 정하기", description: past ? `과거 배경의 배치에서 시작해 능력 ${s.stats.length}가지를 다시 정한다` : `능력 ${s.stats.length}가지를 한 번에 정한다` },
-      { value: "random", label: "운에 맡기기", description: past ? "과거 배경과 상관없이 규칙대로 무작위로 나눈다" : "규칙대로 무작위로 나눈다" },
-    ];
-  }
-  if (step === "traits") {
-    return [
-      { value: "manual", label: "직접 고르기", description: s.persona ? "약점·강점을 한 표에서 고른다" : "약점·강점을 한 표에서 고르고, 성격을 고른다" },
-      { value: "random", label: "운에 맡기기", description: "규칙에 맞게 무작위로" },
-      { value: "none", label: "없이", description: "트레잇 없이 시작한다" },
-    ];
-  }
   if (step === "confirm") {
     return [
       { value: "start", label: "이대로 시작" },
@@ -441,14 +398,12 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     if (draft.presetAge !== undefined && draft.presetAge < min) return { ok: false, error: `${josa(pastOf(s, v)!.label, "은/는")} ${min}세 이상이어야 한다 (정한 나이 ${draft.presetAge}세).` };
     return add({ step: "past", value: v });
   }
-  if (step === "skills") {
-    const v = fromOptions();
-    const past = pastOf(s, collectDraft(draft).past);
-    if (v === "past") return add({ step: "skills", value: "past", values: { ...(past?.skills ?? {}) } });
-    if (v === "manual") return add({ step: "skills", value: "manual" });
-    return { ok: false, error: "배경대로(past) 할지 고칠지(manual) 고른다." };
-  }
   if (step === "skill_set") {
+    const past = pastOf(s, collectDraft(draft).past);
+    if (PAST_WORDS.includes(text.trim().toLowerCase())) {
+      if (!past) return { ok: false, error: "과거 배경이 없어 배경대로 둘 수 없다. 스킬을 적는다." };
+      return add({ step: "skill_set", values: { ...past.skills } });
+    }
     const parsed = parseSkills(s, text);
     if (!parsed.ok) return parsed;
     const problems = checkSkills(s, parsed.values, teachableExperts(s, collectDraft(draft).past, draft.seat));
@@ -487,27 +442,18 @@ export function answerCreation(s: Scenario, draft: CreationDraft, answer: string
     const v = fromOptions();
     return v ? add({ step: "gender", value: v }) : { ok: false, error: `성별은 ${options.map((o) => o.label).join(", ")} 중 하나다.` };
   }
-  if (step === "abilities") {
-    const v = fromOptions();
-    if (v === "random") return add({ step: "abilities", value: "random", rolled: randomAbilityBuy(s, rng) });
-    if (v === "manual") return add({ step: "abilities", value: "manual" });
-    const past = pastOf(s, collectDraft(draft).past);
-    if (v === "past" && past) return add({ step: "abilities", value: "past", rolled: Object.fromEntries(s.stats.map((x) => [x.id, past.stats[x.id] ?? 0])) });
-    return { ok: false, error: `${past ? "배경대로(past), " : ""}직접 정할지(manual), 운에 맡길지(random) 고른다.` };
-  }
   if (step === "ability_set") {
+    const past = pastOf(s, collectDraft(draft).past);
+    if (PAST_WORDS.includes(text.trim().toLowerCase())) {
+      if (!past) return { ok: false, error: "과거 배경이 없어 배경대로 둘 수 없다. 능력을 적는다." };
+      return add({ step: "ability_set", values: Object.fromEntries(s.stats.map((x) => [x.id, past.stats[x.id] ?? 0])) });
+    }
     const tiers = abilityTiers(s);
     const parsed = tiers ? parseAbilityTiers(s, tiers, text) : parseAbilities(s, text);
     if (!parsed.ok) return parsed;
     const problems = checkAbilities(s, parsed.values);
     if (problems.length) return { ok: false, error: problems.join(" ") };
     return add({ step: "ability_set", values: Object.fromEntries(s.stats.map((x) => [x.id, parsed.values[x.id] ?? 0])) });
-  }
-  if (step === "traits") {
-    const v = fromOptions() ?? (NONE_WORDS.includes(text.trim().toLowerCase()) ? "none" : null);
-    if (v === "random") return add({ step: "traits", value: "random", rolled: randomTraits(s, rng) });
-    if (v === "manual" || v === "none") return add({ step: "traits", value: v });
-    return { ok: false, error: "직접 고를지(manual), 운에 맡길지(random), 없이 갈지(none) 고른다." };
   }
   if (step === "settings") {
     const parsed = parseSettings(s, draft, answer);
@@ -591,8 +537,8 @@ function summary(s: Scenario, draft: CreationDraft): string[] {
   if (d.age !== undefined && s.creation?.age) lines.push(`나이: ${d.age}세`);
   const shown = s.stats.filter((x) => d.abilities[x.id] !== undefined);
   if (shown.length) lines.push(`능력: ${shown.map((x) => `${x.label} ${signed(d.abilities[x.id]!)}`).join(", ")}`);
-  if (d.skillMethod !== undefined && (d.skillMethod !== "manual" || d.skillsSet)) lines.push(`스킬: ${describeSkills(s, d.skills)}`);
-  if (d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))) {
+  if (d.skillsSet) lines.push(`스킬: ${describeSkills(s, d.skills)}`);
+  if (d.traitSteps.has("traits_pick")) {
     lines.push(`트레잇: ${d.traits.length ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id).join(", ") : "없음"}`);
   }
   if (d.persona !== undefined) lines.push(`성격: ${personaSummary(s, d.persona)}`);
@@ -606,11 +552,8 @@ const STEP_TITLE: Record<string, string> = {
   portrait: "얼굴",
   gender: "성별",
   age: "나이",
-  abilities: "능력",
-  ability_set: "능력 정하기",
-  skills: "스킬",
-  skill_set: "스킬 정하기",
-  traits: "트레잇",
+  ability_set: "능력",
+  skill_set: "스킬",
   traits_pick: "트레잇: 약점·강점",
   traits_personality: "트레잇: 성격",
   persona: "성격",
@@ -653,15 +596,6 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       "물을 것: 붕괴 전에 무엇을 하던 사람이었는지 (과거 배경). 배경마다 이름과 한 줄, 받는 것(스킬·능력·물건)을 보여 주고 고르게 한다. 능력과 스킬은 배경이 기본값을 주고, 뒤에서 같은 포인트 안에서 고칠 수 있다.",
     );
     if (narration.past) lines.push(`서술 힌트: ${narration.past}`);
-  } else if (step === "skills") {
-    const sk = s.creation?.skills;
-    const granted = grantedExperts(s, draft.seat).map((m) => moveLabel(s, m));
-    lines.push(
-      `물을 것: 스킬을 과거 배경대로 둘지 고칠지. 고치면 ${sk?.points ?? 0}점을 다시 나눈다 (-1→0 1점, 0→+1 2점, +1→+2 3점).`,
-      "스킬은 누구나 하는 일(찍지 않으면 -1로 시도)과 전문 기술(배우기 전엔 못 함)로 나뉜다. 배치의 전문 기술은 과거가 가르쳐 준 것이다. 남긴 점수는 레벨업 점수와 함께 나중에 쓴다.",
-      ...(granted.length ? [`자리가 요구하는 전문 기술(${granted.join(", ")})은 점수 없이 배운 상태(-1)로 받는다.`] : []),
-    );
-    if (narration.skills) lines.push(`서술 힌트: ${narration.skills}`);
   } else if (step === "skill_set") {
     const sk = s.creation?.skills;
     lines.push(
@@ -673,8 +607,11 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
             `지금 고른 것 (과거 배경 ${past.label}): ${describeSkills(s, past.skills)}. 여기서 고치는 것이다: 이것을 먼저 보여 주고, 플레이어가 바꿀 것만 말하면 이 목록에서 바꿔 전체를 넘긴다.`,
           ]
         : []),
-      '답 형식: 스킬 이름과 단계를 쉼표로 (예: 사격 +2, 경계 +1, 근접전 0). 받은 답은 그대로 넘긴다.',
+      ...(grantedExperts(s, draft.seat).length ? [`자리가 요구하는 전문 기술(${grantedExperts(s, draft.seat).map((m) => moveLabel(s, m)).join(", ")})은 점수 없이 배운 상태(-1)로 받는다.`] : []),
+      "스킬은 누구나 하는 일(찍지 않으면 -1로 시도)과 전문 기술(배우기 전엔 못 함)로 나뉜다. 남긴 점수는 레벨업 점수와 함께 나중에 쓴다.",
+      `답 형식: 스킬 이름과 단계를 쉼표로 (예: 사격 +2, 경계 +1, 근접전 0). 받은 답은 그대로 넘긴다.${past ? ' 고치지 않고 배경대로 두면 "배경대로".' : ""}`,
     );
+    if (narration.skills) lines.push(`서술 힌트: ${narration.skills}`);
   } else if (step === "name") {
     lines.push("물을 것: 주인공의 이름 (한글 8자, 영문 16자까지, 자유롭게 입력). 보기 없이 글로 묻는다.");
     if (narration.name) lines.push(`서술 힌트: ${narration.name}`);
@@ -691,15 +628,6 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       `물을 것: 나이 (${floor}~${range.max}세, 숫자로${floor > range.min ? `. ${ageFloorReason(s, draft)} 때문에 ${floor}세부터` : ""}). 보기 없이 글로 묻는다.${base ? ` 이 시나리오의 기본은 ${Math.max(base, floor)}세다. 플레이어가 상관없다고 하면 "기본"을 넘긴다.` : ""}`,
     );
     if (narration.age) lines.push(`서술 힌트: ${narration.age}`);
-  } else if (step === "abilities") {
-    const tiers = abilityTiers(s);
-    lines.push(
-      tiers
-        ? `물을 것: 타고난 능력을 어떻게 정할지. 직접 정하면 ${tiers.map((t) => `${t.label}(${signed(t.value)}) ${t.count}개`).join(", ")}를 고르고 나머지는 보통(0)이다.`
-        : `물을 것: 타고난 능력을 어떻게 정할지. 모두 0(보통)에서 시작해 ${rules?.points ?? 0}포인트를 나눠 쓴다. 값별 비용 ${rules?.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")} (0보다 낮추면 포인트를 돌려받고, ${rules?.maxLow ?? 0}개까지 낮출 수 있다).`,
-      `능력: ${s.stats.map((x) => `${x.label}(${x.description ?? ""})`).join(", ")}`,
-    );
-    if (narration.abilities) lines.push(`서술 힌트: ${narration.abilities}`);
   } else if (step === "ability_set" && abilityTiers(s)) {
     const tiers = abilityTiers(s)!;
     lines.push(
@@ -714,22 +642,18 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
             "",
           ]
         : []),
-      `답 형식: 등급 순서대로 "/"로 나눠 번호나 이름 (예: ${exampleTiers(tiers)}). 받은 답은 그대로 넘긴다. 운에 맡기고 싶다고 하면 create_character(back: true) 뒤 "random".`,
+      `답 형식: 등급 순서대로 "/"로 나눠 번호나 이름 (예: ${exampleTiers(tiers)}). 받은 답은 그대로 넘긴다.${past ? ' 고치지 않고 배경대로 두면 "배경대로".' : ""}`,
     );
+    if (narration.abilities) lines.push(`서술 힌트: ${narration.abilities}`);
   } else if (step === "ability_set") {
     lines.push(
       `물을 것: 능력 ${s.stats.length}가지를 한 번에. 능력마다 따로 묻거나 능력마다 장면을 붙이지 않는다. 아래 표와 규칙을 한 번에 보여 주고 글로 답하게 한다 (보기 없이).`,
       `규칙: 모두 0(보통)에서 시작해 ${rules?.points ?? 0}포인트를 나눠 쓴다. 값별 비용 ${rules?.cost.map((c) => `${signed(c.value)}=${c.cost}`).join(", ")}. 0보다 낮추면 포인트를 돌려받고, ${rules?.maxLow ?? 0}개까지 낮출 수 있다.`,
       `능력 표: ${s.stats.map((x) => `${x.label}(${x.description ?? ""})`).join(" / ")}`,
       ...(past ? [`지금 배치 (과거 배경 ${past.label}): ${describeStats(s, past.stats)}. 여기서 고치는 것이다: 이 배치를 먼저 보여 주고, 플레이어가 바꿀 것만 말하면 이 배치에서 바꿔 전체를 넘긴다.`] : []),
-      `답 형식: 올리거나 낮출 능력만 "이름 값"으로 쉼표로 이어 적는다 (예: ${s.stats[0]?.label ?? ""} +1, ${s.stats[1]?.label ?? ""} +2). 적지 않은 능력은 0. 운에 맡기고 싶다고 하면 create_character(back: true) 뒤 "random".`,
+      `답 형식: 올리거나 낮출 능력만 "이름 값"으로 쉼표로 이어 적는다 (예: ${s.stats[0]?.label ?? ""} +1, ${s.stats[1]?.label ?? ""} +2). 적지 않은 능력은 0.${past ? ' 고치지 않고 배경대로 두면 "배경대로".' : ""}`,
     );
-  } else if (step === "traits") {
-    const lim = rules?.traitLimits;
-    lines.push(
-      `물을 것: 트레잇(타고난 기질과 버릇)을 어떻게 정할지. 강점은 약점으로 얻은 포인트만큼만 가질 수 있다. 약점 ${lim?.max_negative}개·강점 ${lim?.max_positive}개까지${lim?.max_phobia !== undefined ? `, 공포증 ${lim.max_phobia}개까지` : ""}${s.persona ? "" : lim?.max_personality !== undefined ? `, 성격 ${lim.max_personality}개까지` : ", 성격은 몇 개든"}.${s.persona ? " 성격은 다음 단계에서 따로 정한다." : ""} 반대되는 것끼리는 함께 가질 수 없다.`,
-    );
-    if (narration.traits) lines.push(`서술 힌트: ${narration.traits}`);
+    if (narration.abilities) lines.push(`서술 힌트: ${narration.abilities}`);
   } else if (step === "traits_pick") {
     const lim = rules?.traitLimits;
     const list = traitChoices(s, draft, step);
@@ -742,6 +666,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
       ...list.map((t, i) => `| ${i + 1} | ${t.kind === "negative" ? "약점" : "강점"} | ${t.label} | ${t.kind === "negative" ? `+${t.cost}` : `-${t.cost}`} | ${t.description} |`),
       "",
     );
+    if (narration.traits) lines.push(`서술 힌트: ${narration.traits}`);
   } else if (step === "traits_personality") {
     const list = traitChoices(s, draft, step);
     lines.push(
@@ -775,7 +700,7 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
     lines.push("물을 것: 이대로 시작할지. 정한 것을 한 사람의 모습으로 그려 보여 준 뒤 묻는다.");
     const { spent } = abilitySpend(s, collectDraft(draft).abilities);
     const left = (s.creation?.points ?? 0) - spent;
-    if (collectDraft(draft).abilityMethod === "manual" && Number.isFinite(spent) && left > 0) {
+    if (Number.isFinite(spent) && left > 0) {
       lines.push(`능력 포인트 ${josa(String(left), "을/를")} 쓰지 않았다. 이대로 시작하면 사라진다고 알려 주고, 쓰고 싶으면 "처음부터 다시"나 뒤로 가기로 고치게 한다.`);
     }
   }
@@ -793,18 +718,18 @@ export function describeCreationStep(content: Content, draft: CreationDraft, rol
   return lines.join("\n");
 }
 
-/** 이번 단계가 몇 번째인지 (능력·트레잇을 하나씩 고르면 단계가 늘어난다) */
+/** 이번 단계가 몇 번째인지 */
 export function stepIndex(s: Scenario, draft: CreationDraft): { at: number; total: number } {
   const d = collectDraft(draft);
-  const abilitySteps = d.abilityMethod === "manual" ? 1 : 0;
   const pastStep = s.creation?.pasts.length ? 1 : 0;
-  const skillSteps = s.creation?.skills ? (d.skillMethod === "manual" ? 2 : 1) : 0;
-  const traitSteps = d.traitMethod === "manual" ? (s.persona ? 1 : 2) : 0;
+  const skillSteps = s.creation?.skills ? 1 : 0;
+  const traitSteps = s.persona ? 1 : 2;
   const personaStep = (s.persona ? 1 : 0) + (s.settings ? 1 : 0);
   const ageStep = s.creation?.age && draft.presetAge === undefined ? 1 : 0;
   const portraitStep = draft.withPortrait ? 1 : 0;
   const genderStep = draft.presetGender === undefined ? 1 : 0;
-  const total = 4 + pastStep + skillSteps + genderStep + portraitStep + ageStep + abilitySteps + traitSteps + personaStep;
+  // 이름·능력·확인은 늘 묻는다
+  const total = 3 + pastStep + skillSteps + genderStep + portraitStep + ageStep + traitSteps + personaStep;
   return { at: Math.min(liveAnswers(draft).length + 1, total), total };
 }
 

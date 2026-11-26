@@ -121,22 +121,22 @@ creation:
   # 배치의 전문 기술은 과거가 가르쳐 준 것이다
   # 플레이어는 같은 포인트 안에서 고칠 수 있다. 무리원·떠돌이 모두 고른다 (떠돌이의 재주를 합쳤다)
   pasts:
-    - { id: firefighter, label: 소방관, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 2, athletics: 1, first_aid: 0, sense_danger: 0, fight: 0 }, items: [crowbar], min_age: 24 }
-    - { id: police, label: 경찰, summary: 순찰을 돌고 사건 현장을 보던 사람. 총을 쏴 본 적이 있다, stats: { senses: 2, nerve: 1, agility: 1, charm: -1 }, skills: { shoot: 2, insight: 1, sense_danger: 0, intimidate: 0, fight: 0 }, items: [flashlight], min_age: 24 }
-    - { id: soldier, label: 군인, summary: 붕괴 때 부대에 있었다. 명령과 사격을 몸이 기억한다, stats: { agility: 2, vitality: 1, nerve: 1, charm: -1 }, skills: { shoot: 2, tactics: 1, fight: 0, athletics: 0, sense_danger: 0 }, items: [binoculars], min_age: 21 }
-    - { id: doctor, label: 의사, summary: 병원에서 일했다. 약이 없어도 무엇이 사람을 죽이는지 안다, stats: { intellect: 2, senses: 1, nerve: 1, strength: -1 }, skills: { first_aid: 2, surgery: 1, insight: 0, persuade: 0, endure: 0 }, items: [medkit], min_age: 30 }
-    - { id: nurse, label: 간호사, summary: 병동을 지켰다. 상처를 꿰매고 밤새 환자 곁에 있던 손, stats: { senses: 2, intellect: 1, vitality: 1, strength: -1 }, skills: { first_aid: 2, endure: 1, insight: 0, persuade: 0, athletics: 0 }, items: [bandage, cloth], min_age: 24 }
-    - { id: thief, label: 도둑, summary: 남의 문을 열고 들키지 않게 나오던 사람, stats: { agility: 2, senses: 1, nerve: 1, vitality: -1 }, skills: { stealth: 2, deceive: 1, scavenge: 0, athletics: 0, insight: 0 }, items: [flashlight], min_age: 16 }
-    - { id: gangster, label: 조폭, summary: 주먹과 겁으로 먹고살았다. 사람이 언제 물러서는지 안다, stats: { strength: 2, nerve: 1, vitality: 1, intellect: -1 }, skills: { intimidate: 2, fight: 1, endure: 0, deceive: 0, athletics: 0 }, items: [arm_guards], min_age: 19 }
-    - { id: mechanic, label: 정비사, summary: 차와 기계를 고쳤다. 쇳소리만 들어도 어디가 나갔는지 안다, stats: { intellect: 2, strength: 1, agility: 1, charm: -1 }, skills: { mechanics: 2, maintenance: 1, improvise: 0, scavenge: 0, athletics: 0 }, items: [toolkit], min_age: 20 }
-    - { id: builder, label: 건설 노동자, summary: 현장에서 벽을 세우고 비계를 탔다, stats: { strength: 2, vitality: 1, intellect: 1, charm: -1 }, skills: { carpentry: 2, athletics: 1, endure: 0, improvise: 0, fight: 0 }, items: [carpentry_kit], min_age: 20 }
-    - { id: cook, label: 요리사, summary: 식당 주방에서 일했다. 모자란 재료로 끼니를 만든다, stats: { vitality: 2, senses: 1, charm: 1, nerve: -1 }, skills: { persuade: 2, survival: 1, hunt: 0, scavenge: 0, insight: 0 }, items: [kitchen_knife, canned_food], min_age: 20 }
-    - { id: salesman, label: 영업사원, summary: 말로 물건을 팔았다. 웃는 얼굴 뒤의 셈을 읽는다, stats: { charm: 2, intellect: 1, nerve: 1, strength: -1 }, skills: { persuade: 2, deceive: 1, insight: 0, leadership: 0, intimidate: 0 }, items: [cigarettes, trade_token], min_age: 23 }
-    - { id: courier, label: 배달원, summary: 오토바이로 도시 골목을 누볐다. 길과 지름길을 안다, stats: { agility: 2, senses: 1, vitality: 1, intellect: -1 }, skills: { athletics: 2, sense_danger: 1, scavenge: 0, stealth: 0, survival: 0 }, items: [moto_helmet], min_age: 19 }
-    - { id: teacher, label: 교사, summary: 아이들을 가르쳤다. 사람을 모으고 말을 듣게 하는 법을 안다, stats: { intellect: 2, charm: 1, nerve: 1, strength: -1 }, skills: { leadership: 2, history: 1, persuade: 0, insight: 0, improvise: 0 }, items: [notebook, pencil], min_age: 26 }
+    - { id: firefighter, label: 소방관, icon: flame, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 2, athletics: 1, first_aid: 0, sense_danger: 0, fight: 0 }, items: [crowbar], min_age: 24 }
+    - { id: police, label: 경찰, icon: siren, summary: 순찰을 돌고 사건 현장을 보던 사람. 총을 쏴 본 적이 있다, stats: { senses: 2, nerve: 1, agility: 1, charm: -1 }, skills: { shoot: 2, insight: 1, sense_danger: 0, intimidate: 0, fight: 0 }, items: [flashlight], min_age: 24 }
+    - { id: soldier, label: 군인, icon: crosshair, summary: 붕괴 때 부대에 있었다. 명령과 사격을 몸이 기억한다, stats: { agility: 2, vitality: 1, nerve: 1, charm: -1 }, skills: { shoot: 2, tactics: 1, fight: 0, athletics: 0, sense_danger: 0 }, items: [binoculars], min_age: 21 }
+    - { id: doctor, label: 의사, icon: stethoscope, summary: 병원에서 일했다. 약이 없어도 무엇이 사람을 죽이는지 안다, stats: { intellect: 2, senses: 1, nerve: 1, strength: -1 }, skills: { first_aid: 2, surgery: 1, insight: 0, persuade: 0, endure: 0 }, items: [medkit], min_age: 30 }
+    - { id: nurse, label: 간호사, icon: syringe, summary: 병동을 지켰다. 상처를 꿰매고 밤새 환자 곁에 있던 손, stats: { senses: 2, intellect: 1, vitality: 1, strength: -1 }, skills: { first_aid: 2, endure: 1, insight: 0, persuade: 0, athletics: 0 }, items: [bandage, cloth], min_age: 24 }
+    - { id: thief, label: 도둑, icon: key-round, summary: 남의 문을 열고 들키지 않게 나오던 사람, stats: { agility: 2, senses: 1, nerve: 1, vitality: -1 }, skills: { stealth: 2, deceive: 1, scavenge: 0, athletics: 0, insight: 0 }, items: [flashlight], min_age: 16 }
+    - { id: gangster, label: 조폭, icon: hand-fist, summary: 주먹과 겁으로 먹고살았다. 사람이 언제 물러서는지 안다, stats: { strength: 2, nerve: 1, vitality: 1, intellect: -1 }, skills: { intimidate: 2, fight: 1, endure: 0, deceive: 0, athletics: 0 }, items: [arm_guards], min_age: 19 }
+    - { id: mechanic, label: 정비사, icon: wrench, summary: 차와 기계를 고쳤다. 쇳소리만 들어도 어디가 나갔는지 안다, stats: { intellect: 2, strength: 1, agility: 1, charm: -1 }, skills: { mechanics: 2, maintenance: 1, improvise: 0, scavenge: 0, athletics: 0 }, items: [toolkit], min_age: 20 }
+    - { id: builder, label: 건설 노동자, icon: hard-hat, summary: 현장에서 벽을 세우고 비계를 탔다, stats: { strength: 2, vitality: 1, intellect: 1, charm: -1 }, skills: { carpentry: 2, athletics: 1, endure: 0, improvise: 0, fight: 0 }, items: [carpentry_kit], min_age: 20 }
+    - { id: cook, label: 요리사, icon: chef-hat, summary: 식당 주방에서 일했다. 모자란 재료로 끼니를 만든다, stats: { vitality: 2, senses: 1, charm: 1, nerve: -1 }, skills: { persuade: 2, survival: 1, hunt: 0, scavenge: 0, insight: 0 }, items: [kitchen_knife, canned_food], min_age: 20 }
+    - { id: salesman, label: 영업사원, icon: briefcase, summary: 말로 물건을 팔았다. 웃는 얼굴 뒤의 셈을 읽는다, stats: { charm: 2, intellect: 1, nerve: 1, strength: -1 }, skills: { persuade: 2, deceive: 1, insight: 0, leadership: 0, intimidate: 0 }, items: [cigarettes, trade_token], min_age: 23 }
+    - { id: courier, label: 배달원, icon: bike, summary: 오토바이로 도시 골목을 누볐다. 길과 지름길을 안다, stats: { agility: 2, senses: 1, vitality: 1, intellect: -1 }, skills: { athletics: 2, sense_danger: 1, scavenge: 0, stealth: 0, survival: 0 }, items: [moto_helmet], min_age: 19 }
+    - { id: teacher, label: 교사, icon: graduation-cap, summary: 아이들을 가르쳤다. 사람을 모으고 말을 듣게 하는 법을 안다, stats: { intellect: 2, charm: 1, nerve: 1, strength: -1 }, skills: { leadership: 2, history: 1, persuade: 0, insight: 0, improvise: 0 }, items: [notebook, pencil], min_age: 26 }
     # 덫을 놓는다는 설명대로 사냥(덫 판정) 1 (12-239, 플레이 테스트 13: 철사를 주고 사냥 0이라 덫이 늘 실패했다)
-    - { id: farmer, label: 농부, summary: 도시 끝에서 밭을 갈았다. 덫을 놓고 날씨를 읽는다, stats: { vitality: 2, strength: 1, senses: 1, charm: -1 }, skills: { survival: 2, hunt: 1, taming: 0, endure: 0, athletics: 0 }, items: [wire_roll, seed_packet], min_age: 18 }
-    - { id: student, label: 학생, summary: 붕괴 때 학교에 있었다. 아무거나 엮어 쓸 것을 만드는 손재주가 있다, stats: { agility: 2, intellect: 1, senses: 1, nerve: -1 }, skills: { scavenge: 2, improvise: 1, swim: 0, history: 0, stealth: 0 }, items: [duct_tape, scrap_metal] }
+    - { id: farmer, label: 농부, icon: wheat, summary: 도시 끝에서 밭을 갈았다. 덫을 놓고 날씨를 읽는다, stats: { vitality: 2, strength: 1, senses: 1, charm: -1 }, skills: { survival: 2, hunt: 1, taming: 0, endure: 0, athletics: 0 }, items: [wire_roll, seed_packet], min_age: 18 }
+    - { id: student, label: 학생, icon: backpack, summary: 붕괴 때 학교에 있었다. 아무거나 엮어 쓸 것을 만드는 손재주가 있다, stats: { agility: 2, intellect: 1, senses: 1, nerve: -1 }, skills: { scavenge: 2, improvise: 1, swim: 0, history: 0, stealth: 0 }, items: [duct_tape, scrap_metal] }
   # 트레잇 고르기: 긍정 비용 합 ≤ 부정 보상 합. 종류별 최대
   # 성격은 개수 제한 없이 (연기 힌트). 반대되는 것끼리만 막는다
   # 공포증은 하나까지 (드문 공포증을 쌓아 포인트를 버는 것을 막는다, 12-108)
@@ -569,11 +569,12 @@ traits:
   - { id: iron_gut, label: 튼튼한 위장, kind: positive, cost: 1, description: "병에 덜 걸리고, 걸려도 빨리 털고 일어난다 (질병 확률 절반, 낫는 확률 +20%)", opposites: [frail], effects: { disease: 0.5, disease_recover: 0.2 } }
   - { id: cold_hardy, label: 추위에 강함, kind: positive, cost: 1, description: 추운 날 덜 춥다, opposites: [cold_sensitive], effects: { cold: -1 } }
   - { id: light_eater, label: 소식가, kind: positive, cost: 1, description: 배급이 모자랄 때 덜 배고프다, opposites: [big_eater], effects: { hunger: -1 } }
-  - { id: eagle_eye, label: 매의 눈, kind: positive, cost: 1, description: 경계 +1, opposites: [dull_senses], effects: { skills: { sense_danger: 1 } } }
-  - { id: marksman, label: 사격 감각, kind: positive, cost: 1, description: 사격 +1, effects: { skills: { shoot: 1 } } }
+  - { id: eagle_eye, label: 매의 눈, kind: positive, cost: 2, description: "먼 곳까지 잘 본다 (경계 +1, 바깥에서 한 장소 더 멀리 알아챈다. 그 칸은 -1)", opposites: [dull_senses], effects: { skills: { sense_danger: 1 }, sight: 1 } }
+  # 저격수 (2026-11-26, 사격 감각을 바꿨다. id는 세이브·NPC 때문에 그대로): 먼 거리 보정이라 판정 상한(+4) 밖
+  - { id: marksman, label: 저격수, kind: positive, cost: 1, description: "멀리 있는 적을 잘 맞힌다 (먼 거리 사격 +1)", opposites: [poor_aim], effects: { range: { shoot: { far: 1 } } } }
   - { id: shadow, label: 그림자, kind: positive, cost: 1, description: 하는 일이 잘 들키지 않는다, opposites: [conspicuous], effects: { noticed: 0.7 } }
   - { id: silver_tongue, label: 말재간, kind: positive, cost: 1, description: 거짓말 +1, opposites: [bad_liar], effects: { skills: { deceive: 1 } } }
-  - { id: steel_nerves, label: 강심장, kind: positive, cost: 2, description: "버티기 +1, 공포가 덜 오른다", acting: 위험 앞에서도 목소리가 흔들리지 않는다, opposites: [coward], effects: { skills: { endure: 1 }, fear: -1 } }
+  - { id: steel_nerves, label: 강심장, kind: positive, cost: 1, description: 공포가 덜 오른다, acting: 위험 앞에서도 목소리가 흔들리지 않는다, opposites: [coward], effects: { fear: -1 } }
   - { id: beautiful, label: 아름다운 외모, kind: positive, cost: 2, visible: true, description: "첫인상이 좋다 (외모 +2). 이성에게 끌리는 사람은 더 끌리고, 같은 성별은 질투할 수 있다", opposites: [attractive, ugly], effects: { looks: 2 } }
   - { id: attractive, label: 호감형 외모, kind: positive, cost: 1, visible: true, description: 첫인상이 좋다 (외모 +1), opposites: [beautiful, ugly], effects: { looks: 1 } }
   # ── 부정 ──
@@ -582,10 +583,11 @@ traits:
   - { id: frail, label: 허약 체질, kind: negative, cost: 2, description: "병에 잘 걸리고 잘 낫지 않는다 (질병 2배, 낫는 확률 -15%)", opposites: [iron_gut], effects: { disease: 2, disease_recover: -0.15 } }
   - { id: cold_sensitive, label: 추위를 탐, kind: negative, cost: 1, description: 추운 날 더 춥다, opposites: [cold_hardy], effects: { cold: 1 } }
   - { id: big_eater, label: 대식가, kind: negative, cost: 1, description: 정량이 아니면 더 배고프다, opposites: [light_eater], effects: { hunger: 1 } }
-  - { id: dull_senses, label: 둔한 감각, kind: negative, cost: 1, description: 경계 -1, opposites: [eagle_eye], effects: { skills: { sense_danger: -1 } } }
+  - { id: dull_senses, label: 둔한 감각, kind: negative, cost: 2, description: "먼 곳을 잘 못 본다 (경계 -1, 바깥에서 다른 장소를 볼 때 -1)", opposites: [eagle_eye], effects: { skills: { sense_danger: -1 }, sight: -1 } }
+  - { id: poor_aim, label: 서툰 조준, kind: negative, cost: 1, description: "멀리 있는 것을 잘 못 맞힌다 (먼 거리 사격 -1)", acting: 먼 표적을 겨누면 숨을 참다가 한 박자 늦게 당긴다, opposites: [marksman], effects: { range: { shoot: { far: -1 } } } }
   - { id: conspicuous, label: 눈에 띄는 사람, kind: negative, cost: 1, visible: true, description: 하는 일이 잘 들킨다, opposites: [shadow], effects: { noticed: 1.3 } }
   - { id: bad_liar, label: 서툰 거짓말, kind: negative, cost: 1, description: 거짓말 -1, acting: 거짓말을 하면 눈을 피하고 말이 꼬인다, opposites: [silver_tongue], effects: { skills: { deceive: -1 } } }
-  - { id: coward, label: 겁쟁이, kind: negative, cost: 2, description: "버티기 -1, 공포가 더 오른다", acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { skills: { endure: -1 }, fear: 1 } }
+  - { id: coward, label: 겁쟁이, kind: negative, cost: 1, description: 공포가 더 오른다, acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { fear: 1 } }
   # 공포증 (12-103): 그것이 나오는 장면이면 공포가 한 단계 더 오른다 (보통 사람에게 무섭지 않은 장면이어도). 겪을수록 둔감해진다
   - { id: nyctophobia, label: 어둠 공포, kind: negative, cost: 2, description: "어둠이 무섭다 (밤에는 겁이 더 난다)", acting: 불빛 없는 곳에서는 말이 빨라지고 손전등을 놓지 않는다, effects: { phobia: [dark] } }
   - { id: claustrophobia, label: 폐소 공포, kind: negative, cost: 2, description: "좁고 갇힌 곳이 무섭다 (지하·터널에서 겁이 난다)", acting: 지하로 내려가면 숨이 가빠지고 출구 쪽을 자꾸 돌아본다, effects: { phobia: [enclosed] } }
@@ -2146,7 +2148,7 @@ battle:
 # 캐릭터 설정 (RP, design.md 4.6.4, 12-246). 목록 근거: docs/settings-draft.md
 settings:
   slots:
-    - { id: ideal, label: 이상, max: 1, rolls: true, hint: "무엇을 위해 사나" }
+    - { id: ideal, label: 이상, max: 1, rolls: true, describe: true, hint: "무엇을 위해 사나" }
     - { id: taboo, label: 금기, max: 2, rolls: true, hint: "무엇을 하지 않나" }
     - { id: flaw, label: 결점, max: 2, rolls: true, hint: "알면서도 못 고치는 것" }
     - { id: habit, label: 버릇, max: 2, rolls: false, hint: "몸에 밴 것" }
@@ -2156,65 +2158,65 @@ settings:
   items:
     - { id: "ideal_obedience", slot: "ideal", name: "복종", description: "명령 체계가 무너지면 모두 죽는다", acting: "윗사람의 명령을 먼저 따르고, 따지는 것은 그다음", confirm: "복종을 신념으로 가진", opposites: ["ideal_freedom"], needs_faction: true }
     - { id: "ideal_freedom", slot: "ideal", name: "자유", description: "누구의 개도 되지 않는다", acting: "시키는 일보다 스스로 정한 일을 앞세운다", confirm: "자유를 신념으로 가진", opposites: ["ideal_obedience"] }
-    - { id: "ideal_protect", slot: "ideal", name: "지킴", description: "약한 사람을 지키는 것이 살아남은 이유다", acting: "아이·노인·다친 사람이 있으면 먼저 몸이 간다", confirm: "약한 사람을 지키기로 한", opposites: ["ideal_survival"] }
-    - { id: "ideal_survival", slot: "ideal", name: "살아남기", description: "오늘 살아남는 것 말고는 다 사치다", acting: "위험과 몫을 먼저 셈하고, 남을 위한 모험을 꺼린다", confirm: "살아남는 것을 먼저 둔", opposites: ["ideal_protect"] }
+    - { id: "ideal_protect", slot: "ideal", name: "약자 보호", description: "약한 사람을 지키는 것이 살아남은 이유다", acting: "아이·노인·다친 사람이 있으면 먼저 몸이 간다", confirm: "약한 사람을 지키기로 한", opposites: ["ideal_survival"] }
+    - { id: "ideal_survival", slot: "ideal", name: "이기주의", description: "오늘 살아남는 것 말고는 다 사치다", acting: "위험과 몫을 먼저 셈하고, 남을 위한 모험을 꺼린다", confirm: "살아남는 것을 먼저 둔", opposites: ["ideal_protect"] }
     - { id: "ideal_truth", slot: "ideal", name: "진실", description: "거짓 위에 세운 것은 무너진다", acting: "숨긴 것을 캐묻고, 덮자는 말에 불편해한다", confirm: "진실을 신념으로 가진" }
     - { id: "ideal_loyalty", slot: "ideal", name: "의리", description: "같이 버틴 사람을 버리지 않는다", acting: "함께한 사람의 편을 먼저 든다, 무리보다 사람", confirm: "의리를 신념으로 가진" }
-    - { id: "ideal_rebuild", slot: "ideal", name: "다시 세우기", description: "언젠가 이 도시를 다시 사람 사는 곳으로", acting: "부서진 것을 고치고, 씨앗과 책과 기술을 아낀다", confirm: "다시 세우는 꿈을 가진" }
+    - { id: "ideal_rebuild", slot: "ideal", name: "재건", description: "무너진 도시를 다시 사람 사는 곳으로 만든다", acting: "부서진 것을 고치고, 씨앗과 책과 기술을 아낀다", confirm: "재건을 꿈꾸는" }
     - { id: "ideal_fairness", slot: "ideal", name: "공평", description: "몫은 똑같이 나눠야 한다", acting: "배급·전리품을 셈하고, 한쪽으로 쏠리면 말을 꺼낸다", confirm: "공평을 신념으로 가진" }
-    - { id: "ideal_faith", slot: "ideal", name: "믿음", description: "이 모든 데에는 뜻이 있다", acting: "기도하고, 죽은 이를 묻고, 절망하는 사람에게 말을 건넨다", confirm: "믿음을 지키는" }
-    - { id: "ideal_family", slot: "ideal", name: "핏줄", description: "가족이 전부다", acting: "가족 소식과 안전을 무엇보다 먼저 챙긴다", confirm: "가족을 전부로 여기는" }
-    - { id: "ideal_revenge", slot: "ideal", name: "앙갚음", description: "빼앗아 간 자에게 반드시 돌려준다", acting: "원수의 이름에 표정이 굳고, 기회를 노린다", confirm: "앙갚음을 다짐한", opposites: ["ideal_mercy"] }
+    - { id: "ideal_faith", slot: "ideal", name: "신앙", description: "신을 믿는다. 이 모든 일에도 뜻이 있다", acting: "기도하고, 죽은 이를 묻고, 절망하는 사람에게 말을 건넨다", confirm: "신앙을 지키는" }
+    - { id: "ideal_family", slot: "ideal", name: "가족", description: "가족이 전부다", acting: "가족 소식과 안전을 무엇보다 먼저 챙긴다", confirm: "가족을 전부로 여기는" }
+    - { id: "ideal_revenge", slot: "ideal", name: "복수", description: "빼앗아 간 자에게 반드시 갚아 준다", acting: "원수의 이름에 표정이 굳고, 기회를 노린다", confirm: "복수를 다짐한", opposites: ["ideal_mercy"] }
     - { id: "ideal_mercy", slot: "ideal", name: "자비", description: "죽이지 않을 수 있으면 죽이지 않는다", acting: "항복한 자·적의 부상자에게도 손을 내민다", confirm: "자비를 신념으로 가진", opposites: ["ideal_revenge"] }
-    - { id: "ideal_knowledge", slot: "ideal", name: "앎", description: "무너지기 전의 것을 잊지 않게", acting: "글·기록·옛 물건을 모으고, 배울 기회를 놓치지 않는다", confirm: "앎을 지키려는" }
-    - { id: "ideal_strength", slot: "ideal", name: "힘", description: "강한 자만이 정할 수 있다", acting: "약한 모습을 보이지 않고, 힘으로 결론을 내려 한다", confirm: "힘을 믿는", opposites: ["ideal_mercy"] }
+    - { id: "ideal_knowledge", slot: "ideal", name: "지식", description: "책과 기록, 옛 기술을 지켜 다음 세대에 남긴다", acting: "글·기록·옛 물건을 모으고, 배울 기회를 놓치지 않는다", confirm: "지식을 지키려는" }
+    - { id: "ideal_strength", slot: "ideal", name: "약육강식", description: "강한 자가 정하고 약한 자는 따른다", acting: "약한 모습을 보이지 않고, 힘으로 결론을 내려 한다", confirm: "힘을 믿는", opposites: ["ideal_mercy"] }
 
     - { id: "taboo_no_child_harm", slot: "taboo", name: "아이를 해치지 않는다", description: "어떤 까닭이 있어도", acting: "아이가 끼면 손이 멈춘다", confirm: "아이만은 해치지 않기로 한" }
-    - { id: "taboo_no_unarmed", slot: "taboo", name: "맨손인 자는 죽이지 않는다", description: "무기를 놓은 사람은 끝난 사람이다", acting: "항복한 자 앞에서 총구를 내린다", opposites: ["ideal_revenge"], confirm: "맨손인 자는 죽이지 않기로 한" }
+    - { id: "taboo_no_unarmed", slot: "taboo", name: "무기 없는 사람은 죽이지 않는다", description: "무기를 놓은 사람은 끝난 사람이다", acting: "항복한 자 앞에서 총구를 내린다", opposites: ["ideal_revenge"], confirm: "맨손인 자는 죽이지 않기로 한" }
     - { id: "taboo_no_theft", slot: "taboo", name: "훔치지 않는다", description: "굶어도 남의 것에는 손대지 않는다", acting: "주인 있는 물건 앞에서 머뭇거린다", clashes_roles: ["role_c_raider", "role_c_comrades"], confirm: "남의 것은 훔치지 않기로 한" }
     - { id: "taboo_no_lie_friend", slot: "taboo", name: "동료에게 거짓말하지 않는다", description: "바깥사람은 몰라도 우리끼리는", acting: "같은 편에게 둘러대지 못한다", confirm: "동료에게는 거짓말하지 않기로 한" }
     - { id: "taboo_no_abandon", slot: "taboo", name: "다친 동료를 두고 가지 않는다", description: "끌고 가다 같이 죽더라도", acting: "쓰러진 사람을 업으려 한다", opposites: ["ideal_survival"], confirm: "다친 동료를 두고 가지 않기로 한" }
-    - { id: "taboo_no_infected_meat", slot: "taboo", name: "감염체 근처의 고기는 먹지 않는다", description: "굶는 게 낫다", acting: "출처 모를 고기를 밀어낸다", confirm: "수상한 고기는 먹지 않기로 한" }
+    - { id: "taboo_no_infected_meat", slot: "taboo", name: "출처 모를 고기는 먹지 않는다", description: "굶는 게 낫다", acting: "출처 모를 고기를 밀어낸다", confirm: "수상한 고기는 먹지 않기로 한" }
     - { id: "taboo_no_human_flesh", slot: "taboo", name: "사람 고기는 먹지 않는다", description: "굶어 죽더라도 그 선은 넘지 않는다", acting: "고기 출처를 묻고, 대답이 없으면 손대지 않는다", confirm: "사람 고기는 먹지 않기로 한" }
     - { id: "taboo_no_drink", slot: "taboo", name: "술에 손대지 않는다", description: "한 번 무너진 적이 있다", acting: "술잔을 사양하고, 술 냄새에 표정이 굳는다", trait_opposites: ["drinker"], confirm: "술을 끊은" }
-    - { id: "taboo_no_betray", slot: "taboo", name: "무리를 팔지 않는다", description: "붙잡혀도, 매를 맞아도", acting: "심문에 입을 다문다", needs_faction: true, confirm: "무리를 팔지 않기로 한" }
+    - { id: "taboo_no_betray", slot: "taboo", name: "무리를 배신하지 않는다", description: "붙잡혀도, 매를 맞아도", acting: "심문에 입을 다문다", needs_faction: true, confirm: "무리를 팔지 않기로 한" }
     - { id: "taboo_no_kill_human", slot: "taboo", name: "사람은 죽이지 않는다", description: "감염체는 몰라도 사람은", acting: "사람을 겨눌 때 손이 떨린다", opposites: ["ideal_strength"], clashes_roles: ["role_c_raider", "role_c_comrades", "role_a_squad_leader", "role_b_squad_leader", "role_c_squad_leader", "role_d_squad_leader", "role_e_squad_leader"], confirm: "사람만은 죽이지 않기로 한" }
     - { id: "taboo_no_debt", slot: "taboo", name: "빚지지 않는다", description: "빚은 목줄이다", acting: "공짜 호의도 값을 치르려 한다", confirm: "빚지지 않기로 한" }
     - { id: "taboo_no_grave_rob", slot: "taboo", name: "죽은 이의 것을 뒤지지 않는다", description: "묻어 주는 게 먼저다", acting: "유해의 짐에 손대기 전에 묻어 주자고 한다", confirm: "죽은 이의 것은 뒤지지 않기로 한" }
     - { id: "taboo_no_cage", slot: "taboo", name: "사람을 가두지 않는다", description: "갇혀 본 적이 있다", acting: "포로를 묶는 일·감옥 당번을 꺼린다", clashes_roles: ["role_c_raider", "role_c_comrades"], confirm: "사람을 가두지 않기로 한" }
-    - { id: "taboo_no_back", slot: "taboo", name: "등 뒤를 치지 않는다", description: "싸우려면 마주 보고", acting: "기습·암살을 거절한다", confirm: "등 뒤는 치지 않기로 한" }
+    - { id: "taboo_no_back", slot: "taboo", name: "뒤에서 공격하지 않는다", description: "싸우려면 마주 보고", acting: "기습·암살을 거절한다", confirm: "등 뒤는 치지 않기로 한" }
     - { id: "taboo_no_dog", slot: "taboo", name: "개를 해치지 않는다", description: "개만은 끝까지 사람 편이었다", acting: "들개에게도 먼저 먹을 것을 던진다", confirm: "개는 해치지 않기로 한" }
     - { id: "flaw_insult", slot: "flaw", name: "모욕을 못 참는다", description: "가족·무리를 욕하면 앞뒤를 안 본다", acting: "그 말이 나오면 목소리가 낮아지고 한 발 다가선다", confirm: "모욕을 못 참는", requires: { 다혈질: 1 } }
     - { id: "flaw_grudge", slot: "flaw", name: "뒤끝이 길다", description: "당한 것은 꼭 기억해 둔다", acting: "지난 일을 다시 꺼내고, 쉽게 풀어 주지 않는다", confirm: "뒤끝이 긴", requires: { 다혈질: 1 } }
     - { id: "flaw_rush_to_save", slot: "flaw", name: "구하러 뛰어든다", description: "누가 위험하면 계획을 버리고", acting: "비명이 들리면 엄호도 기다리지 않고 달려간다", confirm: "구하러 먼저 뛰어드는", requires: { 충동적: 1 } }
     - { id: "flaw_gambler", slot: "flaw", name: "내기를 못 끊는다", description: "판이 벌어지면 손이 간다", acting: "화투판·내기에 끼고, 잃은 것을 되찾으려 한다", confirm: "내기를 못 끊는", requires: { 충동적: 1 } }
-    - { id: "flaw_greedy", slot: "flaw", name: "손이 먼저 간다", description: "값진 것을 보면 몫을 따지기 전에 챙긴다", acting: "전리품 앞에서 눈이 빠르다", confirm: "욕심 많은", requires: { 실리적: 1 } }
+    - { id: "flaw_greedy", slot: "flaw", name: "욕심이 많다", description: "값진 것을 보면 몫을 따지기 전에 챙긴다", acting: "전리품 앞에서 눈이 빠르다", confirm: "욕심 많은", requires: { 실리적: 1 } }
     - { id: "flaw_secretive", slot: "flaw", name: "속을 털어놓지 못한다", description: "아파도, 무서워도 혼자 삼킨다", acting: "괜찮냐는 물음에 늘 괜찮다고 한다", confirm: "속을 털어놓지 못하는" }
-    - { id: "flaw_soft", slot: "flaw", name: "모질지 못하다", description: "해야 할 일인데 마음이 약해진다", acting: "벌을 주거나 거절해야 할 때 망설인다", confirm: "모질지 못한", requires: { 다정함: 1 } }
+    - { id: "flaw_soft", slot: "flaw", name: "마음이 약하다", description: "해야 할 일인데 마음이 약해진다", acting: "벌을 주거나 거절해야 할 때 망설인다", confirm: "모질지 못한", requires: { 다정함: 1 } }
     - { id: "flaw_no_retreat", slot: "flaw", name: "물러서지 못한다", description: "싸움에서 등을 보이는 게 죽기보다 싫다", acting: "후퇴 명령에도 한 발 늦게 뺀다", confirm: "물러서지 못하는", requires: { 원칙적: 1 } }
     - { id: "flaw_loose_lips", slot: "flaw", name: "입이 가볍다", description: "비밀이 오래 머물지 않는다", acting: "들은 말을 옮기고 싶어 안달한다", confirm: "입이 가벼운", requires: { 수다스러움: 1 } }
     - { id: "flaw_pride", slot: "flaw", name: "자존심이 세다", description: "도움을 청하느니 혼자 한다", acting: "남의 도움·동정을 거절한다", confirm: "자존심이 센" }
     - { id: "flaw_distrust", slot: "flaw", name: "아무도 믿지 않는다", description: "등을 맡기지 않는다", acting: "남이 준 음식·지도를 먼저 의심한다", opposites: ["flaw_naive"], confirm: "아무도 믿지 않는" }
     - { id: "flaw_naive", slot: "flaw", name: "사람을 잘 믿는다", description: "웃으며 다가오는 사람을 의심하지 못한다", acting: "낯선 이의 말을 그대로 받아들인다", opposites: ["flaw_distrust"], trait_opposites: ["cynical"], confirm: "사람을 잘 믿는" }
     - { id: "flaw_squeamish", slot: "flaw", name: "피를 못 본다", description: "붕괴 뒤에도 익숙해지지 않았다", acting: "상처를 보면 얼굴이 하얘지고 고개를 돌린다", confirm: "피를 못 보는" }
-    - { id: "flaw_hoarder", slot: "flaw", name: "버리지 못한다", description: "언젠가 쓸 데가 있다", acting: "짐이 무거워도 잡동사니를 놓지 않는다", confirm: "버리지 못하는" }
-    - { id: "flaw_lazy", slot: "flaw", name: "몸을 아낀다", description: "할 수 있으면 미룬다", acting: "당번·궂은일을 은근히 피한다", confirm: "몸을 아끼는" }
+    - { id: "flaw_hoarder", slot: "flaw", name: "물건을 못 버린다", description: "언젠가 쓸 데가 있다", acting: "짐이 무거워도 잡동사니를 놓지 않는다", confirm: "버리지 못하는" }
+    - { id: "flaw_lazy", slot: "flaw", name: "게으르다", description: "할 수 있으면 미룬다", acting: "당번·궂은일을 은근히 피한다", confirm: "몸을 아끼는" }
     - { id: "flaw_jealous", slot: "flaw", name: "시샘이 많다", description: "남이 칭찬받으면 속이 쓰리다", acting: "남의 공을 깎아내리는 말을 흘린다", confirm: "시샘 많은" }
     - { id: "habit_count_ammo", slot: "habit", name: "탄을 센다", description: "틈만 나면 남은 탄을 센다", acting: "쉴 때 탄창을 빼 손가락으로 세어 본다" }
     - { id: "habit_check_exits", slot: "habit", name: "출구부터 본다", description: "어디 들어가든", acting: "방에 들어서면 문과 창부터 눈으로 짚는다" }
-    - { id: "habit_hum", slot: "habit", name: "흥얼거린다", description: "붕괴 전 노래를", acting: "손이 바쁠 때 옛 노래를 흥얼거린다" }
-    - { id: "habit_knife_whittle", slot: "habit", name: "칼로 깎는다", description: "나무토막을", acting: "기다릴 때 작은 칼로 무언가를 깎는다" }
-    - { id: "habit_journal", slot: "habit", name: "적어 둔다", description: "하루 일을", acting: "밤마다 낡은 수첩에 몇 줄 적는다" }
-    - { id: "habit_pray", slot: "habit", name: "짧게 빈다", description: "나서기 전에", acting: "위험한 일 앞에서 입속으로 무언가 왼다" }
-    - { id: "habit_smell_food", slot: "habit", name: "냄새부터 맡는다", description: "먹기 전에", acting: "받은 음식을 코에 대 보고 먹는다" }
+    - { id: "habit_hum", slot: "habit", name: "옛 노래를 흥얼거린다", description: "붕괴 전 노래를", acting: "손이 바쁠 때 옛 노래를 흥얼거린다" }
+    - { id: "habit_knife_whittle", slot: "habit", name: "나무를 깎는다", description: "나무토막을", acting: "기다릴 때 작은 칼로 무언가를 깎는다" }
+    - { id: "habit_journal", slot: "habit", name: "일기를 쓴다", description: "하루 일을", acting: "밤마다 낡은 수첩에 몇 줄 적는다" }
+    - { id: "habit_pray", slot: "habit", name: "나서기 전에 기도한다", description: "나서기 전에", acting: "위험한 일 앞에서 입속으로 무언가 왼다" }
+    - { id: "habit_smell_food", slot: "habit", name: "음식 냄새부터 맡는다", description: "먹기 전에", acting: "받은 음식을 코에 대 보고 먹는다" }
     - { id: "habit_sleep_light", slot: "habit", name: "얕게 잔다", description: "등을 벽에 대고", acting: "작은 소리에도 눈을 뜬다" }
     - { id: "habit_clean_gun", slot: "habit", name: "총을 닦는다", description: "쓰지 않아도", acting: "저녁마다 총을 분해해 닦는다" }
     - { id: "habit_names", slot: "habit", name: "이름을 묻는다", description: "처음 보는 사람에게", acting: "누굴 만나든 이름부터 묻고 기억해 둔다" }
-    - { id: "habit_weather", slot: "habit", name: "하늘을 본다", description: "나가기 전에", acting: "문을 나서며 하늘과 바람을 살핀다" }
+    - { id: "habit_weather", slot: "habit", name: "날씨부터 살핀다", description: "나가기 전에", acting: "문을 나서며 하늘과 바람을 살핀다" }
     - { id: "habit_coin", slot: "habit", name: "동전을 굴린다", description: "손가락 사이로", acting: "생각할 때 쓸모없어진 동전을 굴린다" }
-    - { id: "habit_feed_strays", slot: "habit", name: "짐승을 먹인다", description: "길고양이·들개를", acting: "남은 음식을 짐승 몫으로 떼어 둔다", trait_opposites: ["cynophobia"] }
+    - { id: "habit_feed_strays", slot: "habit", name: "떠돌이 짐승을 먹인다", description: "길고양이·들개를", acting: "남은 음식을 짐승 몫으로 떼어 둔다", trait_opposites: ["cynophobia"] }
     - { id: "habit_mutter", slot: "habit", name: "혼잣말을 한다", description: "일하면서", acting: "손을 움직이며 순서를 중얼거린다" }
-    - { id: "habit_boots", slot: "habit", name: "신발을 챙긴다", description: "잘 때도 곁에", acting: "신발 끈을 늘 다시 묶고, 머리맡에 둔다" }
+    - { id: "habit_boots", slot: "habit", name: "신발을 곁에 두고 잔다", description: "잘 때도 곁에", acting: "신발 끈을 늘 다시 묶고, 머리맡에 둔다" }
     - { id: "habit_scar_touch", slot: "habit", name: "흉터를 만진다", description: "긴장하면", acting: "불안할 때 옛 상처를 손끝으로 쓸어 본다" }
     - { id: "speech_military", slot: "speech", name: "군대 말투", description: "\"~입니다\", \"확인했습니다\"", acting: "끝을 끊어 말하고 보고하듯 말한다" }
     - { id: "speech_dialect_strong", slot: "speech", name: "진한 사투리", description: "고향 말을 버리지 않았다", acting: "급하거나 화나면 사투리가 더 진해진다" }
@@ -2222,26 +2224,26 @@ settings:
     - { id: "speech_curse", slot: "speech", name: "욕이 섞인다", description: "습관처럼", acting: "감탄사 대신 짧은 욕이 튀어나온다", requires: { 다혈질: 1 } }
     - { id: "speech_polite_all", slot: "speech", name: "누구에게나 존댓말", description: "적에게도", acting: "상대가 누구든 말을 높인다", requires: { 온화함: 1 } }
     - { id: "speech_third_person", slot: "speech", name: "자기를 이름으로 부른다", description: "\"나\" 대신", acting: "\"혁진이는 그렇게 안 해\"" }
-    - { id: "speech_scripture", slot: "speech", name: "경전 구절", description: "외워 둔 구절을", acting: "힘든 순간에 경전·기도문 한 줄을 읊는다" }
+    - { id: "speech_scripture", slot: "speech", name: "경전 구절을 인용한다", description: "외워 둔 구절을", acting: "힘든 순간에 경전·기도문 한 줄을 읊는다" }
     - { id: "speech_numbers", slot: "speech", name: "숫자로 말한다", description: "셈이 입에 붙었다", acting: "\"셋 중 둘\", \"이틀 치\" 하고 수로 말한다", requires: { 실리적: 1 } }
-    - { id: "speech_old_words", slot: "speech", name: "예스러운 말", description: "책으로 배운 말", acting: "요즘 안 쓰는 단어를 섞는다" }
+    - { id: "speech_old_words", slot: "speech", name: "옛날 말투", description: "책으로 배운 말", acting: "요즘 안 쓰는 단어를 섞는다" }
     - { id: "speech_nickname", slot: "speech", name: "별명으로 부른다", description: "이름 대신", acting: "처음 보는 사람에게도 별명을 붙인다" }
-    - { id: "speech_question", slot: "speech", name: "되묻는다", description: "대답 대신 질문", acting: "\"그래서?\", \"왜 그렇게 생각해?\"" }
-    - { id: "speech_whisper", slot: "speech", name: "낮게 말한다", description: "늘 누가 듣는 것처럼", acting: "목소리를 낮추고 주위를 본다", requires: { 신중함: 1 } }
+    - { id: "speech_question", slot: "speech", name: "질문으로 대답한다", description: "대답 대신 질문", acting: "\"그래서?\", \"왜 그렇게 생각해?\"" }
+    - { id: "speech_whisper", slot: "speech", name: "속삭이듯 말한다", description: "늘 누가 듣는 것처럼", acting: "목소리를 낮추고 주위를 본다", requires: { 신중함: 1 } }
     - { id: "speech_joke", slot: "speech", name: "농담으로 넘긴다", description: "무거울수록", acting: "심각한 순간에 실없는 말을 던진다" }
     - { id: "speech_foreign_words", slot: "speech", name: "외래어를 섞는다", description: "붕괴 전 직장 말버릇", acting: "\"체크\", \"오케이\", \"플랜\"" }
     - { id: "secret_deserter", slot: "secret", name: "탈영한 적이 있다", description: "그 무리 이야기가 나오면 말을 돌린다", acting: "그 무리 이야기가 나오면 말을 돌린다", fact: "다른 무리에서 몰래 도망쳐 왔다", backing: { deserter: true } }
     - { id: "secret_debt_owed", slot: "secret", name: "갚지 못한 빚이 있다", description: "그 무리 사람을 피한다", acting: "그 무리 사람을 피한다", fact: "다른 무리에 큰 빚을 지고 달아났다", backing: { debt: "large" } }
     - { id: "secret_family_enemy", slot: "secret", name: "가족이 적 무리에 있다", description: "그 무리와의 싸움 이야기에 굳는다", acting: "그 무리와의 싸움 이야기에 굳는다", fact: "피붙이 하나가 적대하는 무리에 산다", backing: { kin_enemy: true }, roles_none: ["role_a_grunt", "role_t_visitor"] }
-    - { id: "secret_stolen_stash", slot: "secret", name: "숨겨 둔 것이 있다", description: "창고 이야기에 눈치를 본다", acting: "창고 이야기에 눈치를 본다", fact: "무리 몰래 비상 식량을 빼돌려 두었다", backing: { stash: { item: "canned_food", quantity: 3 } }, needs_faction: true }
-    - { id: "secret_addiction", slot: "secret", name: "약에 기대고 있다", description: "약 상자 앞에서 손이 머문다", acting: "약 상자 앞에서 손이 머문다", fact: "진통제 없이는 하루를 못 버틴다", backing: { trait: "pill_habit" } }
+    - { id: "secret_stolen_stash", slot: "secret", name: "몰래 숨겨 둔 물자가 있다", description: "창고 이야기에 눈치를 본다", acting: "창고 이야기에 눈치를 본다", fact: "무리 몰래 비상 식량을 빼돌려 두었다", backing: { stash: { item: "canned_food", quantity: 3 } }, needs_faction: true }
+    - { id: "secret_addiction", slot: "secret", name: "진통제에 중독됐다", description: "약 상자 앞에서 손이 머문다", acting: "약 상자 앞에서 손이 머문다", fact: "진통제 없이는 하루를 못 버틴다", backing: { trait: "pill_habit" } }
     - { id: "secret_former_raider", slot: "secret", name: "약탈자였다", description: "약탈 이야기에 아는 티가 난다", acting: "약탈 이야기에 아는 티가 난다", fact: "붉은 완장을 차고 마을을 털었다", factions_none: ["faction_c"] }
-    - { id: "secret_left_someone", slot: "secret", name: "사람을 두고 왔다", description: "문 두드리는 소리에 몸이 굳는다", acting: "문 두드리는 소리에 몸이 굳는다", fact: "붕괴의 밤, 문을 닫아 누군가를 밖에 두었다" }
-    - { id: "secret_killed_friend", slot: "secret", name: "물린 친구를 쐈다", description: "감염된 사람 이야기에 말이 없어진다", acting: "감염된 사람 이야기에 말이 없어진다", fact: "변하기 전에, 아무도 모르게" }
-    - { id: "secret_bitten_once", slot: "secret", name: "긁힌 적이 있다", description: "격리·검사 이야기에 예민해진다", acting: "격리·검사 이야기에 예민해진다", fact: "긁혔지만 감염되지 않았고, 숨겼다" }
+    - { id: "secret_left_someone", slot: "secret", name: "누군가를 버리고 왔다", description: "문 두드리는 소리에 몸이 굳는다", acting: "문 두드리는 소리에 몸이 굳는다", fact: "붕괴의 밤, 문을 닫아 누군가를 밖에 두었다" }
+    - { id: "secret_killed_friend", slot: "secret", name: "감염된 친구를 쐈다", description: "감염된 사람 이야기에 말이 없어진다", acting: "감염된 사람 이야기에 말이 없어진다", fact: "변하기 전에, 아무도 모르게" }
+    - { id: "secret_bitten_once", slot: "secret", name: "감염체에 긁힌 적이 있다", description: "격리·검사 이야기에 예민해진다", acting: "격리·검사 이야기에 예민해진다", fact: "긁혔지만 감염되지 않았고, 숨겼다" }
     - { id: "secret_real_name", slot: "secret", name: "이름이 가짜다", description: "이름을 불려도 한 박자 늦게 돌아본다", acting: "이름을 불려도 한 박자 늦게 돌아본다", fact: "본래 이름을 버렸다" }
     - { id: "secret_sold_info", slot: "secret", name: "정보를 판 적이 있다", description: "배신 이야기에 말을 아낀다", acting: "배신 이야기에 말을 아낀다", fact: "목숨을 건지려고 동료의 위치를 불었다" }
-    - { id: "secret_coward_once", slot: "secret", name: "한 번 도망쳤다", description: "용기를 칭찬받으면 불편해한다", acting: "용기를 칭찬받으면 불편해한다", fact: "동료가 죽는 동안 숨어 있었다" }
+    - { id: "secret_coward_once", slot: "secret", name: "싸움에서 도망친 적이 있다", description: "용기를 칭찬받으면 불편해한다", acting: "용기를 칭찬받으면 불편해한다", fact: "동료가 죽는 동안 숨어 있었다" }
     - { id: "secret_mercy_kill", slot: "secret", name: "부탁받고 숨을 끊어 줬다", description: "안락사 이야기에 말을 아낀다", acting: "안락사 이야기에 말을 아낀다", fact: "다친 사람의 부탁으로" }
     - { id: "keep_photo", slot: "keepsake", name: "가족사진", description: "비닐에 싼 사진 한 장", acting: "쉴 때 꺼내 보고 다시 넣는다", backing: { keepsake: "ks_photo" } }
     - { id: "keep_ring", slot: "keepsake", name: "결혼반지", description: "줄에 꿰어 목에 건", acting: "긴장하면 손이 목으로 간다", backing: { keepsake: "ks_ring" } }
@@ -2253,7 +2255,7 @@ settings:
     - { id: "keep_key", slot: "keepsake", name: "옛집 열쇠", description: "그 집은 이제 없다", acting: "열쇠를 쥐고 잠든다", backing: { keepsake: "ks_key" } }
     - { id: "keep_harmonica", slot: "keepsake", name: "하모니카", description: "몇 곡만 분다", acting: "불가에서 한 곡 분다", backing: { keepsake: "ks_harmonica" } }
     - { id: "keep_drawing", slot: "keepsake", name: "아이가 그린 그림", description: "접어 지갑에", acting: "보고는 아무 말도 하지 않는다", backing: { keepsake: "ks_drawing" } }
-    - { id: "keep_medal", slot: "keepsake", name: "붕괴 전 메달", description: "운동회·대회의", acting: "옛날의 자기 이야기를 할 때 꺼낸다", backing: { keepsake: "ks_medal" } }
-    - { id: "keep_lighter", slot: "keepsake", name: "각인된 라이터", description: "이름이 새겨진", acting: "불을 붙일 때마다 각인을 엄지로 쓴다", backing: { keepsake: "ks_lighter" } }
+    - { id: "keep_medal", slot: "keepsake", name: "대회 메달", description: "운동회·대회의", acting: "옛날의 자기 이야기를 할 때 꺼낸다", backing: { keepsake: "ks_medal" } }
+    - { id: "keep_lighter", slot: "keepsake", name: "이름 새긴 라이터", description: "이름이 새겨진", acting: "불을 붙일 때마다 각인을 엄지로 쓴다", backing: { keepsake: "ks_lighter" } }
     - { id: "keep_scarf", slot: "keepsake", name: "누군가의 목도리", description: "그 사람 냄새는 이제 없다", acting: "추운 날 꼭 두른다", backing: { keepsake: "ks_scarf" } }
     - { id: "keep_seeds", slot: "keepsake", name: "씨앗 봉지", description: "언젠가 심으려고", acting: "흙을 보면 봉지를 만져 본다", backing: { keepsake: "ks_seeds" } }

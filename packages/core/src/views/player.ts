@@ -150,7 +150,8 @@ export type PlayerView = {
   /** 고른 시나리오 (캐릭터 탭). 시나리오가 없는 역할이면 null */
   scenario: { title: string; pitch: string } | null;
   /** 과거 배경: 붕괴 전에 하던 일 (12-84, 캐릭터 탭) */
-  past: { label: string; summary: string } | null;
+  /** 과거 배경. icon: 월드 팩의 아이콘 이름 (없으면 null) */
+  past: { label: string; summary: string; icon: string | null } | null;
   service: {
     /** 계급 이름 (예: 분대원, 분대장) */
     rankLabel: string;
@@ -467,7 +468,7 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     occupationLabel: occupationTitle(content, player),
     motive: player.motive ? { label: player.motive.label, summary: player.motive.summary } : null,
     scenario: ((s) => (s ? { title: s.title, pitch: s.pitch } : null))(content.roles[state.roleId]?.scenario),
-    past: player.past ? { label: player.past.label, summary: player.past.summary } : null,
+    past: player.past ? { label: player.past.label, summary: player.past.summary, icon: content.scenario.creation?.pasts.find((p) => p.id === player.past!.id)?.icon ?? null } : null,
     clock: clockView(state, content),
     timeLabel: [formatTime(state.time), seasonLabel(seasonAt(content.scenario, state.time)), weatherNow(content.scenario, state)?.label ?? ""]
       .filter(Boolean)

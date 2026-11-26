@@ -44,7 +44,7 @@ function run(answers: string[], draft: NewGameDraft = newGameDraft()) {
 }
 
 /** 캐릭터 만들기 끝까지 (과거 배경 경찰, 이름, 성별, 나이, 능력, 스킬, 트레잇, 시작) */
-const CHARACTER = ["police", "서진", "female", "30", "random", "past", "none", "기본", "없음", "start"];
+const CHARACTER = ["police", "서진", "female", "30", "배경대로", "배경대로", "없음", "기본", "없음", "start"];
 
 describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서술 방식 (기획서 4.2)", () => {
   it("월드 고르기는 이름·한 줄 소개·짧은 설명만, 고르면 그 월드의 시나리오 목록", () => {
@@ -116,7 +116,7 @@ describe("새 게임: 월드 → 시나리오 → 캐릭터 → 수위 → 서�
   it("계급 기본 훈련과 최소 나이: 분대장은 20세부터, 시나리오는 스킬을 주지 않고 과거 배경이 준다 (12-84, 12-87)", () => {
     const leader = run(["post_apoc", "첫 번째 명령", "doctor", "윤하", "female"], newGameDraft({ post_apoc: ["role_a_squad_leader"] })).draft;
     expect(answerNewGame(packs, leader, "27", createSeededRng(1)).ok).toBe(false); // 의사는 30세부터
-    const done = run(["30", "past", "past", "none", "기본", "없음", "start", "off", "novel"], leader);
+    const done = run(["30", "배경대로", "배경대로", "없음", "기본", "없음", "start", "off", "novel"], leader);
     if (!done.done) throw new Error("not done");
     expect(done.roleId).toBe("role_a_squad_leader");
     const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-role-")), content: real, rngFactory: () => createSeededRng(2) }).create("mcp", done.roleId, done.choice, done.packId);
@@ -138,7 +138,7 @@ describe("채팅과 상태 화면이 같은 것을 보여 준다", () => {
   });
 
   it("능력·스킬을 고치면 과거 배경의 배치를 보여 주고, 그 배치를 답 형식 그대로 넘기면 같은 값이 된다", () => {
-    const abilities = run([...start, "soldier", "서진", "female", "30", "manual"]);
+    const abilities = run([...start, "soldier", "서진", "female", "30"]);
     const text = describeNewGameStep(packs, abilities.draft);
     expect(text).toContain("지금 배치 (과거 배경 군인): 민첩 +2");
     const asAnswer = /답 형식으로는 "([^"]+)"/.exec(text)![1]!;
@@ -146,9 +146,8 @@ describe("채팅과 상태 화면이 같은 것을 보여 준다", () => {
     const next = run([asAnswer], abilities.draft);
     const set = next.draft.character.answers.at(-1);
     expect(set?.step === "ability_set" && Object.fromEntries(Object.entries(set.values).filter(([, v]) => v !== 0))).toEqual(view.character!.pastDefaults!.stats);
-    // 스킬 고치기도 지금 고른 것부터
-    const skills = run(["manual"], next.draft);
-    expect(describeNewGameStep(packs, skills.draft)).toContain("지금 고른 것 (과거 배경 군인): 사격 +2, 전략 +1, 근접전 0, 운동 0, 경계 0");
+    // 스킬도 지금 고른 것부터 (방식 고르기 없이 바로)
+    expect(describeNewGameStep(packs, next.draft)).toContain("지금 고른 것 (과거 배경 군인): 사격 +2, 전략 +1, 근접전 0, 운동 0, 경계 0");
   });
 });
 

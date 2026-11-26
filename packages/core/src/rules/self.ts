@@ -58,7 +58,7 @@ export function againstSetting(ctx: ToolContext, settingId: string): SettingRoll
   return { ok: true, proceed: false, lines: [head, `${josa(who, "은/는")} 끝내 하지 못한다: 그 행동은 일어나지 않았다. GM은 행동을 바꿔 서술하고 까닭(${item.name})을 짧게 알린다.`], displays: [roll.display] };
 }
 
-/** 설정을 목적어로: 문장으로 된 이름("무리를 팔지 않는다")은 "~는 마음을", 낱말("복종")은 "복종을" */
+/** 설정을 목적어로: 문장으로 된 이름("무리를 배신하지 않는다")은 "~는 마음을", 낱말("복종")은 "복종을" */
 function settingObject(name: string): string {
   return /다$/.test(name) ? `${name}는 마음을` : josa(name, "을/를");
 }

@@ -1,4 +1,5 @@
 import { startPartyFight } from "./partyTools.ts";
+import { traitSight } from "./traits.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState, Party } from "../game/state.ts";
 import { canAmbush, isNight, partyChoice, partyNoticeBonus, personNoticeBonus, sightings, type Concealment } from "../rules/encounter.ts";
@@ -109,9 +110,11 @@ export function partyPlacePath(state: GameState, content: Content, party: Party,
 
 /**
  * 알아채기 거리 (파트 12): 부대의 장소 길에서 주인공 자리와 가장 가까운 칸 수. 같은 장소 +2, 한 칸 옆 0, 망루에서는 두 칸까지 0, 더 멀면 굴리지 않는다(null).
+ * 주인공의 보는 칸(트레잇 sight): 매의 눈(+1)은 한 칸 더 멀리까지 보고 그 칸은 -1 (부대는 거기서 주인공을 보지 못한다),
+ * 둔한 감각(-1)은 같은 장소가 아니면 -1.
  * 장소가 없는 구역(다른 월드 팩)이면 0
  */
-function distanceBonus(state: GameState, content: Content, party: Party, zone: string, t: number): { mine: number; theirs: number } | null {
+function distanceBonus(state: GameState, content: Content, party: Party, zone: string, t: number, sight = 0): { mine: number; theirs: number } | null {
   const here = currentPlace(state, content);
   if (!here) return { mine: 0, theirs: 0 };
   const { places } = partyPlacePath(state, content, party, zone, t);
@@ -121,7 +124,10 @@ function distanceBonus(state: GameState, content: Content, party: Party, zone: s
   // 저쪽에서 망루 위는 잘 보이지 않는다
   const theirs = watch ? -2 : 0;
   if (d === 0) return { mine: 2, theirs: theirs + 2 };
-  if (d === 1 || (watch && d === 2)) return { mine: 0, theirs };
+  const base = watch ? 2 : 1;
+  if (d <= base) return { mine: Math.min(0, sight), theirs };
+  // 더 멀리 보는 눈: 저쪽은 이 거리에서 주인공을 보지 못한다
+  if (d <= base + Math.max(0, sight)) return { mine: -1, theirs: -99 };
   return null;
 }
 
@@ -133,7 +139,8 @@ export function rollPartySight(state: GameState, content: Content, rng: Rng, par
   const zone = state.playerZone!;
   if (!outdoorsHere(state, content)) return { player: false, party: false, attacks: false, rolled: false };
   // 장소 사이는 멀다: 같은 장소·한 칸 옆(망루면 두 칸)만 서로 볼 수 있다 (파트 12)
-  const dist = distanceBonus(state, content, party, zone, at);
+  const me0 = state.characters[state.playerId];
+  const dist = distanceBonus(state, content, party, zone, at, opts.asleep || !me0 ? 0 : traitSight(content, me0));
   if (!dist) return { player: false, party: false, attacks: false, rolled: false };
   const me = state.characters[state.playerId]!;
   const cover = content.locations[zone]?.cover ?? 0;

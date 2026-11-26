@@ -3,6 +3,7 @@ import type { Character } from "../game/character.ts";
 import type { Rng } from "../rng.ts";
 import { MINUTES_PER_DAY } from "./time.ts";
 import { attemptValue } from "./skill.ts";
+import { traitSkillMod } from "../engine/traits.ts";
 
 /**
  * 공통 규칙 23 마주침 (docs/war-parties-plan.md 파트 4, 9).
@@ -41,13 +42,14 @@ export function partyNoticeBonus(kind: string, intercept = false): number {
   return kind === "scout" || intercept ? 2 : 0;
 }
 
-/** 주인공(사람)의 보는 보정: 시나리오의 알아채기 판정(war.parties.notice_move)의 가장 나은 능력 + 스킬, 상한 +4 */
-export function personNoticeBonus(content: Content, c: Pick<Character, "stats" | "skills">): number {
+/** 주인공(사람)의 보는 보정: 시나리오의 알아채기 판정(war.parties.notice_move)의 가장 나은 능력 + 스킬(트레잇 보정 포함), 상한 +4 */
+export function personNoticeBonus(content: Content, c: Pick<Character, "id" | "stats" | "skills" | "traits">): number {
   const moveId = content.scenario.war?.parties?.notice_move;
   const move = moveId ? content.scenario.moves.find((m) => m.id === moveId) : undefined;
   if (!move) return 0;
   const stat = Math.max(...move.stats.map((s) => c.stats[s] ?? 0));
-  const skill = attemptValue(content.scenario, c.skills, move.id) ?? 0;
+  // 매의 눈·둔한 감각 같은 트레잇의 경계 보정도 (부대 알아채기에서 빠져 있었다)
+  const skill = (attemptValue(content.scenario, c.skills, move.id) ?? 0) + traitSkillMod(content, c as Character, move.id);
   return Math.min(BONUS_CAP, stat + Math.max(0, skill));
 }
 

@@ -3,7 +3,7 @@ import { sagaMarketFactor } from "../rules/saga.ts";
 import { heldOf } from "../rules/held.ts";
 import { needsLight } from "../rules/place.ts";
 import { animalCarry } from "../game/companions.ts";
-import { effectiveSkill } from "./traits.ts";
+import { effectiveSkill, traitsOf } from "./traits.ts";
 import { marketValue } from "./market.ts";
 import { isCreature } from "../game/kinds.ts";
 import { z } from "zod";
@@ -127,6 +127,8 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
   if (carry && encumbrance(content, c, state) > 0 && carry.encumbered_moves.includes(move)) add("짐", carry.penalty);
   // 거리 보정은 상황 보정이라 상한과 따로 (12-93)
   if (distance) add(content.scenario.gear?.distances?.find((d) => d.id === distance)?.label ?? distance, rangeOf(content, c, move)?.[distance] ?? 0);
+  // 트레잇의 거리 보정 (저격수·서툰 조준): 무기 거리 보정과 같은 자리라 상한 밖. 그 거리를 쏠 수 있는지는 rangeProblem이 따로 본다
+  if (distance) for (const t of traitsOf(content, c)) add(t.label, t.effects.range?.[move]?.[distance] ?? 0);
   return { skill, skillLabel, penalty: penaltyParts.reduce((n, x) => n + x.value, 0), penaltyParts };
 }
 

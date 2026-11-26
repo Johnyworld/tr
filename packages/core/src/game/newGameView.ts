@@ -66,11 +66,11 @@ export type CharacterStepView = {
   };
   /** 캐릭터 설정 고르기 (4.6.4): 칸과 항목. ok: 고를 수 있나, reasons: 못 고르는 까닭("다혈질 2 필요"), clash: 이 시나리오와 자주 부딪힘 */
   settings: {
-    slots: { id: string; label: string; max: number; hint: string; rolls: boolean }[];
+    slots: { id: string; label: string; max: number; hint: string; rolls: boolean; describe: boolean }[];
     items: { id: string; slot: string; name: string; description: string; ok: boolean; reasons: string[]; clash: boolean; opposites: string[] }[];
   } | null;
   /** 과거 배경 고르기 (12-84): 배경마다 스킬·능력·물건 */
-  pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge: number | null }[];
+  pasts: { id: string; label: string; summary: string; skills: string; stats: string; items: string; minAge: number | null; icon: string | null }[];
   /** 자리(계급·직분)가 점수 없이 배운 상태로 주는 전문 기술 (4.2.1). 없으면 빈 글 */
   grantedSkills: string;
   /** 고치기에서 점수를 둘 수 있는 전문 기술 id (과거가 가르쳐 준 것과 자리가 주는 것) */
@@ -94,7 +94,8 @@ export type CharacterStepView = {
   tiers: AbilityTier[] | null;
   points: { total: number; cost: { value: number; cost: number }[]; maxLow: number } | null;
   /** 이 단계에서 고를 수 있는 트레잇 */
-  traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[] }[];
+  /** group: 화면에서 따로 묶는 것 (공포증 phobia, 습관 habit). 트레잇 효과로 가른다 */
+  traits: { id: string; label: string; kind: "positive" | "negative" | "personality"; cost: number; description: string; opposites: string[]; group: "phobia" | "habit" | null }[];
   traitLimits: { max_positive: number; max_negative: number; max_personality?: number; max_phobia?: number } | null;
   /** 확인 단계: 쓰지 않은 능력 포인트 */
   unusedPoints: number;
@@ -139,7 +140,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
         abilities: s.stats.filter((x) => d.abilities[x.id] !== undefined).map((x) => ({ label: x.label, value: d.abilities[x.id]! })),
         skills: chosenSkills(s, d),
         traits:
-          d.traitMethod !== undefined && (d.traitMethod !== "manual" || d.traitSteps.has("traits_pick"))
+          d.traitSteps.has("traits_pick")
             ? d.traits.map((id) => s.traits.find((t) => t.id === id)?.label ?? id)
             : null,
         persona: d.persona !== undefined ? personaSummary(s, d.persona) : null,
@@ -147,7 +148,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       },
       settings: s.settings
         ? {
-            slots: s.settings.slots.map((x) => ({ id: x.id, label: x.label, max: x.max, hint: x.hint, rolls: x.rolls })),
+            slots: s.settings.slots.map((x) => ({ id: x.id, label: x.label, max: x.max, hint: x.hint, rolls: x.rolls, describe: x.describe })),
             items: settingChoices(s, draft.character).map((x) => ({ id: x.item.id, slot: x.item.slot, name: x.item.name, description: x.item.description, ok: x.ok, reasons: x.reasons, clash: x.clash, opposites: x.item.opposites })),
           }
         : null,
@@ -161,6 +162,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
         stats: describeStats(s, p.stats),
         items: p.items.map((i) => content.items[i]?.name ?? i).join(" · "),
         minAge: p.min_age ?? null,
+        icon: p.icon ?? null,
       })),
       grantedSkills: grantedExperts(s, draft.character.seat).map((m) => moveLabel(s, m)).join(", "),
       teachable: teachableExperts(s, d.past, draft.character.seat),
@@ -188,11 +190,11 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
       points: rules ? { total: rules.points, cost: rules.cost, maxLow: rules.maxLow } : null,
       traits:
         cstep === "traits_pick" || cstep === "traits_personality"
-          ? traitChoices(s, draft.character, cstep).map((t) => ({ id: t.id, label: t.label, kind: t.kind, cost: t.cost, description: t.description, opposites: t.opposites }))
+          ? traitChoices(s, draft.character, cstep).map((t) => ({ id: t.id, label: t.label, kind: t.kind, cost: t.cost, description: t.description, opposites: t.opposites, group: t.effects.phobia?.length ? ("phobia" as const) : t.effects.habit ? ("habit" as const) : null }))
           : [],
       traitLimits: rules?.traitLimits ?? null,
       personaAxes: (s.persona?.axes ?? []).map((a) => ({ id: a.id, low: a.low, high: a.high, romance: !!a.romance })),
-      unusedPoints: cstep === "confirm" && d.abilityMethod === "manual" && Number.isFinite(spent) && left > 0 ? left : 0,
+      unusedPoints: cstep === "confirm" && Number.isFinite(spent) && left > 0 ? left : 0,
     },
   };
 }
@@ -202,7 +204,7 @@ export function newGameView(packs: ReadonlyMap<string, Content>, draft: NewGameD
  * 스킬도 트레잇도 아직 안 정했으면 null
  */
 function chosenSkills(s: Content["scenario"], d: ReturnType<typeof collectDraft>): { label: string; value: number }[] | null {
-  const skillsSet = d.skillMethod !== undefined && (d.skillMethod !== "manual" || d.skillsSet);
+  const skillsSet = d.skillsSet;
   const bonus: Record<string, number> = {};
   for (const id of d.traits) for (const [m, v] of Object.entries(s.traits.find((t) => t.id === id)?.effects.skills ?? {})) bonus[m] = (bonus[m] ?? 0) + v;
   if (!skillsSet && !Object.keys(bonus).length) return null;

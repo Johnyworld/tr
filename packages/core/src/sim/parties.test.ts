@@ -285,6 +285,15 @@ describe("③-1 닿을 때 계산·장소 거리·믿음", () => {
     expect(rollPartySight(at("to_base"), content, sure, p, t + 60).player).toBe(false);
     expect(rollPartySight(at("trench"), content, sure, p, t + 60).player).toBe(true);
     expect(rollPartySight(at("watchtower"), content, sure, p, t + 60).player).toBe(true);
+    // 매의 눈 (트레잇 sight +1): 한 칸 더 멀리 본다. 저쪽은 그 거리에서 주인공을 보지 못한다
+    const withTraits = (place: string, traits: string[]) => {
+      const s = at(place);
+      return { ...s, characters: { ...s.characters, [s.playerId]: { ...s.characters[s.playerId]!, traits } } };
+    };
+    const eagle = rollPartySight(withTraits("to_base", ["eagle_eye"]), content, sure, p, t + 60);
+    expect(eagle).toMatchObject({ player: true, party: false });
+    // 둔한 감각은 더 멀리 보지 못한다
+    expect(rollPartySight(withTraits("to_base", ["dull_senses"]), content, sure, p, t + 60).player).toBe(false);
     w.close();
   });
 

@@ -29,6 +29,16 @@ export function traitSkillMod(content: Content, c: Character, move: string): num
   return sum(traitsOf(content, c).map((t) => t.effects.skills?.[move] ?? 0));
 }
 
+/** 트레잇의 거리 보정 (저격수 등): 그 판정·거리에 더할 값 */
+export function traitRangeMod(content: Content, c: Pick<Character, "id" | "traits">, move: string, distance: string): number {
+  return sum(traitsOf(content, c).map((t) => t.effects.range?.[move]?.[distance] ?? 0));
+}
+
+/** 트레잇의 보는 칸 (매의 눈 +1, 둔한 감각 -1) */
+export function traitSight(content: Content, c: Pick<Character, "id" | "traits">): number {
+  return sum(traitsOf(content, c).map((t) => t.effects.sight ?? 0));
+}
+
 /**
  * 실제로 쓰는 스킬 값: 배운 스킬 + 트레잇 보정. 성장·배우기는 배운 값(c.skills)만 본다.
  * 못 하는 전문 기술(4.2.1)은 스킬 최저값으로 셈한다 (할 수 있는지는 canUseSkill)

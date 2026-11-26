@@ -162,6 +162,8 @@ export const scenarioFileSchema = z
               items: z.array(id).default([]),
               /** 이 일을 했을 수 있는 최소 나이 (12-87) */
               min_age: z.number().int().min(0).optional(),
+              /** 고르는 화면에서 이름 앞에 보이는 아이콘 (content/icons.ts의 이름) */
+              icon: iconNameSchema.optional(),
             }),
           )
           .default([]),
@@ -224,6 +226,13 @@ export const scenarioFileSchema = z
               infection: z.number().min(0).optional(),
               /** 저절로 낫는 데 걸리는 날 ± */
               recovery_days: z.number().int().optional(),
+              /** 무기 거리 보정에 더한다 (판정 → 거리 id → ±). 저격수는 먼 거리 사격 +1. 거리 보정이라 상한 밖 (12-93) */
+              range: z.record(id, z.record(id, z.number().int())).optional(),
+              /**
+               * 바깥에서 부대를 알아채는 장소 칸 (공통 규칙 23). 양수: 그만큼 더 먼 칸까지 보고 늘어난 칸은 -1 (매의 눈).
+               * 음수: 한 칸 넘게 떨어진 곳을 볼 때 그만큼 불리 (둔한 감각)
+               */
+              sight: z.number().int().optional(),
               /** 공포가 오를 때 더하는 단계 (12-95. 겁이 많으면 +1, 담대하면 -1) */
               fear: z.number().int().optional(),
               /** 공포증 (12-103): 계기에 이 태그가 있으면 공포가 한 단계 더 오른다 (그 계기가 보통 사람에게 무섭지 않아도). dark는 어둠 시간대 전부 */
@@ -1791,7 +1800,8 @@ export const scenarioFileSchema = z
      */
     settings: z
       .strictObject({
-        slots: z.array(z.strictObject({ id, label: z.string().min(1), max: z.number().int().min(1).max(3), rolls: z.boolean().default(false), hint: z.string().min(1) })).min(1),
+        // describe: 고르는 화면에 항목의 설명을 보인다 (이름만으로 뜻이 덜 드러나는 칸, 이상 등)
+        slots: z.array(z.strictObject({ id, label: z.string().min(1), max: z.number().int().min(1).max(3), rolls: z.boolean().default(false), describe: z.boolean().default(false), hint: z.string().min(1) })).min(1),
         items: z.array(
           z.strictObject({
             id,

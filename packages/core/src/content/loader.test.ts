@@ -45,7 +45,7 @@ function tempContent(files: Record<string, string>) {
   delete scenario.exploration;
   // 거점 손보기(12-167)도 실제 아이템을 재료로 쓴다
   delete scenario.facilities;
-  // 필수품(12-350)은 그 일에 쓰는 실제 아이템이 있어야 한다
+  // 필수품(12-357)은 그 일에 쓰는 실제 아이템이 있어야 한다
   delete scenario.needs;
   delete scenario.lure;
   // 모닥불 연료도 실제 아이템을 참조한다 (12-98)

@@ -59,7 +59,7 @@ describe("플레이 테스트 8", () => {
     expect(maskUnknownNames(w.state(), real, "주옥희는 짐꾼 수를 두 번 셌다")).toContain("주옥희");
   });
 
-  it("B9: 낚시 도구는 낚시의 필수품이라 보정을 주지 않는다 (12-350, 공통 규칙 25)", () => {
+  it("B9: 낚시 도구는 낚시의 필수품이라 보정을 주지 않는다 (12-357, 공통 규칙 25)", () => {
     const w = make("role_l_wanderer");
     w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "fishing_kit", quantity: 1 });
     const me = w.state().characters[w.state().playerId]!;

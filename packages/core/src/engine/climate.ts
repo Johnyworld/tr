@@ -218,7 +218,7 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
     if (!f.indoor) allIndoor = false;
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
-      // 방수포 (12-350): 바깥에서 쉬는 동안 쳐 두면 지붕 아래다
+      // 방수포 (12-357): 바깥에서 쉬는 동안 쳐 두면 지붕 아래다
       const roofed = f.indoor || tarped;
       if (!roofed && weather && c.wet.weather.includes(weather.id) && !wearsWaterproof(ctx, me.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
       // 불 곁이면 fire_hours, 지붕 아래면 roof_hours에 마른다 (12-251: 빗속 섬에서 사흘 내내 젖어 있었다)
@@ -272,7 +272,7 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
 }
 
 /** 방수복을 입고 있는가 (E3) */
-/** 방수포 (12-350, 필수품 fire.shelter): 주인공이 지니고 바깥에서 쉬면(휴식·잠·기다림) 곁의 사람까지 지붕 아래다 */
+/** 방수포 (12-357, 필수품 fire.shelter): 주인공이 지니고 바깥에서 쉬면(휴식·잠·기다림) 곁의 사람까지 지붕 아래다 */
 export function underTarp(ctx: ToolContext, activity: Activity | string): boolean {
   const need = climateOf(ctx.content)?.fire?.shelter;
   if (!need || !RESTING_ACTIVITIES.includes(activity)) return false;
@@ -280,7 +280,7 @@ export function underTarp(ctx: ToolContext, activity: Activity | string): boolea
   return !!needItem(ctx.content, state, state.playerId, need);
 }
 
-/** 방수 (12-350): 장비 칸에 입거나 든 것(우산은 무기 칸). splash(물일)는 waterproof: all만 막는다 */
+/** 방수 (12-357): 장비 칸에 입거나 든 것(우산은 무기 칸). splash(물일)는 waterproof: all만 막는다 */
 export function wearsWaterproof(ctx: ToolContext, who: string, splash = false): boolean {
   const me = ctx.store.getState().characters[who];
   return !!me && Object.values(me.equipped ?? {}).some((id) => {
@@ -331,7 +331,7 @@ export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; di
 }
 
 /**
- * 불 붙이기 (12-350, 공통 규칙 25 필수품 fire.ignite): 불이 이미 타고 있거나, 우리 거점·내 거처·우리 사람이 사는 곳이면 붙일 것이 있다 (free).
+ * 불 붙이기 (12-357, 공통 규칙 25 필수품 fire.ignite): 불이 이미 타고 있거나, 우리 거점·내 거처·우리 사람이 사는 곳이면 붙일 것이 있다 (free).
  * 밖에서는 라이터·성냥(item)이 있어야 하고, 없으면 그 일의 move 판정으로 비벼 피운다(hand, 보정·시간이 더 든다).
  * 비 맞는 바깥에서는 방수포 없이 비벼 피우지 못한다
  */
@@ -366,7 +366,7 @@ export function ignitionProblem(content: Content, state: GameState, check: { mov
 }
 
 /** 모닥불을 피운다 (연료 아이템을 쓴다). 같은 구역에 있으면 따뜻하고, 연기와 불빛은 소음이 된다.
- * handOutcome: 불 붙일 것 없이 비벼 피운 판정 결과 (12-350). story: 이야기 효과가 피우는 불은 붙일 것을 따지지 않는다 */
+ * handOutcome: 불 붙일 것 없이 비벼 피운 판정 결과 (12-357). story: 이야기 효과가 피우는 불은 붙일 것을 따지지 않는다 */
 export function lightFire(ctx: ToolContext, item: string, opts: { handOutcome?: CheckOutcome | null; story?: boolean } = {}): { ok: true; lines: string[] } | { ok: false; error: string } | null {
   const fire = climateOf(ctx.content)?.fire;
   const hours = fire?.items[item];

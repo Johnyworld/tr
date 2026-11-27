@@ -1501,7 +1501,7 @@ export const scenarioFileSchema = z
     /** 음식이 상하는 빠르기의 계절 배수 (12-131, 아이템 perishable에 곱한다). 없는 계절은 1 */
     spoilage: z.strictObject({ season: z.record(id, z.number().min(0)).default({}) }).optional(),
     /**
-     * 필수품 (공통 규칙 25, 12-350): 그 일을 하려면 있어야 하는 물건. 물건은 serves로 이 id를 단다. 있으면 보정 없이 보통으로 하고,
+     * 필수품 (공통 규칙 25, 12-357): 그 일을 하려면 있어야 하는 물건. 물건은 serves로 이 id를 단다. 있으면 보정 없이 보통으로 하고,
      * 없으면 without이 null이면 못 하고, 수이면 그만큼 판정 보정(without_label)을 받는다.
      * check: GM이 판정에 check.needs로 붙이는 일 (줄 타기·땅 파기). 아니면 코드가 쓰는 일 (불 붙이기·덫·꾀어내기·방수포·물 거르기).
      * move: 없이 할 때 거는 판정 스킬 (불 붙이기는 생존), minutes: 없이 할 때 더 드는 시간. consume: 한 번 쓰면 하나 없어진다 (정수 알약).
@@ -1522,7 +1522,7 @@ export const scenarioFileSchema = z
       )
       .default([]),
     /**
-     * 꾀어내기 (12-350, take_action.lure): 소리로 감염체·적을 꾀어낸다. 그 구역에 소음이 남는다(감염체가 몰려들 수 있다).
+     * 꾀어내기 (12-357, take_action.lure): 소리로 감염체·적을 꾀어낸다. 그 구역에 소음이 남는다(감염체가 몰려들 수 있다).
      * need(호루라기)가 있으면 같은 턴에 moves로 맞서는 상대(opponent·target)를 상대하는 판정에 bonus. 없으면 소리쳐서 shout_noise만 남고 내 자리가 드러난다(보정 없음)
      */
     lure: z
@@ -1548,12 +1548,12 @@ export const scenarioFileSchema = z
               companions: z.array(id).default([]),
               /** 이 일의 판정 스킬 (없으면 foraging.move) */
               move: id.optional(),
-              /** 필수품 (공통 규칙 25, 12-350): 이 일에 있어야 하는 물건 (낚시 도구) */
+              /** 필수품 (공통 규칙 25, 12-357): 이 일에 있어야 하는 물건 (낚시 도구) */
               need: id.optional(),
             }),
           )
           .min(1),
-        /** 물 거르기 (12-350, 필수품 id, consume): 불이 없을 때 끓이지 않은 물을 마시면 하나 써서 탈이 나지 않는다 (정수 알약) */
+        /** 물 거르기 (12-357, 필수품 id, consume): 불이 없을 때 끓이지 않은 물을 마시면 하나 써서 탈이 나지 않는다 (정수 알약) */
         purify: id.optional(),
         trap: z.strictObject({ /** 덫을 놓으려면 배워야 하는 스킬 (전문 기술, 4.2.1) */ move: id.optional(), need: id, catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
       })
@@ -1693,9 +1693,9 @@ export const scenarioFileSchema = z
                     warmth: z.number().positive(),
                     noise: z.number().int().min(0).default(0),
                     stove: z.number().min(1).default(3),
-                    /** 불 붙일 것 (12-350, 필수품 id). 우리 거점·내 거처·우리 사람이 사는 곳 밖에서 피울 때 있어야 한다. 없으면 needs의 move 판정으로 비벼 피우고, 비 맞는 바깥에서는(방수포 없이) 못 피운다 */
+                    /** 불 붙일 것 (12-357, 필수품 id). 우리 거점·내 거처·우리 사람이 사는 곳 밖에서 피울 때 있어야 한다. 없으면 needs의 move 판정으로 비벼 피우고, 비 맞는 바깥에서는(방수포 없이) 못 피운다 */
                     ignite: id.optional(),
-                    /** 방수포 (12-350, 필수품 id): 바깥에서 쉬는 동안(휴식·잠·기다림) 지붕 아래로 친다 */
+                    /** 방수포 (12-357, 필수품 id): 바깥에서 쉬는 동안(휴식·잠·기다림) 지붕 아래로 친다 */
                     shelter: id.optional(),
                   })
                   .optional(),

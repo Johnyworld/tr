@@ -862,7 +862,7 @@ export function createGameSchemas(s: Scenario) {
     /** 주인공에게 복수를 다짐한 사람 (12-135): 주인공이 죽인 사람(victim)의 가족·친구(avenger) */
     vendettas: z.array(z.strictObject({ avenger: z.string(), victim: z.string(), since: z.number().int() })).default([]),
     /** 놓아 둔 덫 (12-131). caught: 걸린 아이템 (아직이면 null) */
-    /** item: 놓은 덫 물건 (12-350: 철사 뭉치·쥐덫, 거두면 돌아온다) */
+    /** item: 놓은 덫 물건 (12-357: 철사 뭉치·쥐덫, 거두면 돌아온다) */
     traps: z.array(z.strictObject({ zone: z.string(), setAt: z.number().int(), caught: z.string().nullable(), qty: z.number().int().min(0).default(0), item: z.string().optional() })).default([]),
   });
 

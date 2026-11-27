@@ -1,6 +1,6 @@
-# 잡동사니 아이템과 필수품 (12-350)
+# 잡동사니 아이템과 필수품 (12-357)
 
-2026-11-27 사용자와 정한 것. 구현은 12-350 (`docs/design/17-dev-order.md`), 규칙은 공통 규칙 25 (`docs/design/01-principles.md`).
+2026-11-27 사용자와 정한 것. 구현은 12-357 (`docs/design/17-dev-order.md`), 규칙은 공통 규칙 25 (`docs/design/01-principles.md`).
 
 ## 정한 원칙
 

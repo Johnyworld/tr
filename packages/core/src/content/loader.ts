@@ -536,7 +536,7 @@ function checkReferences(content: Content): string[] {
   ];
   for (const item of refs) if (!content.items[item]) problems.push(`scenario: 알 수 없는 아이템 ${item} (foraging·thirst.dirty)`);
   for (const k of f?.kinds ?? []) for (const t of k.companions) if (!content.extras[t]) problems.push(`scenario.foraging.${k.id}: 알 수 없는 엑스트라 틀 ${t}`);
-  // 필수품 (12-350, 공통 규칙 25): 가리키는 일은 scenario.needs에 있고, 일마다 그 일에 쓰는 물건이 하나는 있다
+  // 필수품 (12-357, 공통 규칙 25): 가리키는 일은 scenario.needs에 있고, 일마다 그 일에 쓰는 물건이 하나는 있다
   {
     const needIds = new Set(content.scenario.needs.map((n) => n.id));
     const fire = content.scenario.body?.cold?.climate?.fire;

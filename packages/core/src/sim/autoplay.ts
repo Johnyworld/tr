@@ -139,7 +139,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const move = world.content.scenario.moves.find((m) => m.id === alarm.moves[0])!;
       return world.executeTool(name, { ...(input as object), check: { move: move.id, stat: move.stats[0], difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } });
     }
-    // 불 붙일 것이 없으면 GM처럼 비벼 피우는 판정을 붙여 다시 한다 (12-350)
+    // 불 붙일 것이 없으면 GM처럼 비벼 피우는 판정을 붙여 다시 한다 (12-357)
     const igniteNeed = world.content.scenario.body?.cold?.climate?.fire?.ignite;
     const igniteMove = world.content.scenario.needs.find((n) => n.id === igniteNeed)?.move;
     if (!out.ok && name === "take_action" && igniteMove && out.error.startsWith("불 붙일 것(")) {
@@ -401,7 +401,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         // 낚시·사냥은 그 일의 스킬로 (전문 기술이면 배웠을 때만)
         const kind = content.scenario.foraging.kinds.find((k) => k.id === (wet ? "fish" : "hunt"));
         const fm = moves.find((m) => m.id === (kind?.move ?? survival?.id));
-        // 그 일의 필수품(낚시 도구)이 있을 때만 (12-350)
+        // 그 일의 필수품(낚시 도구)이 있을 때만 (12-357)
         const equipped = !kind?.need || !!needItem(content, s, s.playerId, kind.need);
         if (kind && fm && can(fm.id) && equipped) act = { intent: kind.label, forage: kind.id, check: check(fm, "none") };
       }

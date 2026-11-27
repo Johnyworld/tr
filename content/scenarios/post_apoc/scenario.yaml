@@ -1759,10 +1759,10 @@ foraging:
       companions: [stray_dog, road_dog]
   # 덫: 덫 물건(철사 뭉치·쥐덫, 필수품 trap) 하나를 놓는다. 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 날고기가 걸린다 (12-220). 거두면 놓은 덫이 돌아온다
   trap: { move: hunt, need: trap, catch: { item: raw_meat, qty: [1, 1] } }
-  # 물 거르기 (12-350): 불이 없을 때 끓이지 않은 물을 마시면 정수 알약 하나를 써서 탈이 나지 않는다
+  # 물 거르기 (12-357): 불이 없을 때 끓이지 않은 물을 마시면 정수 알약 하나를 써서 탈이 나지 않는다
   purify: purify
 
-# 필수품 (공통 규칙 25, 12-350, docs/junk-items-plan.md): 그 일을 하려면 있어야 하는 물건. 물건은 serves로 단다. 보정은 주지 않는다.
+# 필수품 (공통 규칙 25, 12-357, docs/junk-items-plan.md): 그 일을 하려면 있어야 하는 물건. 물건은 serves로 단다. 보정은 주지 않는다.
 # 없으면 without이 null이면 못 하고, 수이면 그만큼 판정 보정. check: GM이 판정에 check.needs로 붙이는 일. move·minutes: 없이 할 때의 판정 스킬과 더 드는 시간
 needs:
   - { id: climb, label: "줄 타고 오르내리기·건너기", without: -2, without_label: "밧줄 없이 맨손", check: true }
@@ -1774,7 +1774,7 @@ needs:
   - { id: shelter, label: "바깥에서 비 가리고 쉬기" }
   - { id: purify, label: "물 거르기", consume: true }
 
-# 꾀어내기 (12-350, take_action.lure): 호루라기를 불면 이 구역에 소음 1, 같은 턴에 그 상대를 몰래 지나가거나 치는 판정 +1. 없으면 소리쳐 소음 2, 보정 없음
+# 꾀어내기 (12-357, take_action.lure): 호루라기를 불면 이 구역에 소음 1, 같은 턴에 그 상대를 몰래 지나가거나 치는 판정 +1. 없으면 소리쳐 소음 2, 보정 없음
 lure: { need: lure, moves: [stealth, fight, shoot], bonus: 1, noise: 1, shout_noise: 2 }
 
 consumables:
@@ -1895,7 +1895,7 @@ body:
       trait_degrees: 3
       # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
       # 땔감 한 단은 하룻밤 (12-186, 4 → 8시간)
-      # ignite (12-350): 우리 거점·내 거처·우리 사람이 사는 곳 밖에서는 라이터·성냥이 있어야 불이 붙는다 (없으면 생존 판정 -1, 한 시간. 비 맞는 바깥은 방수포 없이 못 함)
+      # ignite (12-357): 우리 거점·내 거처·우리 사람이 사는 곳 밖에서는 라이터·성냥이 있어야 불이 붙는다 (없으면 생존 판정 -1, 한 시간. 비 맞는 바깥은 방수포 없이 못 함)
       # shelter: 방수포를 지니고 바깥에서 쉬면(휴식·잠·기다림) 지붕 아래다
       fire: { items: { firewood: 8, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1, ignite: fire, shelter: shelter }
       # 젖은 옷 (12-121, 12-186, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 마를 때까지 체감이 떨어진다.

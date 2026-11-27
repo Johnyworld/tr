@@ -308,7 +308,7 @@ export function createTakeActionSchema(s: Scenario) {
       .default(false)
       .describe(
         s.lure
-          ? "소리로 감염체·적을 꾀어내면 true (12-350). 이 구역에 소음이 남아 감염체가 몰려들 수 있다. 꾀어내는 물건(호루라기)이 있으면 같은 턴에 맞서는 상대(opponent·target)를 몰래 지나가거나 치는 판정에 보정이 붙고, 없으면 소리쳐 더 시끄럽고 내 자리가 드러난다(보정 없음)"
+          ? "소리로 감염체·적을 꾀어내면 true (12-357). 이 구역에 소음이 남아 감염체가 몰려들 수 있다. 꾀어내는 물건(호루라기)이 있으면 같은 턴에 맞서는 상대(opponent·target)를 몰래 지나가거나 치는 판정에 보정이 붙고, 없으면 소리쳐 더 시끄럽고 내 자리가 드러난다(보정 없음)"
           : "이 월드에서는 쓰지 않는다. false",
       ),
     change_clothes: z
@@ -900,9 +900,9 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       (input.treatment && !destHealers.length ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), chosenHealer) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
       (input.trap ? trapProblem(ctx, input.trap) : null) ??
-      // 불 붙이기 (12-350, 공통 규칙 25): 밖에서는 라이터·성냥, 없으면 판정을 걸어 비벼 피운다
+      // 불 붙이기 (12-357, 공통 규칙 25): 밖에서는 라이터·성냥, 없으면 판정을 걸어 비벼 피운다
       (fuel ? ignitionProblem(content, start, input.check) : null) ??
-      // 필수품을 붙인 판정 (12-350): 없으면 못 하는 일은 판정 전에 막는다
+      // 필수품을 붙인 판정 (12-357): 없으면 못 하는 일은 판정 전에 막는다
       (input.check?.needs ? needsProblem(content, start, input.check.needs, input.check.move) : null) ??
       (input.lure && !scenario.lure ? "이 월드에는 꾀어내기가 없다." : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
@@ -928,7 +928,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
   const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
-  // 불 붙일 것 없이 비벼 피우는 판정 (12-350): 판정 전에 그만큼 시간이 든다
+  // 불 붙일 것 없이 비벼 피우는 판정 (12-357): 판정 전에 그만큼 시간이 든다
   const fuelUse = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
   const ignition = fuelUse ? ignitionFor(content, start, input.check?.move ?? null) : null;
   const handIgnition = ignition?.kind === "hand" ? ignition : null;
@@ -996,10 +996,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           // 방금 빗나간 상대에게 같은 스킬로 다시 하는 임무 판정은 한 단계 어렵다 (12-258, PT15 섬: 위협 실패 5분 뒤 같은 상대에게 다시 위협해 성공).
           // 맞서는 상대(opponent)에게만: 시범을 보이는 내 편 대상(target)에게는 붙지 않는다 (설계 목록 4-3, PT16·17 분대장)
           ...(forMission && !storyCheck && justMissedAgainst(start, input.check.move, input.check.opponent) ? [{ label: "방금 빗나간 상대", value: -1 }] : []),
-          // 필수품 없이 (12-350, 공통 규칙 25): 맨손으로 줄 타기, 불 붙일 것 없이 비벼 피우기
+          // 필수품 없이 (12-357, 공통 규칙 25): 맨손으로 줄 타기, 불 붙일 것 없이 비벼 피우기
           ...(input.check.needs ? needsParts(content, start, input.check.needs, input.check.move) : []),
           ...(handIgnition ? handIgnition.parts : []),
-          // 꾀어내기 (12-350): 호루라기로 꾀어낸 틈에 그 상대를 지나가거나 친다
+          // 꾀어내기 (12-357): 호루라기로 꾀어낸 틈에 그 상대를 지나가거나 친다
           ...(lureBonus(content, start, input) ?? []),
         ],
         story: storyCheck,
@@ -2136,7 +2136,7 @@ function missionMinutesLeft(state: GameState, forMission: string | null | undefi
   return left.length ? Math.max(5, Math.ceil(Math.max(...left) / 5) * 5) : null;
 }
 
-/** 판정에 붙인 필수품 (12-350, 공통 규칙 25): 없는 일이거나 없으면 못 하는 일 */
+/** 판정에 붙인 필수품 (12-357, 공통 규칙 25): 없는 일이거나 없으면 못 하는 일 */
 function needsProblem(content: Content, state: GameState, need: string, move: string): string | null {
   if (!checkNeedIds(content).includes(need)) return `check.needs는 ${checkNeedIds(content).join("/") || "없음"} 중 하나다.`;
   const r = checkNeed(content, state, state.playerId, need, move);
@@ -2148,7 +2148,7 @@ function needsParts(content: Content, state: GameState, need: string, move: stri
   return r.ok ? r.parts : [];
 }
 
-/** 꾀어내기의 보정 (12-350): 꾀어내는 물건이 있고, 같은 턴에 맞서는 상대를 상대하는 그 스킬 판정이면 */
+/** 꾀어내기의 보정 (12-357): 꾀어내는 물건이 있고, 같은 턴에 맞서는 상대를 상대하는 그 스킬 판정이면 */
 function lureBonus(content: Content, state: GameState, input: { lure: boolean; check: { move: string; opponent: string | null } | null; target?: string | null }): { label: string; value: number }[] | null {
   const lure = content.scenario.lure;
   if (!input.lure || !lure || !input.check || !lure.moves.includes(input.check.move)) return null;
@@ -2157,7 +2157,7 @@ function lureBonus(content: Content, state: GameState, input: { lure: boolean; c
   return item ? [{ label: `꾀어냄 (${content.items[item]?.name ?? item})`, value: lure.bonus }] : null;
 }
 
-/** 꾀어낸다 (12-350, take_action.lure): 이 구역에 소음이 남는다. 꾀어내는 물건이 없으면 소리쳐 더 시끄럽다 */
+/** 꾀어낸다 (12-357, take_action.lure): 이 구역에 소음이 남는다. 꾀어내는 물건이 없으면 소리쳐 더 시끄럽다 */
 function lureAt(ctx: ToolContext): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
   const lure = content.scenario.lure;

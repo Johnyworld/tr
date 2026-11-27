@@ -10,7 +10,7 @@ import { forageProblem, handleTrap } from "./forage.ts";
 import { executeTool } from "./tools.ts";
 import { loadRealContent } from "../testing.ts";
 
-/** 필수품 (공통 규칙 25, 12-350): 우비·우산·방수포·라이터·밧줄·덫·호루라기·정수 알약 */
+/** 필수품 (공통 규칙 25, 12-357): 우비·우산·방수포·라이터·밧줄·덫·호루라기·정수 알약 */
 const content = loadRealContent();
 const act = (input: Record<string, unknown> = {}) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 const check = (move: string, stat: string, extra: Record<string, unknown> = {}) => ({ move, stat, difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, target_harm: "none", ...extra });

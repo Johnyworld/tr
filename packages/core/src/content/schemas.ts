@@ -61,10 +61,10 @@ export const itemContentSchema = z.strictObject({
     })
     .optional(),
   /**
-   * 방수 (플레이 테스트 11 E3, 12-350): 장비 칸에 입거나 들고 있으면 젖지 않는다. rain: 비·눈만 (비닐 우비, 무기 칸에 든 우산), all: 물일(물 튀는 일)까지 (고무 방수복). 물에 빠지면 못 막는다
+   * 방수 (플레이 테스트 11 E3, 12-357): 장비 칸에 입거나 들고 있으면 젖지 않는다. rain: 비·눈만 (비닐 우비, 무기 칸에 든 우산), all: 물일(물 튀는 일)까지 (고무 방수복). 물에 빠지면 못 막는다
    */
   waterproof: z.enum(["rain", "all"]).optional(),
-  /** 필수품 (공통 규칙 25, 12-350): 이 물건으로 할 수 있는 일 (scenario.needs의 id). 보정은 주지 않는다 */
+  /** 필수품 (공통 규칙 25, 12-357): 이 물건으로 할 수 있는 일 (scenario.needs의 id). 보정은 주지 않는다 */
   serves: z.array(contentIdSchema).optional(),
   /**
    * 따뜻함 (12-98): 체감 기온에 더하는 도. worn: 입고 있을 때 (외투), resting: 지니고 자거나 쉴 때 덮는다 (담요)

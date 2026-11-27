@@ -40,7 +40,7 @@ export function forageProblem(ctx: ToolContext, kindId: string): string | null {
   if (!zone) return "어디에 있는지 모른다.";
   if (kind.water && !watery(ctx, zone)) return `여기는 물가가 아니라 ${josa(kind.label, "을/를")} 할 수 없다.`;
   if (!kind.water && content.locations[zone]?.kind === "base") return `거점 안에서는 ${josa(kind.label, "을/를")} 할 수 없다. 담 밖으로 나간다.`;
-  // 필수품 (공통 규칙 25, 12-350): 낚시는 낚시 도구가 있어야 한다
+  // 필수품 (공통 규칙 25, 12-357): 낚시는 낚시 도구가 있어야 한다
   if (kind.need) {
     const state = ctx.store.getState();
     const r = checkNeed(content, state, state.playerId, kind.need);
@@ -137,7 +137,7 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: C
   if (!zone) return { ok: false, error: "어디에 있는지 모른다." };
   const me = state.characters[state.playerId]!;
   const here = state.traps.find((t) => t.zone === zone);
-  // 덫 물건 (12-350, 공통 규칙 25 필수품): 철사 뭉치·쥐덫 중 지닌 것. 거둘 때는 놓은 것이 돌아온다
+  // 덫 물건 (12-357, 공통 규칙 25 필수품): 철사 뭉치·쥐덫 중 지닌 것. 거둘 때는 놓은 것이 돌아온다
   const trapItem = action === "set" ? needItem(content, state, me.id, trap.need) : (here?.item ?? needItems(content, trap.need)[0] ?? null);
   const trapName = trapItem ? (content.items[trapItem]?.name ?? trapItem) : "덫";
   if (action === "set") {
@@ -216,7 +216,7 @@ export function drinkDirty(ctx: ToolContext, chance: number): string | null {
   const state = ctx.store.getState();
   if (fireHere(state)) return "불에 끓여 마셨다.";
   const me = state.characters[state.playerId]!;
-  // 물 거르기 (12-350, 공통 규칙 25 필수품): 정수 알약을 넣어 마시면 탈이 나지 않는다 (하나 쓴다)
+  // 물 거르기 (12-357, 공통 규칙 25 필수품): 정수 알약을 넣어 마시면 탈이 나지 않는다 (하나 쓴다)
   const purify = ctx.content.scenario.foraging?.purify;
   const tablet = purify ? needItem(ctx.content, state, me.id, purify) : null;
   if (purify && tablet) {

@@ -1,5 +1,5 @@
 /**
- * 공통 규칙 25: 필수품 (docs/design.md "공통 규칙", 12-350, docs/junk-items-plan.md).
+ * 공통 규칙 25: 필수품 (docs/design.md "공통 규칙", 12-357, docs/junk-items-plan.md).
  *
  * 그 일을 하려면 있어야 하는 물건. 물건은 serves로 일(scenario.needs의 id)을 단다.
  * 있으면 보정 없이 보통으로 하고, 없으면 without이 null이면 못 하고 수이면 그만큼 판정 보정을 받는다.

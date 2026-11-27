@@ -3,6 +3,7 @@ import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
 import { Icon } from "./Icon.tsx";
 import { ConfirmDialog } from "./Dialog.tsx";
 import type { CreationStatus, NewGameView } from "./types.ts";
+import { Button } from "./Button.tsx";
 
 /**
  * 상태 화면의 새 게임·새 캐릭터 고르기 (12-67): 월드 → 무리 → (떠돌이 동행) → 역할 → (수위) → 캐릭터 (12-77).
@@ -177,9 +178,9 @@ function ScenarioStep({ view, busy, answer, peek, onPeek }: StepProps & { peek: 
         <span className="choice-tagline">{picked.who}</span>
         <p className="scenario-pitch">{picked.pitch}</p>
         {picked.goal && <p className="choice-gains">목표: {picked.goal}</p>}
-        <button type="button" className="primary scenario-start" disabled={busy} onClick={() => answer(picked.roleId)}>
+        <Button type="button" size="lg" variant="primary" className="scenario-start" disabled={busy} onClick={() => answer(picked.roleId)}>
           이 시나리오로 시작
-        </button>
+        </Button>
       </div>
     );
   return (
@@ -307,12 +308,12 @@ function ConfirmStep({ view, busy, answer }: StepProps) {
       <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
       {c.unusedPoints > 0 && <p className="newgame-warn">능력 포인트 {c.unusedPoints}점을 쓰지 않았습니다. 이대로 시작하면 사라집니다.</p>}
       <div className="newgame-actions pinned stacked">
-        <button type="button" disabled={busy} onClick={() => setAsking(true)}>
+        <Button type="button" disabled={busy} onClick={() => setAsking(true)}>
           처음부터 다시 작성
-        </button>
-        <button type="button" className="primary" disabled={busy} onClick={() => answer("start")}>
+        </Button>
+        <Button type="button" variant="primary" disabled={busy} onClick={() => answer("start")}>
           이대로 시작
-        </button>
+        </Button>
       </div>
       {asking && (
         <ConfirmDialog
@@ -398,9 +399,9 @@ function PortraitStep({ view, busy, answer }: StepProps) {
         <div className="portrait-grid">{PORTRAIT_IDS.map((id) => pick(id, 56, false))}</div>
       )}
       <div className="newgame-actions">
-        <button type="button" className={wasPicked(view, null) ? "remembered" : undefined} disabled={busy} onClick={() => answer("none")}>
+        <Button type="button" className={wasPicked(view, null) ? "remembered" : undefined} disabled={busy} onClick={() => answer("none")}>
           고르지 않기
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -426,9 +427,9 @@ function NameStep({ view, busy, answer }: StepProps) {
       <h2 className="newgame-title">이름을 정해 주세요</h2>
       <div className="newgame-inline">
         <input className="newgame-input" value={name} maxLength={max} autoFocus onChange={(e) => setName(e.target.value)} placeholder={`한글 ${max / 2}자, 영문 ${max}자까지`} />
-        <button type="submit" className="primary" disabled={busy || !name.trim() || over}>
+        <Button type="submit" variant="primary" disabled={busy || !name.trim() || over}>
           다음
-        </button>
+        </Button>
       </div>
       {over && <p className="newgame-warn">이름이 너무 깁니다. 한글 {max / 2}자, 영문 {max}자까지입니다.</p>}
     </form>
@@ -464,9 +465,9 @@ function AgeStep({ view, busy, answer }: StepProps) {
           autoFocus
           onChange={(e) => setAge(e.target.value)}
         />
-        <button type="submit" className="primary" disabled={busy || !ok}>
+        <Button type="submit" variant="primary" disabled={busy || !ok}>
           다음
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -587,12 +588,12 @@ function SkillStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
         </div>
       ))}
       <div className="newgame-actions pinned split">
-        <button type="button" className="reset" disabled={busy} onClick={() => setLayout({ ...(c.pastDefaults?.skills ?? {}) })}>
+        <Button type="button" disabled={busy} onClick={() => setLayout({ ...(c.pastDefaults?.skills ?? {}) })}>
           초기화
-        </button>
-        <button type="button" className="primary" disabled={busy || left < 0} onClick={submit}>
+        </Button>
+        <Button type="button" variant="primary" disabled={busy || left < 0} onClick={submit}>
           {left > 0 ? `${left}점 남기고 다음` : "다음"}
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -650,12 +651,12 @@ function TierStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: s
         ))}
       </div>
       <div className="newgame-actions pinned split">
-        <button type="button" className="reset" disabled={busy} onClick={() => setPicked(Object.fromEntries(Object.entries(c.pastDefaults?.stats ?? {}).filter(([, v]) => v !== 0)))}>
+        <Button type="button" disabled={busy} onClick={() => setPicked(Object.fromEntries(Object.entries(c.pastDefaults?.stats ?? {}).filter(([, v]) => v !== 0)))}>
           초기화
-        </button>
-        <button type="button" className="primary" disabled={busy || !full} onClick={submit}>
+        </Button>
+        <Button type="button" variant="primary" disabled={busy || !full} onClick={submit}>
           다음
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -698,12 +699,12 @@ function PointStep({ view, busy, answer }: StepProps) {
         ))}
       </div>
       <div className="newgame-actions pinned split">
-        <button type="button" className="reset" disabled={busy} onClick={() => setValues({ ...(c.pastDefaults?.stats ?? {}) })}>
+        <Button type="button" disabled={busy} onClick={() => setValues({ ...(c.pastDefaults?.stats ?? {}) })}>
           초기화
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="primary"
+          variant="primary"
           disabled={busy}
           onClick={() =>
             answer(
@@ -715,7 +716,7 @@ function PointStep({ view, busy, answer }: StepProps) {
           }
         >
           다음
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -822,12 +823,12 @@ function TraitStep({ view, busy, answer, onLive }: StepProps & { onLive: (text: 
           </div>
         ))}
       <div className="newgame-actions pinned split">
-        <button type="button" className="reset" disabled={busy} onClick={() => setPicked([])}>
+        <Button type="button" disabled={busy} onClick={() => setPicked([])}>
           초기화
-        </button>
-        <button type="button" className="primary" disabled={busy || over} onClick={() => answer(picked)}>
+        </Button>
+        <Button type="button" variant="primary" disabled={busy || over} onClick={() => answer(picked)}>
           {picked.length ? `${picked.length}개로 다음` : "고르지 않고 다음"}
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -871,12 +872,12 @@ function PersonaStep({ view, busy, answer }: StepProps) {
         ))}
       </div>
       <div className="newgame-actions pinned split">
-        <button type="button" className="reset" disabled={busy} onClick={() => setValues({})}>
+        <Button type="button" disabled={busy} onClick={() => setValues({})}>
           초기화
-        </button>
-        <button type="button" className="primary" disabled={busy} onClick={submit}>
+        </Button>
+        <Button type="button" variant="primary" disabled={busy} onClick={submit}>
           다음
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -944,12 +945,12 @@ function SettingsStep({ view, busy, answer }: StepProps) {
         </div>
       ))}
       <div className="newgame-actions pinned split">
-        <button type="button" className="reset" disabled={busy} onClick={() => setPicked([])}>
+        <Button type="button" disabled={busy} onClick={() => setPicked([])}>
           초기화
-        </button>
-        <button type="button" className="primary" disabled={busy} onClick={() => answer(picked.length ? picked.map(nameOf).join(", ") : "없음")}>
+        </Button>
+        <Button type="button" variant="primary" disabled={busy} onClick={() => answer(picked.length ? picked.map(nameOf).join(", ") : "없음")}>
           {picked.length ? "다음" : "고르지 않고 다음"}
-        </button>
+        </Button>
       </div>
     </>
   );

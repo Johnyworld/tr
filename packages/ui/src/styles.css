@@ -1764,40 +1764,11 @@ body {
   font-weight: 600;
 }
 
-/* 예/아니요: 확인 창 단추(.confirm-actions button)를 조금 작게 */
 .popover-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
-}
-
-.popover-actions button {
-  font: inherit;
-  font-size: 13px;
-  padding: 6px 12px;
-  white-space: nowrap;
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--surface);
-  border-radius: 8px;
-  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
-  cursor: pointer;
-}
-
-.popover-actions button.primary {
-  color: var(--on-accent);
-  background: var(--primary);
-  font-weight: 700;
-}
-
-.popover-actions button:hover:not(:disabled) {
-  filter: brightness(1.2);
-}
-
-.popover-actions button:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 /* Lv UP을 누르면 스킬 블록을 잠깐 밝힌다 */
@@ -1829,34 +1800,6 @@ body {
   gap: 6px;
 }
 
-.skill-actions button,
-.skill-actions button.primary {
-  padding: 2px 10px;
-  font-size: 12px;
-  color: var(--muted);
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-/* 고스트: 배경 없이 테두리만. 저장은 글자만 강조색 */
-.skill-actions button.primary {
-  color: var(--accent);
-}
-
-.skill-actions button:hover:not(:disabled),
-.skill-actions button:focus-visible {
-  color: var(--text);
-  border-color: var(--border-hover);
-  outline: none;
-}
-
-.skill-actions button.primary:hover:not(:disabled),
-.skill-actions button.primary:focus-visible {
-  color: var(--accent);
-}
-
 /* 저장 전에 고른 값 */
 .skill-untrained dt,
 .skill-untrained dd > span:first-child {
@@ -1868,10 +1811,6 @@ body {
   font-weight: 600;
 }
 
-.skill-up:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
 .skill-points {
   margin-left: 8px;
   font-size: 10px;
@@ -1939,28 +1878,6 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-/* 일반 단추 모양(.confirm-actions button 등)을 작게, 색은 새로운 게임 단추(.newgame button.primary)와 같게 */
-.skill-up {
-  width: 22px;
-  height: 20px;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--on-accent);
-  background: var(--primary);
-  border: 1px solid var(--surface);
-  border-radius: 6px;
-  box-shadow: 0 3px 2px rgba(0, 0, 0, 0.7);
-  cursor: pointer;
-}
-
-.skill-up:hover:not(:disabled),
-.skill-up:focus-visible {
-  filter: brightness(1.2);
-  outline: none;
 }
 
 .item-move-error {
@@ -2136,12 +2053,6 @@ body {
   margin-top: 4px;
 }
 
-.newgame .newgame-back,
-.newgame .newgame-chat {
-  padding: 4px 10px;
-  font-size: 12px;
-}
-
 .newgame-crumb {
   text-align: center;
   font-size: 12px;
@@ -2267,8 +2178,6 @@ body {
 
 .newgame .scenario-start {
   margin-top: 16px;
-  padding: 14px 16px;
-  font-size: 16px;
 }
 
 .choice-desc {
@@ -2352,7 +2261,6 @@ body {
 
 .newgame-actions.split > button {
   width: 100%;
-  padding: 12px 16px;
 }
 
 /* 확인 단계: 단추를 세로로, 좌우 꽉 차게 */
@@ -2363,7 +2271,6 @@ body {
 
 .newgame-actions.stacked > button {
   width: 100%;
-  padding: 12px 16px;
 }
 
 /* 능력·스킬·기질·성격·설정: 표가 길어 [다음]을 화면 아래에 붙여 둔다 (스크롤해도 보인다) */
@@ -4196,8 +4103,6 @@ button.persona-btn:not(:disabled):hover {
 }
 
 .newgame .mainmenu-button {
-  padding: 14px 16px;
-  font-size: 16px;
   white-space: normal;
 }
 
@@ -4248,12 +4153,6 @@ button.persona-btn:not(:disabled):hover {
 
 .continue-top .newgame-title {
   margin: 0;
-}
-
-.newgame .newgame-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .save-list {
@@ -4337,22 +4236,6 @@ button.persona-btn:not(:disabled):hover {
   align-self: start;
 }
 
-.newgame .save-actions button {
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.newgame .save-actions .save-delete {
-  display: inline-flex;
-  justify-content: center;
-  color: var(--muted);
-}
-
-.newgame .save-actions .save-delete:hover:not(:disabled) {
-  color: var(--error);
-  border-color: var(--error);
-}
-
 /* 확인 창 (세이브 삭제, 게임 종료) */
 .confirm-backdrop {
   position: fixed;
@@ -4394,40 +4277,6 @@ button.persona-btn:not(:disabled):hover {
   gap: 8px;
 }
 
-.confirm-actions button {
-  font: inherit;
-  font-size: 13px;
-  padding: 8px 14px;
-  white-space: nowrap;
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--surface);
-  border-radius: 8px;
-  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
-  cursor: pointer;
-}
-
-.confirm-actions button:hover:not(:disabled) {
-  filter: brightness(1.2);
-}
-
-.confirm-actions button.primary {
-  color: var(--on-accent);
-  background: var(--primary);
-  font-weight: 700;
-}
-
-.confirm-actions button.danger {
-  color: #fff;
-  background: var(--error);
-  font-weight: 700;
-}
-
-.confirm-actions button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 /* 머리 아래 안내 띠 (12-214) */
 .gm-banner {
   /* 시트·만들기와 같은 가운데 칸 (--gutter) */
@@ -4445,22 +4294,6 @@ button.persona-btn:not(:disabled):hover {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
-}
-
-.settings-exit-button {
-  width: 100%;
-  font: inherit;
-  font-size: 13px;
-  padding: 7px 12px;
-  color: var(--error);
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.settings-exit-button:hover {
-  border-color: var(--error);
 }
 
 /* 시트의 설정 (4.6.4): 칸·이름 한 줄, 설명은 그 아래 */
@@ -4503,4 +4336,101 @@ button.persona-btn:not(:disabled):hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+/*
+ * 일반 단추 (Button.tsx). 판 색 배경, 어두운 그림자. 고르기 칸(카드·칩·탭·스테퍼)은 따로.
+ * button.btn: .newgame button(만들기 화면의 칸 공통 모양)보다 앞서도록
+ */
+button.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font: inherit;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+}
+
+button.btn:hover:not(:disabled),
+button.btn:focus-visible {
+  filter: brightness(1.2);
+  outline: none;
+}
+
+button.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.btn.btn-xs {
+  padding: 0;
+  font-size: 13px;
+  border-radius: 6px;
+  box-shadow: 0 3px 2px rgba(0, 0, 0, 0.7);
+}
+
+button.btn.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+button.btn.btn-md {
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+button.btn.btn-lg {
+  padding: 14px 16px;
+  font-size: 16px;
+}
+
+/* 아이콘만: 네모에 가깝게 */
+button.btn.btn-icon.btn-xs {
+  width: 22px;
+  height: 20px;
+}
+
+button.btn.btn-icon.btn-sm {
+  padding: 6px 8px;
+}
+
+button.btn.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+button.btn.btn-primary {
+  color: var(--on-accent);
+  background: var(--primary);
+  font-weight: 700;
+}
+
+button.btn.btn-danger {
+  color: #fff;
+  background: var(--error);
+  font-weight: 700;
+}
+
+/* 흐린 글자, 올리면 빨강 (휴지통·게임 종료) */
+button.btn.btn-remove {
+  color: var(--muted);
+}
+
+button.btn.btn-remove:hover:not(:disabled),
+button.btn.btn-remove:focus-visible {
+  filter: none;
+  color: var(--error);
+  border-color: var(--error);
+}
+
+/* 만드는 중 답을 보내는 잠깐은 흐리지 않는다 (.newgame.busy button:disabled 와 같게) */
+.newgame.busy button.btn:disabled {
+  opacity: 1;
 }

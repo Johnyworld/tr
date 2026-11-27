@@ -3,6 +3,7 @@ import { Portrait } from "./Portrait.tsx";
 import { Icon } from "./Icon.tsx";
 import { ConfirmDialog } from "./Dialog.tsx";
 import type { GmLink, SaveSlot } from "./types.ts";
+import { Button } from "./Button.tsx";
 
 /**
  * 메인 메뉴 (12-214): 열린 세계도 만드는 초안도 없을 때. "새로운 게임"과 "이어서 하기" 둘.
@@ -57,12 +58,12 @@ export function MainMenu({ gm, page, onPage, onStatus }: { gm: GmLink | undefine
       </div>
       {ready ? (
         <div className="mainmenu-buttons">
-          <button type="button" className="mainmenu-button primary" disabled={busy} onClick={() => void run({ action: "new" })}>
+          <Button type="button" size="lg" variant="primary" className="mainmenu-button" disabled={busy} onClick={() => void run({ action: "new" })}>
             새로운 게임
-          </button>
-          <button type="button" className="mainmenu-button" disabled={busy || saveCount === 0} title={saveCount === 0 ? "저장된 게임이 없습니다" : undefined} onClick={() => onPage("continue")}>
+          </Button>
+          <Button type="button" size="lg" className="mainmenu-button" disabled={busy || saveCount === 0} title={saveCount === 0 ? "저장된 게임이 없습니다" : undefined} onClick={() => onPage("continue")}>
             이어서 하기
-          </button>
+          </Button>
         </div>
       ) : (
         <PlayHint />
@@ -108,9 +109,9 @@ function ContinueList({ busy, ready, run, error, onBack }: { busy: boolean; read
   return (
     <div className={busy ? "newgame mainmenu busy" : "newgame mainmenu"}>
       <div className="continue-top">
-        <button type="button" className="newgame-back" disabled={busy} onClick={onBack}>
+        <Button type="button" size="sm" className="newgame-back" disabled={busy} onClick={onBack}>
           <Icon name="arrow-left" size={14} /> 메인 메뉴
-        </button>
+        </Button>
         <h2 className="newgame-title">이어서 하기</h2>
       </div>
       {!slots && !loadError && <p className="muted">불러오는 중…</p>}
@@ -178,9 +179,9 @@ function SaveRow({ slot, busy, canOpen, onOpen, onDelete }: { slot: SaveSlot; bu
       </div>
       {/* 삭제는 줄의 열기로 번지지 않게 막는다 (클릭·키 모두. 막힌 단추를 누른 클릭도 줄로 올라가지 않게 감싼 칸에서 한 번 더) */}
       <div className="save-actions" onClick={(e) => e.stopPropagation()}>
-        <button
+        <Button
           type="button"
-          className="save-delete"
+          size="sm" variant="remove" icon
           aria-label={`${h?.name ?? "세이브"} 삭제`}
           title="삭제"
           disabled={busy || locked}
@@ -191,7 +192,7 @@ function SaveRow({ slot, busy, canOpen, onOpen, onDelete }: { slot: SaveSlot; bu
           onKeyDown={(e) => e.stopPropagation()}
         >
           <Icon name="trash" size={14} />
-        </button>
+        </Button>
       </div>
     </li>
   );

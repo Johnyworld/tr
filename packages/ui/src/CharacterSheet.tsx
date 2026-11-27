@@ -8,6 +8,7 @@ import { SheetTabs } from "./SheetTabs.tsx";
 import { MapPanel } from "./MapPanel.tsx";
 import { ConfirmPopover, Popover } from "./Dialog.tsx";
 import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView, WarMapView } from "./types.ts";
+import { Button } from "./Button.tsx";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
 const SLOTS = ["손", "몸", "머리", "팔"];
@@ -1116,12 +1117,12 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
         </h3>
         {used > 0 && (
           <div className="skill-actions">
-            <button type="button" disabled={busy} onClick={() => setPending({})}>
+            <Button type="button" size="sm" disabled={busy} onClick={() => setPending({})}>
               취소
-            </button>
-            <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
+            </Button>
+            <Button type="button" size="sm" variant="primary" disabled={busy} onClick={() => void save()}>
               저장
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -1146,16 +1147,16 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
                     <dd>
                       <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span>
                       {points > 0 && max !== undefined && (
-                        <button
+                        <Button
                           type="button"
-                          className="skill-up"
+                          size="xs" variant="primary" icon
                           disabled={busy || next === null || left < next}
                           title={next === null ? `${s.label}: 최고 단계` : `${s.label} 한 단계 올리기: ${next}점 (저장해야 적용)`}
                           aria-label={`${s.label} 올리기`}
                           onClick={() => add(s.id)}
                         >
                           +
-                        </button>
+                        </Button>
                       )}
                     </dd>
                   </div>

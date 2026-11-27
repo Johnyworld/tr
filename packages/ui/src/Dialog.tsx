@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { Button } from "./Button.tsx";
 
 /**
  * 상태 화면의 공용 창 (팝오버·확인 창).
@@ -89,12 +90,12 @@ export function ConfirmPopover({
       <p className="popover-q">{question}</p>
       {note && <p className="muted small">{note}</p>}
       <div className="popover-actions">
-        <button type="button" onClick={popover.onClose}>
+        <Button type="button" size="sm" onClick={popover.onClose}>
           {cancelLabel}
-        </button>
-        <button type="button" className="primary" disabled={busy} onClick={onConfirm}>
+        </Button>
+        <Button type="button" size="sm" variant="primary" disabled={busy} onClick={onConfirm}>
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </Popover>
   );
@@ -138,12 +139,12 @@ export function ConfirmDialog({
         {children}
         {error && <p className="settings-error">{error}</p>}
         <div className="confirm-actions">
-          <button type="button" onClick={onCancel} autoFocus disabled={busy}>
+          <Button type="button" onClick={onCancel} autoFocus disabled={busy}>
             {cancelLabel}
-          </button>
-          <button type="button" className={danger ? "danger" : "primary"} onClick={onConfirm} disabled={busy}>
+          </Button>
+          <Button type="button" variant={danger ? "danger" : "primary"} onClick={onConfirm} disabled={busy}>
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

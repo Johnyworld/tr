@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ConfirmExit } from "./MainMenu.tsx";
 import { Popover } from "./Dialog.tsx";
+import { Button } from "./Button.tsx";
 
 /** 세계 설정 (packages/core GameState.options, statusServer의 /api/options 와 맞춘다) */
 export type GameOptions = { mature: boolean; dialogue: "novel" | "script" };
@@ -163,16 +164,16 @@ export function SettingsButton({ enabled, onStatus }: { enabled: boolean; onStat
         {error && <p className="settings-error">{error}</p>}
         <p className="settings-note">바꾸면 다음 서술부터 적용됩니다.</p>
         <div className="settings-exit">
-          <button
+          <Button
             type="button"
-            className="settings-exit-button"
+            size="sm" variant="remove" block
             onClick={() => {
               setExitError(null);
               setExiting(true);
             }}
           >
             게임 종료
-          </button>
+          </Button>
         </div>
       </Popover>
       {exiting && <ConfirmExit busy={exitBusy} error={exitError} onCancel={() => setExiting(false)} onConfirm={() => void exitGame()} />}

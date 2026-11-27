@@ -43,8 +43,8 @@ describe("가방 (공통 규칙 26)", () => {
     const worn = executeTool("equip", { item_id: null, slot: null, bag_id: id }, ctx);
     expect(worn.ok).toBe(true);
     expect(me().equipped.back).toBe("military_pack");
-    // 통조림 4kg의 80%가 준다
-    expect(carriedWeight(content, me(), s())).toBeCloseTo(base - 4 * 0.8);
+    // 통조림 4kg의 80%가 주고, 착용한 배낭 2kg도 70%로 센다
+    expect(carriedWeight(content, me(), s())).toBeCloseTo(base - 4 * 0.8 - 2 * 0.3);
   });
 
   it("용량을 넘게 넣지 못하고, 가방에 가방은 넣지 못한다", () => {

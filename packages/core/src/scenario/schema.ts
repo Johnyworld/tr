@@ -660,6 +660,8 @@ export const scenarioFileSchema = z
           penalty: z.number().int().min(-2).max(0).default(-1),
           /** 들 수 있는 무게의 이 배를 넘으면 옮겨 가지 못한다 */
           hard_limit: z.number().min(1).default(1.5),
+          /** 착용한 것(든 무기·입은 옷·멘 가방)의 무게는 이 배로 센다 (사용자 결정 2026-11-27, 몸에 걸치면 덜 무겁다) */
+          worn_factor: z.number().min(0).max(1).default(1),
         }),
         /** 손질: 이 스킬이 0·1·2일 때 물건이 닳는 것을 피할 확률 (기획서 4.8) */
         maintenance: z.strictObject({ move: id, save_chance: z.array(z.number().min(0).max(1)).length(3) }).optional(),

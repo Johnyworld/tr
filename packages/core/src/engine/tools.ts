@@ -18,7 +18,7 @@ import { fearAfterTool, watchFear, type FearResult } from "./fear.ts";
 import { takeReactionChecks } from "./checks.ts";
 import { ROMANCE_TOOLS } from "./romance.ts";
 import { CAPTIVITY_TOOLS } from "./captivity.ts";
-import { carriedWeight, carryCapacity, DEFAULT_WEIGHT, GEAR_TOOLS } from "./gear.ts";
+import { GEAR_TOOLS, overloadNote } from "./gear.ts";
 import { PEOPLE_TOOLS } from "./people.ts";
 import { josa } from "../text.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -165,14 +165,7 @@ const transferItem = defineTool({
       return { ok: false, error: `${holderName(state, content, input.from)}에게 ${josa(item.name, "이/가")} ${have}개뿐입니다.` };
     }
 
-    // 너무 무거우면 더 받지 못한다 (기획서 4.8)
-    if (input.to === state.playerId && content.scenario.gear) {
-      const me = state.characters[state.playerId]!;
-      const after = carriedWeight(content, me, state) + (item.weight ?? DEFAULT_WEIGHT) * input.quantity;
-      if (after > carryCapacity(content, me, state) * content.scenario.gear.carry.hard_limit) {
-        return { ok: false, error: `${item.name}까지 들면 너무 무겁다 (${after.toFixed(1)}kg). 먼저 무언가를 내려놓는다.` };
-      }
-    }
+    // 무거워도 받는다. 너무 무거우면 옮겨 가지 못한다 (사용자 결정 2026-11-27, 결과 끝에 알린다)
     // 구해 와 건네기 임무의 물건을 임무를 준 상관에게 먼저 건네면 임무로 건넨 것이다 (PT31 약탈자: 먼저 건넨 연료를 보고에서 세지 않고 돌려받지도 못했다).
     // 보고 때 건네는 것과 같이 무리 창고 몫으로 쓰고 그 요건을 채운다
     if (input.from === state.playerId && input.to !== SCENE_HOLDER && !input.deposit && !input.repay) {
@@ -203,6 +196,11 @@ const transferItem = defineTool({
     });
     // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
     const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];
+    // 받아서 너무 무거워졌으면 알린다 (옮겨 가지 못한다, 사용자 결정 2026-11-27)
+    if (input.to === state.playerId && content.scenario.gear) {
+      const heavy = overloadNote(content, store.getState().characters[state.playerId]!, store.getState());
+      if (heavy) kept.push(heavy);
+    }
     // 원하던 것을 선물하면 호감 +1, 같은 사람에게 하루 한 번 (12-257, PT15 분대장: 담배를 건네도 마음이 그대로였다)
     if (input.from === state.playerId && !input.repay && !input.deposit && input.to !== SCENE_HOLDER) {
       const welcomed = welcomeGift(ctx, input.to, item.id);

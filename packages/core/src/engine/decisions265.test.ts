@@ -102,8 +102,10 @@ describe("포로 (12-265)", () => {
 
 describe("세계 만들기·즉흥 자리·겉모습 (12-265)", () => {
   it("시작 짐에서 내려놓은 것은 시작 자리 바닥에 남고, 주인공이 안다", () => {
-    // PT18 튜토리얼과 같은 캐릭터·시드 (짐이 한도를 넘었다)
-    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-265-")), content, rngFactory: () => createSeededRng(17) }).create("mcp", "role_t_visitor", { name: "민재", gender: "male", past: "courier", persona: { talk: 2, principle: 1 }, settings: ["flaw_greedy", "secret_debt_owed"], abilities: null, portrait: null, traits: [] } as never);
+    // PT18 튜토리얼과 같은 캐릭터·시드 (짐이 한도를 넘었다). 착용한 것도 무게 그대로 셀 때 (worn_factor 1)
+    const gear = content.scenario.gear!;
+    const heavy = { ...content, scenario: { ...content.scenario, gear: { ...gear, carry: { ...gear.carry, worn_factor: 1 } } } };
+    const w = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-265-")), content: heavy, rngFactory: () => createSeededRng(17) }).create("mcp", "role_t_visitor", { name: "민재", gender: "male", past: "courier", persona: { talk: 2, principle: 1 }, settings: ["flaw_greedy", "secret_debt_owed"], abilities: null, portrait: null, traits: [] } as never);
     const s = w.state();
     expect((s.beliefs[s.playerId] ?? []).some((b) => b.fact.startsWith("짐이 무거워"))).toBe(true);
     expect(Object.values(s.scene.items).some((n) => n > 0)).toBe(true);

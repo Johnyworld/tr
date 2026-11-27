@@ -203,7 +203,8 @@ gear:
   # 무기에 range가 없으면: 근접은 맞붙어야 하고, 쏘는 것은 가까운 거리까지
   default_range: { fight: { close: 0 }, shoot: { close: 0, near: 0 } }
   # 들 수 있는 무게 = 12kg + 근력 1당 4kg. 넘으면 은밀·근접 -1, 1.5배를 넘으면 옮겨 가지 못한다
-  carry: { base: 12, per_strength: 4, encumbered_moves: [stealth, fight], penalty: -1, hard_limit: 1.5 }
+  # 착용한 것(든 무기·입은 옷·멘 가방)은 무게를 70%로 센다 (worn_factor, 사용자 결정 2026-11-27)
+  carry: { base: 12, per_strength: 4, encumbered_moves: [stealth, fight], penalty: -1, hard_limit: 1.5, worn_factor: 0.7 }
   # 값의 70% 이상이면 흥정 판정으로 깎을 수 있다
   haggle_floor: 0.6
   haggle_moves: [persuade, deceive]

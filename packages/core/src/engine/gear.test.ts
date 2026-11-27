@@ -98,7 +98,7 @@ describe("방어구와 도구", () => {
 });
 
 describe("무게", () => {
-  it("들 수 있는 무게를 넘으면 은밀·근접이 불리하고, 너무 무거우면 옮겨 가지 못하고 더 받지 못한다", () => {
+  it("들 수 있는 무게를 넘으면 은밀·근접이 불리하고, 너무 무거우면 옮겨 가지 못한다 (받거나 줍는 것은 된다, 사용자 결정 2026-11-27)", () => {
     const w = open();
     expect(carryCapacity(w.content, me(w))).toBe(12);
     expect(encumbrance(w.content, me(w), w.state())).toBe(0);
@@ -109,6 +109,10 @@ describe("무게", () => {
     expect(carriedWeight(w.content, me(w), w.state())).toBeGreaterThan(18);
     expect(encumbrance(w.content, me(w), w.state())).toBe(2);
     expect(w.executeTool("take_action", act("차고지로 간다", { move_to: "bus_depot", ignore_story: true })).ok).toBe(false);
+    expect(w.executeTool("transfer_item", { from: "player", to: "scene", item_id: "scrap_metal", quantity: 10 }).ok).toBe(true);
+    // 너무 무거워도 다시 줍는다. 결과가 옮겨 가지 못한다고 알린다
+    const back = w.executeTool("transfer_item", { from: "scene", to: "player", item_id: "scrap_metal", quantity: 10 });
+    expect(back.ok && back.resultText).toContain("옮겨 가지 못한다");
     expect(w.executeTool("transfer_item", { from: "player", to: "scene", item_id: "scrap_metal", quantity: 10 }).ok).toBe(true);
     stepToRoad(w, "bus_depot");
     expect(w.executeTool("take_action", act("차고지로 간다", { move_to: "bus_depot", ignore_story: true })).ok).toBe(true);

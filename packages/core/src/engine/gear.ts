@@ -44,8 +44,14 @@ export function equippedItem(c: Character, slot: Slot): string | null {
 /** 지닌 짐의 무게 */
 export function carriedWeight(content: Content, c: Character, state: Pick<GameState, "bags" | "characters">): number {
   const loose = Object.entries(c.inventory).reduce((n, [id, q]) => n + (content.items[id]?.weight ?? DEFAULT_WEIGHT) * q, 0);
+  // 착용한 것은 worn_factor 배로 센다 (든 무기·입은 옷·멘 가방, 사용자 결정 2026-11-27)
+  const factor = content.scenario.gear?.carry.worn_factor ?? 1;
+  const worn = GEAR_SLOTS.reduce((n, slot) => {
+    const id = equippedItem(c, slot);
+    return n + (id ? (content.items[id]?.weight ?? DEFAULT_WEIGHT) * (1 - factor) : 0);
+  }, 0);
   // 지닌 가방 속 (공통 규칙 26): 멘 가방은 감소율만큼 덜어서
-  return loose + bagsCarriedWeight(content, state, c.id);
+  return loose - worn + bagsCarriedWeight(content, state, c.id);
 }
 
 /** 들 수 있는 무게 (근력에 따라) */
@@ -56,6 +62,11 @@ export function carryCapacity(content: Content, c: Character, state?: GameState)
   // 짐을 나르는 개 (12-172): 주인공 곁의 동물이 배운 재주
   const animal = state && c.id === state.playerId ? animalCarry(state, content) : 0;
   return carry.base + strength * carry.per_strength + animal;
+}
+
+/** 너무 무거워졌으면 그 한 줄 (사용자 결정 2026-11-27: 무거워도 줍고 꺼내고 받을 수 있지만, 그러면 다른 구역으로 옮겨 가지 못한다) */
+export function overloadNote(content: Content, c: Character, state: GameState): string | null {
+  return encumbrance(content, c, state) === 2 ? `짐이 너무 무겁다 (${carriedWeight(content, c, state).toFixed(1)}kg). 이대로는 다른 구역으로 옮겨 가지 못한다: 내려놓거나 맡기거나 가방을 멘다.` : null;
 }
 
 /** 짐이 무거운 정도: 0 가벼움, 1 무거움(판정 보정), 2 너무 무거움(옮겨 가지 못한다) */

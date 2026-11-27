@@ -4,7 +4,7 @@ import type { Content } from "../content/schemas.ts";
 import type { Character } from "../game/character.ts";
 import { SCENE_HOLDER, type GameState } from "../game/state.ts";
 import { josa } from "../text.ts";
-import { carriedWeight, carryCapacity, encumbrance, equippedItem } from "./gear.ts";
+import { carriedWeight, carryCapacity, encumbrance, equippedItem, overloadNote } from "./gear.ts";
 import { defineTool, type ToolContext, type ToolOutcome } from "./toolkit.ts";
 import { ownedBy } from "../rules/home.ts";
 import { bagById, bagsAt, bagSpec, contentsWeight, heldCount, packItem, unpackItem, type BagRef } from "../rules/bags.ts";
@@ -97,13 +97,7 @@ export function moveStash(ctx: ToolContext, direction: "put" | "take", moves: re
       return { ok: false, error: `${direction === "put" ? "지닌" : "맡겨 둔"} ${josa(item.name, "이/가")} ${have}개뿐이다${worn}.` };
     }
   }
-  // 꺼낼 때도 너무 무거우면 들지 못한다 (기획서 4.8)
-  if (direction === "take" && content.scenario.gear) {
-    const bagLoad = moves.reduce((w, m) => w + (m.bag_id ? contentsWeight(content, bagById(state, m.bag_id)?.contents ?? {}) : 0), 0);
-    const add = [...total].reduce((w, [id, n]) => w + (content.items[id]?.weight ?? 0.5) * n, 0) + bagLoad;
-    const after = carriedWeight(content, me, store.getState()) + add;
-    if (after > carryCapacity(content, me, store.getState()) * content.scenario.gear.carry.hard_limit) return { ok: false, error: `그만큼 꺼내면 너무 무겁다 (${after.toFixed(1)}kg). 덜 꺼낸다.` };
-  }
+  // 무거워도 꺼낸다. 너무 무거우면 옮겨 가지 못한다 (사용자 결정 2026-11-27, 아래 짐 줄에 알린다)
   // 집은 가방은 그 개체째 하나씩, 나머지는 합쳐서
   const picked = moves.filter((m) => m.bag_id);
   for (const m of picked) store.append({ type: "item_stashed", characterId: me.id, zone, itemId: m.item_id, quantity: 1, direction, bagId: m.bag_id! });
@@ -115,7 +109,8 @@ export function moveStash(ctx: ToolContext, direction: "put" | "take", moves: re
   const where = place?.label ?? `${zoneName(content, zone)}에 맡겨 둔 곳`;
   const after = store.getState().characters[me.id]!;
   const weight = content.scenario.gear ? ` 짐 ${carriedWeight(content, after, store.getState()).toFixed(1)}/${carryCapacity(content, after, store.getState()).toFixed(0)}kg.` : "";
-  return { ok: true, lines: [`${direction === "put" ? `${where}에 넣었다` : `${where}에서 꺼냈다`}: ${listed}.${weight}`] };
+  const heavy = direction === "take" && content.scenario.gear ? overloadNote(content, after, store.getState()) : null;
+  return { ok: true, lines: [`${direction === "put" ? `${where}에 넣었다` : `${where}에서 꺼냈다`}: ${listed}.${weight}`, ...(heavy ? [heavy] : [])] };
 }
 
 /** 이 구역을 거처로 삼는다 (떠돌이). 예전 거처에 맡긴 물건은 거기 남는다 */
@@ -281,11 +276,7 @@ export function moveItem(ctx: ToolContext, input: { itemId: string; quantity: nu
   } else if (from === "ground") {
     const have = store.getState().scene.items[itemId] ?? 0;
     if (have < quantity) return { ok: false, error: `바닥에 ${josa(content.items[itemId]!.name, "이/가")} ${have}개뿐이다.` };
-    if (content.scenario.gear) {
-      const load = bagId ? contentsWeight(content, bagById(store.getState(), bagId)?.contents ?? {}) : 0;
-      const after = carriedWeight(content, me, store.getState()) + (content.items[itemId]!.weight ?? 0.5) * quantity + load;
-      if (after > carryCapacity(content, me, store.getState()) * content.scenario.gear.carry.hard_limit) return { ok: false, error: `그만큼 주우면 너무 무겁다 (${after.toFixed(1)}kg).` };
-    }
+    // 무거워도 줍는다. 너무 무거우면 옮겨 가지 못한다 (사용자 결정 2026-11-27)
     store.append({ type: "item_transferred", from: SCENE_HOLDER, to: me.id, itemId, quantity, ...(bagId ? { bagId } : {}) });
     lines.push(`바닥에서 ${josa(content.items[itemId]!.name, "을/를")} 주웠다${quantity > 1 ? ` (${quantity}개)` : ""}.`);
   } else if (from === "stash") {
@@ -293,7 +284,10 @@ export function moveItem(ctx: ToolContext, input: { itemId: string; quantity: nu
     if (!r.ok) return r;
     lines.push(...r.lines);
   }
-  if (to === "body") return { ok: true, lines };
+  if (to === "body") {
+    const heavy = overloadNote(content, store.getState().characters[me.id]!, store.getState());
+    return { ok: true, lines: heavy ? [...lines, heavy] : lines };
+  }
   // 2. 맨몸에서 목적지로
   const fail = (error: string) => (lines.length ? { ok: true as const, lines: [...lines, `거기서 멈췄다: ${error}`] } : { ok: false as const, error });
   if (to.startsWith("bag:") || to.startsWith("newbag:")) {

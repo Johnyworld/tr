@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { BgeM3Embedder, ContentError, loadContent, loadContentPacks, LoreLibrary, WorldManager, type Content } from "@trpg/core";
 import { createMcpServer } from "./server.ts";
+import { registerServer, sweepOrphans, unregisterServer } from "./serverRegistry.ts";
 import { startStatusServer } from "./statusServer.ts";
 
 /**
@@ -54,6 +55,10 @@ try {
   process.exit(1);
 }
 
+// 주인(claude)이 죽은 지난 서버를 내리고, 내 줄을 장부에 적는다
+sweepOrphans(savesDir);
+registerServer(savesDir);
+
 const transport = new StdioServerTransport();
 transport.onclose = () => shutdown();
 await app.server.connect(transport);
@@ -91,6 +96,7 @@ if (process.env.TRPG_STATUS !== "off") {
     .then((s) => {
       statusUrl = s.url;
       closeStatus = s.close;
+      registerServer(savesDir, Number(new URL(s.url).port));
       console.error(`[mcp] 상태 화면: ${s.url}`);
     })
     .catch((err: unknown) => console.error(`[mcp] 상태 화면을 띄우지 못했습니다: ${String(err)}`));
@@ -98,6 +104,7 @@ if (process.env.TRPG_STATUS !== "off") {
 
 function shutdown() {
   app.close(); // 세이브와 잠금을 정리한다
+  unregisterServer(savesDir);
   void closeStatus?.();
   process.exit(0);
 }

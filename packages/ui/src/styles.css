@@ -290,32 +290,14 @@ body {
   color: var(--muted);
 }
 
-.badge {
-  margin-left: auto;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--border);
-}
-
 .card.check.success {
   border-left-color: var(--success);
-}
-.card.check.success .badge {
-  color: var(--success);
 }
 .card.check.partial {
   border-left-color: var(--partial);
 }
-.card.check.partial .badge {
-  color: var(--partial);
-}
 .card.check.miss {
   border-left-color: var(--miss);
-}
-.card.check.miss .badge {
-  color: var(--miss);
 }
 .card.time {
   border-left-color: var(--border);
@@ -454,14 +436,6 @@ body {
   gap: 8px;
   font-size: 13px;
   line-height: 1.5;
-}
-
-.belief-source {
-  font-size: 11px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0 4px;
 }
 
 .card.mission {
@@ -807,19 +781,6 @@ body {
   color: var(--accent);
 }
 
-.slot .badge {
-  font-size: 11px;
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--muted);
-}
-
-.slot .badge.dead {
-  color: var(--error);
-  border-color: var(--error);
-}
-
 .slot-foot {
   margin-top: 4px;
 }
@@ -1084,21 +1045,6 @@ body {
   margin: 8px 0;
 }
 
-.chip.trait:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.chip.trait.positive.on {
-  border-color: var(--success);
-  color: var(--success);
-}
-
-.chip.trait.negative.on {
-  border-color: var(--miss);
-  color: var(--miss);
-}
-
 .trait-cost {
   margin-left: 6px;
   font-size: 12px;
@@ -1139,15 +1085,11 @@ body {
   display: grid;
   gap: 4px;
 }
+/* 장비 칸의 자리 이름표 (Chip): 왼쪽 칸 가운데 */
 .gear-slot {
-  display: inline-block;
   min-width: 2.2em;
-  padding: 0 4px;
-  border-radius: 4px;
-  font-size: 0.75em;
   text-align: center;
-  background: var(--chip-bg, rgba(127, 127, 127, 0.15));
-  color: var(--muted, #888);
+  justify-self: start;
 }
 
 /* 설정 (12-63): 상태 화면 머리의 톱니바퀴 */
@@ -1557,11 +1499,6 @@ body {
   grid-template-columns: 30px minmax(0, 1fr);
   background: none;
   border-style: dashed;
-}
-
-.gear-box .gear-slot {
-  font-size: 11px;
-  color: var(--muted);
 }
 
 .gear-ammo {
@@ -3261,17 +3198,6 @@ body {
   }
 }
 
-/* 몸 상태 판정 보정 칩 (상태 줄 맨 뒤) */
-.penalty-chip {
-  padding: 1px 6px;
-  border: 1px solid rgba(210, 106, 92, 0.6);
-  border-radius: 999px;
-  font-size: 11px;
-  color: var(--error);
-  background: rgba(210, 106, 92, 0.1);
-  font-variant-numeric: tabular-nums;
-}
-
 /*
  * 넓은 창: 페이지(바탕·탭 줄)는 창 폭 전체를 쓰고, 내용만 가운데 480px 안에 둔다.
  * --gutter = 섹션 좌우 여백 (좁으면 8px, 넓으면 480px 칸이 가운데 오도록)
@@ -3531,12 +3457,6 @@ body {
 .trait-card strong,
 .tier-stat strong {
   color: var(--heading);
-}
-
-/* 스킬 고르기 (12-84): 포인트를 다 쓰면 나머지 칩은 흐리게 */
-.newgame .choice-row .chip:disabled {
-  opacity: 0.35;
-  cursor: default;
 }
 
 /* 성격 축 (12-99): 왼쪽 이름 · 다섯 칸 · 오른쪽 이름 */
@@ -4361,4 +4281,23 @@ button.fold-head:hover:not(:disabled) {
 
 .fold.open .fold-chevron {
   transform: none;
+}
+
+/* 이름표 (Chip.tsx): 회색 바탕, 글자는 바탕색으로 뒤집는다. 눌러서 고르는 칩(.chip)과는 따로 */
+.chip-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+  color: var(--bg);
+  background: var(--muted);
+}
+
+.chip-tag.danger {
+  background: var(--error);
 }

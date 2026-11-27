@@ -65,7 +65,7 @@ function player(): PlayerView {
     clock: { time: "오후 3시", hhmm: "15:10", minute: 910, segment: "afternoon", segmentLabel: "오후", date: "3일째", season: "늦가을", weather: { label: "흐림", icon: null, chill: 0 }, temperature: { outside: 8, feels: 6, detail: "쌀쌀하다" } },
     conditions: [],
     symptoms: [{ id: "tired", label: "피곤함", penalty: 0, tone: 1, fatal: false }],
-    conditionPenalty: 0,
+    conditionPenalty: -1,
     dead: false,
     stats: (Object.keys(STATS) as StatId[]).map((id) => ({ id, label: STATS[id], value: statValue[id] })),
     statRange: { min: -1, max: 2 },

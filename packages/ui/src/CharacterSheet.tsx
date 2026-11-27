@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Accordion } from "./Accordion.tsx";
+import { Chip } from "./Chip.tsx";
 import { MemoPanel } from "./MemoPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
@@ -46,9 +47,9 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                   <SymptomList list={player.symptoms ?? []} itemClassName="hero-condition" />
                   {/* 이 상태들 때문에 판정에 붙는 보정 (합) */}
                   {player.conditionPenalty !== 0 && (
-                    <span className="penalty-chip" title="몸 상태 때문에 모든 판정에 붙는 보정">
+                    <Chip tone="danger" title="몸 상태 때문에 모든 판정에 붙는 보정">
                       판정 {signed(player.conditionPenalty)}
-                    </span>
+                    </Chip>
                   )}
                 </div>
               </div>
@@ -333,7 +334,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                 <ul>
                   {player.deeds.map((d) => (
                     <li key={d.id}>
-                      <span className="belief-source">{d.tagLabels.join("·")}</span> {d.summary}
+                      <Chip>{d.tagLabels.join("·")}</Chip> {d.summary}
                       {d.visibleWitnesses.length > 0 && <span className="muted"> — 본 사람: {d.visibleWitnesses.join(", ")}</span>}
                     </li>
                   ))}
@@ -347,7 +348,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
               <ul>
                 {player.beliefs.map((b) => (
                   <li key={b.id}>
-                    <span className="belief-source">{b.sourceLabel}</span> {b.fact}
+                    <Chip>{b.sourceLabel}</Chip> {b.fact}
                   </li>
                 ))}
               </ul>
@@ -754,7 +755,7 @@ function GearBox({ gear, canUnequip }: { gear: GearView; canUnequip?: boolean })
           }
         : {})}
     >
-      <span className="gear-slot">{gear.slotLabel}</span>
+      <Chip className="gear-slot">{gear.slotLabel}</Chip>
       <div className="gear-main">
         <div>
           <Icon name={gear.icon} className={gear.slotLabel === "손" ? "icon-weapon" : "icon-muted"} /> {gear.name}
@@ -791,7 +792,7 @@ function GearBox({ gear, canUnequip }: { gear: GearView; canUnequip?: boolean })
 function EmptySlot({ slot, bare }: { slot: string; bare: boolean }) {
   return (
     <div className="gear-box empty">
-      <span className="gear-slot">{slot}</span>
+      <Chip className="gear-slot">{slot}</Chip>
       <span className="muted">{bare ? "맨손" : "비어 있음"}</span>
     </div>
   );

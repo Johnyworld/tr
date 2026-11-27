@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { heldOf } from "../rules/held.ts";
 import { fireLitHere } from "../rules/place.ts";
-import { knowAllPlaces, loadRealContent } from "../testing.ts";
+import { knowAllPlaces, loadRealContent, walkToPlace } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
 /** 플레이 테스트 19 뒤 고친 것 (12-267). 실제 경로(세계 만들기·도구 호출)로 본다 */
@@ -51,7 +51,7 @@ describe("판정·불 (12-267)", () => {
     const lit = w.executeTool("take_action", act({ use_item: "firewood" }));
     expect(lit.ok, lit.ok ? "" : lit.error).toBe(true);
     expect(fireLitHere(w.state())).toBe(true);
-    w.executeTool("take_action", act({ place_to: "mess" }));
+    walkToPlace(w, "mess");
     expect(fireLitHere(w.state())).toBe(false);
     expect(sceneText(w)).not.toContain("모닥불 +");
   });

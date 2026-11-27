@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { withKnownNames } from "../game/acquaintance.ts";
 import { npcPlaceAt, placesIn, whereIs } from "../rules/place.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atNeighborOf } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
 /** 플레이 테스트 16 뒤 고친 것 (12-261) */
@@ -20,6 +20,7 @@ describe("같은 장소의 사람 들이기 (12-261)", () => {
     const here = s.playerPlace;
     const pick = Object.keys(content.npcs).map((id) => ({ id, w: whereIs(s, content, id) })).find((x) => x.w?.zone === s.playerZone && x.w.place && x.w.place !== here && !s.scene.present.includes(x.id));
     expect(pick).toBeTruthy();
+    atNeighborOf(w, pick!.w!.place!);
     const r = w.executeTool("take_action", act({ place_to: pick!.w!.place, target: pick!.id }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().scene.present).toContain(pick!.id);

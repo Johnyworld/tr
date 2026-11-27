@@ -61,6 +61,44 @@ export function segmentEnd(time: GameTime): GameTime {
   return Math.min(...TIME_SEGMENTS.map((s) => nextSegmentStart(time, s)));
 }
 
+/** 밤(20~04시)을 빼고 낮 시간만 세는 한 날의 길이 (분) */
+const DAYLIGHT_START = SEGMENT_START_HOUR.dawn * 60;
+const DAYLIGHT_END = SEGMENT_START_HOUR.night * 60;
+
+/** start에서 낮 시간 minutes분이 지난 시각. 밤에는 시계가 멈추고 04시부터 다시 센다 (임무 기한, 12-354) */
+export function addDaylight(start: GameTime, minutes: number): GameTime {
+  let t = start;
+  let left = minutes;
+  for (;;) {
+    const m = minuteOfDay(t);
+    if (m >= DAYLIGHT_END) t += MINUTES_PER_DAY - m + DAYLIGHT_START;
+    else if (m < DAYLIGHT_START) t += DAYLIGHT_START - m;
+    const room = DAYLIGHT_END - minuteOfDay(t);
+    if (left <= room) return t + left;
+    left -= room;
+    t += room;
+  }
+}
+
+/** from부터 to까지 사이의 낮 시간 (분). 밤은 세지 않는다 */
+export function daylightMinutes(from: GameTime, to: GameTime): number {
+  if (to <= from) return 0;
+  const len = DAYLIGHT_END - DAYLIGHT_START;
+  const clamp = (t: GameTime) => Math.floor(t / MINUTES_PER_DAY) * len + Math.min(Math.max(minuteOfDay(t) - DAYLIGHT_START, 0), len);
+  return clamp(to) - clamp(from);
+}
+
+/**
+ * 임무 기한 (12-354). 낮 시간 hours시간(+오가는 시간 allowance분)이 지난 때.
+ * 급하지 않은 일은 받은 다음 날 낮이 끝나는 때(20시)와 견주어 늦은 쪽
+ */
+export function missionDeadline(start: GameTime, hours: number, urgent: boolean, allowance = 0): GameTime {
+  const base = addDaylight(start, hours * 60 + allowance);
+  if (urgent) return base;
+  const nextDayEnd = start - minuteOfDay(start) + MINUTES_PER_DAY + DAYLIGHT_END;
+  return Math.max(base, nextDayEnd);
+}
+
 /** 1일차가 start(YYYY-MM-DD)인 달력의 날짜: "2032. 11. 8." */
 export function calendarDate(start: string, time: GameTime): string {
   const d = new Date(`${start}T00:00:00Z`);

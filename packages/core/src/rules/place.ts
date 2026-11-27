@@ -598,8 +598,9 @@ export function homeHidden(state: GameState, id: string): boolean {
 
 /**
  * 주인공이 아는 장소인가 (설계 목록 C-1). 모르는 장소는 GM에게도 이름·id·그곳 사람 없이 '알 수 없는 문'으로만 보인다 (원칙 4).
- * - 늘 안다: 구역의 길(road)과 담 문(gate), 즉흥 장소(GM이 그 자리에서 만든 곳), 우리 무리 땅의 모든 곳
- * - 담 밖(깊이 0)은 밖에서 보이니 안다. 담 없는 구역은 길만
+ * - 늘 안다: 즉흥 장소(GM이 그 자리에서 만든 곳), 우리 무리 땅의 모든 곳
+ * - 길(road)과 담 문(gate)은 처음에는 모른다 (12-353): 구역에 들어서 선 길과, 지나가 본 곳만 안다
+ * - 담 밖(깊이 0)은 밖에서 보이니 안다 (길은 뺀다)
  * - 있어 본 곳 (state.knownPlaces, 어떤 일로 옮겨졌든)
  */
 export function knowsPlace(state: GameState, content: Content, zone: string | null | undefined, placeId: string | null | undefined): boolean {
@@ -607,10 +608,10 @@ export function knowsPlace(state: GameState, content: Content, zone: string | nu
   if (zone === state.playerZone && placeId === state.playerPlace) return true;
   const p = placeById(state, content, placeId, zone);
   if (!p) return false;
-  if (p.road || p.gate || p.spawned) return true;
+  if (p.spawned) return true;
   if (onOwnLand(state, zone)) return true;
   if ((state.knownPlaces?.[state.playerId] ?? []).includes(`${zone}:${placeId}`)) return true;
-  return depthAt(state, content, placeId, zone) === 0;
+  return !p.road && !p.gate && depthAt(state, content, placeId, zone) === 0;
 }
 
 /**

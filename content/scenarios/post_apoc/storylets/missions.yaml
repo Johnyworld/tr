@@ -21,11 +21,11 @@
       outcomes:
         success:
           - mission_goal: true
-          - companion_join: { who: runner, kind: purpose, until: { hours: 12 } }
+          - companion_join: { who: runner, kind: purpose, until: { hours: 24 } }
           - belief: { fact: "담을 넘은 {runner:을/를} 설득해 살아서 데려가게 됐다", source: seen }
         partial:
           - mission_goal: true
-          - companion_join: { who: runner, kind: purpose, until: { hours: 12 } }
+          - companion_join: { who: runner, kind: purpose, until: { hours: 24 } }
           - relation: { who: runner, axis: trust, delta: -1 }
           - belief: { fact: "{runner:은/는} 따라오기로 했지만 걸음마다 뒤를 돌아본다", source: seen }
         miss:
@@ -37,12 +37,12 @@
       outcomes:
         success:
           - mission_goal: true
-          - companion_join: { who: runner, kind: purpose, until: { hours: 12 } }
+          - companion_join: { who: runner, kind: purpose, until: { hours: 24 } }
           - relation: { who: runner, axis: trust, delta: -2 }
           - belief: { fact: "담을 넘은 {runner:을/를} 덮쳐 붙잡았다. 손을 묶어 데려간다", source: seen }
         partial:
           - mission_goal: true
-          - companion_join: { who: runner, kind: purpose, until: { hours: 12 } }
+          - companion_join: { who: runner, kind: purpose, until: { hours: 24 } }
           - wound: { steps: 1, cause: 붙잡히지 않으려는 탈영병의 쇠막대 }
           - relation: { who: runner, axis: trust, delta: -2 }
         miss:
@@ -75,12 +75,12 @@
       outcomes:
         success:
           - mission_goal: true
-          - companion_join: { who: hurt, kind: purpose, until: { hours: 12 } }
+          - companion_join: { who: hurt, kind: purpose, until: { hours: 24 } }
           - relation: { who: hurt, axis: trust, delta: 2 }
           - belief: { fact: "강변 공장에서 다친 {hurt:을/를} 지혈해 데려가게 됐다", source: seen }
         partial:
           - mission_goal: true
-          - companion_join: { who: hurt, kind: purpose, until: { hours: 12 } }
+          - companion_join: { who: hurt, kind: purpose, until: { hours: 24 } }
           - belief: { fact: "{hurt}의 피는 겨우 멎었다. 오래 걷지는 못한다", source: seen }
         miss:
           - npc_depart: { who: hurt }

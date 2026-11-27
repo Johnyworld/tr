@@ -1259,6 +1259,31 @@ export const scenarioFileSchema = z
      * 깊이 칸을 move 판정으로 내려가고, 칸마다 한 번 search_move로 뒤진다 (loot는 칸마다의 찾을 거리 표).
      * 소음이 3에 닿으면 wake[깊이]의 감염체가 깊이+1만큼 깨어난다. hazard: 실패해 다칠 때의 원인
      */
+    /**
+     * 수색 범위 (12-355, 사용자 결정): GM이 뒤질 대상의 크기로 고른다. 칸 전체를 한 번에 뒤지는 범위는 없다.
+     * minutes: 드는 시간, finds: 결과별로 찾을 거리 표에서 뽑는 수의 범위(대가 있는 성공은 최소 1), deplete_minutes: 오늘 이 칸에서 뒤진 시간 이만큼마다 다음 수색 -1.
+     * 없으면 예전대로 (수색 60~120분, 성공 2·대가 1)
+     */
+    search_scopes: z
+      .strictObject({
+        default: id,
+        deplete_minutes: z.number().int().min(5).max(120).default(15),
+        scopes: z
+          .array(
+            z.strictObject({
+              id,
+              label: z.string().min(1),
+              examples: z.string().min(1),
+              minutes: z.number().int().min(5).max(240),
+              finds: z.strictObject({
+                success: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+                partial: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+              }),
+            }),
+          )
+          .min(1),
+      })
+      .optional(),
     exploration: z
       .strictObject({
         move: id,
@@ -2071,6 +2096,12 @@ export const scenarioFileSchema = z
       if (harm && !harm.levels.some((l) => l.id === surgery.from)) problem(`recovery.surgery.from: 알 수 없는 부상 단계 ${surgery.from}`);
       if (!s.moves.some((m) => m.id === surgery.move)) problem(`recovery.surgery.move: 알 수 없는 스킬 ${surgery.move}`);
       if (!s.stats.some((x) => x.id === surgery.stat)) problem(`recovery.surgery.stat: 알 수 없는 능력 ${surgery.stat}`);
+    }
+    if (s.search_scopes) {
+      if (!s.search_scopes.scopes.some((x) => x.id === s.search_scopes!.default)) problem(`search_scopes.default: 없는 범위 ${s.search_scopes.default}`);
+      for (const x of s.search_scopes.scopes) {
+        for (const k of ["success", "partial"] as const) if (x.finds[k][0] > x.finds[k][1]) problem(`search_scopes.${x.id}.finds.${k}: 최솟값이 최댓값보다 크다`);
+      }
     }
     if (s.exploration) {
       for (const m of [s.exploration.move, s.exploration.search_move]) if (!s.moves.some((x) => x.id === m)) problem(`exploration: 알 수 없는 행동 ${m}`);

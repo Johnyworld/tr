@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, walkToPlace } from "../testing.ts";
 import { buildPlaceMapView, placeListLines } from "../views/map.ts";
 import { WorldManager } from "../world/manager.ts";
 import { currentPlace, directionTo, knowsZone, placeCoord, placesIn, roadTo } from "./place.ts";
@@ -52,7 +52,7 @@ describe("이동 규칙 (12-304)", () => {
     const r = w.executeTool("take_action", act({ move_to: dest }));
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error).toContain(`place_to로 ${road.name}(${road.id})`);
-    expect(w.executeTool("take_action", act({ place_to: road.id })).ok).toBe(true);
+    expect(walkToPlace(w, road.id)).toBe(true);
     expect(w.executeTool("take_action", act({ move_to: dest })).ok).toBe(true);
     expect(w.state().playerZone).toBe(dest);
   });

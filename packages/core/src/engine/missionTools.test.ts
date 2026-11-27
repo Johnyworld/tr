@@ -42,6 +42,15 @@ describe("임무 배정", () => {
     expect(mission).toMatchObject({ status: "active", giverId: "npc_leader", deadline: 330 + 12 * 60 });
   });
 
+  it("급하지 않은 일은 받은 다음 날 20시까지 넉넉하고, 급한 일은 낮 시간 12시간뿐이다 (12-354)", () => {
+    const calm = withLeader(setup());
+    executeTool("assign_mission", { template_id: "m_scout" }, calm.ctx);
+    expect(calm.store.getState().missions.m_1!.deadline).toBe(1440 + 20 * 60);
+    const hurry = withLeader(setup());
+    executeTool("assign_mission", { template_id: "m_guard" }, hurry.ctx);
+    expect(hurry.store.getState().missions.m_1!.deadline).toBe(330 + 12 * 60);
+  });
+
   it("오늘의 후보가 아니거나 이미 임무가 있으면 거부한다", () => {
     const env = withLeader(setup());
     expect(executeTool("assign_mission", { template_id: "made_up" }, env.ctx).ok).toBe(false);

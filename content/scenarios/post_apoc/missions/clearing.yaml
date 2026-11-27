@@ -7,6 +7,7 @@
   briefing: 우리 땅에 감염체가 몰려들었다. 둘씩 붙어 다니며 하나씩 끌어내 처리한다. 총은 아낀다. 총소리가 더 부른다.
   giver_rank: squad_leader
   deadline_hours: 12
+  urgent: true
   clears: 1
   requirements:
     - activity: search
@@ -18,6 +19,7 @@
   briefing: 몰려든 감염체 떼를 소리 나는 덫으로 우리 땅 밖으로 끌어낸다. 덫을 만들고, 떼가 따라오는 동안 들키지 않는다.
   giver_rank: squad_leader
   deadline_hours: 12
+  urgent: true
   clears: 1
   requirements:
     - check: improvise

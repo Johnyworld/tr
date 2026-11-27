@@ -17,14 +17,17 @@ const sceneText = (w: ReturnType<typeof make>) => w.sceneForGm();
 const doorOf = (w: ReturnType<typeof make>, id: string) => `문${doorNumber(w.state(), content, id)}`;
 
 describe("모르는 장소 (12-282)", () => {
-  it("우리 땅은 다 알고, 남의 땅은 길·담 문·담 밖만 안다", () => {
+  it("우리 땅은 다 알고, 남의 땅은 서 있는 길과 담 밖만 안다 (다른 길·담 문은 지나 봐야 안다, 12-353)", () => {
     const w = make();
     const s = w.state();
     for (const p of content.locations[s.playerZone!]!.places) expect(knowsPlace(s, content, s.playerZone, p.id)).toBe(true);
     w.runCheat("~goto c_warehouse");
     const t = w.state();
+    expect(knowsPlace(t, content, "c_warehouse", t.playerPlace)).toBe(true); // 서 있는 길
     expect(knowsPlace(t, content, "c_warehouse", "checkpoint_3")).toBe(true); // 담 밖
-    expect(knowsPlace(t, content, "c_warehouse", "yard")).toBe(true); // 담 문
+    expect(knowsPlace(t, content, "c_warehouse", "yard")).toBe(false); // 담 문은 지나 봐야 안다
+    const otherRoad = content.locations.c_warehouse!.places.find((p) => p.road && p.id !== t.playerPlace)!;
+    expect(knowsPlace(t, content, "c_warehouse", otherRoad.id)).toBe(false); // 다른 길도
     expect(knowsPlace(t, content, "c_warehouse", "stockade")).toBe(false);
     expect(knowsPlace(t, content, "c_warehouse", "command")).toBe(false);
   });

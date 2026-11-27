@@ -7,6 +7,8 @@ import { join, resolve } from "node:path";
 import { ContentError, loadContent } from "./loader.ts";
 import { loadContentPacks } from "./packs.ts";
 import { loadRetrievalEval, RetrievalEvalError } from "../rag/eval.ts";
+import { checkMissionDeadlines } from "./missionDeadlines.ts";
+import { checkBringLoot } from "./bringLoot.ts";
 import type { Content } from "./schemas.ts";
 
 const root = resolve(import.meta.dirname, "../../../../content/scenarios");
@@ -21,6 +23,17 @@ try {
     if (!scenario.world) console.log(`  참고: ${scenario.id}에 world(월드 고르기 소개)가 없다`);
     for (const role of Object.values(content.roles)) {
       if (!role.scenario) console.log(`  참고: ${scenario.id}/${role.id}에 scenario(시나리오 고르기 소개)가 없다`);
+    }
+    const deadlines = checkMissionDeadlines(content);
+    for (const note of deadlines.storyNotes) console.log(`  참고: ${note}`);
+    if (deadlines.errors.length) {
+      console.error(`임무 기한 검사 실패 (${scenario.id}):\n${deadlines.errors.join("\n")}`);
+      process.exit(1);
+    }
+    const bring = checkBringLoot(content);
+    if (bring.length) {
+      console.error(`구해 오는 임무 검사 실패 (${scenario.id}):\n${bring.join("\n")}`);
+      process.exit(1);
     }
     if (existsSync(join(dir, "eval", "retrieval.yaml"))) {
       const evalSet = loadRetrievalEval(dir);

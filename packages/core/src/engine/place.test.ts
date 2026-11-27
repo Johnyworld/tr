@@ -5,10 +5,10 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { knowAllPlaces, loadRealContent, atEntry } from "../testing.ts";
+import { knowAllPlaces, loadRealContent, atEntry, atPlace, walkToPlace } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { createSeededRng } from "../rng.ts";
-import { currentPlace, guardedHere, hereWithMe, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, storyPlaceFits, whereIs } from "../rules/place.ts";
+import { currentPlace, guardedHere, hereWithMe, jailFor, nearby, npcPlaceAt, placeIndoor, placesIn, shelterAt, stepsBetween, storyPlaceFits, whereIs } from "../rules/place.ts";
 import { capturePlayer } from "./captivity.ts";
 import { campSite } from "./camp.ts";
 import { feelsLike } from "./climate.ts";
@@ -18,6 +18,11 @@ const choice = { name: "서진", gender: "female" as const, abilities: null, por
 const startWorld = (roleId: string) => new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-place-")), content, rngFactory: () => createSeededRng(5) }).create("mcp", roleId, choice);
 // 길(구역에 막 들어온 자리)에서 시작 (12-259 시작 장소 이전의 전제, 장소 개편)
 const world = (roleId: string) => atEntry(startWorld(roleId));
+// 목적지의 이웃 장소로 시간 없이 옮겨 둔다 (place_to는 이웃으로만 한 칸씩 간다, 12-352)
+const nextTo = <T extends ReturnType<typeof startWorld>>(w: T, id: string): T => {
+  const to = placesIn(w.state(), content, w.state().playerZone!).find((p) => p.id === id)!;
+  return atPlace(w, to.near[0]!);
+};
 const act = (input: Record<string, unknown>) => ({ intent: "행동", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...input });
 
 describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
@@ -26,13 +31,12 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
     expect(w.state().playerZone).toBe("a_base");
     expect(currentPlace(w.state(), content)?.road).toBe(true);
     const t = w.state().time;
-    const out = w.executeTool("take_action", act({ intent: "운동장으로 나간다", place_to: "yard_gate" }));
-    expect(out.ok, out.ok ? "" : out.error).toBe(true);
+    expect(walkToPlace(w, "yard_gate")).toBe(true);
     expect(currentPlace(w.state(), content)?.id).toBe("yard_gate");
     expect(w.state().time - t).toBeGreaterThanOrEqual(5);
     expect(placeIndoor(w.state(), content)).toBe(false);
     expect(feelsLike(content, w.state(), "rest")?.indoor).toBe(false);
-    w.executeTool("take_action", act({ intent: "막사로 들어간다", place_to: "barracks" }));
+    expect(walkToPlace(w, "barracks")).toBe(true);
     expect(feelsLike(content, w.state(), "guard_duty")?.indoor).toBe(true);
   });
 
@@ -49,14 +53,14 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
 
   it("바닥의 물건은 장소마다 남는다", () => {
     const w = world("role_a_grunt");
-    w.executeTool("take_action", act({ place_to: "barracks" }));
+    walkToPlace(w, "barracks");
     const me = w.state().playerId;
     const item = Object.keys(w.state().characters[me]!.inventory)[0]!;
     w.executeTool("transfer_item", { from: me, to: "scene", item_id: item, quantity: 1 });
     expect(w.state().scene.items[item]).toBe(1);
-    w.executeTool("take_action", act({ place_to: "mess" }));
+    walkToPlace(w, "mess");
     expect(w.state().scene.items[item]).toBeUndefined();
-    w.executeTool("take_action", act({ place_to: "barracks" }));
+    walkToPlace(w, "barracks");
     expect(w.state().scene.items[item]).toBe(1);
   });
 
@@ -72,20 +76,20 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
   it("실내·바깥 이야기는 장소를 정했을 때만 거른다", () => {
     const w = world("role_a_grunt");
     expect(storyPlaceFits(w.state(), content, false)).toBe(true);
-    w.executeTool("take_action", act({ place_to: "barracks" }));
+    atPlace(w, "barracks");
     expect(storyPlaceFits(w.state(), content, false)).toBe(false);
     expect(storyPlaceFits(w.state(), content, true)).toBe(true);
   });
 
   it("지붕 아래와 잠자리 (12-245): 거점의 바깥 장소는 지켜 주지만 바깥, 바깥 구역의 실내 장소는 지붕은 있지만 야영", () => {
     const w = world("role_a_grunt");
-    w.executeTool("take_action", act({ place_to: "yard_gate" }));
+    atPlace(w, "yard_gate");
     expect(shelterAt(content, w.state(), "sleep").indoor).toBe(false);
     expect(guardedHere(content, w.state())).toBe(true);
     expect(campSite(content, w.state())).toBeNull();
     w.ctx().store.append({ type: "zone_moved", from: "a_base", to: "old_town" });
     knowAllPlaces(w, content);
-    w.executeTool("take_action", act({ place_to: "shops", ignore_story: true }));
+    atPlace(w, "shops");
     expect(shelterAt(content, w.state(), "sleep").indoor).toBe(true);
     expect(guardedHere(content, w.state())).toBe(false);
     expect(campSite(content, w.state())).not.toBeNull();
@@ -97,7 +101,7 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
     w.state().characters[npc.id]!.captive = { by: "faction_c", zone: "c_base" };
     expect(whereIs(w.state(), content, npc.id)?.zone).toBe("c_base");
     w.state().characters[npc.id]!.captive = null;
-    w.executeTool("take_action", act({ place_to: "barracks" }));
+    atPlace(w, "barracks");
     const at = whereIs(w.state(), content, npc.id);
     if (at?.place && at.place !== "barracks") expect(nearby(w.state(), content, npc.id)).toBe(false);
   });
@@ -106,6 +110,7 @@ describe("구역 안의 장소 (12-244, 공통 규칙 15)", () => {
 describe("장소·동행·물건·붙잡힘 (PT14)", () => {
   it("동무조 T1: 들인 사람을 target으로 둔 place_to는 그 사람과 함께 옮긴다 (다음 호출이 오류가 되지 않는다)", () => {
     const w = world("role_c_comrades");
+    nextTo(w, "yard");
     expect(w.executeTool("npc_presence", { npc_id: "c_cm_jaeho", action: "enter" }).ok).toBe(true);
     const out = w.executeTool("take_action", act({ place_to: "yard", target: "c_cm_jaeho" }));
     expect(out.ok, out.ok ? "" : out.error).toBe(true);
@@ -116,19 +121,22 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
 
   it("거절되는 행동의 place_to는 옮기지도 시간을 쓰지도 않는다", () => {
     const w = world("role_c_comrades");
+    nextTo(w, "yard");
+    const road = currentPlace(w.state(), content)!.id;
     const t = w.state().time;
     const out = w.executeTool("take_action", act({ place_to: "yard", use_item: "no_such_item" }));
     expect(out.ok).toBe(false);
-    expect(currentPlace(w.state(), content)?.road).toBe(true);
+    expect(currentPlace(w.state(), content)?.id).toBe(road);
     expect(w.state().time).toBe(t);
     // 옮겨 가는 곳에 있는 사람은 with로 부를 수 있다 (12-268). 다른 구역 사람은 거절
     const stray = w.executeTool("take_action", act({ place_to: "yard", with: ["a_taeho"] }));
     expect(stray.ok ? "" : stray.error).toContain("장면에 없다");
-    expect(currentPlace(w.state(), content)?.road).toBe(true);
+    expect(currentPlace(w.state(), content)?.id).toBe(road);
   });
 
   it("짐꾼 T1: 옮겨 가는 장소가 제자리인 사람과 with로 데려간 사람은 남고, 나머지는 원래 자리에 남는다", () => {
     const w = world("role_c_comrades");
+    nextTo(w, "yard");
     const s = w.state();
     // 창고 마당이 지금 제자리인 사람과 아닌 사람
     const ids = Object.values(content.npcs).filter((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead).map((n) => n.id);
@@ -173,11 +181,15 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     const road = w.state().playerPlace!;
     const item = Object.keys(w.state().characters[me]!.inventory)[0]!;
     w.executeTool("transfer_item", { from: me, to: "scene", item_id: item, quantity: 1 });
-    const moved = w.executeTool("take_action", act({ place_to: "barracks" }));
+    // 이웃으로만 한 칸씩 옮긴다: 첫 칸에서 바닥에 둔 물건이 길에 남았다는 말이 나온다
+    const here = currentPlace(w.state(), content)!;
+    const left = stepsBetween(w.state(), content, road, "barracks");
+    const hop = here.near.find((id) => stepsBetween(w.state(), content, id, "barracks") === left - 1)!;
+    const moved = w.executeTool("take_action", act({ place_to: hop }));
     expect(moved.ok && moved.resultText).toContain(road);
     expect(w.state().scene.items[item]).toBeUndefined();
-    const back = w.executeTool("take_action", act({ place_to: road }));
-    expect(back.ok, back.ok ? "" : back.error).toBe(true);
+    walkToPlace(w, "barracks");
+    walkToPlace(w, road);
     expect(currentPlace(w.state(), content)?.id).toBe(road);
     expect(w.state().scene.items[item]).toBe(1);
   });
@@ -187,7 +199,7 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
     const me = w.state().playerId;
     // 수용소가 있는 물류창고에서 붙잡히면 그 자리의 수용소에
     w.ctx().store.append({ type: "zone_moved", from: w.state().playerZone, to: "c_warehouse" });
-    w.executeTool("take_action", act({ place_to: "yard", ignore_story: true }));
+    atPlace(w, "yard");
     const item = Object.keys(w.state().characters[me]!.inventory)[0]!;
     w.executeTool("transfer_item", { from: me, to: "scene", item_id: item, quantity: 1 });
     const line = capturePlayer(w.ctx(), "faction_c");
@@ -224,13 +236,13 @@ describe("장소·동행·물건·붙잡힘 (PT14)", () => {
 describe("머무는 자리 (12-253, 공통 규칙 15)", () => {
   it("두고 온 사람은 그 시간대가 끝날 때까지 그 자리에 있고, 그 뒤엔 일과로 돌아간다", () => {
     const w = world("role_c_comrades");
-    w.executeTool("take_action", act({ place_to: "yard" }));
+    atPlace(w, "yard");
     const s = w.state();
     const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && npcPlaceAt(s, content, n.id) && npcPlaceAt(s, content, n.id) !== "yard")!.id;
     const routine = npcPlaceAt(s, content, id);
     expect(w.executeTool("npc_presence", { npc_id: id, action: "enter" }).ok).toBe(true);
     const other = placesIn(s, content, "c_warehouse").find((p) => p.id !== "yard" && p.id !== routine)!.id;
-    expect(w.executeTool("take_action", act({ place_to: other })).ok).toBe(true);
+    expect(walkToPlace(w, other)).toBe(true);
     expect(w.state().scene.present).not.toContain(id);
     expect(whereIs(w.state(), content, id)).toEqual({ zone: "c_warehouse", place: "yard" });
     const later = segmentEnd(w.state().time) + 1;
@@ -239,7 +251,7 @@ describe("머무는 자리 (12-253, 공통 규칙 15)", () => {
 
   it("같은 장소에 있는 사람을 target으로 부르면 장면에 들이고 행동한다", () => {
     const w = world("role_c_comrades");
-    w.executeTool("take_action", act({ place_to: "yard" }));
+    atPlace(w, "yard");
     const s = w.state();
     const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id) && whereIs(s, content, n.id)?.place === "yard")!.id;
     expect(hereWithMe(s, content, id)).toBe(true);
@@ -251,7 +263,7 @@ describe("머무는 자리 (12-253, 공통 규칙 15)", () => {
 
   it("다른 장소에 있는 사람은 지금처럼 장면에 없다고 거절한다", () => {
     const w = world("role_c_comrades");
-    w.executeTool("take_action", act({ place_to: "yard" }));
+    atPlace(w, "yard");
     const s = w.state();
     const id = Object.values(content.npcs).find((n) => n.zone === "c_warehouse" && !s.characters[n.id]?.dead && !s.scene.present.includes(n.id) && whereIs(s, content, n.id)?.place && whereIs(s, content, n.id)?.place !== "yard")!.id;
     const out = w.executeTool("take_action", act({ intent: "말을 건다", target: id }));

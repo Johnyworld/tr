@@ -83,6 +83,7 @@
   giver_rank: officer
   supplies: { medicine: 3 }
   deadline_hours: 14
+  urgent: true
   requirements:
     - check: scavenge
       min_outcome: partial

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { buildCustomRole, checkCustomStart, type CustomStartInput } from "../game/customStart.ts";
 import { createSeededRng, type Rng } from "../rng.ts";
 import { WorldManager } from "../world/manager.ts";
-import { stepToRoad, loadRealContent, teachSkills } from "../testing.ts";
+import { stepToRoad, loadRealContent, teachSkills, atNeighborOf } from "../testing.ts";
 
 const content = loadRealContent();
 const act = (intent: string, extra: Record<string, unknown> = {}) => ({ intent, check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, ...extra });
@@ -77,7 +77,7 @@ describe("잠시 떨어짐 (기획서 7.9)", () => {
     const waiting = w.state().bonds[kin!]?.apart?.place ?? null;
     const back = move(w, "old_town");
     // 돌아온 길이 기다리는 장소가 아니면 그 장소로 가야 합류한다 (장소 개편: 구역에 들어오면 떠나온 쪽 길)
-    const joined = w.state().playerPlace === waiting ? back : (() => { const r = w.executeTool("take_action", act("간다", { place_to: waiting, ignore_story: true })); return r.ok ? r.resultText : r.error; })();
+    const joined = w.state().playerPlace === waiting ? back : (() => { atNeighborOf(w, waiting!); const r = w.executeTool("take_action", act("간다", { place_to: waiting, ignore_story: true })); return r.ok ? r.resultText : r.error; })();
     expect(joined).toContain("다시 합류했다");
     expect(w.state().companions).toContain(kin);
     expect(w.state().bonds[kin!]?.apart).toBeUndefined();

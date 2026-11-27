@@ -11,7 +11,7 @@ import { createWorldEvent } from "./game/state.ts";
 import { InMemoryGameStore } from "./game/store.ts";
 import { InMemoryRepository } from "./persistence/repository.ts";
 import { GameWorld } from "./world/world.ts";
-import { whereIs, arrivalPlace, placesIn, movePlayer, storyIndoor, storyOpenPlaces, currentPlace, knowsZone, roadTo } from "./rules/place.ts";
+import { whereIs, arrivalPlace, placesIn, movePlayer, storyIndoor, storyOpenPlaces, currentPlace, knowsZone, roadTo, stepsBetween } from "./rules/place.ts";
 import { storyText } from "./rules/storySlot.ts";
 import { runAfterTimeAdvance } from "./engine/turnStart.ts";
 import { createSeededRng, type Rng } from "./rng.ts";
@@ -374,6 +374,7 @@ export const TEST_CONTENT: Content = {
       briefing: "초소에서 보초를 선다",
       giver_rank: "squad_leader",
       deadline_hours: 12,
+      urgent: true,
       requirements: [{ activity: "guard_duty", minutes: 240 }],
     },
     m_scout: {
@@ -495,7 +496,41 @@ export function stepToRoad(world: GameWorld, zone: string): void {
   const road = roadTo(s, world.content, zone);
   const at = currentPlace(s, world.content);
   if (!road || !at || at.id === road.id || knowsZone(s, world.content, zone)) return;
-  world.executeTool("take_action", { intent: "길로 나간다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, place_to: road.id, ignore_story: true });
+  // 이웃 길이 모르는 장소로 막혀 있으면(문을 지나 찾아야 한다) 걸어가지 못하니, 시간 없이 길로 옮긴다
+  if (!walkToPlace(world, road.id)) atPlace(world, road.id);
+}
+
+/**
+ * 같은 구역 안의 장소로 이웃을 따라 한 칸씩 걸어간다 (12-352: 장소는 이웃으로만 옮긴다. 칸마다 5분이 든다).
+ * 옮기는 행동 자체를 시험하는 테스트와 시간이 흘러도 되는 설정에 쓴다. 닿지 못하면 false
+ */
+export function walkToPlace(world: GameWorld, placeId: string): boolean {
+  for (let hop = 0; hop < 40; hop++) {
+    const s = world.state();
+    const at = currentPlace(s, world.content);
+    if (!at) return false;
+    if (at.id === placeId) return true;
+    const left = stepsBetween(s, world.content, at.id, placeId);
+    const next = at.near.find((id) => stepsBetween(s, world.content, id, placeId) === left - 1) ?? placeId;
+    const r = world.executeTool("take_action", { intent: "한 칸 걸어간다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, place_to: next, ignore_story: true });
+    if (!r.ok) return false;
+  }
+  return false;
+}
+
+/** 시간을 쓰지 않고 주인공을 그 장소의 이웃 장소(첫 번째)로 옮긴다. 그 장소로 place_to 한 번에 가는 행동을 시험할 때의 설정 */
+export function atNeighborOf<T extends GameWorld>(world: T, placeId: string): T {
+  const s = world.state();
+  const to = s.playerZone ? placesIn(s, world.content, s.playerZone).find((p) => p.id === placeId) : undefined;
+  if (!to?.near[0]) throw new Error(`이웃이 없는 장소: ${placeId}`);
+  return atPlace(world, to.near[0]);
+}
+
+/** 시간을 쓰지 않고 주인공을 같은 구역의 그 장소로 옮긴다 (이웃이 아니어도). 옮기는 행동이 시험 대상이 아닌 설정에 쓴다 */
+export function atPlace<T extends GameWorld>(world: T, placeId: string): T {
+  const zone = world.state().playerZone;
+  if (zone) movePlayer(world.ctx(), { zone, place: placeId }, "cheat");
+  return world;
 }
 
 export function teachSkills(world: GameWorld, skills: string[] | Record<string, number>, who = world.state().playerId) {

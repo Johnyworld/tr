@@ -25,7 +25,7 @@ import { z } from "zod";
 import { CHECK_OUTCOME_LABELS } from "../rules/check.ts";
 import { moveLabel } from "../scenario/scenario.ts";
 import type { Scenario } from "../scenario/schema.ts";
-import { ACTIVITY_COSTS, ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY } from "../rules/time.ts";
+import { ACTIVITY_COSTS, ACTIVITY_LABELS, dayOf, formatDuration, formatTime, MINUTES_PER_DAY, missionDeadline } from "../rules/time.ts";
 import type { Content, MissionRequirement } from "../content/schemas.ts";
 import { moveOf } from "../scenario/scenario.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -221,7 +221,7 @@ const assignMission = defineTool({
       assigneeId: player.id,
       giverId: commander.id,
       assignedAt: state.time,
-      deadline: state.time + template.deadline_hours * 60 + travelAllowance(ctx, template.where, player.factionId),
+      deadline: missionDeadline(state.time, template.deadline_hours, template.urgent ?? false, travelAllowance(ctx, template.where, player.factionId)),
       // 서로 바꿔 쓸 수 있는 판정을 적어 둔다 (교섭 ↔ 위협·거짓말)
       requirements: structuredClone(template.requirements).map((r) => {
         if (!("check" in r)) return r;

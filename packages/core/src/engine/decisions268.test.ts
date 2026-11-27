@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { placesIn, whereIs } from "../rules/place.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atNeighborOf, walkToPlace } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
 /** 구역·장소 혼동 버그 (12-268). 실제 경로로 본다 */
@@ -18,6 +18,7 @@ describe("구역·장소 (12-268)", () => {
     const s = w.state();
     const pick = Object.keys(content.npcs).map((id) => ({ id, at: whereIs(s, content, id) })).find((x) => x.at?.zone === s.playerZone && x.at.place && x.at.place !== s.playerPlace && !s.scene.present.includes(x.id));
     expect(pick).toBeTruthy();
+    atNeighborOf(w, pick!.at!.place!);
     const r = w.executeTool("take_action", act({ place_to: pick!.at!.place, with: [pick!.id] }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(w.state().scene.present).toContain(pick!.id);
@@ -31,10 +32,10 @@ describe("구역·장소 (12-268)", () => {
     expect(here).toBeTruthy();
     w.executeTool("companion_part", { target: mate, how: "wait", hours: null });
     const other = placesIn(w.state(), content, w.state().playerZone).find((p) => p.id !== here && !p.jail)!.id;
-    w.executeTool("take_action", act({ place_to: other }));
-    w.executeTool("take_action", act({ place_to: "entry" }));
+    walkToPlace(w, other);
+    walkToPlace(w, "entry");
     expect(w.state().companions.includes(mate) && !w.state().bonds[mate]?.apart).toBe(false);
-    w.executeTool("take_action", act({ place_to: here }));
+    walkToPlace(w, here);
     expect(w.state().bonds[mate]?.apart).toBeFalsy();
   });
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { eligibleStorylets } from "../story/storylets.ts";
 import { WorldManager } from "../world/manager.ts";
-import { atEntry, atStoryPlace, loadRealContent } from "../testing.ts";
+import { atEntry, atPlace, atStoryPlace, loadRealContent } from "../testing.ts";
 
 const content = loadRealContent();
 // 날을 넘기는 데 쓴다: 잇달아 자면 이어진 잠이라 피곤하지 않으면 깨어 있게 된다 (플레이 테스트 13), 그래서 기다린다
@@ -30,7 +30,7 @@ describe("NPC의 몸 (기획서 7.7)", () => {
     for (let i = 0; i < 20 && Math.floor(w.state().time / 1440) + 1 < day0 + 2; i++) w.executeTool("take_action", { ...sleep, activity: { kind: "wait", until: i % 2 ? "morning" : "night" } });
     expect(w.state().characters.d_sori!.conditions.infection).toBe("chill");
     // 그동안 열린 이야기가 주인공을 약제실 같은 장소로 옮겨 뒀을 수 있다 (12-254): 숙소 이야기를 보려고 숙소로
-    w.executeTool("take_action", { ...sleep, activity: null, place_to: "lodging" });
+    atPlace(w, "lodging");
     expect(ids(w, dawnOf(w, 5))).toContain("d_sori_fever");
     expect(ids(w, morningOf(7))).not.toContain("d_sori_clear");
     w.close();

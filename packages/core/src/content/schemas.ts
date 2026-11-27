@@ -422,6 +422,8 @@ export function createContentSchemas(s: Scenario) {
     /** 이 계급 이상만 받는 일감 (플레이 테스트 11, C9: 신입이 신병 훈련을 맡았다) */
     min_rank: idEnum(rankIds(s)).optional(),
     deadline_hours: z.number().int().positive().max(72),
+    /** 이야기가 급함을 말하는 일 (12-354). 기한이 낮 시간 deadline_hours뿐이다. 아니면 받은 다음 날 20시까지 넉넉하다 */
+    urgent: z.boolean().optional(),
     requirements: z.array(missionRequirement).min(1),
     /**
      * 임무를 해야 하는 곳 (플레이 테스트 4). 그 자리에서 한 판정·활동만 진행으로 센다. 없으면 어디서든 (거점 안의 일).
@@ -1039,7 +1041,7 @@ export function createContentSchemas(s: Scenario) {
      */
     party_story: z.boolean().optional(),
     /** 잠을 깨울 만큼 급한 일인지. 아니면 자는 동안에는 열리지 않는다 */
-    urgent: z.boolean().default(false),
+    urgent: z.boolean().optional(),
     /** 꼭 열려야 하는 이야기 (플레이 테스트 12: 튜토리얼 엔딩이 하루 상한에 막혔다). 하루 상한·위협 상한에 막히지 않는다 */
     essential: z.boolean().default(false),
     /** 자는 주인공을 깨워 열 수 있는가 (12-251, 플레이 테스트 14: 튜토리얼 안내가 자정에 잠을 깨웠다). false면 깨어 있을 때만 */

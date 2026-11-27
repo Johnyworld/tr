@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { MissionInstance } from "../game/missions.ts";
 import { graceExcuse } from "../rules/blame.ts";
 import { searchSpot } from "../rules/place.ts";
-import { loadRealContent } from "../testing.ts";
+import { loadRealContent, atPlace } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { issueArmory } from "./armory.ts";
 import { scavengeParts } from "./scavenge.ts";
@@ -35,10 +35,10 @@ describe("무기고 (12-258)", () => {
 describe("다시 뒤짐은 장소마다 (12-258)", () => {
   it("한 장소를 뒤진 뒤 다른 장소에서는 '오늘 다시 뒤짐'이 붙지 않는다", () => {
     const w = world("role_a_grunt");
-    w.executeTool("take_action", act({ place_to: "storehouse" }));
+    atPlace(w, "storehouse");
     w.ctx().store.append({ type: "zone_searched", zone: searchSpot(w.state())!, day: Math.floor(w.state().time / 1440) + 1 });
     expect(scavengeParts(w.ctx()).some((p) => p.label === "오늘 다시 뒤짐")).toBe(true);
-    w.executeTool("take_action", act({ place_to: "barracks" }));
+    atPlace(w, "barracks");
     expect(scavengeParts(w.ctx()).some((p) => p.label === "오늘 다시 뒤짐")).toBe(false);
   });
 });

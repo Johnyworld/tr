@@ -30,6 +30,7 @@
   briefing: 저쪽 무리가 우리 땅을 노린다. 그 자리에 가서 몇 시간 버티고 서 있어라. 혼자 막으라는 게 아니다. 보고 알리고, 덤비면 물러서지 마라.
   giver_rank: squad_leader
   deadline_hours: 12
+  urgent: true
   requirements:
     - activity: guard_duty
       minutes: 180

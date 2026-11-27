@@ -680,15 +680,15 @@ describe("균형: 자원·흥정·직분 (플레이 테스트 13 뒤 정한 것)
     expect(r.alts).toEqual(expect.arrayContaining(["intimidate", "deceive"]));
   });
 
-  it("임무로 찾는 자원은 대가 있는 성공 이상이면 하나는 나온다", () => {
+  it("임무로 찾는 자원도 따로 보장하지 않는다: 찾을 거리 표에 없으면 나오지 않는다 (12-355, 예전 12-227의 보장을 뺐다)", () => {
     const w = world("role_b_guard");
     const ctx = w.ctx();
     const zone = Object.values(content.locations).find((l) => l.loot && !l.loot.items.some((i) => itemResource(content, i.item) === "medicine"))!.id;
     ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });
     const meds = () => Object.entries(w.state().characters[w.state().playerId]!.inventory).filter(([id]) => itemResource(content, id) === "medicine").reduce((n, [, q]) => n + q, 0);
     const before = meds();
-    scavenge(ctx, "partial", "medicine");
-    expect(meds()).toBeGreaterThan(before);
+    scavenge(ctx, "success");
+    expect(meds()).toBe(before);
   });
 });
 

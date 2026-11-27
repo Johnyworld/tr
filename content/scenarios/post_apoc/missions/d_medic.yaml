@@ -101,6 +101,7 @@
   briefing: 어젯밤 강변 공장 지대에서 교전이 있었다. 남은 부상자가 있으면 어느 쪽이든 응급처치를 하고 데려온다. 총소리가 나면 바로 물러난다.
   giver_rank: squad_leader
   deadline_hours: 10
+  urgent: true
   requirements:
     - goal: 부상자를 수습해 데려온다
     - check: sense_danger

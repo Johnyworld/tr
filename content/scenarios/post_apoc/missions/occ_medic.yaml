@@ -56,6 +56,7 @@
   briefing: 교전에서 다친 사람들이 의무실에 누워 있다. 상처를 다시 씻고 붕대를 갈고, 열이 오르는 사람부터 살핀다. 오늘 손을 놓으면 며칠 안에 누군가 잃는다.
   giver_rank: squad_leader
   deadline_hours: 12
+  urgent: true
   requirements:
     - activity: treat
       minutes: 120

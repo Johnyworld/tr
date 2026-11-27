@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { arrivalPlace, closeness, currentPlace, depthAt, placesIn, routineAway, stepsBetween, whereIs, whereLabel } from "../rules/place.ts";
 import { segmentOf } from "../rules/time.ts";
 import type { GameState } from "../game/state.ts";
-import { stepToRoad, loadRealContent } from "../testing.ts";
+import { stepToRoad, loadRealContent, walkToPlace } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
 /** 장소 개편 (12-274, docs/places-v2-plan.md): 길에 도착, 이웃 칸수, gate 깊이, 근처 목격, 구역 밖 일과. 실제 콘텐츠로 본다 */
@@ -31,16 +31,25 @@ describe("장소 개편 (12-274)", () => {
     expect(currentPlace(w.state(), content)?.id).toBe("to_pine");
   });
 
-  it("장소를 옮기면 이웃 5분, 한 칸 멀 때마다 5분", () => {
+  it("장소는 이웃으로 한 칸씩만 옮긴다: 이웃은 5분, 이웃이 아니면 시간 없이 거절, 걸어가면 칸마다 5분", () => {
     const w = make();
     w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "to_old_town" });
     const s = w.state();
     expect(stepsBetween(s, content, "to_old_town", "wall_path")).toBe(1);
     expect(stepsBetween(s, content, "to_old_town", "barracks")).toBe(3); // 둘레길 → 뒷담 쪽문 → 막사
     const t = s.time;
-    const r = w.executeTool("take_action", act({ place_to: "barracks" }));
-    expect(r.ok, r.ok ? "" : r.error).toBe(true);
-    expect(w.state().time - t).toBe(15);
+    const far = w.executeTool("take_action", act({ place_to: "barracks" }));
+    expect(far.ok).toBe(false);
+    expect(far.ok ? "" : far.error).toContain("이웃 장소로 한 칸씩");
+    expect(far.ok ? "" : far.error).toContain("시간은 흐르지 않았다");
+    expect(w.state().time).toBe(t);
+    expect(currentPlace(w.state(), content)?.id).toBe("to_old_town");
+    const near = w.executeTool("take_action", act({ place_to: "wall_path" }));
+    expect(near.ok, near.ok ? "" : near.error).toBe(true);
+    expect(w.state().time - t).toBe(5);
+    expect(walkToPlace(w, "barracks")).toBe(true);
+    expect(currentPlace(w.state(), content)?.id).toBe("barracks");
+    expect(w.state().time - t).toBe(15); // 둘레길 5분 + 쪽문 5분 + 막사 5분
   });
 
   it("즉흥 장소는 만든 자리의 이웃이 된다", () => {

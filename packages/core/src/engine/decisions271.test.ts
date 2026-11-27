@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { currentPlace, peopleHere, placesIn, whereIs } from "../rules/place.ts";
+import { currentPlace, doorNumber, peopleHere, placesIn, whereIs } from "../rules/place.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { watchers } from "./opposition.ts";
@@ -51,7 +51,8 @@ describe("장소의 사람 (12-271)", () => {
     w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "checkpoint_3" });
     const owners = peopleHere({ ...w.state(), playerPlace: "yard" }, content).filter((id) => w.state().characters[id]?.factionId === "faction_c");
     expect(owners.length).toBeGreaterThan(0);
-    const r = w.executeTool("take_action", act({ place_to: "yard" }));
+    // 창고 마당(담 문)은 처음 가는 곳이라 문 번호로 들어선다 (12-353)
+    const r = w.executeTool("take_action", act({ place_to: `문${doorNumber(w.state(), content, "yard")}` }));
     expect(r.ok, r.ok ? "" : r.error).toBe(true);
     expect(r.ok && r.resultText).toContain("알아보았다");
   });

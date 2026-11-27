@@ -58,7 +58,7 @@ import { startingSkills } from "./creation.ts";
 // 126: 지도에 아는 전황 (12-336). partyIntel.zone (본·전해 들은 곳)
 // 127: 큰 이야기 (공통 규칙 24, docs/saga-plan.md). sagas, 이벤트 saga_*
 // 128: 큰 이야기 인물 (offstage, 이벤트 npc_arrived)
-export const SAVE_SCHEMA_VERSION = 128;
+export const SAVE_SCHEMA_VERSION = 129;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -660,7 +660,8 @@ export function createGameSchemas(s: Scenario) {
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
-    zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int() })).default({}),
+    /** 오늘 뒤진 곳: count는 뒤진 양(수색 범위가 있으면 deplete_minutes 단위, 12-355), hurt는 그날 그곳 수색으로 다쳤는지 (다시 다치지 않는다) */
+    zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int(), hurt: z.boolean().optional() })).default({}),
     /**
      * 무리 사이 협정 (12-126). truce: until까지 서로 치지 않는다 (그동안 두 무리의 태도를 적대 기준 위로 올려 두고, 끝나면 restore로 돌린다)
      */
@@ -874,7 +875,7 @@ export function createGameSchemas(s: Scenario) {
       renames: z.record(z.string(), z.strictObject({ from: z.string(), to: z.string() })).optional(),
     }),
     z.strictObject({ type: z.literal("npc_entered"), npcId: z.string() }),
-    z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int() }),
+    z.strictObject({ type: z.literal("zone_searched"), zone: z.string(), day: z.number().int(), units: z.number().int().min(1).optional(), hurt: z.boolean().optional() }),
     z.strictObject({ type: z.literal("extra_kept"), key: z.string(), characterId: z.string() }),
     /** NPC의 계급이 바뀐다 (지도부 교체, 강등) */
     z.strictObject({ type: z.literal("npc_rank_changed"), npcId: z.string(), rank: z.string() }),
@@ -2516,7 +2517,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     case "zone_searched": {
       const prev = next.zoneSearches[event.zone];
-      next.zoneSearches[event.zone] = { day: event.day, count: prev && prev.day === event.day ? prev.count + 1 : 1 };
+      const same = !!prev && prev.day === event.day;
+      const hurt = (same && !!prev!.hurt) || !!event.hurt;
+      next.zoneSearches[event.zone] = { day: event.day, count: (same ? prev!.count : 0) + (event.units ?? 1), ...(hurt ? { hurt: true } : {}) };
       return next;
     }
     case "npc_entered": {

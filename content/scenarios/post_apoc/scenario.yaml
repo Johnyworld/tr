@@ -1548,6 +1548,16 @@ requests:
 
 # 탐험할 곳 (12-162, *임시*): 구역의 숨은 곳. 그 구역을 뒤지다 수색이 성공하면 찾는다 (대가 있는 성공은 낌새만, 12-220). 찾은 것은 그 캐릭터만 안다.
 # 칸을 경계 판정으로 내려가고(마지막 칸은 어렵다), 칸마다 한 번 수색 판정으로 뒤진다. 소음이 3이면 깊이+1만큼 감염체가 깨어난다
+# 수색 범위 (12-355, 사용자 결정, *임시* 수치): 뒤질 대상의 크기로 고른다. 칸(장소) 전체를 한 번에 뒤지는 범위는 없다.
+# finds: 결과별로 찾을 거리 표에서 뽑는 수의 범위 (성공 / 대가 있는 성공. 실패는 0). 대가 있는 성공은 시간이 절반 더 든다.
+# deplete_minutes: 오늘 이 칸에서 뒤진 시간 이만큼마다 같은 칸 다음 수색이 -1
+search_scopes:
+  default: room
+  deplete_minutes: 15
+  scopes:
+    - { id: room, label: 방 하나, examples: "방 하나, 약국 같은 작은 가게, 조제실, 사무실 한 칸, 버스·차 한 대 안, 골목 한 구간, 마당 한쪽", minutes: 15, finds: { success: [1, 3], partial: [1, 1] } }
+    - { id: floor, label: 건물 한 층, examples: "작은 건물 전체, 빌딩 한 층, 주차장, 넓은 마당 하나 (큰 건물은 층마다 따로)", minutes: 60, finds: { success: [2, 5], partial: [1, 2] } }
+
 exploration:
   move: sense_danger
   search_move: scavenge

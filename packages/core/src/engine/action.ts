@@ -30,7 +30,7 @@ import { CAMP_INTERRUPT, createCampCheck, runCampEvent, deepSleepReason } from "
 import { shakeNerves, sleepNerves } from "./body.ts";
 import { withoutWear } from "./gear.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
-import { scavenge, scavengeParts } from "./scavenge.ts";
+import { scavenge, scavengeParts, searchedToday, searchScopeOf } from "./scavenge.ts";
 import { josa, sentence } from "../text.ts";
 import { isInfected } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -89,7 +89,7 @@ import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {comesAlong, pursuers, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
+import {searchSpot, comesAlong, pursuers, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -108,6 +108,7 @@ export function harmSteps(outcome: CheckOutcome, severity: HarmSeverity): number
 export const PARTIAL_TIME_COST = 30;
 
 export function createTakeActionSchema(s: Scenario) {
+  const scopeIds = s.search_scopes?.scopes.map((x) => x.id) ?? [];
   return z.strictObject({
     intent: z.string().min(1).max(300).describe("플레이어 캐릭터가 이번 턴에 하려는 것 한두 문장"),
     check: z
@@ -176,6 +177,14 @@ export function createTakeActionSchema(s: Scenario) {
         ),
         until: timeSegmentSchema.nullable().default(null).describe("sleep·wait·rest·guard_duty·treat 전용: 이 시간대가 시작될 때까지. 다른 활동은 null. 임무 보초는 until·hours 없이 걸면 임무에 남은 시간만큼 선다"),
         hours: z.number().min(0.5).max(12).multipleOf(0.5).nullable().default(null).describe("sleep·wait·rest·guard_duty·treat·work: 몇 시간 할지 (0.5 단위, until 대신). 없으면 null"),
+        scope: (scopeIds.length ? z.enum(scopeIds as [string, ...string[]]) : z.string())
+          .nullable()
+          .default(null)
+          .describe(
+            s.search_scopes
+              ? `search 전용: 뒤질 범위. 플레이어가 말한 대상의 크기대로 고른다 (칸 전체를 한 번에 뒤지는 범위는 없다: 뒤질 대상을 정한다). ${s.search_scopes.scopes.map((x) => `${x.id} ${x.label} ${x.minutes}분 (${x.examples})`).join(" / ")}. null이면 ${s.search_scopes.default}`
+              : "search 전용 수색 범위 (이 월드에는 없다). null",
+          ),
       })
       .nullable()
       .default(null)
@@ -240,7 +249,7 @@ export function createTakeActionSchema(s: Scenario) {
       .string()
       .nullable()
       .default(null)
-      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 주인공이 모르는 곳은 상태의 '문1'처럼 문 번호로 (들어서면 그곳을 안다). 구역 밖으로 나가는 길(road)도 장소다. 이웃 장소는 5분, 한 칸 더 멀 때마다 5분. 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
+      .describe(`이번 턴에 같은 구역 안의 다른 장소로 옮기면 그 장소 id (상태의 '이 구역의 장소', 즉흥 장소는 spawn_place로 만든 id). 주인공이 모르는 곳은 상태의 '문1'처럼 문 번호로 (들어서면 그곳을 안다). 구역 밖으로 나가는 길(road)도 장소다. 지금 자리의 이웃 장소로만 한 번에 한 칸(5분) 옮긴다: 이웃이 아니면 거절되고 거쳐 갈 칸을 알려 준다 (먼 곳은 한 칸씩 여러 번). 구역을 옮기는 move_to와 함께 쓰지 않는다. 아니면 null`),
     with: z
       .array(z.string())
       .default([])
@@ -376,6 +385,12 @@ export type TakeActionArgs = z.input<ReturnType<typeof createTakeActionSchema>>;
 export type TakeActionResult =
   | { ok: true; resultText: string; displays: ToolDisplayEvent[]; outcome: CheckOutcome | null; dead: boolean }
   | { ok: false; error: string };
+
+/** 수색의 결과 안내 (12-355): 수색의 실패는 "못 찾음"으로 끝난다. GM이 다침·새 위협을 덧붙이지 않게 */
+const SEARCH_GUIDE: Record<"partial" | "miss", string> = {
+  partial: "찾긴 했지만 적게 찾았고 시간이 더 들었다 (그것이 대가다). 찾은 것은 아래 수색 줄대로만 서술하고, 다침이나 새 위협을 지어내지 않는다.",
+  miss: "찾지 못했다. 시간만 들었다. 몸의 피해는 시스템이 적용한 것만 (있다면 아래). 그 밖의 다침이나 새 위협을 지어내지 않는다.",
+};
 
 const OUTCOME_GUIDE: Record<CheckOutcome, string> = {
   success: "의도한 대로 이루어진다. 깔끔하게 성공한 장면을 서술하라.",
@@ -716,6 +731,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const road = roadTo(start, content, input.move_to);
     const at = currentPlace(start, content);
     if (!escapeAttempt && !input.check && road && at && at.id !== road.id && !knowsZone(start, content, input.move_to)) {
+      // 그 길을 아직 모르면 이름·방향을 알리지 않는다 (원칙 4): 이웃 장소(문)를 지나 길을 찾아가야 한다
+      if (!knowsPlace(start, content, start.playerZone, road.id)) {
+        return { ok: false, error: `${josa(dest.name, "은/는")} 처음 가는 곳이라 그리로 가는 길(구역을 넘어가는 접점)에 서야 떠날 수 있는데, 그 길이 어디인지 아직 모른다. 이웃 장소(문)를 한 칸씩 지나 찾아간다 (시간은 흐르지 않았다).` };
+      }
       return { ok: false, error: `${josa(dest.name, "은/는")} 처음 가는 곳이라 그 길로 나가야 떠날 수 있다. 먼저 place_to로 ${road.name}(${road.id}) 쪽으로 나간다 (${directionTo(start, content, at.id, road.id) ?? "가까운 쪽"}, 시간은 흐르지 않았다).` };
     }
     if (crossing && !neighbors(content, here).includes(input.move_to)) {
@@ -771,10 +790,10 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (to === undefined) {
       return { ok: false, error: `주인공이 아는 장소가 아니다: ${input.place_to}. 갈 수 있는 곳: ${placeChoices(start, content) || "없음"}. 모르는 곳은 문을 지나 찾아가고, 콘텐츠에 없는 곳(누구의 방·화장실 등)이면 spawn_place로 만든다 (시간은 흐르지 않았다).` };
     }
-    // 적 땅에서 드러내 놓고 옮기면 이웃 장소로 한 칸씩만 (B③ 12-273, 장소 개편에서 이웃으로. PT16~19 졸병: 담 밖에서 수용소 철망 앞까지 곧장 갔다).
+    // 장소는 이웃으로 한 칸씩만 옮긴다 (12-352, 사용자 결정: 아는 곳이어도 지금 자리와 이어져 있지 않으면 한 번에 가지 않는다). 적 땅에서는 처음부터 그랬다 (B③ 12-273, 장소 개편에서 이웃으로. PT16~19 졸병: 담 밖에서 수용소 철망 앞까지 곧장 갔다).
     // 지나는 장소마다 그곳 사람이 알아볼 수 있다 (12-271)
     const herePlace = currentPlace(start, content);
-    if (hostileHere(ctx) && herePlace && stepsBetween(start, content, herePlace.id, to.id) > 1) {
+    if (herePlace && stepsBetween(start, content, herePlace.id, to.id) > 1) {
       const doors = unknownDoors(start, content);
       // 거칠 칸은 그리로 가는 가장 짧은 길의 다음 칸만 (12-307, PT30 졸병: 이웃을 모두 늘어놓아 방금 떠난 칸까지 "거친다"로 나왔다)
       const left = stepsBetween(start, content, herePlace.id, to.id);
@@ -782,7 +801,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       // 같은 거리면 담 문·초소가 아닌 칸을 먼저 (담 밖 둘레)
       const open = next.filter((p) => !p.gate && !p.kinds.includes("gate"));
       const via = (open.length ? open : next).map((p) => (doors.some((d) => d.id === p.id) ? doorLabel(start, content, p) : `${p.id}(${p.name})`)).join(" 또는 ");
-      return { ok: false, error: `적 땅에서는 이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다${Number.isFinite(left) ? ` (${left}칸)` : ""}. 몰래 가려면 infiltrate (시간은 흐르지 않았다).` };
+      const hostile = hostileHere(ctx);
+      return { ok: false, error: `${hostile ? "적 땅에서는 " : ""}이웃 장소로 한 칸씩 지나간다: ${to.name}로 가려면 먼저 ${via || "이웃 장소"}를 거친다${Number.isFinite(left) ? ` (${left}칸)` : ""}.${hostile ? " 몰래 가려면 infiltrate" : ""} (시간은 흐르지 않았다).` };
     }
     // 이번 행동이 겨누는 사람은 함께 간다 (옮긴 자리에서 그 사람에게 이번 행동을 한다)
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
@@ -826,6 +846,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
   const displays: ToolDisplayEvent[] = [...settingDisplays];
   let outcome: CheckOutcome | null = null;
+  /** 이번 수색에서 다쳤다 (그날 그 칸 수색은 다시 다치지 않는다, 12-355) */
+  let searchHurt = false;
 
   // 0. 성격이 결과를 남기는 순간 (12-99): 도발당하면 발끈, 장면의 인물과 이야기하면 말이 새어 나갈 수 있다. 줄은 GM이 그대로 옮긴다
   {
@@ -902,6 +924,17 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
         lines.push(`빈틈을 기다리느라 ${formatDuration(minutes)}이 걸렸다.`);
       }
     }
+    // 수색의 위험 (12-355, 사용자 결정): 가벼운 위험까지만. 그날 그 칸 수색으로 이미 다쳤으면 위험 없이 (조심하며 뒤진다)
+    if (input.activity?.kind === "search" && input.check.harm_on_failure !== "none") {
+      const prev = start.zoneSearches[searchSpot(start) ?? start.playerZone ?? ""];
+      if (prev?.hurt && prev.day === dayOf(start.time)) {
+        input.check.harm_on_failure = "none";
+        lines.push("오늘 이 자리를 뒤지다 이미 한 번 다쳐 조심하며 뒤진다: 이번 수색에는 다칠 위험이 없다.");
+      } else if (input.check.harm_on_failure === "heavy") {
+        input.check.harm_on_failure = "light";
+        lines.push("수색의 위험은 가벼운 위험까지다 (무거운 위험을 가벼운 위험으로 셌다).");
+      }
+    }
     const roll = rollPlayerCheck(
       { move: input.check.move, stat: input.check.stat, difficulty: input.ambush ? ambushDifficulty(input.check.difficulty) : input.check.difficulty, intent: input.intent, distance: input.check.distance, opponent: input.check.opponent },
       ctx,
@@ -925,7 +958,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           travel: !input.move_to ? "none" : escapeAttempt || hostileHere(ctx) || hostileZone({ ...start, playerZone: input.move_to }, content) ? "hostile" : "safe",
           exposed,
           gathering: !!input.forage || !!input.trap,
-          activity: !!input.activity && input.activity.kind !== "brief",
+          // 같은 칸을 같은 날 다시 뒤지는 수색은 경험치를 주지 않는다 (12-355): 한 번만
+          activity: !!input.activity && input.activity.kind !== "brief" && !(input.activity.kind === "search" && searchedToday(start, searchSpot(start) ?? start.playerZone ?? "") > 0),
         }).stake,
         // 수색할 곳의 보정은 찾을 거리를 정하는 수색 판정에만 (플레이 테스트 14: 뒤지며 굴린 생존 판정에 "+1(넉넉한 곳) +1(역사)")
         situation: [
@@ -987,7 +1021,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     lines.push(
       `판정 ${roll.checkId}: ${CHECK_OUTCOME_LABELS[roll.outcome]} (${roll.outcome}). ` +
         `주사위 ${roll.dice[0]}+${roll.dice[1]}, 보정 ${signed(roll.modifier)}, 합계 ${roll.total}.`,
-      OUTCOME_GUIDE[roll.outcome],
+      input.activity?.kind === "search" && roll.outcome !== "success" ? SEARCH_GUIDE[roll.outcome] : OUTCOME_GUIDE[roll.outcome],
     );
     if (roll.growthNote) lines.push(roll.growthNote);
     if (missionNote) lines.push(missionNote);
@@ -1037,7 +1071,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 혼란에 빠진 상대는 주인공을 다치게 하지 못한다 (12-177)
     const harmless = isConfused(start, input.check.opponent ?? input.target ?? null);
     if (harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none") lines.push("상대가 허둥대느라 반격하지 못했다. 다치지 않았다.");
-    if (!harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none") {
+    // 수색의 대가 있는 성공은 다치지 않는다: 대가는 시간이다 (12-355)
+    if (!harmless && roll.outcome !== "success" && input.check.harm_on_failure !== "none" && !(input.activity?.kind === "search" && roll.outcome === "partial")) {
       // 상대의 몫은 맞서 싸우는 판정에서만 (흥정·설득의 target에 근접전 실력이 붙었다, 플레이 테스트 8)
       const fightMoves = content.scenario.opposition?.harm?.moves ?? [];
       const opponent = input.check.opponent ?? (fightMoves.includes(input.check.move) ? input.target : null) ?? null;
@@ -1048,6 +1083,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       displays.push(harm.display);
       // 방어구·버팀으로 다치지 않았으면 피도 흉터도 마음의 흔들림도 감염도 없다 (플레이 테스트 8: "다치지 않았다" + 긁힘)
       const hurt = harm.fatal || harm.display.fromLabel !== harm.display.toLabel;
+      if (hurt && input.activity?.kind === "search") searchHurt = true;
       // 피가 나는 상처면 출혈 (12-91)
       if (!harm.fatal && hurt) {
         const bleed = bleedFromHarm(ctx, start.playerId, input.check.harm_kind, input.check.harm_on_failure === "light");
@@ -1113,10 +1149,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const lootRoll = !input.check || !searchMove || input.check.move === searchMove || exposed;
   if (input.activity?.kind === "search" && !inBattle && !lootRoll) lines.push(`${moveLabel(scenario, input.check!.move)} 판정이라 뒤져서 찾은 물건은 없다 (찾을 거리는 ${moveLabel(scenario, searchMove!)} 판정으로 뒤질 때 나온다).`);
   if (input.activity?.kind === "search" && !inBattle && lootRoll) {
-    // 임무로 찾는 자원 (구해 와 건네기, 아니면 일감의 창고 몫)
-    const m = forMission ? store.getState().missions[forMission] : undefined;
-    const want = m ? ((m.requirements.find((r) => "bring" in r) as { bring: string } | undefined)?.bring ?? Object.keys(content.missions[m.templateId]?.supplies ?? {})[0] ?? null) : null;
-    const found = scavenge(ctx, outcome, want);
+    // 찾을 거리 표대로만 나온다: 임무로 찾는 자원도 따로 보장하지 않는다 (12-355)
+    const found = scavenge(ctx, outcome, { scope: input.activity.scope, hurt: searchHurt });
     // 적 땅에서는 숨는 판정 하나로 찾는 양까지 정한다 (한 행동에 판정은 하나, 플레이 테스트 13: 수색을 굴리지 않았는데 물건이 나왔다)
     if (exposed && input.check) lines.push(`숨어서 뒤졌다: ${moveLabel(scenario, input.check.move)} 판정 결과로 찾는 양도 정했다.`);
     lines.push(...found.lines);
@@ -1314,7 +1348,13 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 적 땅에서 시간을 들이던 일이 들켰으면 들킨 그 시각에 끊긴다 (PT37 약탈조원: 기다림이 한 시간 반 그대로 흘러 그 사이 땅이 바뀌었는데 적 보초 장면이 남았다)
   const cutShort = alarmCut && !["brief", "travel", "combat"].includes(activity);
   if (cutShort) lines.push("들킨 그 자리에서 하던 일이 끊겼다.");
-  const time = cutShort ? advanceTime(ctx, "brief", null, forMission) : advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : workMinutes, hours);
+  // 수색 범위의 시간 (12-355): 대가 있는 성공이면 절반이 더 든다 (5분 단위로 올림)
+  // 먹을 것 구하기·덫은 수색 범위와 따로다 (예전 수색 시간 그대로)
+  const scopeNow = activity === "search" && !input.forage && !input.trap ? searchScopeOf(content, input.activity?.scope) : null;
+  const searchExtra = scopeNow && outcome === "partial" && lootRoll ? Math.ceil(scopeNow.minutes / 2 / 5) * 5 : 0;
+  const searchMinutes = scopeNow ? scopeNow.minutes + searchExtra : null;
+  if (searchExtra) lines.push(`대가 있는 성공이라 뒤지는 데 ${searchExtra}분이 더 들었다 (${scopeNow!.label}, 모두 ${searchMinutes}분).`);
+  const time = cutShort ? advanceTime(ctx, "brief", null, forMission) : advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : (workMinutes ?? searchMinutes), hours);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
   if (forMission && !input.move_to) {
     const m = store.getState().missions[forMission];

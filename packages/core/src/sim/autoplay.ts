@@ -18,7 +18,7 @@ import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
 import { learned } from "../rules/skill.ts";
-import {nearby, fireLitHere, currentPlace, knowsPlace, placesIn, unknownDoors, doorNumber } from "../rules/place.ts";
+import {nearby, fireLitHere, currentPlace, knowsPlace, placesIn, roadsIn, unknownDoors, doorNumber } from "../rules/place.ts";
 
 /**
  * 랜덤 자동 플레이 (기획서 17: 막힘과 밸런스 점검). LLM 없이 tool만 무작위로 부른다.
@@ -71,8 +71,12 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     if (!out.ok && name === "take_action" && out.error.includes("ignore_story")) out = world.executeTool(name, { ...(input as object), ignore_story: true });
     // 적 땅에서는 길로 나가야 구역을 떠난다: GM처럼 가장 가까운 길로 한 칸씩 나간 뒤 다시 한다 (이동 기획 뒤 돌아다니다 담 안에 있을 수 있다)
     // 처음 가는 구역도 그 길에서만 떠난다 (12-304). 장소가 늘어 거절 글을 따라 여섯 번으로는 모자랐다: 장소 이웃을 따라 길까지 한 칸씩 걷는다
-    for (let i = 0; i < 3 && !out.ok && name === "take_action" && out.error.includes("길로 나가야"); i++) {
-      const road = /place_to로 [^(]*\(([a-z0-9_]+)\)/.exec(out.error)?.[1];
+    for (let i = 0; i < 3 && !out.ok && name === "take_action" && (out.error.includes("길로 나가야") || out.error.includes("아직 모른다")); i++) {
+      // 모르는 길은 거절 글이 알리지 않는다 (12-353): 자동 플레이는 콘텐츠에서 그 구역으로 가는 길을 찾아 이웃을 따라 걷는다 (GM은 문을 살피며 찾는다)
+      const dest = (input as { move_to?: string }).move_to ?? "";
+      const road =
+        /place_to로 [^(]*\(([a-z0-9_]+)\)/.exec(out.error)?.[1] ??
+        (out.error.includes("아직 모른다") ? roadsIn(world.state(), world.content, world.state().playerZone).find((r) => r.to.includes(dest))?.id : undefined);
       if (!road) break;
       // 먼저 길로 바로 (우리 땅·아는 땅은 여러 칸을 한 번에 걷는다), 안 되면 이웃을 따라 한 칸씩 (모르는 칸은 문 번호로)
       const direct = world.executeTool("take_action", { ...base, intent: "길로 나간다", place_to: road, ignore_story: true });
@@ -380,7 +384,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       else if (cold && shown(cold) > 0 && fuelHere && !fireLit && rng() < 0.6) act = { intent: "불을 피운다", use_item: fuelHere };
       else if (remainsHere(s).length && rng() < 0.3) act = { intent: "묻어 준다", bury: { who: remainsHere(s)[0]!.holder, words: null } };
       // 구역 안을 돌아다닌다 (이동 기획: 이야기는 주인공이 이미 있는 자리에서만 열린다). 이웃 칸으로, 모르는 곳은 문 번호로
-      else if (walk) act = { intent: "자리를 옮긴다", place_to: walk };
+      else if (walk) act = { intent: "자리를 옮긴다", place_to: nextHop(world, walk) };
       else if (trapReady && rng() < 0.6) act = { intent: "덫을 거둔다", trap: "check" };
       else if (trapItem && has(trapItem) && can(content.scenario.foraging?.trap?.move) && !atBase && !trapHere && rng() < 0.06) act = { intent: "덫을 놓는다", trap: "set" };
       else if (content.scenario.foraging && !atBase && rng() < 0.06) {
@@ -585,6 +589,14 @@ function walkTarget(s: GameState, content: Content, rng: () => number): string |
   const doors = unknownDoors(s, content).filter((p) => !p.jail).map((p) => `문${doorNumber(s, content, p.id)}`);
   const options = [...known, ...doors];
   return options.length ? options[Math.floor(rng() * options.length)]! : null;
+}
+
+/** 그 장소로 가는 길의 첫 칸 (장소는 이웃으로 한 칸씩만 옮긴다, 12-352). 모르는 칸은 문 번호로 */
+function nextHop(world: GameWorld, target: string): string {
+  const step = pathTo(world, target)[0] ?? target;
+  const s0 = world.state();
+  if (knowsPlace(s0, world.content, s0.playerZone, step)) return step;
+  return unknownDoors(s0, world.content).some((p) => p.id === step) ? `문${doorNumber(s0, world.content, step)}` : step;
 }
 
 /** 지금 자리에서 그 장소까지 이웃을 따라가는 길 (지금 자리는 빼고, 그 장소까지). 못 가면 그 장소 하나 */

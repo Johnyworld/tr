@@ -29,7 +29,7 @@ places:
 ## 늘어나는 것 / 줄어드는 것
 
 - 콘텐츠: 21개 구역에 길 장소 1~3개씩, 모든 장소에 near, 길에 to. 장소가 없는 구역에도 길 하나 이상
-- 규칙(rules/place.ts): `neighbors`, `stepsBetween`(깊이·이동 시간), 도착 길 고르기. 장소 사이 이동은 이웃 5분, 한 칸마다 5분
+- 규칙(rules/place.ts): `neighbors`, `stepsBetween`(깊이·이동 시간), 도착 길 고르기. 장소 사이 이동은 이웃으로 한 번에 한 칸(5분) (12-352: 처음에는 아는 곳이면 한 번에 가고 칸마다 5분이었으나, 이웃이 아니면 거절하도록 고쳤다)
 - 지울 것: `ENTRY_PLACE`와 null 예외(이야기 실내외의 막 들어선 자리, `storyPlaceOnEntry`, `atWaitingSpot`의 null, `sharesPlace`의 null, 바닥 물건 구역 열쇠, 불 `fireSpot`의 구역 열쇠, `searchSpot`), 실내외로 깊이 어림(`depthAt`), "구역 어딘가" 판정
 - 세이브: 형식 바뀜, 하위 호환 없이 `SAVE_SCHEMA_VERSION` 올림 (12-244 때처럼)
 

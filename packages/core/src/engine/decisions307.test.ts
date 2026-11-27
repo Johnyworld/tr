@@ -69,6 +69,7 @@ describe("적 땅 길끼리 (12-307)", () => {
     const w = make("role_a_grunt");
     w.runCheat("~goto c_warehouse");
     w.ctx().store.append({ type: "place_moved", from: w.state().playerPlace, to: "to_west" });
+    w.ctx().store.append({ type: "place_learned", zone: "c_warehouse", place: "to_north" }); // 가 본 길 (길은 지나 봐야 안다, 12-353)
     const r = w.executeTool("take_action", act({ place_to: "to_north" }));
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error).toContain("rail_side");

@@ -1,6 +1,5 @@
 import { searchSpot } from "../rules/place.ts";
 import { ownedBy } from "../rules/home.ts";
-import { itemResource } from "./market.ts";
 import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
 import type { CheckOutcome } from "../rules/check.ts";
@@ -45,13 +44,36 @@ export function foundCount(outcome: CheckOutcome | null): number {
   return outcome === "success" ? 2 : outcome === "partial" ? 1 : 0;
 }
 
+type SearchScope = NonNullable<ToolContext["content"]["scenario"]["search_scopes"]>["scopes"][number];
+
+/** 수색 범위 (12-355). id가 없으면 기본 범위, 월드 팩에 범위가 없으면 null (예전 규칙) */
+export function searchScopeOf(content: ToolContext["content"], id: string | null | undefined): SearchScope | null {
+  const cfg = content.scenario.search_scopes;
+  if (!cfg) return null;
+  return cfg.scopes.find((x) => x.id === (id ?? cfg.default)) ?? cfg.scopes.find((x) => x.id === cfg.default) ?? null;
+}
+
+/** 이 범위를 뒤진 양 (같은 날 다시 뒤지기 보정의 단위: deplete_minutes마다 1) */
+export function searchUnits(content: ToolContext["content"], scope: SearchScope): number {
+  return Math.max(1, Math.round(scope.minutes / (content.scenario.search_scopes?.deplete_minutes ?? 15)));
+}
+
+/** 범위의 finds에서 뽑는 수: 성공·대가 있는 성공은 범위 안에서 굴리고, 실패·판정 없음은 0 */
+export function scopeFinds(scope: SearchScope, outcome: CheckOutcome | null, rng: () => number): number {
+  if (outcome !== "success" && outcome !== "partial") return 0;
+  const [min, max] = scope.finds[outcome];
+  return min + Math.floor(rng() * (max - min + 1));
+}
+
 /**
  * 수색으로 물건 찾기 (기획서 4.7): 수색(search) 활동을 하면 그 구역의 찾을 거리 표(locations의 loot)에서 코드가 고른다.
- * - 판정 결과만큼 찾는다 (12-220): 성공 2개, 대가 있는 성공 1개, 실패 0개. 판정 없이는 찾지 못한다 (숨은 확률을 굴리지 않는다)
- * - 구역의 넉넉함과 같은 날 다시 뒤지는 것은 판정 보정이다 (scavengeParts)
+ * - 판정 결과만큼 찾는다: 수색 범위(search_scopes, 12-355)가 있으면 그 범위의 finds에서 뽑는 수를 굴리고, 없으면 성공 2·대가 있는 성공 1 (12-220). 실패 0. 판정 없이는 찾지 못한다
+ * - 찾을 거리 표대로만 나온다: 임무로 찾는 자원도 따로 보장하지 않는다 (12-355, 사용자 결정: 약을 찾으러 가도 잡동사니만 나올 수 있다)
+ * - 구역의 넉넉함과 같은 날 다시 뒤지는 것은 판정 보정이다 (scavengeParts). 뒤진 양은 범위의 시간으로 센다
  * - 찾은 것은 바로 주인공의 소지품에 들어간다. 무엇을 얼마나 찾는지는 코드가 정한다 (원칙 2)
+ * hurt: 이번 수색에서 다쳤다 (그날 그 칸 수색은 다시 다치지 않는다)
  */
-export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null, want: string | null = null): { lines: string[]; displays: ToolDisplayEvent[] } {
+export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null, opts: { scope?: string | null; hurt?: boolean } = {}): { lines: string[]; displays: ToolDisplayEvent[] } {
   const { store, content, rng } = ctx;
   const state = store.getState();
   const zone = state.playerZone;
@@ -61,28 +83,18 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null, want: s
   // 장소마다 센다 (12-258)
   const spot = searchSpot(state) ?? zone;
   const count = searchedToday(state, spot);
-  store.append({ type: "zone_searched", zone: spot, day: dayOf(state.time) });
+  const scope = searchScopeOf(content, opts.scope);
+  store.append({ type: "zone_searched", zone: spot, day: dayOf(state.time), ...(scope ? { units: searchUnits(content, scope) } : {}), ...(opts.hurt ? { hurt: true } : {}) });
 
   const total = loot.items.reduce((n, i) => n + i.weight, 0);
   const found = new Map<string, number>();
-  for (let r = 0; r < foundCount(outcome); r++) {
+  const picks = scope ? scopeFinds(scope, outcome, rng) : foundCount(outcome);
+  for (let r = 0; r < picks; r++) {
     let pick = rng() * total;
     const entry = loot.items.find((i) => (pick -= i.weight) < 0) ?? loot.items[loot.items.length - 1]!;
     const [min, max] = entry.qty;
     const qty = min + Math.floor(rng() * (max - min + 1));
     found.set(entry.item, (found.get(entry.item) ?? 0) + qty);
-  }
-
-  // 임무로 찾는 자원이 있으면 (찾아오기·땔감 수색) 대가 있는 성공 이상에서 그 자원 물건 하나는 나온다 (플레이 테스트 13: 6일 동안 약을 한 번도 못 찾았다)
-  if (want && outcome && outcome !== "miss" && ![...found.keys()].some((id) => itemResource(content, id) === want)) {
-    const here = loot.items.filter((i) => itemResource(content, i.item) === want).map((i) => i.item);
-    const any = Object.values(content.items).filter((i) => itemResource(content, i.id) === want).sort((a, b) => (a.value ?? 0) - (b.value ?? 0)).map((i) => i.id);
-    const pick = here[0] ?? any[0];
-    if (pick) {
-      const first = [...found.keys()][0];
-      if (first && found.size >= foundCount(outcome)) found.delete(first);
-      found.set(pick, (found.get(pick) ?? 0) + 1);
-    }
   }
 
   const player = state.characters[state.playerId]!;

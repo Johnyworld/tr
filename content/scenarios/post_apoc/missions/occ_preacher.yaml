@@ -18,6 +18,7 @@
   briefing: 열이 오른 사람 곁에서 밤을 지킨다. 물을 먹이고 말을 들어 준다. 상태가 바뀌면 바로 사람을 부른다.
   giver_rank: squad_leader
   deadline_hours: 14
+  urgent: true
   requirements:
     - activity: talk
       minutes: 120
@@ -38,6 +39,7 @@
   briefing: 물리거나 긁혀 갇힌 사람이 사람을 불렀다. 문 너머로 마지막 말을 듣고 가족에게 전한다. 문은 열지 않는다.
   giver_rank: squad_leader
   deadline_hours: 10
+  urgent: true
   requirements:
     - check: infected_lore
       min_outcome: partial

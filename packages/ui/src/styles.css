@@ -1842,7 +1842,63 @@ body {
   margin-left: 8px;
   font-size: 10px;
   font-weight: 400;
-  color: var(--accent);
+  color: var(--partial);
+}
+
+/* 분류 묶음: 두 칸으로 흘린다 (묶음은 칸 사이에서 쪼개지지 않는다) */
+.skill-groups {
+  columns: 2;
+  column-gap: 24px;
+}
+
+.skill-group {
+  break-inside: avoid;
+  margin-bottom: 12px;
+}
+
+.skill-group h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+/* 좁으면 줄을 넘기지 않고 능력 글자를 말줄임 */
+.skill-group .stats {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.skill-group dt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-group dd {
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+/* 못 하는 전문 기술: 맨 아래 한 줄에 이름만 */
+.skill-unusable {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.skill-unusable-head {
+  margin-right: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.skill-unusable span[title] {
+  cursor: help;
 }
 
 .skills dd {
@@ -1851,23 +1907,25 @@ body {
   gap: 6px;
 }
 
+/* 일반 단추 모양(.confirm-actions button 등)을 작게, 색은 새로운 게임 단추(.newgame button.primary)와 같게 */
 .skill-up {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 20px;
   padding: 0;
   font-size: 13px;
+  font-weight: 700;
   line-height: 1;
-  color: var(--muted);
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 50%;
+  color: var(--on-accent);
+  background: var(--primary);
+  border: 1px solid var(--surface);
+  border-radius: 6px;
+  box-shadow: 0 3px 2px rgba(0, 0, 0, 0.7);
   cursor: pointer;
 }
 
 .skill-up:hover:not(:disabled),
 .skill-up:focus-visible {
-  color: var(--text);
-  border-color: var(--border-hover);
+  filter: brightness(1.2);
   outline: none;
 }
 

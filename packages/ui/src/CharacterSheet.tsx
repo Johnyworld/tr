@@ -1167,41 +1167,70 @@ function SkillBlock({ player, onStatus }: { player: PlayerView; onStatus?: (stat
         )}
       </div>
       {error && <div className="item-move-error">{error}</div>}
-      <dl className="stats two-col">
-        {player.skills.map((s) => {
-          const plus = pending[s.id] ?? 0;
-          const value = s.value + plus;
-          const level = s.learned === null ? null : s.learned + plus;
-          const next = level === null || max === undefined || level >= max ? null : stepCost(level);
-          // 단계 (4.2.1): 못 함 / 배움·미숙(-1) / 0 / 숙련 / 마스터. -1 이하와 못 함은 흐리게
-          const tier = plus ? (level === null ? s.tier : ({ 0: "할 수 있음", 1: "숙련", 2: "마스터" } as Record<number, string>)[level] ?? s.tier) : s.tier;
-          return (
-            <div key={s.id} className={!s.usable || (level ?? min) <= min ? "skill-untrained" : undefined}>
-              <dt>
-                {s.label} <span className="muted small">{s.category}{s.kind === "expert" ? " 전문" : ""} · {s.stats.join("·")}</span>
-              </dt>
-              <dd>
-                {s.usable ? <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span> : null}
-                <span className="muted small"> {tier}</span>
-                {points > 0 && max !== undefined && s.usable && (
-                  <button
-                    type="button"
-                    className="skill-up"
-                    disabled={busy || next === null || left < next}
-                    title={next === null ? `${s.label}: 최고 단계` : `${s.label} 한 단계 올리기: ${next}점 (저장해야 적용)`}
-                    aria-label={`${s.label} 올리기`}
-                    onClick={() => add(s.id)}
-                  >
-                    +
-                  </button>
-                )}
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
+      {/* 할 수 있는 스킬은 분류별 묶음으로 (월드 팩 순서 그대로), 못 하는 전문 기술은 맨 아래 한 줄에 이름만 */}
+      <div className="skill-groups">
+        {groupByCategory(player.skills.filter((s) => s.usable)).map(([category, list]) => (
+          <div key={category} className="skill-group">
+            <h4>{category}</h4>
+            <dl className="stats">
+              {list.map((s) => {
+                const plus = pending[s.id] ?? 0;
+                const value = s.value + plus;
+                const level = s.learned === null ? null : s.learned + plus;
+                const next = level === null || max === undefined || level >= max ? null : stepCost(level);
+                // 단계 이름(숙련·미숙 등)은 보이지 않고 값만. -1 이하는 흐리게
+                return (
+                  <div key={s.id} className={(level ?? min) <= min ? "skill-untrained" : undefined}>
+                    <dt>
+                      {s.label} <span className="muted small">{s.kind === "expert" ? "전문 · " : ""}{s.stats.join("·")}</span>
+                    </dt>
+                    <dd>
+                      <span className={plus ? "skill-pending" : undefined}>{signed(value)}</span>
+                      {points > 0 && max !== undefined && (
+                        <button
+                          type="button"
+                          className="skill-up"
+                          disabled={busy || next === null || left < next}
+                          title={next === null ? `${s.label}: 최고 단계` : `${s.label} 한 단계 올리기: ${next}점 (저장해야 적용)`}
+                          aria-label={`${s.label} 올리기`}
+                          onClick={() => add(s.id)}
+                        >
+                          +
+                        </button>
+                      )}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </div>
+        ))}
+      </div>
+      {player.skills.some((s) => !s.usable) && (
+        <p className="skill-unusable">
+          <span className="skill-unusable-head">못 함</span>
+          {player.skills
+            .filter((s) => !s.usable)
+            .map((s, i) => (
+              <span key={s.id} title={`${s.category} 전문 · ${s.stats.join("·")} — 배워야 할 수 있다`}>
+                {i > 0 && " · "}
+                {s.label}
+              </span>
+            ))}
+        </p>
+      )}
     </section>
   );
+}
+
+/** 분류별로 묶는다. 분류 순서와 묶음 안의 순서는 처음 나온 순서(월드 팩 순서) 그대로 */
+function groupByCategory<T extends { category: string }>(list: T[]): [string, T[]][] {
+  const groups = new Map<string, T[]>();
+  for (const s of list) {
+    const key = s.category || "기타";
+    groups.set(key, [...(groups.get(key) ?? []), s]);
+  }
+  return [...groups];
 }
 
 /** 받침에 맞는 목적격 조사 (core의 josa와 같은 셈, 한글이 아니면 "를") */

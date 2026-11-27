@@ -28,7 +28,7 @@ age: 44
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: rise, target: "leader", text: 위원회의 맨 윗자리에 오른다 }
 start_skills: {}
-start_inventory: [ledger, notebook, pencil, c_armband, pistol, pistol_rounds, pistol_rounds, coat, radio]
+start_inventory: [ledger, notebook, pencil, c_armband, pistol, pistol_rounds, pistol_rounds, coat, radio, matchbox]
 start_location: c_base
 access: [ration, mission_board]
 beliefs_preset: c_officer_start

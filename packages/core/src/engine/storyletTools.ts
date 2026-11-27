@@ -1000,7 +1000,7 @@ export function applyEffect(
     return { line: broke ?? `${josa(content.items[weapon]?.name ?? weapon, "이/가")} 상했다 (내구도가 줄었다).` };
   }
   if ("light_fire" in effect) {
-    const lit = lightFire(ctx, effect.light_fire.item);
+    const lit = lightFire(ctx, effect.light_fire.item, { story: true });
     return lit?.ok ? { line: lit.lines.join(" ") } : lit ? { line: lit.error } : {};
   }
   if ("take_item" in effect) {

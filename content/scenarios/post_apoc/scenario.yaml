@@ -497,13 +497,13 @@ custom_start:
   # 무소속으로 시작할 때 고를 수 있는 연고 (extras/kin.yaml, 기획서 7.9)
   kin: [kin_young, kin_elder, kin_sibling, kin_partner, kin_comrade, stray_dog]
   kits:
-    - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [machete, padded_armor, water_bottle, dry_ration] }
-    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, crossbow, bolts, bolts, combat_knife, water_bottle, dry_ration] }
-    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, bandage, cloth, water_bottle, dry_ration] }
-    - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle] }
-    - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle, canned_food] }
-    - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, pipe_spear, leather_jacket, dry_ration, fishing_kit] }
-    - { id: camp, label: 생활 채비, description: 무리 안에서 지내는 사람, items: [kitchen_knife, water_bottle, dry_ration, blanket] }
+    - { id: fighter, label: 싸울 채비, description: 몸으로 부딪치는 사람, items: [machete, padded_armor, water_bottle, dry_ration, matchbox] }
+    - { id: scout, label: 정찰 채비, description: 먼저 보고 먼저 피하는 사람, items: [binoculars, crossbow, bolts, bolts, combat_knife, water_bottle, dry_ration, matchbox] }
+    - { id: medic, label: 의무 채비, description: 다친 사람을 돌보는 사람, items: [medkit, fever_reducer, bandage, cloth, water_bottle, dry_ration, matchbox] }
+    - { id: trader, label: 거래 채비, description: 말과 물건으로 사는 사람, items: [cigarettes, canned_food, water_bottle, lighter] }
+    - { id: clerk, label: 장부 채비, description: 숫자와 소식을 다루는 사람, items: [ledger, radio, water_bottle, canned_food, matchbox] }
+    - { id: wanderer, label: 떠돌이 채비, description: 담 밖에서 버텨 온 사람, items: [blanket, pipe_spear, leather_jacket, dry_ration, fishing_kit, lighter] }
+    - { id: camp, label: 생활 채비, description: 무리 안에서 지내는 사람, items: [kitchen_knife, water_bottle, dry_ration, blanket, matchbox] }
   # 떠돌이로 시작할 때의 꾸러미 (12-77)
   free_kit: wanderer
   pet: stray_dog
@@ -1618,7 +1618,7 @@ exploration:
       depths: [관리동 지하, 보안 복도, 무기고]
       loot:
         - [{ item: cell_key_ring, weight: 1, qty: [1, 1] }, { item: baseball_bat, weight: 1, qty: [1, 1] }, { item: cloth, weight: 1, qty: [1, 2] }]
-        - [{ item: arm_guards, weight: 1, qty: [1, 1] }, { item: shells, weight: 2, qty: [2, 4] }, { item: moto_helmet, weight: 1, qty: [1, 1] }]
+        - [{ item: arm_guards, weight: 1, qty: [1, 1] }, { item: shells, weight: 2, qty: [2, 4] }, { item: moto_helmet, weight: 1, qty: [1, 1] }, { item: rifle_scope, weight: 0.5, qty: [1, 1] }, { item: whistle, weight: 1, qty: [1, 1] }]
         - [{ item: shotgun, weight: 1, qty: [1, 1] }, { item: shells, weight: 2, qty: [4, 6] }, { item: kevlar_vest, weight: 0.5, qty: [1, 1] }]
     - id: campus_lab
       zone: campus
@@ -1757,8 +1757,24 @@ foraging:
       move: hunt
       items: [{ item: raw_meat, weight: 3, qty: [1, 1] }, { item: raw_meat, weight: 1, qty: [2, 3] }]
       companions: [stray_dog, road_dog]
-  # 덫: 철사 한 뭉치를 놓는다. 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 날고기가 걸린다 (12-220). 거두면 철사가 돌아온다
-  trap: { move: hunt, item: wire_roll, catch: { item: raw_meat, qty: [1, 1] } }
+  # 덫: 덫 물건(철사 뭉치·쥐덫, 필수품 trap) 하나를 놓는다. 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 날고기가 걸린다 (12-220). 거두면 놓은 덫이 돌아온다
+  trap: { move: hunt, need: trap, catch: { item: raw_meat, qty: [1, 1] } }
+  # 물 거르기 (12-350): 불이 없을 때 끓이지 않은 물을 마시면 정수 알약 하나를 써서 탈이 나지 않는다
+  purify: purify
+
+# 필수품 (공통 규칙 25, 12-350, docs/junk-items-plan.md): 그 일을 하려면 있어야 하는 물건. 물건은 serves로 단다. 보정은 주지 않는다.
+# 없으면 without이 null이면 못 하고, 수이면 그만큼 판정 보정. check: GM이 판정에 check.needs로 붙이는 일. move·minutes: 없이 할 때의 판정 스킬과 더 드는 시간
+needs:
+  - { id: climb, label: "줄 타고 오르내리기·건너기", without: -2, without_label: "밧줄 없이 맨손", check: true }
+  - { id: dig, label: "땅 파기 (구덩이·참호·묻기)", without: -2, without_label: "삽 없이 판자 조각으로", check: true }
+  - { id: fire, label: "불 붙이기", without: -1, without_label: "불 붙일 것 없이 비벼 피움", move: survival, minutes: 60 }
+  - { id: trap, label: "덫 놓기" }
+  - { id: lure, label: "소리로 꾀어내기" }
+  - { id: shelter, label: "바깥에서 비 가리고 쉬기" }
+  - { id: purify, label: "물 거르기", consume: true }
+
+# 꾀어내기 (12-350, take_action.lure): 호루라기를 불면 이 구역에 소음 1, 같은 턴에 그 상대를 몰래 지나가거나 치는 판정 +1. 없으면 소리쳐 소음 2, 보정 없음
+lure: { need: lure, moves: [stealth, fight, shoot], bonus: 1, noise: 1, shout_noise: 2 }
 
 consumables:
   # 구급상자·붕대는 응급처치 물건이다 (출혈 효과가 있으면 응급처치 물건으로 본다, 플레이 테스트 11 A9). 효과는 판정이 정한다: 성공 = 피가 멎고 부상 한 단계, 대가 있는 성공 = 피만, 실패 = 아무 일 없음
@@ -1878,7 +1894,9 @@ body:
       trait_degrees: 3
       # 모닥불: 연료 → 타는 시간. 곁에 있으면 +10°, 피우면 그 구역 소음 +1 (연기와 불빛)
       # 땔감 한 단은 하룻밤 (12-186, 4 → 8시간)
-      fire: { items: { firewood: 8, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1 }
+      # ignite (12-350): 우리 거점·내 거처·우리 사람이 사는 곳 밖에서는 라이터·성냥이 있어야 불이 붙는다 (없으면 생존 판정 -1, 한 시간. 비 맞는 바깥은 방수포 없이 못 함)
+      # shelter: 방수포를 지니고 바깥에서 쉬면(휴식·잠·기다림) 지붕 아래다
+      fire: { items: { firewood: 8, planks: 3, fuel_bottle: 2 }, warmth: 10, noise: 1, ignite: fire, shelter: shelter }
       # 젖은 옷 (12-121, 12-186, *임시*): 비 오는 날 바깥에 있었거나 강·하수구에 빠지면 마를 때까지 체감이 떨어진다.
       # 젖기 전 체감이 8° 밑이면 -10, 15° 밑이면 -6, 그 위면 -3 (12-251, 플레이 테스트 14: 여름비에도 -10이라 섬 사흘 내내 오한).
       # 바깥에서는 마르지 않는다. 불 곁(모닥불·난로)에서 2시간, 지붕 아래에서 4시간, 또는 갈아입을 옷이 있는 곳(우리 거점·내 거처·location.clothes)에서 갈아입으면 마른다

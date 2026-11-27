@@ -32,7 +32,7 @@ age: 34
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: protect, target: "d_eunyoung", n: 40, text: 서은영 대표를 지킨다 }
 start_skills: {}
-start_inventory: [pistol, pistol_rounds, crowbar, radio, flashlight, bandage, water_bottle]
+start_inventory: [pistol, pistol_rounds, crowbar, radio, flashlight, bandage, water_bottle, matchbox]
 start_location: d_clinic
 start_place: gate
 access: [ration, mission_board]

@@ -27,7 +27,7 @@ age: 27
 # 플레이 테스트 11: 단서("내보내" 등)로도 차서 1일차에 이뤘다. 진실(의회 저장고에서 본 것)이 담긴 믿음으로만 이룬다
 resolve: { kind: truth, target: "섬을 떠나지 않았다|사람을 먹는다", n: 1, text: 뭍으로 내보내진 사람들이 어디로 가는지 안다 }
 start_skills: {}
-start_inventory: [harpoon_gun, harpoons, harpoons, harpoons, old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, rifle_rounds, leather_jacket, water_bottle, canned_food, fishing_kit]
+start_inventory: [harpoon_gun, harpoons, harpoons, harpoons, old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, rifle_rounds, leather_jacket, water_bottle, canned_food, fishing_kit, matchbox]
 start_location: yeoul_isle
 start_place: dock
 access: [ration, mission_board]

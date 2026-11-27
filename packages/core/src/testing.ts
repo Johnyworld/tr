@@ -24,6 +24,7 @@ import type { PlayMode } from "./engine/log.ts";
 export const TEST_SCENARIO: Scenario = {
   id: "test_scenario",
   name: "테스트",
+  needs: [],
   resources: [
     { id: "food", label: "식량" },
     { id: "bullets", label: "탄" },

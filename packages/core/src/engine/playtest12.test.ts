@@ -2,6 +2,7 @@ import { neighbors } from "../sim/war.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { needItems } from "../rules/needs.ts";
 import { describe, expect, it } from "vitest";
 import { activeMissionOf, atMissionPlace, pickDailyOffers } from "../game/missions.ts";
 import { createSeededRng } from "../rng.ts";
@@ -191,7 +192,7 @@ describe("플레이 테스트 12: 동행·덫·문구", () => {
 
   it("덫 판정이 실패하면 덫을 놓지 못하고 재료가 남는다", () => {
     const w = world("role_l_wanderer");
-    const trap = content.scenario.foraging!.trap!;
+    const trap = { item: needItems(content, content.scenario.foraging!.trap!.need)[0]! };
     const ctx = w.ctx();
     const zone = Object.keys(content.locations).find((z) => content.locations[z]!.kind !== "base")!;
     ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: zone });

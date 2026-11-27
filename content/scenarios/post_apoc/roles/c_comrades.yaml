@@ -32,7 +32,7 @@ age: 26
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: protect, target: "c_cm_dahye", n: 40, text: 오래 함께 버틴 안다혜를 지킨다 }
 start_skills: {}
-start_inventory: [c_armband, crowbar, water_bottle, padded_armor]
+start_inventory: [c_armband, crowbar, water_bottle, padded_armor, matchbox]
 start_location: c_warehouse
 start_place: yard
 access: [ration, mission_board]

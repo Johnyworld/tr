@@ -10,6 +10,7 @@ import { moveLabel } from "../scenario/scenario.ts";
 import { changeCondition } from "./body.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { learned } from "../rules/skill.ts";
+import { checkNeed, needItem, needItems, useNeedItem } from "../rules/needs.ts";
 
 /**
  * 먹고 마시기 (기획서 4.5.5, 12-131): 사냥·낚시, 덫, 음식이 상하는 것, 끓이지 않은 물.
@@ -130,17 +131,22 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: C
   if (!zone) return { ok: false, error: "어디에 있는지 모른다." };
   const me = state.characters[state.playerId]!;
   const here = state.traps.find((t) => t.zone === zone);
-  const trapName = content.items[trap.item]?.name ?? trap.item;
+  // 덫 물건 (12-350, 공통 규칙 25 필수품): 철사 뭉치·쥐덫 중 지닌 것. 거둘 때는 놓은 것이 돌아온다
+  const trapItem = action === "set" ? needItem(content, me, trap.need) : (here?.item ?? needItems(content, trap.need)[0] ?? null);
+  const trapName = trapItem ? (content.items[trapItem]?.name ?? trapItem) : "덫";
   if (action === "set") {
     if (here) return { ok: false, error: "이 구역에는 이미 덫을 놓았다. 먼저 거둔다 (trap: check)." };
     if (content.locations[zone]?.kind === "base") return { ok: false, error: "거점 안에는 덫을 놓을 데가 없다." };
-    if ((me.inventory[trap.item] ?? 0) < 1) return { ok: false, error: `${josa(trapName, "이/가")} 없다.` };
+    if (!trapItem) {
+      const r = checkNeed(content, me, trap.need);
+      return { ok: false, error: r.ok ? "덫으로 쓸 것이 없다." : r.error };
+    }
     // 판정을 걸고 실패하면 놓지 못한다 (플레이 테스트 12: 실패해도 성공과 같이 놓였다). 재료는 남는다
     if (outcome === "miss") return { ok: true, lines: [`덫을 제대로 놓지 못했다. 시간만 들었다 (${josa(trapName, "은/는")} 그대로 남았다). 실패한 것을 서술한다.`], displays: [] };
-    store.append({ type: "item_consumed", holder: me.id, itemId: trap.item, quantity: 1 });
+    store.append({ type: "item_consumed", holder: me.id, itemId: trapItem, quantity: 1 });
     // 놓는 판정이 걸리는 날을 정한다 (12-220): 성공이면 다음 날, 대가 있는 성공·판정 없음이면 이틀 뒤. 하루 더 늦는 덫은 놓은 때를 하루 뒤로 적는다
     const sloppy = outcome !== "success";
-    store.append({ type: "trap_set", zone, at: state.time + (sloppy ? MINUTES_PER_DAY : 0) });
+    store.append({ type: "trap_set", zone, at: state.time + (sloppy ? MINUTES_PER_DAY : 0), item: trapItem });
     return {
       ok: true,
       lines: [`${josa(trapName, "을/를")} 감아 덫을 놓았다. ${sloppy ? "자리가 썩 좋지는 않다. 짐승이 들려면 이틀은 지나야 한다." : "자리가 좋다. 하루가 지나면 걸려 있을 것이다."} 다시 와서 거둔다.`],
@@ -149,7 +155,7 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: C
   }
   if (!here) return { ok: false, error: "이 구역에 놓아 둔 덫이 없다." };
   store.append({ type: "trap_collected", zone });
-  store.append({ type: "item_granted", to: me.id, itemId: trap.item, quantity: 1 });
+  if (trapItem) store.append({ type: "item_granted", to: me.id, itemId: trapItem, quantity: 1 });
   const lines = [`덫을 거뒀다 (${josa(trapName, "은/는")} 다시 소지품으로).`];
   const displays: ToolDisplayEvent[] = [];
   if (here.caught) {
@@ -203,8 +209,15 @@ export function runDailyFood(ctx: ToolContext): ToolDisplayEvent[] {
 export function drinkDirty(ctx: ToolContext, chance: number): string | null {
   const state = ctx.store.getState();
   if (fireHere(state)) return "불에 끓여 마셨다.";
-  const track = ctx.content.scenario.body?.disease?.track;
   const me = state.characters[state.playerId]!;
+  // 물 거르기 (12-350, 공통 규칙 25 필수품): 정수 알약을 넣어 마시면 탈이 나지 않는다 (하나 쓴다)
+  const purify = ctx.content.scenario.foraging?.purify;
+  const tablet = purify ? needItem(ctx.content, me, purify) : null;
+  if (purify && tablet) {
+    useNeedItem(ctx, me.id, purify, tablet);
+    return `${josa(ctx.content.items[tablet]?.name ?? tablet, "을/를")} 넣어 걸러 마셨다.`;
+  }
+  const track = ctx.content.scenario.body?.disease?.track;
   if (!track || ctx.rng() >= chance) return null;
   const levels = ctx.content.scenario.condition_tracks.find((t) => t.id === track)?.levels ?? [];
   if (levels.findIndex((l) => l.id === me.conditions[track]) > 0) return null;

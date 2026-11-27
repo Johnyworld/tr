@@ -67,6 +67,8 @@
   loot:
     modifier: -1
     items:
+      - { item: whistle, weight: 0.5, qty: [1, 1] }
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
       - { item: wire_roll, weight: 3, qty: [1, 1] }
       - { item: dry_ration, weight: 2, qty: [1, 1] }
       - { item: binoculars, weight: 1, qty: [1, 1] }
@@ -108,6 +110,10 @@
   loot:
     modifier: 1
     items:
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: tarp, weight: 0.5, qty: [1, 1] }
+      - { item: work_gloves, weight: 0.5, qty: [1, 1] }
+      - { item: shovel, weight: 0.5, qty: [1, 1] }
       - { item: canned_food, weight: 4, qty: [1, 2] }
       - { item: dry_ration, weight: 3, qty: [1, 2] }
       - { item: coat, weight: 1, qty: [1, 1] }
@@ -192,6 +198,9 @@
   loot:
     modifier: 1
     items:
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: work_gloves, weight: 0.5, qty: [1, 1] }
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: dried_fish, weight: 1, qty: [1, 1] }
       - { item: mushroom, weight: 1, qty: [1, 2] }
@@ -234,6 +243,13 @@
   loot:
     modifier: 1
     items:
+      - { item: umbrella, weight: 0.5, qty: [1, 1] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: lighter, weight: 0.5, qty: [1, 1] }
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
+      - { item: wool_hat, weight: 0.5, qty: [1, 1] }
+      - { item: sewing_kit, weight: 0.5, qty: [1, 1] }
+      - { item: whistle, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: mushroom, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
@@ -351,6 +367,10 @@
   loot:
     modifier: -1
     items:
+      - { item: lighter, weight: 0.5, qty: [1, 1] }
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: umbrella, weight: 0.5, qty: [1, 1] }
       - { item: water_bottle, weight: 1, qty: [1, 1] }
       - { item: dried_fish, weight: 1, qty: [1, 1] }
       - { item: salted_meat, weight: 1, qty: [1, 1] }
@@ -387,6 +407,7 @@
   loot:
     modifier: 1
     items:
+      - { item: purifier_tablets, weight: 0.5, qty: [1, 2] }
       - { item: firewood, weight: 1, qty: [1, 2] }
       - { item: fever_reducer, weight: 3, qty: [1, 2] }
       - { item: medkit, weight: 2, qty: [1, 1] }
@@ -454,6 +475,10 @@
   loot:
     modifier: 0
     items:
+      - { item: sickle, weight: 0.5, qty: [1, 1] }
+      - { item: shovel, weight: 0.5, qty: [1, 1] }
+      - { item: rat_trap, weight: 0.5, qty: [1, 1] }
+      - { item: wool_hat, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: potato, weight: 2, qty: [1, 2] }
       - { item: wild_greens, weight: 1, qty: [1, 2] }
@@ -499,6 +524,8 @@
   loot:
     modifier: -1
     items:
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: rope, weight: 0.5, qty: [1, 1] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: dried_fish, weight: 3, qty: [1, 2] }
       - { item: oilskin, weight: 1, qty: [1, 1] }

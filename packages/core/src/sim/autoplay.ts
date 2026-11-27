@@ -18,6 +18,8 @@ import { sitsOnCouncil, squadMembers } from "../engine/command.ts";
 import { battleConfig, effectBlocker } from "./battle.ts";
 import type { GameWorld } from "../world/world.ts";
 import { learned } from "../rules/skill.ts";
+import { needItem } from "../rules/needs.ts";
+import { ignitionFor } from "../engine/climate.ts";
 import {nearby, fireLitHere, currentPlace, knowsPlace, placesIn, roadsIn, unknownDoors, doorNumber } from "../rules/place.ts";
 
 /**
@@ -136,6 +138,13 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
     if (!out.ok && name === "take_action" && alarm && out.error.includes("적대하는 땅에서 시간을 들이는 일")) {
       const move = world.content.scenario.moves.find((m) => m.id === alarm.moves[0])!;
       return world.executeTool(name, { ...(input as object), check: { move: move.id, stat: move.stats[0], difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: "close" } });
+    }
+    // 불 붙일 것이 없으면 GM처럼 비벼 피우는 판정을 붙여 다시 한다 (12-350)
+    const igniteNeed = world.content.scenario.body?.cold?.climate?.fire?.ignite;
+    const igniteMove = world.content.scenario.needs.find((n) => n.id === igniteNeed)?.move;
+    if (!out.ok && name === "take_action" && igniteMove && out.error.startsWith("불 붙일 것(")) {
+      const move = world.content.scenario.moves.find((m) => m.id === igniteMove)!;
+      return world.executeTool(name, { ...(input as object), check: { move: move.id, stat: move.stats[0], difficulty: "normal", harm_on_failure: "none", harm_cause: "", harm_kind: null, infected_source: false, target_harm: "none", distance: null } });
     }
     return out;
   };
@@ -371,7 +380,8 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       const trapHere = !!s.playerZone && s.traps.some((t) => t.zone === s.playerZone);
       // 덫은 하루가 지나야 걸린다: 놓은 지 하루 넘은 것만 거둔다
       const trapReady = !!s.playerZone && s.traps.some((t) => t.zone === s.playerZone && s.time - t.setAt >= 24 * 60);
-      const trapItem = content.scenario.foraging?.trap?.item;
+      const trapNeed = content.scenario.foraging?.trap?.need;
+      const trapItem = trapNeed ? needItem(content, s.characters[s.playerId], trapNeed) : null;
       const wet = !!s.playerZone && !!content.scenario.body?.thirst && (content.locations[s.playerZone]?.yields[content.scenario.body.thirst.resource] ?? 0) > 0;
       const survival = moves.find((m) => m.id === content.scenario.foraging?.move);
       let act: Record<string, unknown> | null = null;
@@ -381,7 +391,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       else if (hunger && shown(hunger) > 0 && usable(hunger).length && rng() < 0.7) act = { intent: "먹는다", use_item: usable(hunger)[0] };
       else if (thirst && shown(thirst) > 0 && usable(thirst).length && rng() < 0.7) act = { intent: "물병을 마신다", use_item: usable(thirst)[0] };
       else if (shown("craving") > 0 && usable("craving").length) act = { intent: "담배를 피운다", use_item: usable("craving")[0] };
-      else if (cold && shown(cold) > 0 && fuelHere && !fireLit && rng() < 0.6) act = { intent: "불을 피운다", use_item: fuelHere };
+      else if (cold && shown(cold) > 0 && fuelHere && !fireLit && ignitionFor(content, s).kind !== "blocked" && rng() < 0.6) act = { intent: "불을 피운다", use_item: fuelHere };
       else if (remainsHere(s).length && rng() < 0.3) act = { intent: "묻어 준다", bury: { who: remainsHere(s)[0]!.holder, words: null } };
       // 구역 안을 돌아다닌다 (이동 기획: 이야기는 주인공이 이미 있는 자리에서만 열린다). 이웃 칸으로, 모르는 곳은 문 번호로
       else if (walk) act = { intent: "자리를 옮긴다", place_to: nextHop(world, walk) };

@@ -168,7 +168,7 @@
   value: 9
   armor: { slot: body, reduces: 0, blocks_infection: 0.6 }
   durability: 6
-  repair: { move: improvise, materials: { cloth: 1, duct_tape: 1 } }
+  repair: { move: improvise, materials: { cloth: 1, duct_tape: 1 }, tools: [sewing_kit] }
 - id: padded_armor
   name: 덧댄 갑옷
   description: 잡지와 고철 조각을 덕트 테이프로 몸통에 두른 것. 투박하고 시끄럽다.
@@ -178,7 +178,7 @@
   armor: { slot: body, reduces: 1, penalty: { stealth: -1 }, blocks_infection: 0.3 }
   durability: 3
   breaks_into: scrap_metal
-  repair: { move: improvise, materials: { cloth: 1, duct_tape: 1 } }
+  repair: { move: improvise, materials: { cloth: 1, duct_tape: 1 }, tools: [sewing_kit] }
 - id: kevlar_vest
   name: 방탄 조끼
   description: 경찰 표식이 지워진 방탄 조끼. 총알도 막지만 무겁고 몸이 굳는다.
@@ -188,7 +188,7 @@
   armor: { slot: body, reduces: 1, penalty: { stealth: -1 }, blocks_infection: 0.4 }
   durability: 5
   breaks_into: cloth
-  repair: { move: improvise, materials: { cloth: 2, duct_tape: 1 } }
+  repair: { move: improvise, materials: { cloth: 2, duct_tape: 1 }, tools: [sewing_kit] }
 
 # ── 도구 ─────────────────────────────────────────
 - id: toolkit
@@ -358,3 +358,143 @@
   value: 60
   vehicle: { speed: 0.3, fuel: fuel_bottle, noise: 2, road_risk: 0.5 }
 
+
+# ── 잡동사니 (12-350, docs/junk-items-plan.md) ──────
+# 필수품(serves, 공통 규칙 25)은 보정을 주지 않는다: 그 일을 하려면 있어야 하는 물건이다. 보조 도구(조준경·장갑·낫)는 지금처럼 보정을 준다
+- id: raincoat
+  name: 비닐 우비
+  icon: cloth
+  description: 편의점에서 팔던 반투명 비닐 우비. 가볍고 접으면 주먹만 하다. 비와 눈은 막지만 물일(여울·갯벌에서 물 튀는 일)은 못 막는다. 외투 칸이라 방한복과 함께 입지 못한다.
+  kind: armor
+  weight: 0.3
+  value: 3
+  armor: { slot: outer, reduces: 0 }
+  waterproof: rain
+  durability: 2
+- id: umbrella
+  name: 장우산
+  icon: club
+  description: 살 하나가 휜 검은 장우산. 들고 있으면(무기 칸) 비와 눈에 젖지 않는다. 다른 무기를 들면 접어 둔다. 급하면 휘두를 수도 있지만 오래 버티지 못한다.
+  kind: weapon
+  weight: 0.6
+  value: 3
+  weapon: { moves: [fight], max_harm: light, noise: 0, bonus: -1, wound: { fight: blunt } }
+  waterproof: rain
+  durability: 3
+  breaks_into: scrap_metal
+- id: rope
+  name: 밧줄
+  icon: tool
+  description: 굵은 나일론 밧줄 한 사리. 담을 넘고, 무너진 계단을 내려가고, 물길을 건널 때 있어야 한다.
+  kind: tool
+  weight: 1.5
+  value: 4
+  serves: [climb]
+- id: shovel
+  name: 삽
+  icon: tool
+  description: 자루가 짧은 군용 야전삽. 땅을 파고 구덩이를 묻을 때 있어야 하고, 날을 세우면 무기도 된다.
+  kind: weapon
+  weight: 1.8
+  value: 6
+  weapon: { moves: [fight], max_harm: light, noise: 0, wound: { fight: blunt } }
+  serves: [dig]
+  durability: 10
+  breaks_into: scrap_metal
+  repair: { move: maintenance, materials: { scrap_metal: 1 } }
+- id: lighter
+  name: 일회용 라이터
+  icon: fire
+  description: 가스가 반쯤 남은 플라스틱 라이터. 밖에서 불을 붙일 때 있어야 한다. 열댓 번 켜면 다 쓴다.
+  kind: tool
+  weight: 0.05
+  value: 4
+  serves: [fire]
+  durability: 15
+- id: matchbox
+  name: 성냥갑
+  icon: fire
+  description: 다방 이름이 찍힌 작은 성냥갑. 밖에서 불을 붙일 때 있어야 한다. 몇 번 쓰면 다 쓴다.
+  kind: tool
+  weight: 0.02
+  value: 2
+  serves: [fire]
+  durability: 5
+- id: whistle
+  name: 호루라기
+  icon: tool
+  description: 체육 선생이 목에 걸던 쇠 호루라기. 불면 멀리까지 날카롭게 울려 감염체나 사람을 소리 쪽으로 꾀어낸다.
+  kind: tool
+  weight: 0.02
+  value: 2
+  serves: [lure]
+- id: tarp
+  name: 방수포
+  icon: cloth
+  description: 귀퉁이에 쇠고리가 달린 파란 방수포. 바깥에서 쉴 때 나무나 담에 쳐 두면 비를 가리는 지붕이 된다.
+  kind: tool
+  weight: 1.2
+  value: 5
+  serves: [shelter]
+- id: rat_trap
+  name: 쥐덫
+  icon: tool
+  description: 용수철이 살아 있는 쇠 쥐덫. 철사 덫처럼 놓아 두면 작은 짐승이 걸린다. 거두면 다시 쓴다.
+  kind: tool
+  weight: 0.5
+  value: 3
+  serves: [trap]
+- id: purifier_tablets
+  name: 정수 알약
+  icon: medicine
+  description: 은박에 싸인 군용 정수 알약 몇 알. 불이 없을 때 끓이지 않은 물에 넣어 마시면 탈이 나지 않는다 (마실 때 저절로 하나씩 쓴다).
+  kind: misc
+  weight: 0.05
+  value: 4
+  serves: [purify]
+- id: sewing_kit
+  name: 반짇고리
+  icon: cloth
+  description: 바늘 몇 개와 실타래가 든 깡통. 가죽 재킷·덧댄 갑옷·방탄 조끼처럼 천이 든 방어구를 꿰매 고칠 때 있어야 한다.
+  kind: tool
+  weight: 0.2
+  value: 3
+- id: rifle_scope
+  name: 망원 조준경
+  icon: light
+  description: 사냥용 소총에서 떼어 낸 조준경. 총에 얹으면 먼 거리에서 더 잘 맞힌다 (먼 거리 사격 +1).
+  kind: tool
+  weight: 0.4
+  value: 15
+  tool: { bonus: { shoot: 1 }, only: { distances: [far] } }
+- id: work_gloves
+  name: 작업 장갑
+  icon: cloth
+  description: 손바닥에 고무를 입힌 두꺼운 목장갑. 손을 지켜 주고(팔 칸), 거친 것을 엮을 때 손이 덜 다친다 (급조 +1).
+  kind: armor
+  weight: 0.2
+  value: 3
+  armor: { slot: arms, reduces: 0, blocks_infection: 0.2 }
+  tool: { bonus: { improvise: 1 } }
+  durability: 3
+- id: wool_hat
+  name: 털모자
+  icon: cloth
+  description: 보풀이 인 털실 모자. 머리 칸에 쓰면 조금 덜 춥다 (체감 +2). 방한복과 겹쳐 더 따뜻해지지는 않지만, 방수복이나 우비 밑에는 좋다. 헬멧과 함께 쓰지 못한다.
+  kind: armor
+  weight: 0.1
+  value: 2
+  armor: { slot: head, reduces: 0 }
+  warmth: { degrees: 2, when: worn }
+- id: sickle
+  name: 낫
+  icon: blade
+  description: 날이 무딘 농가의 낫. 풀을 베고 길을 트는 데 쓴다 (생존 +1). 휘두르면 벤다.
+  kind: weapon
+  weight: 0.6
+  value: 4
+  weapon: { moves: [fight], max_harm: light, noise: 0, wound: { fight: cut } }
+  tool: { bonus: { survival: 1 } }
+  durability: 6
+  breaks_into: scrap_metal
+  repair: { move: maintenance, materials: { scrap_metal: 1 } }

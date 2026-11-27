@@ -192,13 +192,13 @@ export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string
 }
 
 /** 소모품을 쓴다 (구급상자, 항생제, 통조림 등). 나아질 데가 없으면 쓰지 않는다 */
-export function useItem(ctx: ToolContext, item: string, targetId?: string | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+export function useItem(ctx: ToolContext, item: string, targetId?: string | null, fireOutcome?: CheckOutcome | null): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const { store, content } = ctx;
   const state = store.getState();
   const player = state.characters[state.playerId]!;
   const name = content.items[item]?.name ?? item;
   // 모닥불 연료 (12-98)
-  const fire = lightFire(ctx, item);
+  const fire = lightFire(ctx, item, { handOutcome: fireOutcome });
   if (fire) return fire.ok ? { ok: true, lines: fire.lines, displays: [] } : fire;
   const problem = itemUseProblem(ctx, item, targetId);
   if (problem) return { ok: false, error: problem };

@@ -42,7 +42,7 @@ age: 23
 # 능력은 정하지 않는다: 시나리오의 능력 배열을 섞어 준다 (능력은 계급·역할과 관계없다, 기획서 4.6)
 # 스킬은 시나리오가 아니라 과거 배경에서 온다 (12-84)
 start_skills: {}
-start_inventory: [kitchen_knife, water_bottle, wire_roll, bandage]
+start_inventory: [kitchen_knife, water_bottle, wire_roll, bandage, matchbox]
 # 아래 필드는 해당 시스템이 생기면 쓰인다 (장소·배급·Belief·스토리렛)
 start_location: a_base
 access: [ration, mission_board]

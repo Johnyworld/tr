@@ -58,10 +58,14 @@ export const itemContentSchema = z.strictObject({
       reduces: z.number().int().min(0).max(2),
       penalty: z.record(contentIdSchema, z.number().int().min(-2).max(0)).default({}),
       blocks_infection: z.number().min(0).max(1).default(0),
-      /** 방수 (플레이 테스트 11, E3): 입고 있으면 비와 물일에 옷이 젖지 않는다 (물에 빠지면 젖는다) */
-      waterproof: z.boolean().default(false),
     })
     .optional(),
+  /**
+   * 방수 (플레이 테스트 11 E3, 12-350): 장비 칸에 입거나 들고 있으면 젖지 않는다. rain: 비·눈만 (비닐 우비, 무기 칸에 든 우산), all: 물일(물 튀는 일)까지 (고무 방수복). 물에 빠지면 못 막는다
+   */
+  waterproof: z.enum(["rain", "all"]).optional(),
+  /** 필수품 (공통 규칙 25, 12-350): 이 물건으로 할 수 있는 일 (scenario.needs의 id). 보정은 주지 않는다 */
+  serves: z.array(contentIdSchema).optional(),
   /**
    * 따뜻함 (12-98): 체감 기온에 더하는 도. worn: 입고 있을 때 (외투), resting: 지니고 자거나 쉴 때 덮는다 (담요)
    */

@@ -25,7 +25,7 @@ age: 45
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: peace, target: "faction_b", target2: faction_c, text: 붉은연합과 휴전을 맺어 마을을 지킨다 }
 start_skills: {}
-start_inventory: [ledger, radio, flashlight, coat]
+start_inventory: [ledger, radio, flashlight, coat, matchbox]
 start_location: b_base
 access: [ration, mission_board]
 beliefs_preset: b_officer_start

@@ -531,11 +531,30 @@ function checkReferences(content: Content): string[] {
   const f = content.scenario.foraging;
   const refs = [
     ...(f?.kinds.flatMap((k) => k.items.map((i) => i.item)) ?? []),
-    ...(f?.trap ? [f.trap.item, f.trap.catch.item] : []),
+    ...(f?.trap ? [f.trap.catch.item] : []),
     ...Object.entries(content.scenario.body?.thirst?.dirty?.refill ?? {}).flat(),
   ];
   for (const item of refs) if (!content.items[item]) problems.push(`scenario: 알 수 없는 아이템 ${item} (foraging·thirst.dirty)`);
   for (const k of f?.kinds ?? []) for (const t of k.companions) if (!content.extras[t]) problems.push(`scenario.foraging.${k.id}: 알 수 없는 엑스트라 틀 ${t}`);
+  // 필수품 (12-350, 공통 규칙 25): 가리키는 일은 scenario.needs에 있고, 일마다 그 일에 쓰는 물건이 하나는 있다
+  {
+    const needIds = new Set(content.scenario.needs.map((n) => n.id));
+    const fire = content.scenario.body?.cold?.climate?.fire;
+    const used: [string, string | undefined][] = [
+      ["foraging.trap.need", f?.trap?.need],
+      ["foraging.purify", f?.purify],
+      ["lure.need", content.scenario.lure?.need],
+      ["body.cold.climate.fire.ignite", fire?.ignite],
+      ["body.cold.climate.fire.shelter", fire?.shelter],
+    ];
+    for (const [where, need] of used) if (need && !needIds.has(need)) problems.push(`scenario.${where}: 알 수 없는 필수품 ${need} (scenario.needs)`);
+    for (const item of Object.values(content.items)) for (const need of item.serves ?? []) if (!needIds.has(need)) problems.push(`items.${item.id}.serves: 알 수 없는 필수품 ${need} (scenario.needs)`);
+    for (const n of content.scenario.needs) {
+      if (!Object.values(content.items).some((i) => i.serves?.includes(n.id))) problems.push(`scenario.needs.${n.id}: 이 일에 쓰는 물건(serves)이 없다`);
+      if (n.move && !content.scenario.moves.some((m) => m.id === n.move)) problems.push(`scenario.needs.${n.id}: 알 수 없는 스킬 ${n.move}`);
+    }
+    for (const m of content.scenario.lure?.moves ?? []) if (!content.scenario.moves.some((x) => x.id === m)) problems.push(`scenario.lure.moves: 알 수 없는 스킬 ${m}`);
+  }
   // 즉흥 이야기의 보상 물건 (12-247)
   for (const tier of ["small", "medium"] as const) {
     for (const { item } of Object.values(content.scenario.improv?.rewards[tier].items ?? {}).flat()) if (!content.items[item]) problems.push(`scenario.improv.rewards.${tier}: 알 수 없는 아이템 ${item}`);

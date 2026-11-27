@@ -27,7 +27,7 @@ age: 38
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: reclaim, target: "riverside", text: 강변 공장 지대를 되찾는다 }
 start_skills: {}
-start_inventory: [ledger, radio, coat, cigarettes]
+start_inventory: [ledger, radio, coat, cigarettes, lighter]
 start_location: a_base
 access: [ration, mission_board]
 beliefs_preset: a_officer

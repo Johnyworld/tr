@@ -29,7 +29,7 @@ age: 32
 # 능력은 정하지 않는다 (시나리오의 능력 배열을 섞는다)
 # 시나리오는 스킬을 주지 않는다 (지나온 배경이 정한다)
 start_skills: {}
-start_inventory: [trade_token, shotgun, shells, shells, shells, water_bottle, cigarettes, coat]
+start_inventory: [trade_token, shotgun, shells, shells, shells, water_bottle, cigarettes, coat, lighter]
 start_location: e_market
 start_place: wagon_yard
 access: [ration, mission_board]

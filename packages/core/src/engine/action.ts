@@ -16,7 +16,8 @@ import { exposeToFatigue } from "./fatigue.ts";
 import { deliverPrisoners, escapeRule, releasePlayer } from "./captivity.ts";
 import { BELIEF_SOURCE_LABELS } from "../game/belief.ts";
 import { againstSetting, rollBlowup, rollHear, rollLeak } from "../rules/self.ts";
-import { exposeToCold, changeClothes, soak } from "./climate.ts";
+import { exposeToCold, changeClothes, soak, ignitionFor, ignitionProblem } from "./climate.ts";
+import { checkNeed, checkNeedIds, checkNeedsGuide, needExtraMinutes, needItem } from "../rules/needs.ts";
 import { opponentHarm } from "./opposition.ts";
 import { calmAfterSleep, fearTagIds, frighten, FRIGHT_CAUSES } from "./fear.ts";
 import { hostileHere, hostileZone, raiseAlarm, runAlarm, runInfestedArrival, runRoadEvent } from "./storyletTools.ts";
@@ -87,6 +88,7 @@ import { cargoOf } from "../rules/entrusted.ts";
 import { baseOfNow, ownedBy } from "../rules/home.ts";
 import { runPendingClashes } from "./battleTools.ts";
 import type { GameState } from "../game/state.ts";
+import type { Content } from "../content/schemas.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
 import {searchSpot, comesAlong, pursuers, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
@@ -166,6 +168,7 @@ export function createTakeActionSchema(s: Scenario) {
           .boolean()
           .default(false)
           .describe("그 위험이 감염체에게 물리거나 긁히는 것이면 true. 장면의 감염체를 opponent·target으로 두면 시스템이 저절로 켠다. 다치면 시스템이 감염 여부를 정한다 (캐릭터는 바로 알지 못한다)"),
+        needs: z.string().nullable().default(null).describe(checkNeedsGuide(s)),
       })
       .nullable()
       .default(null)
@@ -299,6 +302,14 @@ export function createTakeActionSchema(s: Scenario) {
       .boolean()
       .default(false)
       .describe("개천·강가처럼 물이 나는 바깥 물가에서 물에 들어가면(헤엄, 옷 입은 채 뛰어듦) true. 옷이 흠뻑 젖는다 (12-255)"),
+    lure: z
+      .boolean()
+      .default(false)
+      .describe(
+        s.lure
+          ? "소리로 감염체·적을 꾀어내면 true (12-350). 이 구역에 소음이 남아 감염체가 몰려들 수 있다. 꾀어내는 물건(호루라기)이 있으면 같은 턴에 맞서는 상대(opponent·target)를 몰래 지나가거나 치는 판정에 보정이 붙고, 없으면 소리쳐 더 시끄럽고 내 자리가 드러난다(보정 없음)"
+          : "이 월드에서는 쓰지 않는다. false",
+      ),
     change_clothes: z
       .boolean()
       .default(false)
@@ -574,7 +585,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 의식불명 등: 스스로 아무것도 하지 못한다. 시간이 흐르게 하거나(기다림·잠·휴식) 남이 돌보는(treatment, 치료사에게 받기) 것만
   const out = incapacitatingSymptom(scenario, player);
   if (out) {
-    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.wade || input.change_clothes || !!input.craft || !!input.build || !!input.train || !!input.lesson || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
+    const acts = !!input.check || !!input.move_to || !!input.target || !!input.prepare || !!input.use_item || !!input.bury || !!input.forage || !!input.trap || input.drink || input.refill || input.wade || input.lure || input.change_clothes || !!input.craft || !!input.build || !!input.train || !!input.lesson || input.broadcast || input.ambush || !!input.battle || !!input.deed || (input.treatment && (input.treatment.item || input.treatment.target));
     const passive = !input.activity || ["wait", "sleep", "rest"].includes(input.activity.kind);
     if (acts || !passive) {
       return {
@@ -887,7 +898,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
       (input.treatment && !destHealers.length ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), chosenHealer) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
-      (input.trap ? trapProblem(ctx, input.trap) : null);
+      (input.trap ? trapProblem(ctx, input.trap) : null) ??
+      // 불 붙이기 (12-350, 공통 규칙 25): 밖에서는 라이터·성냥, 없으면 판정을 걸어 비벼 피운다
+      (fuel ? ignitionProblem(content, start, input.check) : null) ??
+      // 필수품을 붙인 판정 (12-350): 없으면 못 하는 일은 판정 전에 막는다
+      (input.check?.needs ? needsProblem(content, start, input.check.needs, input.check.move) : null) ??
+      (input.lure && !scenario.lure ? "이 월드에는 꾀어내기가 없다." : null);
     if (problem) return { ok: false, error: `${problem} (시간은 흐르지 않았다)` };
   }
   // 적대하는 땅에서 시간을 들이는 일 (플레이 테스트 12): 숨은 확률 대신 주인공이 한 번 굴린다. 판정이 없으면 숨기 판정을 건다
@@ -911,6 +927,18 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
 
   // 열린 이야기가 요구하는 판정일 때만 이야기가 걸린 판정이다 (플레이 테스트 13: 길 위 이야기가 열린 사이 위험 없는 5분 경계로 레벨이 올랐다)
   const storyCheck = !!start.activeStorylet && !!input.check && !!storyletOf(start, content, start.activeStorylet.id)?.choices.some((c) => c.check === input.check!.move);
+  // 불 붙일 것 없이 비벼 피우는 판정 (12-350): 판정 전에 그만큼 시간이 든다
+  const fuelUse = !!input.use_item && !!scenario.body?.cold?.climate?.fire?.items[input.use_item];
+  const ignition = fuelUse ? ignitionFor(content, start, input.check?.move ?? null) : null;
+  const handIgnition = ignition?.kind === "hand" ? ignition : null;
+  if (handIgnition && input.check) {
+    const extra = needExtraMinutes(content, scenario.body!.cold!.climate!.fire!.ignite!);
+    if (extra > 0) {
+      const now = store.getState().time;
+      store.append({ type: "time_advanced", activity: "work", from: now, to: now + extra });
+      lines.push(`불 붙일 것이 없어 불씨를 비벼 살리느라 ${formatDuration(extra)}이 걸렸다.`);
+    }
+  }
   // 1. 판정과 선언한 위험
   if (input.check) {
     // 탈출은 빈틈을 기다리는 데 시간이 든다 (플레이 테스트 12). 기다린 뒤의 시각(어둠·시간대)으로 굴린다 (PT21 졸병·하얀매: 아침 탈출에 +1(어둠))
@@ -967,6 +995,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           // 방금 빗나간 상대에게 같은 스킬로 다시 하는 임무 판정은 한 단계 어렵다 (12-258, PT15 섬: 위협 실패 5분 뒤 같은 상대에게 다시 위협해 성공).
           // 맞서는 상대(opponent)에게만: 시범을 보이는 내 편 대상(target)에게는 붙지 않는다 (설계 목록 4-3, PT16·17 분대장)
           ...(forMission && !storyCheck && justMissedAgainst(start, input.check.move, input.check.opponent) ? [{ label: "방금 빗나간 상대", value: -1 }] : []),
+          // 필수품 없이 (12-350, 공통 규칙 25): 맨손으로 줄 타기, 불 붙일 것 없이 비벼 피우기
+          ...(input.check.needs ? needsParts(content, start, input.check.needs, input.check.move) : []),
+          ...(handIgnition ? handIgnition.parts : []),
+          // 꾀어내기 (12-350): 호루라기로 꾀어낸 틈에 그 상대를 지나가거나 친다
+          ...(lureBonus(content, start, input) ?? []),
         ],
         story: storyCheck,
       },
@@ -1203,7 +1236,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
     [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default", chosenHealer)],
-    [input.use_item, () => useItem(ctx, input.use_item!)],
+    [input.use_item, () => useItem(ctx, input.use_item!, null, handIgnition ? outcome : undefined)],
+    [input.lure || null, () => lureAt(ctx)],
     [input.drink || null, () => drinkWater(ctx)],
     [input.refill || null, () => refillWater(ctx)],
     [input.change_clothes || null, () => changeClothes(ctx)],
@@ -2092,4 +2126,41 @@ function missionMinutesLeft(state: GameState, forMission: string | null | undefi
   if (!m) return null;
   const left = m.requirements.flatMap((r, i) => ("activity" in r && r.activity === activity ? [r.minutes - (m.progress[i] ?? 0)] : [])).filter((n) => n > 0);
   return left.length ? Math.max(5, Math.ceil(Math.max(...left) / 5) * 5) : null;
+}
+
+/** 판정에 붙인 필수품 (12-350, 공통 규칙 25): 없는 일이거나 없으면 못 하는 일 */
+function needsProblem(content: Content, state: GameState, need: string, move: string): string | null {
+  if (!checkNeedIds(content).includes(need)) return `check.needs는 ${checkNeedIds(content).join("/") || "없음"} 중 하나다.`;
+  const r = checkNeed(content, state.characters[state.playerId], need, move);
+  return r.ok ? null : r.error;
+}
+
+function needsParts(content: Content, state: GameState, need: string, move: string): { label: string; value: number }[] {
+  const r = checkNeed(content, state.characters[state.playerId], need, move);
+  return r.ok ? r.parts : [];
+}
+
+/** 꾀어내기의 보정 (12-350): 꾀어내는 물건이 있고, 같은 턴에 맞서는 상대를 상대하는 그 스킬 판정이면 */
+function lureBonus(content: Content, state: GameState, input: { lure: boolean; check: { move: string; opponent: string | null } | null; target?: string | null }): { label: string; value: number }[] | null {
+  const lure = content.scenario.lure;
+  if (!input.lure || !lure || !input.check || !lure.moves.includes(input.check.move)) return null;
+  if (!input.check.opponent && !input.target) return null;
+  const item = needItem(content, state.characters[state.playerId], lure.need);
+  return item ? [{ label: `꾀어냄 (${content.items[item]?.name ?? item})`, value: lure.bonus }] : null;
+}
+
+/** 꾀어낸다 (12-350, take_action.lure): 이 구역에 소음이 남는다. 꾀어내는 물건이 없으면 소리쳐 더 시끄럽다 */
+function lureAt(ctx: ToolContext): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
+  const { store, content } = ctx;
+  const lure = content.scenario.lure;
+  const state = store.getState();
+  if (!lure) return { ok: false, error: "이 월드에는 꾀어내기가 없다." };
+  if (!state.playerZone) return { ok: false, error: "어디에 있는지 모른다." };
+  const item = needItem(content, state.characters[state.playerId], lure.need);
+  const noise = item ? lure.noise : lure.shout_noise;
+  store.append({ type: "noise_made", zone: state.playerZone, level: noise, day: dayOf(state.time) });
+  const line = item
+    ? `${josa(content.items[item]?.name ?? item, "을/를")} 불어 소리를 냈다. 소리 난 쪽으로 무언가 다가온다 (이 구역에 소음이 남아 감염체가 몰려들 수 있다). 꾀어낸 상대의 움직임은 장면에 맞게 서술한다.`
+    : "꾀어낼 물건이 없어 소리쳐 불렀다. 소리가 크게 퍼지고 내 자리도 드러났다 (이 구역에 소음이 크게 남아 감염체가 몰려들 수 있다).";
+  return { ok: true, lines: [line], displays: [] };
 }

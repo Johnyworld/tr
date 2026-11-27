@@ -46,7 +46,7 @@ scenario:
     이야기가 데려오기 전에는 가족을 장면에 들이지 않는다 (npc_presence로 부르지 않는다). 가족을 만나는 장면은 이 시나리오의 끝이다.
 age: 25
 start_skills: {}
-start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, dry_ration]
+start_inventory: [pipe_spear, leather_jacket, blanket, water_bottle, dry_ration, dry_ration, matchbox]
 start_location: overpass
 access: []
 known_npcs: []

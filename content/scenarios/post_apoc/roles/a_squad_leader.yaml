@@ -33,7 +33,7 @@ age: 29
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: protect, target: "a_haneul", n: 40, text: 막내 문하늘을 살려서 데리고 있는다 }
 start_skills: {}
-start_inventory: [old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, radio, water_bottle, machete]
+start_inventory: [old_rifle, rifle_rounds, rifle_rounds, rifle_rounds, radio, water_bottle, machete, matchbox]
 start_location: a_base
 access: [ration, mission_board]
 beliefs_preset: a_squad_leader

@@ -58,7 +58,8 @@ import { startingSkills } from "./creation.ts";
 // 126: 지도에 아는 전황 (12-336). partyIntel.zone (본·전해 들은 곳)
 // 127: 큰 이야기 (공통 규칙 24, docs/saga-plan.md). sagas, 이벤트 saga_*
 // 128: 큰 이야기 인물 (offstage, 이벤트 npc_arrived)
-export const SAVE_SCHEMA_VERSION = 129;
+// 130: 필수품 (공통 규칙 25, 12-357). traps.item, trap_set.item
+export const SAVE_SCHEMA_VERSION = 130;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -853,7 +854,8 @@ export function createGameSchemas(s: Scenario) {
     /** 주인공에게 복수를 다짐한 사람 (12-135): 주인공이 죽인 사람(victim)의 가족·친구(avenger) */
     vendettas: z.array(z.strictObject({ avenger: z.string(), victim: z.string(), since: z.number().int() })).default([]),
     /** 놓아 둔 덫 (12-131). caught: 걸린 아이템 (아직이면 null) */
-    traps: z.array(z.strictObject({ zone: z.string(), setAt: z.number().int(), caught: z.string().nullable(), qty: z.number().int().min(0).default(0) })).default([]),
+    /** item: 놓은 덫 물건 (12-350: 철사 뭉치·쥐덫, 거두면 돌아온다) */
+    traps: z.array(z.strictObject({ zone: z.string(), setAt: z.number().int(), caught: z.string().nullable(), qty: z.number().int().min(0).default(0), item: z.string().optional() })).default([]),
   });
 
   /** 상태 변경은 반드시 이벤트로 기록한다 (append-only). 상태는 이벤트를 차례로 적용한 결과다 */
@@ -1264,7 +1266,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("vendetta_sworn"), avenger: z.string(), victim: z.string() }),
     z.strictObject({ type: z.literal("vendetta_settled"), avenger: z.string() }),
     /** 덫을 놓았다 / 덫에 걸렸다 / 덫을 거뒀다 (12-131) */
-    z.strictObject({ type: z.literal("trap_set"), zone: z.string(), at: z.number().int() }),
+    z.strictObject({ type: z.literal("trap_set"), zone: z.string(), at: z.number().int(), item: z.string().optional() }),
     z.strictObject({ type: z.literal("trap_caught"), zone: z.string(), item: z.string(), qty: z.number().int().min(1) }),
     z.strictObject({ type: z.literal("trap_collected"), zone: z.string() }),
     /** 유해를 묻었다. marker: 묘비에 적힌 말 (12-130) */
@@ -2975,7 +2977,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       break;
     case "trap_set":
       if (next.traps.some((t) => t.zone === event.zone)) throw new Error(`이미 덫이 있다: ${event.zone}`);
-      next.traps.push({ zone: event.zone, setAt: event.at, caught: null, qty: 0 });
+      next.traps.push({ zone: event.zone, setAt: event.at, caught: null, qty: 0, ...(event.item ? { item: event.item } : {}) });
       break;
     case "trap_caught": {
       const t = next.traps.find((x) => x.zone === event.zone);

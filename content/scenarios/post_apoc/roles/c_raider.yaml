@@ -25,7 +25,7 @@ age: 21
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: rise, target: "squad_leader", text: 약탈조의 사조장이 된다 }
 start_skills: {}
-start_inventory: [c_armband, crowbar, water_bottle, padded_armor]
+start_inventory: [c_armband, crowbar, water_bottle, padded_armor, matchbox]
 start_location: c_base
 access: [ration, mission_board]
 beliefs_preset: c_raider_start

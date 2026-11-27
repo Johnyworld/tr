@@ -15,6 +15,8 @@ import { changeCondition } from "./body.ts";
 import { traitsOf } from "./traits.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { atOwnBase, myPeopleLiveHere, ownedBy } from "../rules/home.ts";
+import { checkNeed, needExtraMinutes, needItem, useNeedItem } from "../rules/needs.ts";
+import type { CheckOutcome } from "../rules/check.ts";
 import {shelterAt, welcomedAsGuest, fireLitHere, fireSpot } from "../rules/place.ts";
 export { welcomedAsGuest } from "../rules/place.ts";
 
@@ -208,6 +210,7 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
   let coldest: Feels | null = null;
   let warmest: Feels | null = null;
   let allIndoor = true;
+  const tarped = underTarp(ctx, activity);
   for (let t = from; t < to; ) {
     const end = Math.min(to, nextBoundary(t));
     const f = feelsLike(ctx.content, { ...state, wet: { ...state.wet, [me.id]: wetLeft } }, activity, t, me.id);
@@ -215,9 +218,11 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
     if (!f.indoor) allIndoor = false;
     if (c.wet) {
       const weather = dayOf(t) === dayOf(state.time) ? weatherNow(ctx.content.scenario, state) : null;
-      if (!f.indoor && weather && c.wet.weather.includes(weather.id) && !wearsWaterproof(ctx, me.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
+      // 방수포 (12-350): 바깥에서 쉬는 동안 쳐 두면 지붕 아래다
+      const roofed = f.indoor || tarped;
+      if (!roofed && weather && c.wet.weather.includes(weather.id) && !wearsWaterproof(ctx, me.id)) wetLeft = Math.round(c.wet.fire_hours * 60);
       // 불 곁이면 fire_hours, 지붕 아래면 roof_hours에 마른다 (12-251: 빗속 섬에서 사흘 내내 젖어 있었다)
-      else if (wetLeft > 0 && (f.warm || f.indoor)) wetLeft = Math.max(0, Math.round(wetLeft - (end - t) * (f.warm ? 1 : c.wet.fire_hours / c.wet.roof_hours)));
+      else if (wetLeft > 0 && (f.warm || roofed)) wetLeft = Math.max(0, Math.round(wetLeft - (end - t) * (f.warm ? 1 : c.wet.fire_hours / c.wet.roof_hours)));
     }
     const hours = (end - t) / 60;
     if (f.value < c.comfort) {
@@ -267,9 +272,21 @@ function exposeOne(ctx: ToolContext, who: string, activity: Activity | string, f
 }
 
 /** 방수복을 입고 있는가 (E3) */
-export function wearsWaterproof(ctx: ToolContext, who: string): boolean {
+/** 방수포 (12-350, 필수품 fire.shelter): 주인공이 지니고 바깥에서 쉬면(휴식·잠·기다림) 곁의 사람까지 지붕 아래다 */
+export function underTarp(ctx: ToolContext, activity: Activity | string): boolean {
+  const need = climateOf(ctx.content)?.fire?.shelter;
+  if (!need || !RESTING_ACTIVITIES.includes(activity)) return false;
+  const state = ctx.store.getState();
+  return !!needItem(ctx.content, state.characters[state.playerId], need);
+}
+
+/** 방수 (12-350): 장비 칸에 입거나 든 것(우산은 무기 칸). splash(물일)는 waterproof: all만 막는다 */
+export function wearsWaterproof(ctx: ToolContext, who: string, splash = false): boolean {
   const me = ctx.store.getState().characters[who];
-  return !!me && Object.values(me.equipped ?? {}).some((id) => !!id && (me.inventory[id] ?? 0) > 0 && !!ctx.content.items[id]?.armor?.waterproof);
+  return !!me && Object.values(me.equipped ?? {}).some((id) => {
+    const w = id && (me.inventory[id] ?? 0) > 0 ? ctx.content.items[id]?.waterproof : undefined;
+    return w === "all" || (w === "rain" && !splash);
+  });
 }
 
 /** 젖은 옷 (12-186): 마르기까지 체감이 떨어진다. 무엇으로 마르는지 GM·화면에 알린다. splash: 물이 튀는 정도라 방수복이 막는다 (물에 빠지면 막지 못한다) */
@@ -277,7 +294,7 @@ export function soak(ctx: ToolContext, who: string, cause: string, splash = fals
   const wet = climateOf(ctx.content)?.wet;
   const me = ctx.store.getState().characters[who];
   if (!wet || !me || me.dead) return [];
-  if (splash && wearsWaterproof(ctx, who)) return [];
+  if (splash && wearsWaterproof(ctx, who, true)) return [];
   const was = (ctx.store.getState().wet?.[who] ?? 0) > 0;
   ctx.store.append({ type: "wet_set", characterId: who, left: Math.round(wet.fire_hours * 60), cause });
   if (was) return [];
@@ -313,8 +330,44 @@ export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; di
   return { ok: true, lines: [`${who.map((id) => playerCalls(state, ctx.content, id)).join(", ")}: 마른 옷으로 갈아입었다.`], displays };
 }
 
-/** 모닥불을 피운다 (연료 아이템을 쓴다). 같은 구역에 있으면 따뜻하고, 연기와 불빛은 소음이 된다 */
-export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: string[] } | { ok: false; error: string } | null {
+/**
+ * 불 붙이기 (12-350, 공통 규칙 25 필수품 fire.ignite): 불이 이미 타고 있거나, 우리 거점·내 거처·우리 사람이 사는 곳이면 붙일 것이 있다 (free).
+ * 밖에서는 라이터·성냥(item)이 있어야 하고, 없으면 그 일의 move 판정으로 비벼 피운다(hand, 보정·시간이 더 든다).
+ * 비 맞는 바깥에서는 방수포 없이 비벼 피우지 못한다
+ */
+export type Ignition = { kind: "free" } | { kind: "item"; item: string } | { kind: "hand"; parts: { label: string; value: number }[]; move: string | null } | { kind: "blocked"; error: string };
+
+export function ignitionFor(content: Content, state: GameState, move?: string | null): Ignition {
+  const fire = climateOf(content)?.fire;
+  const need = fire?.ignite;
+  const me = state.characters[state.playerId];
+  const zone = state.playerZone;
+  if (!need || !me || !zone) return { kind: "free" };
+  if (fireLitHere(state) || state.homes?.[me.id] === zone || atOwnBase(state, content, zone) || myPeopleLiveHere(state, content, zone)) return { kind: "free" };
+  const r = checkNeed(content, me, need, move ?? undefined);
+  if (!r.ok) return { kind: "blocked", error: r.error };
+  if (r.item) return { kind: "item", item: r.item };
+  const shelter = fire.shelter ? needItem(content, me, fire.shelter) : null;
+  if (rainingOnMe(content, state) && !shelter) return { kind: "blocked", error: "비 맞는 바깥이라 불 붙일 것 없이는 불이 붙지 않는다. 방수포를 치거나 지붕 아래 장소로 옮긴다." };
+  return { kind: "hand", parts: r.parts, move: content.scenario.needs.find((n) => n.id === need)?.move ?? null };
+}
+
+/** 불을 피우기 전에 막을 일 (시간을 흘리기 전에). 비벼 피울 때는 판정을 함께 걸어야 한다 */
+export function ignitionProblem(content: Content, state: GameState, check: { move: string } | null): string | null {
+  const fuel = climateOf(content)?.fire;
+  if (!fuel) return null;
+  const ig = ignitionFor(content, state, check?.move ?? null);
+  if (ig.kind === "blocked") return ig.error;
+  if (ig.kind === "hand" && !check) {
+    const minutes = needExtraMinutes(content, fuel.ignite!);
+    return `불 붙일 것(라이터·성냥 같은 것)이 없다. 비벼 피우려면 check로 ${ig.move ?? "판정"}을 함께 건다 (${ig.parts.map((p) => `${p.value} ${p.label}`).join(", ")}${minutes ? `, ${minutes}분 더 든다` : ""}). 실패하면 땔감은 남는다.`;
+  }
+  return null;
+}
+
+/** 모닥불을 피운다 (연료 아이템을 쓴다). 같은 구역에 있으면 따뜻하고, 연기와 불빛은 소음이 된다.
+ * handOutcome: 불 붙일 것 없이 비벼 피운 판정 결과 (12-350). story: 이야기 효과가 피우는 불은 붙일 것을 따지지 않는다 */
+export function lightFire(ctx: ToolContext, item: string, opts: { handOutcome?: CheckOutcome | null; story?: boolean } = {}): { ok: true; lines: string[] } | { ok: false; error: string } | null {
   const fire = climateOf(ctx.content)?.fire;
   const hours = fire?.items[item];
   if (!fire || hours === undefined) return null;
@@ -324,6 +377,14 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
   const zone = state.playerZone;
   if (!zone) return { ok: false, error: "불을 피울 곳이 없다." };
   if ((me.inventory[item] ?? 0) < 1) return { ok: false, error: `${josa(name, "이/가")} 없다.` };
+  const ig: Ignition = opts.story ? { kind: "free" } : ignitionFor(ctx.content, state);
+  if (ig.kind === "blocked") return { ok: false, error: ig.error };
+  if (ig.kind === "hand") {
+    if (!opts.handOutcome) return { ok: false, error: ignitionProblem(ctx.content, state, null) ?? "불 붙일 것이 없다." };
+    if (opts.handOutcome === "miss") return { ok: true, lines: [`불 붙일 것 없이 비벼 보았지만 불이 붙지 않았다 (${josa(name, "은/는")} 그대로 남았다). 실패한 것을 서술한다.`] };
+  }
+  const used = ig.kind === "item" ? useNeedItem(ctx, me.id, fire.ignite!, ig.item) : null;
+  const how = ig.kind === "item" ? `${josa(ctx.content.items[ig.item]?.name ?? ig.item, "으로/로")} 불을 붙였다. ` : ig.kind === "hand" ? "불 붙일 것 없이 오래 비벼 겨우 불씨를 살렸다. " : "";
   // 난로가 있으면 같은 땔감이 오래 탄다 (12-190)
   const stove = stoveAt(ctx.content, state, zone);
   const spot = fireSpot(state) ?? zone;
@@ -337,7 +398,8 @@ export function lightFire(ctx: ToolContext, item: string): { ok: true; lines: st
     lines: [
       stove
         ? `난로에 ${josa(name, "을/를")} 넣었다. 앞으로 ${hoursLeft}시간쯤 탄다 (실내에 있으면 체감 +${fire.warmth}°). 연통의 연기는 멀리서도 보일 수 있다.`
-        : `${josa(name, "으로/로")} 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`,
+        : `${how}${josa(name, "으로/로")} 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`,
+      ...(used ? [used] : []),
     ],
   };
 }

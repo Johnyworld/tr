@@ -118,6 +118,7 @@ describe("기온", () => {
   it("땔감으로 불을 피우면 연료가 줄고, 그 구역이 따뜻해지고, 소음이 난다", () => {
     const { ctx, store, me } = setup({ hour: SEGMENT_START_HOUR.night });
     me().inventory.firewood = 1;
+    me().inventory.matchbox = 1;
     const before = feelsLike(content, store.getState(), "rest")!.value;
     const out = executeTool("take_action", act({ use_item: "firewood" }), ctx);
     expect(out.ok).toBe(true);

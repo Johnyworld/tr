@@ -28,7 +28,7 @@ age: 41
 # 플레이 테스트 11: "장부" 같은 흔한 낱말로 너무 일찍 찼다. 진실이 담긴 믿음으로만
 resolve: { kind: truth, target: "피를 뽑|혈청을 만", n: 1, text: 장부 맨 아랫줄의 사람들이 어디로 가는지 안다 }
 start_skills: {}
-start_inventory: [ledger, notebook, pen, trade_token, pistol, pistol_rounds, pistol_rounds, coat, cigarettes]
+start_inventory: [ledger, notebook, pen, trade_token, pistol, pistol_rounds, pistol_rounds, coat, cigarettes, lighter]
 start_location: e_market
 start_place: pawnshop
 access: [ration, mission_board]

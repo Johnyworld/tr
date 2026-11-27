@@ -32,7 +32,7 @@ scenario:
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: rise, target: "squad_leader", text: 정찰대 분대장이 된다 }
 start_skills: {}
-start_inventory: [baseball_bat, kitchen_knife, water_bottle, binoculars]
+start_inventory: [baseball_bat, kitchen_knife, water_bottle, binoculars, matchbox]
 start_location: b_base
 start_place: rooftop_watch
 access: [ration, mission_board]

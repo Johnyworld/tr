@@ -26,6 +26,9 @@
   loot:
     modifier: 1
     items:
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: whistle, weight: 0.5, qty: [1, 1] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 1, qty: [1, 2] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
       - { item: flashlight, weight: 1, qty: [1, 1] }
@@ -62,6 +65,9 @@
   loot:
     modifier: 0
     items:
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: work_gloves, weight: 0.5, qty: [1, 1] }
+      - { item: shovel, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: fuel_bottle, weight: 3, qty: [1, 2] }
       - { item: scrap_metal, weight: 3, qty: [1, 2] }
@@ -96,6 +102,8 @@
   loot:
     modifier: 0
     items:
+      - { item: whistle, weight: 0.5, qty: [1, 1] }
+      - { item: shovel, weight: 0.5, qty: [1, 1] }
       - { item: rifle_rounds, weight: 2, qty: [1, 2] }
       - { item: pistol_rounds, weight: 1, qty: [1, 1] }
       - { item: shells, weight: 1, qty: [1, 1] }
@@ -133,6 +141,13 @@
   loot:
     modifier: 1
     items:
+      - { item: umbrella, weight: 0.5, qty: [1, 1] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: lighter, weight: 0.5, qty: [1, 1] }
+      - { item: tarp, weight: 0.5, qty: [1, 1] }
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: work_gloves, weight: 0.5, qty: [1, 1] }
+      - { item: wool_hat, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
       - { item: dry_ration, weight: 2, qty: [1, 2] }
@@ -172,6 +187,8 @@
   loot:
     modifier: -1
     items:
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
+      - { item: sewing_kit, weight: 0.5, qty: [1, 1] }
       - { item: canned_food, weight: 1, qty: [1, 1] }  # 플레이 테스트 13: 빈 땅에서 먹을 것이 한 번도 안 나왔다
       - { item: wild_greens, weight: 1, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 2] }
@@ -205,6 +222,9 @@
   loot:
     modifier: 0
     items:
+      - { item: whistle, weight: 0.5, qty: [1, 1] }
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: sewing_kit, weight: 0.5, qty: [1, 1] }
       - { item: canned_food, weight: 1, qty: [1, 1] }  # 플레이 테스트 13: 빈 땅에서 먹을 것이 한 번도 안 나왔다
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: wild_greens, weight: 2, qty: [1, 2] }
@@ -246,6 +266,10 @@
   loot:
     modifier: -1
     items:
+      - { item: lighter, weight: 0.5, qty: [1, 1] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: umbrella, weight: 0.5, qty: [1, 1] }
+      - { item: tarp, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: fuel_bottle, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 1, qty: [1, 1] }
@@ -281,6 +305,8 @@
   loot:
     modifier: 0
     items:
+      - { item: tarp, weight: 0.5, qty: [1, 1] }
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: dry_ration, weight: 3, qty: [1, 1] }
@@ -337,6 +363,8 @@
   loot:
     modifier: -1
     items:
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: oilskin, weight: 1, qty: [1, 1] }
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: scrap_metal, weight: 2, qty: [1, 1] }
@@ -385,6 +413,9 @@
   loot:
     modifier: 0
     items:
+      - { item: oilskin, weight: 1, qty: [1, 1] }
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: tarp, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 3, qty: [1, 2] }
       - { item: water_bottle, weight: 2, qty: [1, 1] }
       - { item: dried_fish, weight: 1, qty: [1, 1] }
@@ -409,6 +440,10 @@
   loot:
     modifier: 0
     items:
+      - { item: umbrella, weight: 0.5, qty: [1, 1] }
+      - { item: rat_trap, weight: 0.5, qty: [1, 1] }
+      - { item: sewing_kit, weight: 0.5, qty: [1, 1] }
+      - { item: matchbox, weight: 0.5, qty: [1, 2] }
       - { item: blanket, weight: 2, qty: [1, 1] }
       - { item: canned_food, weight: 2, qty: [1, 1] }
       - { item: cloth, weight: 2, qty: [1, 1] }
@@ -437,6 +472,9 @@
   loot:
     modifier: 0
     items:
+      - { item: work_gloves, weight: 0.5, qty: [1, 1] }
+      - { item: rope, weight: 0.5, qty: [1, 1] }
+      - { item: lighter, weight: 0.5, qty: [1, 1] }
       - { item: scrap_metal, weight: 3, qty: [1, 2] }
       - { item: fuel_bottle, weight: 1, qty: [1, 1] }
       - { item: duct_tape, weight: 2, qty: [1, 1] }
@@ -461,6 +499,7 @@
   loot:
     modifier: -1
     items:
+      - { item: purifier_tablets, weight: 0.5, qty: [1, 2] }
       - { item: bandage, weight: 2, qty: [1, 1] }
       - { item: painkiller, weight: 1, qty: [1, 1] }
       - { item: empty_bottle, weight: 3, qty: [1, 2] }
@@ -509,6 +548,10 @@
   loot:
     modifier: -1
     items:
+      - { item: sickle, weight: 0.5, qty: [1, 1] }
+      - { item: shovel, weight: 0.5, qty: [1, 1] }
+      - { item: rat_trap, weight: 0.5, qty: [1, 1] }
+      - { item: work_gloves, weight: 0.5, qty: [1, 1] }
       - { item: seed_packet, weight: 1, qty: [1, 1] }
       - { item: potato, weight: 2, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 1] }
@@ -558,6 +601,7 @@
   loot:
     modifier: -1
     items:
+      - { item: shovel, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 1] }
       - { item: planks, weight: 2, qty: [1, 1] }
@@ -589,6 +633,9 @@
   loot:
     modifier: 0
     items:
+      - { item: oilskin, weight: 1, qty: [1, 1] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: rope, weight: 0.5, qty: [1, 1] }
       - { item: scrap_metal, weight: 3, qty: [1, 2] }
       - { item: cloth, weight: 2, qty: [1, 1] }
       - { item: dried_fish, weight: 2, qty: [1, 1] }

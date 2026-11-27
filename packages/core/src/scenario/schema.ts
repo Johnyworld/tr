@@ -1501,10 +1501,38 @@ export const scenarioFileSchema = z
     /** 음식이 상하는 빠르기의 계절 배수 (12-131, 아이템 perishable에 곱한다). 없는 계절은 1 */
     spoilage: z.strictObject({ season: z.record(id, z.number().min(0)).default({}) }).optional(),
     /**
+     * 필수품 (공통 규칙 25, 12-350): 그 일을 하려면 있어야 하는 물건. 물건은 serves로 이 id를 단다. 있으면 보정 없이 보통으로 하고,
+     * 없으면 without이 null이면 못 하고, 수이면 그만큼 판정 보정(without_label)을 받는다.
+     * check: GM이 판정에 check.needs로 붙이는 일 (줄 타기·땅 파기). 아니면 코드가 쓰는 일 (불 붙이기·덫·꾀어내기·방수포·물 거르기).
+     * move: 없이 할 때 거는 판정 스킬 (불 붙이기는 생존), minutes: 없이 할 때 더 드는 시간. consume: 한 번 쓰면 하나 없어진다 (정수 알약).
+     * 쓸 때마다 내구도가 닳는 물건(라이터·성냥갑)은 durability로 닳고, 다 닳으면 없어진다
+     */
+    needs: z
+      .array(
+        z.strictObject({
+          id,
+          label: z.string().min(1),
+          without: z.number().int().min(-3).max(-1).nullable().default(null),
+          without_label: z.string().min(1).optional(),
+          check: z.boolean().default(false),
+          move: id.optional(),
+          minutes: z.number().int().min(0).max(240).default(0),
+          consume: z.boolean().default(false),
+        }),
+      )
+      .default([]),
+    /**
+     * 꾀어내기 (12-350, take_action.lure): 소리로 감염체·적을 꾀어낸다. 그 구역에 소음이 남는다(감염체가 몰려들 수 있다).
+     * need(호루라기)가 있으면 같은 턴에 moves로 맞서는 상대(opponent·target)를 상대하는 판정에 bonus. 없으면 소리쳐서 shout_noise만 남고 내 자리가 드러난다(보정 없음)
+     */
+    lure: z
+      .strictObject({ need: id, moves: z.array(id).min(1), bonus: z.number().int().min(1).max(2).default(1), noise: z.number().int().min(1).max(5).default(1), shout_noise: z.number().int().min(1).max(5).default(2) })
+      .optional(),
+    /**
      * 먹을 것 구하기 (12-131, 12-220): take_action.forage. 판정 결과만큼 얻는다 (수색과 같다: 성공 2, 대가 1, 실패 0, 판정 없으면 0).
      * modifier: 그 일의 판정 보정 (낚시는 쉽고 사냥은 어렵다). 같은 날 같은 구역에서 같은 일을 다시 할 때마다 판정 -1.
      * water: 물이 나는 구역에서만 (아니면 거점이 아닌 구역). companions: 이 엑스트라 틀이 동행이면 하나 더
-     * trap: 덫 (take_action.trap). item을 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 catch가 걸린다. 확인하면 걸린 것과 덫을 거둔다
+     * trap: 덫 (take_action.trap). need(필수품, 철사 뭉치·쥐덫)를 놓는 판정이 성공이면 다음 날, 대가 있는 성공이면 이틀 뒤에 catch가 걸린다. 확인하면 걸린 것과 놓은 덫을 거둔다
      */
     foraging: z
       .strictObject({
@@ -1523,7 +1551,9 @@ export const scenarioFileSchema = z
             }),
           )
           .min(1),
-        trap: z.strictObject({ /** 덫을 놓으려면 배워야 하는 스킬 (전문 기술, 4.2.1) */ move: id.optional(), item: id, catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
+        /** 물 거르기 (12-350, 필수품 id, consume): 불이 없을 때 끓이지 않은 물을 마시면 하나 써서 탈이 나지 않는다 (정수 알약) */
+        purify: id.optional(),
+        trap: z.strictObject({ /** 덫을 놓으려면 배워야 하는 스킬 (전문 기술, 4.2.1) */ move: id.optional(), need: id, catch: z.strictObject({ item: id, qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]) }) }).optional(),
       })
       .optional(),
     /** 몸 상태 (12-1): 허기와 감염. 없으면 그 규칙을 쓰지 않는다 */
@@ -1656,7 +1686,16 @@ export const scenarioFileSchema = z
                  * stove: 난로(시설 effects.fire)가 있는 구역에서 피우면 이만큼 오래 탄다 (12-190: 난로도 땔감을 땐다, 실내만 따뜻하다)
                  */
                 fire: z
-                  .strictObject({ items: z.record(id, z.number().positive()), warmth: z.number().positive(), noise: z.number().int().min(0).default(0), stove: z.number().min(1).default(3) })
+                  .strictObject({
+                    items: z.record(id, z.number().positive()),
+                    warmth: z.number().positive(),
+                    noise: z.number().int().min(0).default(0),
+                    stove: z.number().min(1).default(3),
+                    /** 불 붙일 것 (12-350, 필수품 id). 우리 거점·내 거처·우리 사람이 사는 곳 밖에서 피울 때 있어야 한다. 없으면 needs의 move 판정으로 비벼 피우고, 비 맞는 바깥에서는(방수포 없이) 못 피운다 */
+                    ignite: id.optional(),
+                    /** 방수포 (12-350, 필수품 id): 바깥에서 쉬는 동안(휴식·잠·기다림) 지붕 아래로 친다 */
+                    shelter: id.optional(),
+                  })
                   .optional(),
                 /**
                  * 젖은 옷 (12-121, 12-186): weather 날씨에 바깥에 있었거나 이야기 효과 soak로 젖으면 마를 때까지 체감이 떨어진다.

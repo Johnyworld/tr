@@ -31,7 +31,7 @@ age: 31
 # 다짐 (12-164): 이 시나리오 주인공의 큰 줄기
 resolve: { kind: protect, target: "c_areum", n: 40, text: 조원 진아름을 앞줄에서 살려 낸다 }
 start_skills: {}
-start_inventory: [c_armband, sawn_shotgun, shells, shells, shells, radio, padded_armor]
+start_inventory: [c_armband, sawn_shotgun, shells, shells, shells, radio, padded_armor, matchbox]
 start_location: c_warehouse
 start_place: yard
 access: [ration, mission_board]

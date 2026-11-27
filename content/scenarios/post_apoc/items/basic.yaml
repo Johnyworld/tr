@@ -75,8 +75,9 @@
   value: 10
 - id: wire_roll
   name: 철사 뭉치
-  description: 녹슨 철사와 빈 깡통 몇 개. 덫을 엮을 수 있다.
+  description: 녹슨 철사와 빈 깡통 몇 개. 덫을 엮을 수 있다 (덫 놓기에 쓴다).
   kind: material
+  serves: [trap]
   weight: 0.8
   value: 2
 - id: antibiotics
@@ -140,7 +141,8 @@
   kind: armor
   weight: 2.5
   value: 7
-  armor: { slot: outer, reduces: 0, waterproof: true, penalty: { stealth: -1 } }
+  armor: { slot: outer, reduces: 0, penalty: { stealth: -1 } }
+  waterproof: all
 - id: firewood
   name: 땔감
   icon: fire

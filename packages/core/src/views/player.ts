@@ -252,12 +252,34 @@ function wetSymptom(s: Content["scenario"], state: GameState, id: string): Sympt
 
 /** 장비 한 줄. durability: 남은 내구도 (내구도가 없는 물건은 null) */
 /** slot: 자리 id (벗을 때 쓴다) */
-export type GearView = { id: string; name: string; slot: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName };
+export type GearView = { id: string; name: string; slot: string; slotLabel: string; detail: string; durability: { left: number; max: number } | null; ammo: string | null; icon: IconName; /** 등 칸의 가방 (공통 규칙 26) */ bagId?: string | null; bag?: BagInside };
 
 /** 물건 한 칸 */
 /** wear: 들거나 입을 수 있는 물건이면 그 자리 id (화면의 착용 단추) */
 /** bagId·load: 내용물이 든 가방 개체 (공통 규칙 26, 바닥·창고에서 따로 보인다) */
-export type ItemView = { id: string; name: string; quantity: number; icon: IconName; wear?: string; bagId?: string; load?: number; /** 하나의 무게 (kg, 가방 용량 안내) */ weight: number; /** 가방 물건 (가방에 넣지 못한다) */ isBag?: boolean };
+export type ItemView = {
+  id: string;
+  name: string;
+  quantity: number;
+  icon: IconName;
+  wear?: string;
+  bagId?: string;
+  load?: number;
+  /** 하나의 무게 (kg, 가방 용량 안내) */
+  weight: number;
+  /** 가방 물건 (가방에 넣지 못한다) */
+  isBag?: boolean;
+  /** 지닌 가방이면 용량·감소율·안에 든 것 (누르면 팝오버에 보인다, 공통 규칙 26) */
+  bag?: BagInside;
+};
+export type BagInside = { capacity: number; reduce: number; load: number; items: ItemView[] };
+
+/** 물건 목록 (가방 속처럼 개체를 나누지 않는 곳) */
+function plainItems(content: Content, inv: Record<string, number>): ItemView[] {
+  return Object.entries(inv)
+    .filter(([, quantity]) => quantity > 0)
+    .map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity, icon: itemIcon(content.items[id]), weight: content.items[id]?.weight ?? 0.5 }));
+}
 /** 지닌 가방 하나 (공통 규칙 26). id가 null이면 빈 가방 */
 export type BagSlotView = { id: string | null; item: string; name: string; icon: IconName; worn: boolean; capacity: number; reduce: number; load: number; items: ItemView[] };
 
@@ -272,7 +294,7 @@ export function timeLeftLabel(minutes: number): string {
   return `${words[days] ?? `${days}일`}${halves % 2 ? " 반" : ""}`;
 }
 
-const SLOT_LABELS: Record<string, string> = { weapon: "손", body: "몸", head: "머리", arms: "팔", outer: "외투" };
+const SLOT_LABELS: Record<string, string> = { weapon: "손", body: "몸", back: "가방", head: "머리", arms: "팔", outer: "외투" };
 const HARM_CAP_LABELS: Record<string, string> = { light: "가벼운 피해까지", heavy: "무거운 피해까지" };
 
 function gearView(state: GameState, content: Content): PlayerView["gear"] {
@@ -300,9 +322,17 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
       icon: itemIcon(item),
     };
   };
+  // 등 칸 (공통 규칙 26): 멘 가방과 안에 든 것
+  const worn = carriedBags(content, state, me.id).find((b) => b.worn);
+  const back = worn ? one(worn.item, "back") : null;
+  if (back && worn) {
+    back.detail = `${Math.round(worn.load * 10) / 10}/${worn.capacity}kg · 무게 ${worn.reduce}% 줄임`;
+    back.bagId = worn.id;
+    back.bag = { capacity: worn.capacity, reduce: worn.reduce, load: Math.round(worn.load * 10) / 10, items: plainItems(content, worn.contents) };
+  }
   return {
     weapon: one(equippedItem(me, "weapon"), "weapon"),
-    armor: (["body", "head", "arms", "outer"] as const).map((s) => one(equippedItem(me, s), s)).filter((x): x is GearView => !!x),
+    armor: [...(["body", "head", "arms", "outer"] as const).map((s) => one(equippedItem(me, s), s)), back].filter((x): x is GearView => !!x),
     weight: Math.round(carriedWeight(content, me, state) * 10) / 10,
     capacity: Math.round(carryCapacity(content, me, state)),
     burden: encumbrance(content, me, state),
@@ -422,16 +452,31 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
     const rest = { ...inv };
     for (const b of filled) rest[b.item] = (rest[b.item] ?? 0) - 1;
     return [
-      ...filled.map((b) => ({ id: b.item, name: b.name, quantity: 1, icon: itemIcon(content.items[b.item]), bagId: b.id!, load: Math.round(b.load * 10) / 10, weight: content.items[b.item]?.weight ?? 0.5, isBag: true })),
+      // 바닥·창고의 가방도 누르면 안에 든 것이 보인다
+      ...filled.map((b) => ({ id: b.item, name: b.name, quantity: 1, icon: itemIcon(content.items[b.item]), bagId: b.id!, load: Math.round(b.load * 10) / 10, weight: content.items[b.item]?.weight ?? 0.5, isBag: true, bag: { capacity: b.capacity, reduce: b.reduce, load: Math.round(b.load * 10) / 10, items: plainItems(content, b.contents) } })),
       ...Object.entries(rest)
         .filter(([, quantity]) => quantity > 0)
-        .map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity, icon: itemIcon(content.items[id]), weight: content.items[id]?.weight ?? 0.5, ...(content.items[id]?.bag ? { isBag: true } : {}) })),
+        .map(([id, quantity]) => {
+          const spec = content.items[id]?.bag;
+          return { id, name: content.items[id]?.name ?? id, quantity, icon: itemIcon(content.items[id]), weight: content.items[id]?.weight ?? 0.5, ...(spec ? { isBag: true, bag: { capacity: spec.capacity, reduce: spec.reduce, load: 0, items: [] } } : {}) };
+        }),
     ];
   };
   // 장비로 걸친 것은 소지품에서 하나씩 뺀다 (장비 블록에 따로 보인다)
   const carried = { ...player.inventory };
-  // 가방은 아래쪽 가방 칸에 따로 보인다 (공통 규칙 26)
+  // 가방은 하나씩 따로 (든 가방은 개체마다, 빈 가방은 묶어서). 멘 가방은 장비의 등 칸에 (공통 규칙 26)
   for (const id of Object.keys(carried)) if (content.items[id]?.bag) delete carried[id];
+  const bagTiles: ItemView[] = [];
+  const emptyBags = new Map<string, number>();
+  for (const b of carriedBags(content, state, player.id)) {
+    if (b.worn) continue;
+    if (b.id) bagTiles.push({ id: b.item, name: b.name, quantity: 1, icon: itemIcon(content.items[b.item]), weight: content.items[b.item]?.weight ?? 0.5, isBag: true, bagId: b.id, load: Math.round(b.load * 10) / 10, bag: { capacity: b.capacity, reduce: b.reduce, load: Math.round(b.load * 10) / 10, items: plainItems(content, b.contents) } });
+    else emptyBags.set(b.item, (emptyBags.get(b.item) ?? 0) + 1);
+  }
+  for (const [item, n] of emptyBags) {
+    const spec = content.items[item]?.bag!;
+    bagTiles.push({ id: item, name: content.items[item]?.name ?? item, quantity: n, icon: itemIcon(content.items[item]), weight: content.items[item]?.weight ?? 0.5, isBag: true, bag: { capacity: spec.capacity, reduce: spec.reduce, load: 0, items: [] } });
+  }
   if (content.scenario.gear) {
     for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) {
       const id = equippedItem(player, slot);
@@ -542,11 +587,14 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       ? { level: player.level, xp: player.xp, next: xpForLevel(scenario, atMaxLevel(scenario, player.level) ? player.level : player.level + 1), skillPoints: player.skillPoints, prev: xpForLevel(scenario, player.level), skillMax: scenario.ranges.skill.max, skillMin: scenario.ranges.skill.min, skillCosts: Array.from({ length: scenario.ranges.skill.max - scenario.ranges.skill.min }, (_, i) => raiseCost(scenario, scenario.ranges.skill.min + i)) }
       : null,
     // 소지품은 들거나 입을 수 있는 물건에 그 자리를 붙인다 (상태 화면의 착용 단추, 12-139)
-    inventory: items(carried).map((it) => {
-      const def = content.items[it.id];
-      const wear = content.scenario.gear ? (def?.weapon ? "weapon" : def?.armor?.slot) : undefined;
-      return wear ? { ...it, wear } : it;
-    }),
+    inventory: [
+      ...items(carried).map((it) => {
+        const def = content.items[it.id];
+        const wear = content.scenario.gear ? (def?.weapon ? "weapon" : def?.armor?.slot) : undefined;
+        return wear ? { ...it, wear } : it;
+      }),
+      ...bagTiles.map((it) => ({ ...it, wear: "back" })),
+    ],
     sceneItems: items(state.scene.items),
     bags: carriedBags(content, state, player.id).map((b) => ({ id: b.id, item: b.item, name: b.name, icon: itemIcon(content.items[b.item]), worn: b.worn, capacity: b.capacity, reduce: b.reduce, load: Math.round(b.load * 10) / 10, items: items(b.contents) })),
     ground: { items: items(state.scene.items, SCENE_HOLDER), blocked: groundBlocked(state, content) },

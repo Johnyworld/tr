@@ -91,13 +91,30 @@ function player(): PlayerView {
     }),
     growth: { level: 3, xp: 140, prev: 100, next: 220, skillPoints, skillMax: MAX, skillMin: MIN, skillCosts: COSTS },
     inventory: [
-      { id: "canned_food", name: "통조림", quantity: 3 },
-      { id: "bandage", name: "붕대", quantity: 2 },
+      { id: "canned_food", name: "통조림", quantity: 3, weight: 0.4 },
+      { id: "bandage", name: "붕대", quantity: 2, weight: 0.1 },
+      { id: "water_bottle", name: "물병", quantity: 2, weight: 0.6, icon: "water" },
+      { id: "tote_bag", name: "장바구니", quantity: 1, weight: 0.2, icon: "bag", isBag: true, wear: "back", bag: { capacity: 5, reduce: 10, load: 0, items: [] } },
     ],
     sceneItems: [],
+    // 가방 (공통 규칙 26): 멘 군용 배낭(장비 등 칸), 빈 장바구니(소지품), 바닥의 든 책가방
+    bags: [
+      { id: "bag1", item: "military_pack", name: "군용 배낭", icon: "backpack", worn: true, capacity: 18, reduce: 80, load: 2.2, items: [] },
+      { id: null, item: "tote_bag", name: "장바구니", icon: "bag", worn: false, capacity: 5, reduce: 10, load: 0, items: [] },
+    ],
+    ground: {
+      items: [
+        { id: "school_bag", name: "책가방", quantity: 1, icon: "backpack", bagId: "bag2", load: 1.7, weight: 0.6, isBag: true },
+        { id: "scrap_metal", name: "고철", quantity: 2, weight: 1 },
+      ],
+      blocked: null,
+    },
     gear: {
       weapon: armed ? { id: "pipe", name: "쇠파이프", slot: "weapon", slotLabel: "손", detail: "근접 +1", durability: { left: 6, max: 10 }, ammo: null } : null,
-      armor: [{ id: "jacket", name: "가죽 재킷", slot: "body", slotLabel: "몸", detail: "방어 1", durability: { left: 3, max: 8 }, ammo: null }],
+      armor: [
+        { id: "jacket", name: "가죽 재킷", slot: "body", slotLabel: "몸", detail: "방어 1", durability: { left: 3, max: 8 }, ammo: null },
+        { id: "military_pack", name: "군용 배낭", slot: "back", slotLabel: "가방", detail: "2.2/18kg · 무게 80% 줄임", durability: null, ammo: null, icon: "backpack", bagId: "bag1", bag: { capacity: 18, reduce: 80, load: 2.2, items: [{ id: "canned_food", name: "통조림", quantity: 4, weight: 0.4 }, { id: "rope", name: "밧줄", quantity: 1, weight: 0.6, icon: "tool" }] } },
+      ],
       weight: 9,
       capacity: 20,
       burden: 0,
@@ -184,6 +201,7 @@ window.fetch = async (input, init) => {
     return json({ status: status() });
   }
   if (url.endsWith("/api/exit")) return json({ error: "목업에서는 끝낼 수 없습니다" }, false);
+  if (url.endsWith("/api/item-move")) return json({ error: "목업에서는 옮길 수 없습니다 (모양만 봅니다)" }, false);
   if (url.includes("/api/")) return json({});
   return realFetch(input, init);
 };

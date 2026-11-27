@@ -35,11 +35,10 @@ const PATHS: Record<string, string[]> = {
   rain: ["M7 14a4 4 0 0 1-.6-8A6 6 0 0 1 18 5a4.5 4.5 0 0 1-.5 9z", "M8 17l-1 3", "M12 17l-1 3", "M16 17l-1 3"],
   fog: ["M4 8h16", "M3 12h14", "M6 16h15", "M5 20h10"],
   snow: ["M7 13a4 4 0 0 1-.6-8A6 6 0 0 1 18 4a4.5 4.5 0 0 1-.5 9z", "M8 17h.01", "M12 16h.01", "M16 17h.01", "M10 20h.01", "M14 20h.01"],
+  // Lucide arrow-up-right (ISC 라이선스, lucide.dev): 물건 옮기기 (공통 규칙 26)
+  "arrow-up-right": ["M7 7h10v10", "M7 17 17 7"],
   // Lucide arrow-left (ISC 라이선스, lucide.dev)
   "arrow-left": ["m12 19-7-7 7-7", "M19 12H5"],
-  // Lucide download·upload (ISC 라이선스, lucide.dev): 창고로 넣기·꺼내기 (12-149)
-  "stash-in": ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "m7 10 5 5 5-5", "M12 15V3"],
-  "stash-out": ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "m17 8-5-5-5 5", "M12 3v12"],
   // Lucide trash-2 (ISC 라이선스, lucide.dev): 세이브 삭제 (12-214)
   trash: ["M3 6h18", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", "M10 11v6", "M14 11v6"],
   // Lucide lock (ISC 라이선스, lucide.dev)

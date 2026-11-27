@@ -60,7 +60,7 @@ export type PlayerView = {
   /** 구역 안의 지금 장소 (12-244). 없으면 헤더는 구역 이름 */
   place?: { name: string; indoor: boolean; spawned: boolean } | null;
   battle: { title: string; sideLabel: string; round: string; momentum: number; momentumMax: number; momentumLabel: string; alarmLabel: string; positionLabel: string } | null;
-  gear?: { weapon: GearView | null; armor: GearView[]; weight: number; capacity: number; burden: 0 | 1 | 2 } | null;
+  gear?: { weapon: GearView | null; armor: GearView[]; weight: number; capacity: number; burden: 0 | 1 | 2; } | null;
   companions?: { id: string; name: string; bondLabel: string; note: string | null; apart: boolean; states?: SymptomView[] }[];
   debts?: { name: string; amount: number }[];
   loan?: string[];
@@ -83,10 +83,13 @@ export type PlayerView = {
   placeMap?: PlaceMapView | null;
 };
 
-export type GearView = { id: string; name: string; slot?: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };
+export type GearView = { id: string; name: string; slot?: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string; /** 등 칸의 가방 (공통 규칙 26) */ bagId?: string | null; bag?: BagInside };
+
+/** 가방의 용량·감소율·안에 든 것 */
+export type BagInside = { capacity: number; reduce: number; load: number; items: ItemView[] };
 
 /** wear: 들거나 입을 수 있으면 그 자리 id */
-export type ItemView = { id: string; name: string; quantity: number; icon?: string; wear?: string; /** 든 가방 개체 (바닥·창고) */ bagId?: string; load?: number; weight?: number; isBag?: boolean };
+export type ItemView = { id: string; name: string; quantity: number; icon?: string; wear?: string; /** 든 가방 개체 (바닥·창고) */ bagId?: string; load?: number; weight?: number; isBag?: boolean; /** 지닌 가방이면 안에 든 것 */ bag?: BagInside };
 
 /** 지닌 가방 하나 (공통 규칙 26). id가 null이면 빈 가방 */
 export type BagSlotView = { id: string | null; item: string; name: string; icon?: string; worn: boolean; capacity: number; reduce: number; load: number; items: ItemView[] };

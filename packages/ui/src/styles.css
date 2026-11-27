@@ -1588,144 +1588,67 @@ body {
   font-size: 13px;
 }
 
-/* 물건 옮기기 팝오버 (공통 규칙 26): 아이템을 누르면 어디에 둘지 고른다 */
-.item-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  min-width: 190px;
-  padding: 4px;
-  border: 1px solid var(--border-hover);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
-  cursor: default;
+/* 물건 옮기기 팝오버 (공통 규칙 26): 모양은 .popover, 고르는 것은 .btn·.chip */
+.popover.item-pop {
+  width: min(260px, calc(100vw - 32px));
 }
 
-.item-grid li:nth-child(2n) .item-menu {
+.item-grid li:nth-child(2n) .popover.item-pop,
+.item-grid li:nth-child(2n) .popover.bag-pop {
   left: auto;
   right: 0;
 }
 
-.item-menu > button {
-  padding: 6px 8px;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.item-menu > button:hover:not(:disabled),
-.item-menu > button:focus-visible {
-  background: var(--surface);
-  color: var(--heading);
-  outline: none;
-}
-
-.item-menu > button:disabled {
-  color: var(--muted);
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.item-menu-qty {
+.bag-pop-head {
   display: flex;
-  gap: 4px;
-  padding: 2px 2px 6px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
-
-.item-menu-qty button {
-  flex: 1;
-  padding: 3px 6px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.item-menu-qty button.on {
-  border-color: var(--accent);
-  color: var(--heading);
-}
-
-/* 가방 칸 (공통 규칙 26): 창고처럼 시트 아래쪽 */
-.bag-block .bag-load {
-  font-size: 12px;
-}
-
-.bag-block.worn h3 {
-  color: var(--accent);
-}
-
-.bag-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.bag-actions button {
-  padding: 3px 10px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.bag-actions button:hover:not(:disabled) {
-  border-color: var(--border-hover);
-  color: var(--heading);
-}
-
-.bag-actions button:disabled {
-  color: var(--muted);
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* 창고로 넣기·꺼내기 (12-149): 아이콘 버튼, 누르고 있으면 계속 */
-.item-move {
-  flex: none;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bag-pop-head .popover-q {
+  margin: 0;
+}
+
+.item-pop-qty {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+
+.item-pop-qty .chip {
+  flex: 1;
+  padding: 3px 10px;
+  font-size: 13px;
+}
+
+.item-pop-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.item-pop-options .btn {
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+}
+
+.item-pop-options .btn {
+  flex-wrap: wrap;
+}
+
+.item-pop-why {
+  flex-basis: 100%;
+  font-size: 11px;
   color: var(--muted);
-  opacity: 0.55;
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: opacity 0.12s;
 }
 
-.item-move:hover,
-.item-move:focus-visible {
-  opacity: 1;
-}
-
-.item-move:active {
-  background: var(--border);
+/* 옮기기 단추 (공통 규칙 26): 모양은 Button(.btn), 칸 오른쪽 끝에 */
+button.btn.item-move {
+  flex: none;
+  margin-left: auto;
 }
 
 /* 장비 착용·해제 (12-139): 소지품 칸을 누르면 입기·들기, 장비 칸을 누르면 벗기 확인 */
@@ -1761,6 +1684,27 @@ body {
   border: 1px solid var(--surface);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+/* 아래 자리가 모자라면 위로 연다 (useFlipUp) */
+.popover.popover-up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.popover.bag-pop {
+  width: min(300px, calc(100vw - 32px));
+}
+
+.popover.bag-pop .item-grid.one-col,
+.item-grid.one-col {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 8px;
+}
+
+.item-grid.one-col li .popover.item-pop {
+  left: auto;
+  right: 0;
 }
 
 .popover-q {

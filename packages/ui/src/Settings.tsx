@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ConfirmExit } from "./MainMenu.tsx";
+import { Popover } from "./Dialog.tsx";
 
 /** 세계 설정 (packages/core GameState.options, statusServer의 /api/options 와 맞춘다) */
 export type GameOptions = { mature: boolean; dialogue: "novel" | "script" };
@@ -95,15 +96,7 @@ export function SettingsButton({ enabled, onStatus }: { enabled: boolean; onStat
       .then((r) => r.json() as Promise<{ open: boolean; options?: GameOptions }>)
       .then((b) => setOptions(b.open ? (b.options ?? null) : null))
       .catch(() => setError("설정을 읽지 못했습니다."));
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    // 확인 창(게임 종료)은 설정 창 바깥에 그려지니 그 안을 누른 것은 닫지 않는다
-    const onClick = (e: MouseEvent) => boxRef.current && !boxRef.current.contains(e.target as Node) && !(e.target as Element).closest?.(".confirm-backdrop") && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("mousedown", onClick);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("mousedown", onClick);
-    };
+    // 바깥 누르기·Esc로 닫기는 Popover가 한다 (게임 종료 확인 창 안을 누른 것은 닫지 않는다)
   }, [open]);
 
   useEffect(() => {
@@ -142,48 +135,46 @@ export function SettingsButton({ enabled, onStatus }: { enabled: boolean; onStat
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       </button>
-      {open && (
-        <div className="settings-panel" role="dialog" aria-label="설정" style={place ?? { visibility: "hidden" }}>
-          <h2>설정</h2>
-          {!options && !error && <p className="muted">불러오는 중…</p>}
-          {options &&
-            ROWS.map((row) => (
-              <div key={row.key} className="settings-row">
-                <div className="settings-label">{row.label}</div>
-                <div className="settings-choices" role="radiogroup" aria-label={row.label}>
-                  {row.choices.map((c) => (
-                    <button
-                      key={String(c.value)}
-                      type="button"
-                      role="radio"
-                      aria-checked={options[row.key] === c.value}
-                      className={options[row.key] === c.value ? "chip on" : "chip"}
-                      disabled={saving}
-                      onClick={() => options[row.key] !== c.value && void change({ [row.key]: c.value })}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="settings-help">{row.choices.find((c) => c.value === options[row.key])?.help}</p>
+      <Popover open={open} onClose={() => setOpen(false)} boundary={boxRef} label="설정" className="settings-panel" style={place ?? { visibility: "hidden" }}>
+        <h2>설정</h2>
+        {!options && !error && <p className="muted">불러오는 중…</p>}
+        {options &&
+          ROWS.map((row) => (
+            <div key={row.key} className="settings-row">
+              <div className="settings-label">{row.label}</div>
+              <div className="settings-choices" role="radiogroup" aria-label={row.label}>
+                {row.choices.map((c) => (
+                  <button
+                    key={String(c.value)}
+                    type="button"
+                    role="radio"
+                    aria-checked={options[row.key] === c.value}
+                    className={options[row.key] === c.value ? "chip on" : "chip"}
+                    disabled={saving}
+                    onClick={() => options[row.key] !== c.value && void change({ [row.key]: c.value })}
+                  >
+                    {c.label}
+                  </button>
+                ))}
               </div>
-            ))}
-          {error && <p className="settings-error">{error}</p>}
-          <p className="settings-note">바꾸면 다음 서술부터 적용됩니다.</p>
-          <div className="settings-exit">
-            <button
-              type="button"
-              className="settings-exit-button"
-              onClick={() => {
-                setExitError(null);
-                setExiting(true);
-              }}
-            >
-              게임 종료
-            </button>
-          </div>
+              <p className="settings-help">{row.choices.find((c) => c.value === options[row.key])?.help}</p>
+            </div>
+          ))}
+        {error && <p className="settings-error">{error}</p>}
+        <p className="settings-note">바꾸면 다음 서술부터 적용됩니다.</p>
+        <div className="settings-exit">
+          <button
+            type="button"
+            className="settings-exit-button"
+            onClick={() => {
+              setExitError(null);
+              setExiting(true);
+            }}
+          >
+            게임 종료
+          </button>
         </div>
-      )}
+      </Popover>
       {exiting && <ConfirmExit busy={exitBusy} error={exitError} onCancel={() => setExiting(false)} onConfirm={() => void exitGame()} />}
     </div>
   );

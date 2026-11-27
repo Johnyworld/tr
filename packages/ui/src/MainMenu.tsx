@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Portrait } from "./Portrait.tsx";
 import { Icon } from "./Icon.tsx";
+import { ConfirmDialog } from "./Dialog.tsx";
 import type { GmLink, SaveSlot } from "./types.ts";
 
 /**
@@ -198,28 +199,12 @@ function SaveRow({ slot, busy, canOpen, onOpen, onDelete }: { slot: SaveSlot; bu
 
 /** 삭제 확인 창: 되돌릴 수 없다 */
 function ConfirmDelete({ slot, onCancel, onConfirm }: { slot: SaveSlot; onCancel: () => void; onConfirm: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
   return (
-    <div className="confirm-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
-        <h2 id="confirm-title">세이브를 삭제할까요?</h2>
-        <p>
-          <strong>{slot.hero?.name ?? slot.id}</strong> ({slot.worldTitle})의 이야기가 모두 지워집니다. 되돌릴 수 없습니다.
-        </p>
-        <div className="confirm-actions">
-          <button type="button" onClick={onCancel} autoFocus>
-            취소
-          </button>
-          <button type="button" className="danger" onClick={onConfirm}>
-            삭제
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog title="세이브를 삭제할까요?" confirmLabel="삭제" onCancel={onCancel} onConfirm={onConfirm}>
+      <p>
+        <strong>{slot.hero?.name ?? slot.id}</strong> ({slot.worldTitle})의 이야기가 모두 지워집니다. 되돌릴 수 없습니다.
+      </p>
+    </ConfirmDialog>
   );
 }
 
@@ -235,26 +220,9 @@ function playedAt(iso: string): string {
 
 /** 게임 종료 확인 창 (시트의 설정 창에서) */
 export function ConfirmExit({ busy, error, onCancel, onConfirm }: { busy: boolean; error: string | null; onCancel: () => void; onConfirm: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
   return (
-    <div className="confirm-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="exit-title">
-        <h2 id="exit-title">게임을 끝낼까요?</h2>
-        <p>진행은 자동으로 저장돼 있습니다. 메인 메뉴로 돌아가고, 이어서 하기에서 다시 열 수 있습니다.</p>
-        {error && <p className="settings-error">{error}</p>}
-        <div className="confirm-actions">
-          <button type="button" onClick={onCancel} autoFocus disabled={busy}>
-            취소
-          </button>
-          <button type="button" className="danger" onClick={onConfirm} disabled={busy}>
-            게임 종료
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog title="게임을 끝낼까요?" confirmLabel="게임 종료" busy={busy} error={error} onCancel={onCancel} onConfirm={onConfirm}>
+      <p>진행은 자동으로 저장돼 있습니다. 메인 메뉴로 돌아가고, 이어서 하기에서 다시 열 수 있습니다.</p>
+    </ConfirmDialog>
   );
 }

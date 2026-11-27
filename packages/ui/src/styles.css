@@ -1233,17 +1233,13 @@ body {
   cursor: default;
 }
 
-.settings-panel {
-  /* 자리(top·left·width)는 Settings.tsx가 버튼 위치로 재서 화면 안에 둔다 */
+.popover.settings-panel {
+  /* 모양은 .popover. 자리(top·left·width)는 Settings.tsx가 버튼 위치로 재서 화면 안에 둔다 */
   position: fixed;
   z-index: 10;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
   padding: 14px 16px 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .settings-panel h2 {
@@ -1746,24 +1742,62 @@ body {
   position: relative;
 }
 
-.gear-pop {
+/* 팝오버 (Dialog.tsx Popover): 여는 것 바로 아래 왼쪽 맞춤. 부모가 position: relative */
+.popover {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   z-index: 30;
   width: 220px;
   padding: 12px;
   cursor: default;
+  white-space: normal;
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--surface);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
 }
 
-.gear-pop-q {
+.popover-q {
   margin: 0 0 4px;
   color: var(--heading);
   font-weight: 600;
+}
+
+/* 예/아니요: 확인 창 단추(.confirm-actions button)를 조금 작게 */
+.popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.popover-actions button {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+}
+
+.popover-actions button.primary {
+  color: var(--on-accent);
+  background: var(--primary);
+  font-weight: 700;
+}
+
+.popover-actions button:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+
+.popover-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Lv UP을 누르면 스킬 블록을 잠깐 밝힌다 */
@@ -2973,33 +3007,8 @@ body {
   border-color: var(--border-hover);
 }
 
-.portrait-pop {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 30;
-  width: 220px;
-  padding: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
-}
-
-.portrait-pop-pick {
+.popover.portrait-pop-pick {
   width: min(360px, calc(100vw - 32px));
-}
-
-.portrait-pop-q {
-  margin: 0 0 4px;
-  color: var(--heading);
-  font-weight: 600;
-}
-
-.portrait-pop-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
 }
 
 .portrait-pop-error {
@@ -4400,6 +4409,12 @@ button.persona-btn:not(:disabled):hover {
 
 .confirm-actions button:hover:not(:disabled) {
   filter: brightness(1.2);
+}
+
+.confirm-actions button.primary {
+  color: var(--on-accent);
+  background: var(--primary);
+  font-weight: 700;
 }
 
 .confirm-actions button.danger {

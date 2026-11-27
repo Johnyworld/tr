@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Portrait, PORTRAIT_IDS } from "./Portrait.tsx";
 import { Icon } from "./Icon.tsx";
+import { ConfirmDialog } from "./Dialog.tsx";
 import type { CreationStatus, NewGameView } from "./types.ts";
 
 /**
@@ -301,12 +302,6 @@ function CharacterStep({ view, busy, answer }: StepProps) {
 function ConfirmStep({ view, busy, answer }: StepProps) {
   const c = view.character!;
   const [asking, setAsking] = useState(false);
-  useEffect(() => {
-    if (!asking) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setAsking(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [asking]);
   return (
     <>
       <h2 className="newgame-title">이 사람으로 시작할까요?</h2>
@@ -320,27 +315,17 @@ function ConfirmStep({ view, busy, answer }: StepProps) {
         </button>
       </div>
       {asking && (
-        <div className="confirm-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setAsking(false)}>
-          <div className="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="restart-title">
-            <h2 id="restart-title">처음부터 다시 만들까요?</h2>
-            <p>지금까지 정한 과거 배경·이름·능력·스킬·트레잇·성격·설정이 모두 지워집니다.</p>
-            <div className="confirm-actions">
-              <button type="button" onClick={() => setAsking(false)} autoFocus>
-                취소
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => {
-                  setAsking(false);
-                  answer("restart");
-                }}
-              >
-                처음부터 다시
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="처음부터 다시 만들까요?"
+          confirmLabel="처음부터 다시"
+          onCancel={() => setAsking(false)}
+          onConfirm={() => {
+            setAsking(false);
+            answer("restart");
+          }}
+        >
+          <p>지금까지 정한 과거 배경·이름·능력·스킬·트레잇·성격·설정이 모두 지워집니다.</p>
+        </ConfirmDialog>
       )}
     </>
   );

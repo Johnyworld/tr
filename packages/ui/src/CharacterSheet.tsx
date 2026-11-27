@@ -6,6 +6,7 @@ import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
 import { MapPanel } from "./MapPanel.tsx";
+import { ConfirmPopover, Popover } from "./Dialog.tsx";
 import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView, WarMapView } from "./types.ts";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
@@ -740,18 +741,6 @@ function GearBox({ gear, canUnequip }: { gear: GearView; canUnequip?: boolean })
   const clickable = !!(canUnequip && equip && gear.slot);
   const [confirm, setConfirm] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!confirm) return;
-    const close = (e: Event) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setConfirm(false);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [confirm]);
   const verb = gear.slot === "weapon" ? "내려놓을까요" : "벗을까요";
   return (
     <div
@@ -792,30 +781,18 @@ function GearBox({ gear, canUnequip }: { gear: GearView; canUnequip?: boolean })
           </span>
         </div>
       )}
-      {clickable && confirm && (
-        // 팝오버 안을 누른 것은 상자 클릭(열고 닫기)으로 번지지 않게 막는다
-        <div className="gear-pop" role="dialog" aria-label={`${gear.name} ${verb}`} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-          <p className="gear-pop-q">
-            {objectJosa(gear.name)} {verb}?
-          </p>
-          <div className="portrait-pop-actions">
-            <button
-              type="button"
-              className="primary"
-              disabled={equip!.busy}
-              onClick={() => {
-                setConfirm(false);
-                void equip!.send({ slot: gear.slot });
-              }}
-            >
-              예
-            </button>
-            <button type="button" onClick={() => setConfirm(false)}>
-              아니요
-            </button>
-          </div>
-        </div>
-      )}
+      <ConfirmPopover
+        open={clickable && confirm}
+        onClose={() => setConfirm(false)}
+        boundary={box}
+        label={`${gear.name} ${verb}`}
+        question={`${objectJosa(gear.name)} ${verb}?`}
+        busy={equip?.busy}
+        onConfirm={() => {
+          setConfirm(false);
+          void equip!.send({ slot: gear.slot });
+        }}
+      />
     </div>
   );
 }
@@ -1000,18 +977,7 @@ function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: Event) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(null);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
+  const close = () => setOpen(null);
   const choose = async (id: string) => {
     if (busy) return;
     setBusy(true);
@@ -1036,41 +1002,34 @@ function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: 
       <button type="button" className="portrait-chooser-face" aria-haspopup="dialog" aria-expanded={open !== null} title="얼굴 고르기" onClick={() => setOpen(open ? null : "ask")}>
         <Portrait id={null} size={90} title="얼굴 없음 (눌러서 고르기)" />
       </button>
-      {open === "ask" && (
-        <div className="portrait-pop" role="dialog" aria-label="얼굴 고르기">
-          <p className="portrait-pop-q">얼굴을 선택하시겠습니까?</p>
-          <p className="muted small">한 번만 고를 수 있습니다.</p>
-          <div className="portrait-pop-actions">
-            <button type="button" className="primary" onClick={() => setOpen("pick")}>
-              예
-            </button>
-            <button type="button" onClick={() => setOpen(null)}>
-              아니요
-            </button>
-          </div>
+      <ConfirmPopover
+        open={open === "ask"}
+        onClose={close}
+        boundary={box}
+        label="얼굴 고르기"
+        question="얼굴을 선택하시겠습니까?"
+        note="한 번만 고를 수 있습니다."
+        onConfirm={() => setOpen("pick")}
+      />
+      <Popover open={open === "pick"} onClose={close} boundary={box} label="얼굴 고르기" className="portrait-pop-pick">
+        <p className="popover-q">얼굴을 골라 주세요</p>
+        {error && <p className="portrait-pop-error">{error}</p>}
+        <div className="portrait-pop-list">
+          {sections.map((sec) => (
+            <section key={sec.style}>
+              {sections.length > 1 && <h3 className="portrait-section-title">{sec.label}</h3>}
+              <div className="portrait-pop-grid">
+                {sec.faces.map((id, i) => (
+                  <button key={id} type="button" className="portrait-pick" disabled={busy} aria-label={sec.numbered ? `초상화 ${i + 1}` : `초상화 ${id}`} onClick={() => void choose(id)}>
+                    <Portrait id={id} pack={player.packId} size={72} square />
+                    {sec.numbered && <span className="portrait-number">{i + 1}</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
-      )}
-      {open === "pick" && (
-        <div className="portrait-pop portrait-pop-pick" role="dialog" aria-label="얼굴 고르기">
-          <p className="portrait-pop-q">얼굴을 골라 주세요</p>
-          {error && <p className="portrait-pop-error">{error}</p>}
-          <div className="portrait-pop-list">
-            {sections.map((sec) => (
-              <section key={sec.style}>
-                {sections.length > 1 && <h3 className="portrait-section-title">{sec.label}</h3>}
-                <div className="portrait-pop-grid">
-                  {sec.faces.map((id, i) => (
-                    <button key={id} type="button" className="portrait-pick" disabled={busy} aria-label={sec.numbered ? `초상화 ${i + 1}` : `초상화 ${id}`} onClick={() => void choose(id)}>
-                      <Portrait id={id} pack={player.packId} size={72} square />
-                      {sec.numbered && <span className="portrait-number">{i + 1}</span>}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      )}
+      </Popover>
     </div>
   );
 }

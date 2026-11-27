@@ -215,40 +215,6 @@ function ScenarioStep({ view, busy, answer, peek, onPeek }: StepProps & { peek: 
   );
 }
 
-/** 마크다운 조금(## 제목, - 목록)만 읽는 글 */
-function StoryText({ text }: { text: string }) {
-  const blocks = text
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .split(/\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  return (
-    <div className="story-text">
-      {blocks.map((line, i) =>
-        line.startsWith("#") ? (
-          <h4 key={i}>{line.replace(/^#+\s*/, "")}</h4>
-        ) : line.startsWith("- ") ? (
-          <p key={i} className="story-item">
-            {line.slice(2)}
-          </p>
-        ) : (
-          <p key={i}>{line}</p>
-        ),
-      )}
-    </div>
-  );
-}
-
-/** 접는 이야기 상자 (지금 상황 등) */
-function Story({ text, title }: { text: string; title?: string }) {
-  return (
-    <details className="newgame-story" open>
-      <summary>{title ?? "이야기"}</summary>
-      <StoryText text={text} />
-    </details>
-  );
-}
-
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
 /** 뒤로 왔을 때 이 단계에 전에 골라 둔 값 (없으면 undefined) */

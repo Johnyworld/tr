@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { HudPanel } from "./HudPanel.tsx";
+import { Accordion } from "./Accordion.tsx";
 import { MemoPanel } from "./MemoPanel.tsx";
 import { Icon } from "./Icon.tsx";
 import { Portrait } from "./Portrait.tsx";
@@ -55,9 +55,10 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
             </div>
 
 
-            <HudPanel
+            <Accordion
+              variant="card"
               id="present"
-              label="같이 있는 인물"
+              title="같이 있는 인물"
               meta={player.present.length ? `${player.present.length}명` : null}
               peek={player.present.length ? player.present.map((p) => p.name).join(", ") : "아무도 없습니다"}
               empty={player.present.length === 0}
@@ -71,7 +72,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                   ))}
                 </ul>
               )}
-            </HudPanel>
+            </Accordion>
 
             {player.battle && (
               <section className="sheet-battle">
@@ -261,10 +262,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
 
           {player.relations.length > 0 && (
             <section className="relations">
-              <details open>
-                <summary>
-                  <h3>관계</h3>
-                </summary>
+              <Accordion id="relations" title={<h3>관계</h3>}>
                 <table>
                   <thead>
                     <tr>
@@ -287,22 +285,19 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                     ))}
                   </tbody>
                 </table>
-              </details>
+              </Accordion>
             </section>
           )}
 
           {player.ties && player.ties.length > 0 && (
             <section className="beliefs ties">
-              <details open>
-                <summary>
-                  <h3>인물 사이 ({player.ties.length})</h3>
-                </summary>
+              <Accordion id="ties" title={<h3>인물 사이 ({player.ties.length})</h3>}>
                 <ul>
                   {player.ties.map((t) => (
                     <li key={t.key}>{t.text}</li>
                   ))}
                 </ul>
-              </details>
+              </Accordion>
             </section>
           )}
 
@@ -334,10 +329,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
             <>
           {player.deeds.length > 0 && (
             <section className="beliefs deeds">
-              <details open>
-                <summary>
-                  <h3>내 행적 ({player.deeds.length})</h3>
-                </summary>
+              <Accordion id="deeds" title={<h3>내 행적 ({player.deeds.length})</h3>}>
                 <ul>
                   {player.deeds.map((d) => (
                     <li key={d.id}>
@@ -346,15 +338,12 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                     </li>
                   ))}
                 </ul>
-              </details>
+              </Accordion>
             </section>
           )}
 
           <section className="beliefs">
-            <details open>
-              <summary>
-                <h3>아는 것 ({player.beliefs.length})</h3>
-              </summary>
+            <Accordion id="beliefs" title={<h3>아는 것 ({player.beliefs.length})</h3>}>
               <ul>
                 {player.beliefs.map((b) => (
                   <li key={b.id}>
@@ -362,7 +351,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                   </li>
                 ))}
               </ul>
-            </details>
+            </Accordion>
           </section>
             </>
           ),
@@ -676,9 +665,10 @@ function TodoCard({ todos }: { todos: NonNullable<PlayerView["todos"]> }) {
   const first = todos[0];
   const urgent = todos.filter((t) => t.urgent).length;
   return (
-    <HudPanel
+    <Accordion
+      variant="card"
       id="todo"
-      label="퀘스트"
+      title="퀘스트"
       meta={todos.length > 0 && <span className={urgent ? "todo-count urgent" : "todo-count"}>{urgent ? `급한 일 ${urgent} · ` : ""}{todos.length}개</span>}
       peek={first ? `${first.title}${todos.length > 1 ? ` 외 ${todos.length - 1}` : ""}` : "퀘스트가 없습니다"}
       empty={todos.length === 0}
@@ -713,7 +703,7 @@ function TodoCard({ todos }: { todos: NonNullable<PlayerView["todos"]> }) {
           ))}
         </ul>
       )}
-    </HudPanel>
+    </Accordion>
   );
 }
 

@@ -108,9 +108,16 @@ function player(): PlayerView {
     faction: { name: "강변 정착지", moraleLabel: "보통", rationLabel: "넉넉함" },
     zone: { name: "무너진 고가도로", owner: "강변 정착지" },
     battle: null,
-    relations: [],
-    deeds: [],
-    beliefs: [],
+    relations: [
+      { id: "npc_a", name: "박*호", trust: 2, affection: 1, respect: 0 },
+      { id: "npc_b", name: "최*란", trust: -1, affection: 0, respect: 2 },
+    ],
+    ties: [{ key: "t1", text: "박*호와 최*란은 오랜 동료다" }],
+    deeds: [{ id: "d1", summary: "고가도로 아래에서 낯선 사람을 도왔다", tagLabels: ["도움"], visibleWitnesses: ["박*호"] }],
+    beliefs: [
+      { id: "b1", fact: "강 건너 공장에 물자가 남아 있다", sourceLabel: "소문", learnedLabel: "2일째" },
+      { id: "b2", fact: "밤에는 북쪽 다리에 감염체가 모인다", sourceLabel: "직접 봄", learnedLabel: "3일째" },
+    ],
   };
 }
 

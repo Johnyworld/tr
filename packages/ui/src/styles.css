@@ -446,27 +446,6 @@ body {
   padding-left: 18px;
 }
 
-.beliefs summary {
-  cursor: pointer;
-  list-style: none;
-}
-
-.beliefs summary::-webkit-details-marker {
-  display: none;
-}
-
-.beliefs summary h3 {
-  display: inline;
-}
-
-.beliefs summary h3::after {
-  content: " ▸";
-}
-
-.beliefs details[open] summary h3::after {
-  content: " ▾";
-}
-
 .beliefs ul {
   margin: 8px 0 0;
   padding: 0;
@@ -517,28 +496,6 @@ body {
 
 .card.deed {
   border-left-color: var(--partial);
-}
-
-.relations summary,
-.relations summary h3 {
-  cursor: pointer;
-  display: inline;
-}
-
-.relations summary {
-  list-style: none;
-}
-
-.relations summary::-webkit-details-marker {
-  display: none;
-}
-
-.relations summary h3::after {
-  content: " ▸";
-}
-
-.relations details[open] summary h3::after {
-  content: " ▾";
 }
 
 .relations table {
@@ -2186,48 +2143,6 @@ body {
   color: var(--muted);
 }
 
-.newgame-story {
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
-  max-height: 46vh;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.newgame-story::-webkit-scrollbar {
-  display: none;
-}
-
-.newgame-story summary {
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.newgame-story h4 {
-  margin: 12px 0 4px;
-  font-size: 14px;
-}
-
-.newgame-story p {
-  margin: 4px 0;
-  font-size: 13px;
-  line-height: 1.75;
-}
-
-.newgame-story .story-item {
-  padding-left: 12px;
-  text-indent: -8px;
-}
-
-.newgame-story .story-item::before {
-  content: "· ";
-  color: var(--muted);
-}
-
 .newgame .choice-gains {
   margin: 8px 0 0;
   font-size: 12px;
@@ -3250,7 +3165,7 @@ body {
   }
 }
 
-/* 접는 칸의 여닫기: 칸(hud-swap)의 높이만 움직이고, 안의 내용은 제 크기 그대로 가려진다 */
+/* 접는 칸(Accordion.tsx)의 여닫기: 칸(hud-swap)의 높이만 움직이고, 안의 내용은 제 크기 그대로 가려진다 */
 .hud-swap {
   display: grid;
   align-items: start;
@@ -3608,33 +3523,10 @@ body {
   transition: opacity 0s 0.3s;
 }
 
-.story-text h4 {
-  margin: 12px 0 4px;
-  font-size: 14px;
-}
-
-.story-text p {
-  margin: 4px 0;
-  font-size: 13px;
-  line-height: 1.75;
-}
-
-.story-text .story-item {
-  padding-left: 12px;
-  text-indent: -8px;
-}
-
-.story-text .story-item::before {
-  content: "· ";
-  color: var(--muted);
-}
-
 /* 제목은 본문보다 밝게 (--heading). 머리의 월드 이름(흰색 50%)은 따로 */
 .sheet h2,
 .newgame-title,
 .newgame .choice-card strong,
-.story-text h4,
-.newgame-story h4,
 .chosen-name,
 .trait-card strong,
 .tier-stat strong {
@@ -4433,4 +4325,40 @@ button.btn.btn-remove:focus-visible {
 /* 만드는 중 답을 보내는 잠깐은 흐리지 않는다 (.newgame.busy button:disabled 와 같게) */
 .newgame.busy button.btn:disabled {
   opacity: 1;
+}
+
+/* 접는 칸 plain (Accordion.tsx): 시트의 접는 섹션. 머리는 글자처럼 보이는 단추 */
+button.fold-head {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+button.fold-head:hover:not(:disabled) {
+  filter: none;
+}
+
+.fold-head h3 {
+  display: inline;
+}
+
+.fold-chevron {
+  font-size: 11px;
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform 0.15s;
+}
+
+.fold.open .fold-chevron {
+  transform: none;
 }

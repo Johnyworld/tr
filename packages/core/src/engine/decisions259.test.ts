@@ -71,10 +71,10 @@ describe("시작 짐·가족 성 (12-259)", () => {
     const w = world("role_y_islander");
     w.runCheat("~give old_rifle 3");
     const me = () => w.state().characters[w.state().playerId]!;
-    expect(carriedWeight(content, me())).toBeGreaterThan(carryCapacity(content, me(), w.state()));
+    expect(carriedWeight(content, me(), w.state())).toBeGreaterThan(carryCapacity(content, me(), w.state()));
     const stowed = stowStartingLoad(w.ctx());
     expect(stowed.length).toBeGreaterThan(0);
-    expect(carriedWeight(content, me())).toBeLessThanOrEqual(carryCapacity(content, me(), w.state()));
+    expect(carriedWeight(content, me(), w.state())).toBeLessThanOrEqual(carryCapacity(content, me(), w.state()));
     expect(Object.keys(w.state().stashes[w.state().playerId]?.yeoul_isle ?? {}).length).toBeGreaterThan(0);
   });
 

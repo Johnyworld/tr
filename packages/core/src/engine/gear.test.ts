@@ -83,7 +83,7 @@ describe("방어구와 도구", () => {
     const w = open("role_a_grunt", () => () => 0);
     give(w, "kevlar_vest");
     expect(w.executeTool("equip", { item_id: "kevlar_vest", slot: null }).ok).toBe(true);
-    expect(gearModifiers(w.content, me(w), "stealth").penalty).toBe(-1);
+    expect(gearModifiers(w.content, me(w), "stealth", null, w.state()).penalty).toBe(-1);
     const r = w.executeTool("take_action", act("뛰어든다", { check: chk("endure", "vitality", { harm_on_failure: "heavy", harm_cause: "총상", harm_kind: "gunshot" }) }));
     expect(r.ok && r.resultText).toContain("방탄 조끼가 피해를 1단계 막았다");
     expect(me(w).wear.kevlar_vest).toBe(1);
@@ -101,13 +101,13 @@ describe("무게", () => {
   it("들 수 있는 무게를 넘으면 은밀·근접이 불리하고, 너무 무거우면 옮겨 가지 못하고 더 받지 못한다", () => {
     const w = open();
     expect(carryCapacity(w.content, me(w))).toBe(12);
-    expect(encumbrance(w.content, me(w))).toBe(0);
+    expect(encumbrance(w.content, me(w), w.state())).toBe(0);
     give(w, "scrap_metal", 11); // 지닌 것 1.8kg + 11kg
-    expect(encumbrance(w.content, me(w))).toBe(1);
-    expect(gearModifiers(w.content, me(w), "stealth").penalty).toBe(-1);
+    expect(encumbrance(w.content, me(w), w.state())).toBe(1);
+    expect(gearModifiers(w.content, me(w), "stealth", null, w.state()).penalty).toBe(-1);
     give(w, "scrap_metal", 7);
-    expect(carriedWeight(w.content, me(w))).toBeGreaterThan(18);
-    expect(encumbrance(w.content, me(w))).toBe(2);
+    expect(carriedWeight(w.content, me(w), w.state())).toBeGreaterThan(18);
+    expect(encumbrance(w.content, me(w), w.state())).toBe(2);
     expect(w.executeTool("take_action", act("차고지로 간다", { move_to: "bus_depot", ignore_story: true })).ok).toBe(false);
     expect(w.executeTool("transfer_item", { from: "player", to: "scene", item_id: "scrap_metal", quantity: 10 }).ok).toBe(true);
     stepToRoad(w, "bus_depot");
@@ -191,11 +191,12 @@ describe("급조와 손질", () => {
     expect(equippedItem(me(w), "arms")).toBe("arm_guards");
   });
 
-  it("배낭 틀을 지니면 더 들 수 있다", () => {
+  it("배낭 틀은 가방이다: 들 수 있는 무게는 그대로이고, 메면 안의 무게가 절반으로 준다 (공통 규칙 26)", () => {
     const w = open();
     const before = carryCapacity(w.content, me(w));
     give(w, "pack_frame");
-    expect(carryCapacity(w.content, me(w))).toBe(before + 6);
+    expect(carryCapacity(w.content, me(w))).toBe(before);
+    expect(w.content.items.pack_frame!.bag).toEqual({ capacity: 12, reduce: 50 });
   });
 
   it("손질을 잘하면 무기가 덜 닳는다 (주사위가 늘 1: 공격은 실패하지만 손질 2는 닳음을 피한다)", () => {

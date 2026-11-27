@@ -51,6 +51,9 @@ import { learned } from "../rules/skill.ts";
 import { currentPlace } from "../rules/place.ts";
 import { beliefText, deedText } from "../rules/lens.ts";
 import { josa } from "../text.ts";
+import { carriedBags, placeBags } from "../rules/bags.ts";
+import { SCENE_HOLDER } from "../game/state.ts";
+import { groundBlocked } from "../engine/stash.ts";
 
 /**
  * 웹 앱 화면용 조회 결과. 정보 필터를 거친다 (원칙 4, 9: 필터는 어댑터가 아니라 core에서).
@@ -126,6 +129,10 @@ export type PlayerView = {
    * 넣을 곳도 맡긴 것도 거처도 없으면 null
    */
   stash: { label: string | null; canPut: boolean; items: ItemView[]; home: string | null } | null;
+  /** 지닌 가방 (공통 규칙 26): 멘 것이 먼저 */
+  bags: BagSlotView[];
+  /** 지금 자리의 바닥 (줍기·내려놓기). blocked: 위협이 있어 화면에서 못 하는 까닭 */
+  ground: { items: ItemView[]; blocked: string | null };
   /** conditionLabel: 상태가 처음과 달라졌을 때만 요약 (예: "부상: 경상") */
   /**
    * states: 처음과 달라진 몸 상태 (보이는 단계만). step: 트랙의 몇 번째 단계인지 (0이 처음), fatal: 죽음 단계.
@@ -249,7 +256,10 @@ export type GearView = { id: string; name: string; slot: string; slotLabel: stri
 
 /** 물건 한 칸 */
 /** wear: 들거나 입을 수 있는 물건이면 그 자리 id (화면의 착용 단추) */
-export type ItemView = { id: string; name: string; quantity: number; icon: IconName; wear?: string };
+/** bagId·load: 내용물이 든 가방 개체 (공통 규칙 26, 바닥·창고에서 따로 보인다) */
+export type ItemView = { id: string; name: string; quantity: number; icon: IconName; wear?: string; bagId?: string; load?: number; /** 하나의 무게 (kg, 가방 용량 안내) */ weight: number; /** 가방 물건 (가방에 넣지 못한다) */ isBag?: boolean };
+/** 지닌 가방 하나 (공통 규칙 26). id가 null이면 빈 가방 */
+export type BagSlotView = { id: string | null; item: string; name: string; icon: IconName; worn: boolean; capacity: number; reduce: number; load: number; items: ItemView[] };
 
 /** 기한까지 남은 때를 말로 (분 단위) */
 export function timeLeftLabel(minutes: number): string {
@@ -293,7 +303,7 @@ function gearView(state: GameState, content: Content): PlayerView["gear"] {
   return {
     weapon: one(equippedItem(me, "weapon"), "weapon"),
     armor: (["body", "head", "arms", "outer"] as const).map((s) => one(equippedItem(me, s), s)).filter((x): x is GearView => !!x),
-    weight: Math.round(carriedWeight(content, me) * 10) / 10,
+    weight: Math.round(carriedWeight(content, me, state) * 10) / 10,
     capacity: Math.round(carryCapacity(content, me, state)),
     burden: encumbrance(content, me, state),
   };
@@ -406,12 +416,22 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       .map((level) => level.label);
     return labels.length ? labels.join(" · ") : null;
   };
-  const items = (inv: Record<string, number>): ItemView[] =>
-    Object.entries(inv)
-      .filter(([, quantity]) => quantity > 0)
-      .map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity, icon: itemIcon(content.items[id]) }));
+  // at: 그 자리의 든 가방 개체는 따로 한 칸씩 (공통 규칙 26)
+  const items = (inv: Record<string, number>, at?: string): ItemView[] => {
+    const filled = at ? placeBags(content, state, at) : [];
+    const rest = { ...inv };
+    for (const b of filled) rest[b.item] = (rest[b.item] ?? 0) - 1;
+    return [
+      ...filled.map((b) => ({ id: b.item, name: b.name, quantity: 1, icon: itemIcon(content.items[b.item]), bagId: b.id!, load: Math.round(b.load * 10) / 10, weight: content.items[b.item]?.weight ?? 0.5, isBag: true })),
+      ...Object.entries(rest)
+        .filter(([, quantity]) => quantity > 0)
+        .map(([id, quantity]) => ({ id, name: content.items[id]?.name ?? id, quantity, icon: itemIcon(content.items[id]), weight: content.items[id]?.weight ?? 0.5, ...(content.items[id]?.bag ? { isBag: true } : {}) })),
+    ];
+  };
   // 장비로 걸친 것은 소지품에서 하나씩 뺀다 (장비 블록에 따로 보인다)
   const carried = { ...player.inventory };
+  // 가방은 아래쪽 가방 칸에 따로 보인다 (공통 규칙 26)
+  for (const id of Object.keys(carried)) if (content.items[id]?.bag) delete carried[id];
   if (content.scenario.gear) {
     for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) {
       const id = equippedItem(player, slot);
@@ -528,9 +548,11 @@ export function buildPlayerView(state: GameState, content: Content): PlayerView 
       return wear ? { ...it, wear } : it;
     }),
     sceneItems: items(state.scene.items),
+    bags: carriedBags(content, state, player.id).map((b) => ({ id: b.id, item: b.item, name: b.name, icon: itemIcon(content.items[b.item]), worn: b.worn, capacity: b.capacity, reduce: b.reduce, load: Math.round(b.load * 10) / 10, items: items(b.contents) })),
+    ground: { items: items(state.scene.items, SCENE_HOLDER), blocked: groundBlocked(state, content) },
     stash: (() => {
       const place = stashPlace(content, state);
-      const here = items(stashHere(state));
+      const here = items(stashHere(state), state.playerZone ? `stash:${player.id}:${state.playerZone}` : undefined);
       const homeZone = !player.factionId ? state.homes[player.id] : undefined;
       const home = homeZone && homeZone !== state.playerZone ? (content.locations[homeZone]?.name ?? homeZone) : null;
       if (!place && !here.length && !home) return null;

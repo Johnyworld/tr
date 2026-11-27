@@ -35,7 +35,7 @@ describe("치료 값 (동무조 T27·T28)", () => {
     const me = w.state().characters[w.state().playerId]!;
     me.conditions.harm = "light";
     me.inventory = { cigarettes: 0, potato: 1, ks_lighter: 1, trade_token: 1 };
-    me.equipped = { weapon: null, body: null, head: null, arms: null, outer: null };
+    me.equipped = { weapon: null, body: null, head: null, arms: null, outer: null, back: null };
     w.state().scene.present.push(healer);
     return { w, healer };
   }

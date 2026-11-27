@@ -23,7 +23,7 @@ describe("실제 경로로 도는가 (12-262)", () => {
     for (const roll of [0.05, 0.5, 0.95]) {
       const w = make("role_t_visitor", { name: "민재", gender: "male", past: "courier" }, roll);
       const me = w.state().characters[w.state().playerId]!;
-      expect(carriedWeight(content, me), `roll ${roll}`).toBeLessThanOrEqual(carryCapacity(content, me, w.state()));
+      expect(carriedWeight(content, me, w.state()), `roll ${roll}`).toBeLessThanOrEqual(carryCapacity(content, me, w.state()));
     }
   });
 

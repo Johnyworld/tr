@@ -52,7 +52,7 @@ describe("플레이 테스트 12: 치료 값", () => {
   it("신표(완장·통행패)는 내지 않고, 먹고 마시는 것은 하나씩 남긴다", () => {
     const w = world("role_c_raider");
     const me = structuredClone(w.state().characters[w.state().playerId]!);
-    me.equipped = { weapon: null, body: null, head: null, arms: null, outer: null };
+    me.equipped = { weapon: null, body: null, head: null, arms: null, outer: null, back: null };
     me.inventory = { c_armband: 1, trade_token: 1, water_bottle: 1, canned_food: 2 };
     expect(pickFee(w.ctx(), me, 3)?.get("canned_food")).toBe(1);
     expect(pickFee(w.ctx(), me, 4)).toBeNull(); // 통조림 하나(3)만 낼 수 있다

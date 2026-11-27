@@ -43,7 +43,7 @@ export function forageProblem(ctx: ToolContext, kindId: string): string | null {
   // 필수품 (공통 규칙 25, 12-350): 낚시는 낚시 도구가 있어야 한다
   if (kind.need) {
     const state = ctx.store.getState();
-    const r = checkNeed(content, state.characters[state.playerId], kind.need);
+    const r = checkNeed(content, state, state.playerId, kind.need);
     if (!r.ok) return r.error;
   }
   return unlearned(ctx, kind.move ?? rules.move);
@@ -138,13 +138,13 @@ export function handleTrap(ctx: ToolContext, action: "set" | "check", outcome: C
   const me = state.characters[state.playerId]!;
   const here = state.traps.find((t) => t.zone === zone);
   // 덫 물건 (12-350, 공통 규칙 25 필수품): 철사 뭉치·쥐덫 중 지닌 것. 거둘 때는 놓은 것이 돌아온다
-  const trapItem = action === "set" ? needItem(content, me, trap.need) : (here?.item ?? needItems(content, trap.need)[0] ?? null);
+  const trapItem = action === "set" ? needItem(content, state, me.id, trap.need) : (here?.item ?? needItems(content, trap.need)[0] ?? null);
   const trapName = trapItem ? (content.items[trapItem]?.name ?? trapItem) : "덫";
   if (action === "set") {
     if (here) return { ok: false, error: "이 구역에는 이미 덫을 놓았다. 먼저 거둔다 (trap: check)." };
     if (content.locations[zone]?.kind === "base") return { ok: false, error: "거점 안에는 덫을 놓을 데가 없다." };
     if (!trapItem) {
-      const r = checkNeed(content, me, trap.need);
+      const r = checkNeed(content, state, me.id, trap.need);
       return { ok: false, error: r.ok ? "덫으로 쓸 것이 없다." : r.error };
     }
     // 판정을 걸고 실패하면 놓지 못한다 (플레이 테스트 12: 실패해도 성공과 같이 놓였다). 재료는 남는다
@@ -218,10 +218,10 @@ export function drinkDirty(ctx: ToolContext, chance: number): string | null {
   const me = state.characters[state.playerId]!;
   // 물 거르기 (12-350, 공통 규칙 25 필수품): 정수 알약을 넣어 마시면 탈이 나지 않는다 (하나 쓴다)
   const purify = ctx.content.scenario.foraging?.purify;
-  const tablet = purify ? needItem(ctx.content, me, purify) : null;
+  const tablet = purify ? needItem(ctx.content, state, me.id, purify) : null;
   if (purify && tablet) {
-    useNeedItem(ctx, me.id, purify, tablet);
-    return `${josa(ctx.content.items[tablet]?.name ?? tablet, "을/를")} 넣어 걸러 마셨다.`;
+    const used = useNeedItem(ctx, me.id, purify, tablet);
+    return [...used, `${josa(ctx.content.items[tablet]?.name ?? tablet, "을/를")} 넣어 걸러 마셨다.`].join(" ");
   }
   const track = ctx.content.scenario.body?.disease?.track;
   if (!track || ctx.rng() >= chance) return null;

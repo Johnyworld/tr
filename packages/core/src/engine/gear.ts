@@ -18,6 +18,7 @@ import { josa } from "../text.ts";
 import { rollPlayerCheck } from "./checks.ts";
 import { defineTool, type ToolContext, type ToolDisplayEvent, type ToolOutcome } from "./toolkit.ts";
 import { changeRelation } from "../rules/regard.ts";
+import { bagsAt, bagsCarriedWeight, describeBags, heldCount, takeOut, wearBag, withBags } from "../rules/bags.ts";
 
 /**
  * 물건 (기획서 4.8): 무기·탄약·방어구·도구·내구도·무게·수리·제작·흥정. 수치는 아이템·시나리오 데이터, 규칙은 여기.
@@ -27,7 +28,7 @@ import { changeRelation } from "../rules/regard.ts";
 export const DEFAULT_WEIGHT = 0.5;
 export const DEFAULT_VALUE = 1;
 type Item = Content["items"][string];
-export const GEAR_SLOTS = ["weapon", "body", "head", "arms", "outer"] as const;
+export const GEAR_SLOTS = ["weapon", "body", "head", "arms", "outer", "back"] as const;
 type Slot = (typeof GEAR_SLOTS)[number];
 const ARMOR_SLOTS = ["body", "head", "arms", "outer"] as const;
 
@@ -41,8 +42,10 @@ export function equippedItem(c: Character, slot: Slot): string | null {
 }
 
 /** 지닌 짐의 무게 */
-export function carriedWeight(content: Content, c: Character): number {
-  return Object.entries(c.inventory).reduce((n, [id, q]) => n + (content.items[id]?.weight ?? DEFAULT_WEIGHT) * q, 0);
+export function carriedWeight(content: Content, c: Character, state: Pick<GameState, "bags" | "characters">): number {
+  const loose = Object.entries(c.inventory).reduce((n, [id, q]) => n + (content.items[id]?.weight ?? DEFAULT_WEIGHT) * q, 0);
+  // 지닌 가방 속 (공통 규칙 26): 멘 가방은 감소율만큼 덜어서
+  return loose + bagsCarriedWeight(content, state, c.id);
 }
 
 /** 들 수 있는 무게 (근력에 따라) */
@@ -50,18 +53,16 @@ export function carryCapacity(content: Content, c: Character, state?: GameState)
   const carry = content.scenario.gear?.carry;
   if (!carry) return Infinity;
   const strength = content.scenario.stats.find((s) => s.id === "strength") ? (c.stats.strength ?? 0) : 0;
-  // 배낭 틀처럼 지니면 더 드는 것 (가장 큰 것 하나)
-  const pack = Object.entries(c.inventory).reduce((n, [id, q]) => Math.max(n, q > 0 ? (content.items[id]?.carry_bonus ?? 0) : 0), 0);
   // 짐을 나르는 개 (12-172): 주인공 곁의 동물이 배운 재주
   const animal = state && c.id === state.playerId ? animalCarry(state, content) : 0;
-  return carry.base + strength * carry.per_strength + pack + animal;
+  return carry.base + strength * carry.per_strength + animal;
 }
 
 /** 짐이 무거운 정도: 0 가벼움, 1 무거움(판정 보정), 2 너무 무거움(옮겨 가지 못한다) */
-export function encumbrance(content: Content, c: Character, state?: GameState): 0 | 1 | 2 {
+export function encumbrance(content: Content, c: Character, state: GameState): 0 | 1 | 2 {
   const carry = content.scenario.gear?.carry;
   if (!carry) return 0;
-  const w = carriedWeight(content, c);
+  const w = carriedWeight(content, c, state);
   const cap = carryCapacity(content, c, state);
   if (w > cap * carry.hard_limit) return 2;
   return w > cap ? 1 : 0;
@@ -107,7 +108,8 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
   const weaponId = equippedItem(c, "weapon");
   const weapon = itemOf(content, weaponId)?.weapon;
   if (weapon?.moves.includes(move) && weapon.bonus > skill) [skill, skillLabel] = [weapon.bonus, nameOf(content, weaponId!)];
-  for (const [id, q] of Object.entries(c.inventory)) {
+  // 지닌 가방 속 도구도 보정을 준다 (공통 규칙 26, 꺼내지 않는다)
+  for (const [id, q] of Object.entries(state ? withBags(state, c).inventory : c.inventory)) {
     const tool = content.items[id]?.tool;
     const only = tool?.only;
     // only.dark: 어둡거나 지붕 아래일 때만 (손전등, 공통 규칙 15 needsLight, B①)
@@ -124,7 +126,7 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
     add(id ? nameOf(content, id) : slot, itemOf(content, id)?.armor?.penalty[move] ?? 0);
   }
   const carry = content.scenario.gear?.carry;
-  if (carry && encumbrance(content, c, state) > 0 && carry.encumbered_moves.includes(move)) add("짐", carry.penalty);
+  if (carry && state && encumbrance(content, c, state) > 0 && carry.encumbered_moves.includes(move)) add("짐", carry.penalty);
   // 거리 보정은 상황 보정이라 상한과 따로 (12-93)
   if (distance) add(content.scenario.gear?.distances?.find((d) => d.id === distance)?.label ?? distance, rangeOf(content, c, move)?.[distance] ?? 0);
   // 트레잇의 거리 보정 (저격수·서툰 조준): 무기 거리 보정과 같은 자리라 상한 밖. 그 거리를 쏠 수 있는지는 rangeProblem이 따로 본다
@@ -171,7 +173,7 @@ export function afterAttack(ctx: ToolContext, plan: AttackPlan, outcome: CheckOu
   const lines: string[] = [];
   if (plan.ammo) {
     store.append({ type: "item_consumed", holder: me.id, itemId: plan.ammo, quantity: 1 });
-    const left = store.getState().characters[me.id]!.inventory[plan.ammo] ?? 0;
+    const left = heldCount(store.getState(), me.id, plan.ammo);
     lines.push(`${nameOf(content, plan.ammo)} 하나를 썼다 (남은 것 ${left}).`);
   }
   if (plan.noise > 0 && state.playerZone) {
@@ -262,15 +264,21 @@ export function armorBlocksInfection(ctx: ToolContext): { blocked: boolean; line
 const equipTool = defineTool({
   name: "equip",
   description:
-    "주인공이 무기를 손에 들거나 방어구를 입는다(벗는다). 가진 것만. 공격 판정은 손에 든 무기로 한다 (없으면 맨손). 방어구는 받는 피해를 줄이지만 무겁고 불리한 판정이 있을 수 있다. 시간은 거의 들지 않는다.",
+    "주인공이 무기를 손에 들거나 방어구를 입거나 가방을 등에 멘다(벗는다). 가진 것만 (가방 속 것은 꺼내서 든다). 등에 멘 가방 하나만 안의 무게가 준다 (bag_id로 든 가방을 고른다). 공격 판정은 손에 든 무기로 한다 (없으면 맨손). 방어구는 받는 피해를 줄이지만 무겁고 불리한 판정이 있을 수 있다. 시간은 거의 들지 않는다.",
   schema: z.strictObject({
     item_id: z.string().nullable().describe("들거나 입을 아이템 id. 벗으려면 null"),
-    slot: z.enum(["weapon", "body", "head", "arms", "outer"]).nullable().default(null).describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
+    slot: z.enum(["weapon", "body", "head", "arms", "outer", "back"]).nullable().default(null).describe("벗을 때만 자리. 들거나 입을 때는 null (아이템이 정한다)"),
+    bag_id: z.string().nullable().default(null).describe("든 가방을 멜 때 그 가방 id (상태의 가방 줄). 아니면 null"),
   }),
   run(input, ctx): ToolOutcome {
     const { store, content } = ctx;
     const state = store.getState();
     const me = state.characters[state.playerId]!;
+    // 가방 (공통 규칙 26): 등 칸
+    if (input.bag_id || (input.item_id && content.items[input.item_id]?.bag) || (!input.item_id && input.slot === "back")) {
+      const r = wearBag(ctx, me.id, input.bag_id ? { bagId: input.bag_id } : input.item_id ? { bagItem: input.item_id } : null);
+      return r.ok ? { ok: true, resultText: r.line, display: { type: "item", fromName: "", toName: me.name, itemName: input.item_id ? nameOf(content, input.item_id) : "-", quantity: input.item_id || input.bag_id ? 1 : 0 } } : r;
+    }
     if (!input.item_id) {
       if (!input.slot) return { ok: false, error: "벗을 자리(slot)를 정한다." };
       const was = equippedItem(me, input.slot);
@@ -278,15 +286,17 @@ const equipTool = defineTool({
       return { ok: true, resultText: was ? `${josa(nameOf(content, was), "을/를")} 내려놓았다 (소지품에는 남는다).` : "그 자리에는 든 것이 없다.", display: { type: "item", fromName: me.name, toName: "", itemName: was ? nameOf(content, was) : "-", quantity: 0 } };
     }
     const item = content.items[input.item_id];
-    if (!item || (me.inventory[input.item_id] ?? 0) < 1) return { ok: false, error: `가진 물건이 아니다: ${input.item_id}` };
+    if (!item || heldCount(state, me.id, input.item_id) < 1) return { ok: false, error: `가진 물건이 아니다: ${input.item_id}` };
     const slot: Slot | null = item.weapon ? "weapon" : item.armor ? item.armor.slot : null;
     if (!slot) return { ok: false, error: `${josa(item.name, "은/는")} 들거나 입는 물건이 아니다.` };
+    // 가방 속이면 꺼내서 든다 (다시 넣지 않는다)
+    const pulled = takeOut(ctx, me.id, item.id, 1).lines;
     store.append({ type: "item_equipped", characterId: me.id, slot, itemId: item.id });
     const what = slot === "weapon" ? "손에 들었다" : "입었다";
     const note = item.weapon
       ? ` (${item.weapon.moves.join("/")} 공격, 피해 상한 ${item.weapon.max_harm}${item.weapon.ammo ? `, 쏠 때마다 ${nameOf(content, item.weapon.ammo)} 하나` : ""}${item.weapon.noise >= 2 ? ", 시끄럽다" : ""})`
       : ` (피해 ${item.armor!.reduces}단계 줄임${Object.keys(item.armor!.penalty).length ? `, ${Object.entries(item.armor!.penalty).map(([m, v]) => `${m} ${v}`).join(", ")}` : ""})`;
-    return { ok: true, resultText: `${josa(item.name, "을/를")} ${what}${note}.`, display: { type: "item", fromName: "", toName: me.name, itemName: item.name, quantity: 1 } };
+    return { ok: true, resultText: `${pulled.length ? `${pulled.join(" ")} ` : ""}${josa(item.name, "을/를")} ${what}${note}.`, display: { type: "item", fromName: "", toName: me.name, itemName: item.name, quantity: 1 } };
   },
 });
 
@@ -330,7 +340,10 @@ const barterTool = defineTool({
     if (!npc || !state.scene.present.includes(input.npc_id) || npc.dead) return { ok: false, error: "장면에 있는 인물이 아니다." };
     if (isCreature(content, npc)) return { ok: false, error: "사람이 아니라 물건을 주고받을 수 없다. 쓰러뜨린 뒤 지닌 것을 챙기려면 transfer_item." };
     if (isEmpty(input.get) && isEmpty(input.give)) return { ok: false, error: "주고받는 것이 없다." };
-    for (const [id, q] of Object.entries(input.give)) if ((me.inventory[id] ?? 0) < q) return { ok: false, error: `${josa(nameOf(content, id), "이/가")} ${me.inventory[id] ?? 0}개뿐이다.` };
+    const held = withBags(state, me).inventory;
+    for (const [id, q] of Object.entries(input.give)) if ((held[id] ?? 0) < q) return { ok: false, error: `${josa(nameOf(content, id), "이/가")} ${held[id] ?? 0}개뿐이다.` };
+    // 든 가방은 내주지 못한다 (공통 규칙 26: 내용물이 함께 넘어간다)
+    for (const [id, q] of Object.entries(input.give)) if (content.items[id]?.bag && (me.inventory[id] ?? 0) - bagsAt(state, me.id).filter(([, b]) => b.item === id).length < q) return { ok: false, error: `${josa(nameOf(content, id), "은/는")} 안에 든 것이 있다. 먼저 비운다 (stash unpack).` };
     const name = playerCalls(state, content, input.npc_id);
     for (const [id, q] of Object.entries(input.get)) if ((npc.inventory[id] ?? 0) < q) return { ok: false, error: `${josa(name, "은/는")} ${josa(nameOf(content, id), "을/를")} ${npc.inventory[id] ?? 0}개만 가졌다.` };
     // 시세 (12-155): 그 땅 주인 무리의 창고 형편과 계절이 값에 닿는다
@@ -441,7 +454,9 @@ export function applyCraft(ctx: ToolContext, craft: { recipe: string | null; rep
   const use = (bundle: Record<string, number>, part: number) => {
     for (const [id, q] of Object.entries(bundle)) {
       const n = Math.max(1, Math.ceil(q * part));
-      store.append({ type: "item_consumed", holder: me.id, itemId: id, quantity: Math.min(n, store.getState().characters[me.id]!.inventory[id] ?? 0) });
+      // 가방 속 재료도 쓴다 (공통 규칙 26: 리듀서가 가방에서 덜어 낸다)
+      const have = heldCount(store.getState(), me.id, id);
+      if (have > 0) store.append({ type: "item_consumed", holder: me.id, itemId: id, quantity: Math.min(n, have) });
     }
   };
   if (craft.recipe) {
@@ -466,24 +481,26 @@ export function applyCraft(ctx: ToolContext, craft: { recipe: string | null; rep
 }
 
 /** GM 상태의 장비·짐 줄 */
-export function describeGear(content: Content, c: Character, state?: GameState): string {
+export function describeGear(content: Content, c: Character, state: GameState): string {
   if (!content.scenario.gear) return "";
   const parts: string[] = [];
   const weapon = equippedItem(c, "weapon");
   const show = (id: string) => {
     const item = content.items[id]!;
     const wear = c.wear[id] ?? 0;
-    const ammo = item.weapon?.ammo ? `, ${nameOf(content, item.weapon.ammo)} ${c.inventory[item.weapon.ammo] ?? 0}` : "";
+    const ammo = item.weapon?.ammo ? `, ${nameOf(content, item.weapon.ammo)} ${withBags(state, c).inventory[item.weapon.ammo] ?? 0}` : "";
     return `${item.name}(${id})${item.durability ? ` 내구도 ${Math.max(0, item.durability - wear)}/${item.durability}` : ""}${ammo}`;
   };
   parts.push(`손에 든 것: ${weapon ? show(weapon) : "맨손"}`);
   const worn = ARMOR_SLOTS.map((s) => equippedItem(c, s)).filter((x): x is string => !!x);
   if (worn.length) parts.push(`입은 것: ${worn.map(show).join(", ")}`);
-  const w = carriedWeight(content, c);
+  const bags = describeBags(content, state, c.id);
+  if (bags) parts.push(bags);
+  const w = carriedWeight(content, c, state);
   const cap = carryCapacity(content, c, state);
   const enc = encumbrance(content, c, state);
   parts.push(`짐 ${w.toFixed(1)}/${cap.toFixed(0)}kg${enc === 2 ? " (너무 무겁다: 내려놓아야 옮겨 간다)" : enc === 1 ? ` (무겁다: ${content.scenario.gear.carry.encumbered_moves.join("·")} ${content.scenario.gear.carry.penalty})` : ""}`);
-  return `장비: ${parts.join(" · ")} (들기·입기는 equip, 흥정은 barter, 고치기·만들기는 take_action.craft)`;
+  return `장비: ${parts.join(" · ")} (들기·입기·가방 메기는 equip, 가방에 넣기·꺼내기는 stash pack·unpack, 흥정은 barter, 고치기·만들기는 take_action.craft)`;
 }
 
 /** 든 무기가 없으면 가진 것 중 가장 센 것을 든다 (시작할 때, 이어 갈 때). 쏘는 무기는 탄약이 있을 때만 앞선다 */

@@ -331,12 +331,12 @@
   tool: { bonus: { sense_danger: 1 }, only: { activities: [sleep, rest, guard_duty, wait] } }
 - id: pack_frame
   name: 배낭 틀
-  icon: bag
-  description: 판자와 천으로 짠 등짐 틀. 무게를 등에 고루 실어 더 많이 지고 다닌다.
+  icon: backpack
+  description: 판자와 천으로 짠 등짐 틀. 12kg까지 싣고, 등에 메면 안의 무게가 절반으로 준다.
   kind: tool
   weight: 1.5
   value: 5
-  carry_bonus: 6
+  bag: { capacity: 12, reduce: 50 }
 
 # 이동 수단 (12-137): take_action.ride. 무게는 들고 다니는 짐으로 치지 않는다 (끌고 다닌다)
 - id: bicycle
@@ -519,3 +519,46 @@
   durability: 14
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1 } }
+
+# ── 가방 (공통 규칙 26, docs/bags-plan.md) ──────
+# 용량(kg)만큼 담고, 등 칸에 메면 안의 무게가 reduce%만큼 준다. 메지 않은 가방은 무게 그대로
+- id: tote_bag
+  name: 장바구니
+  icon: bag
+  description: 마트 이름이 찍힌 접는 장바구니. 5kg쯤 담는다. 손에 들거나 어깨에 걸어도 무게는 거의 그대로다 (메면 10% 줄임).
+  kind: tool
+  weight: 0.2
+  value: 1
+  bag: { capacity: 5, reduce: 10 }
+- id: shoulder_bag
+  name: 숄더백
+  icon: bag
+  description: 끈이 긴 천 숄더백. 6kg쯤 담는다 (메면 20% 줄임).
+  kind: tool
+  weight: 0.4
+  value: 2
+  bag: { capacity: 6, reduce: 20 }
+- id: school_bag
+  name: 책가방
+  icon: backpack
+  description: 지퍼가 하나 고장 난 학생 책가방. 8kg쯤 담는다 (메면 40% 줄임).
+  kind: tool
+  weight: 0.6
+  value: 4
+  bag: { capacity: 8, reduce: 40 }
+- id: hiking_pack
+  name: 등산 배낭
+  icon: backpack
+  description: 허리끈이 달린 등산 배낭. 15kg쯤 싣고, 메면 무게가 등과 허리에 고루 실린다 (70% 줄임).
+  kind: tool
+  weight: 1.2
+  value: 12
+  bag: { capacity: 15, reduce: 70 }
+- id: military_pack
+  name: 군용 배낭
+  icon: backpack
+  description: 국방색 대형 군용 배낭. 18kg까지 싣고, 메면 거의 몸의 일부처럼 느껴진다 (80% 줄임).
+  kind: tool
+  weight: 2.0
+  value: 20
+  bag: { capacity: 18, reduce: 80 }

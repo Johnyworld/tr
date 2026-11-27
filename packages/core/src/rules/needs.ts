@@ -8,7 +8,8 @@
  * 일의 목록과 물건은 시나리오 데이터다 (원칙 7). 새로 물건이 있어야 하는 일이 생기면 needs에 id를 더하고, 코드는 이 모듈로만 묻는다
  */
 import type { Content } from "../content/schemas.ts";
-import type { Character } from "../game/character.ts";
+import type { GameState } from "../game/state.ts";
+import { heldInventory, takeOut } from "./bags.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { josa } from "../text.ts";
 
@@ -31,10 +32,13 @@ export function needItems(content: Pick<Content, "items">, need: string): string
     .map(([id]) => id);
 }
 
-/** 이 사람이 지닌 그 일의 물건 (없으면 null). 여럿이면 콘텐츠 순서로 먼저 것 */
-export function needItem(content: Pick<Content, "items">, who: Pick<Character, "inventory"> | undefined, need: string): string | null {
-  if (!who) return null;
-  return needItems(content, need).find((id) => (who.inventory[id] ?? 0) > 0) ?? null;
+type Holder = Pick<GameState, "characters" | "bags">;
+
+/** 이 사람이 지닌 그 일의 물건 (없으면 null). 지닌 가방 속도 본다 (공통 규칙 26). 여럿이면 콘텐츠 순서로 먼저 것 */
+export function needItem(content: Pick<Content, "items">, state: Holder, who: string, need: string): string | null {
+  if (!state.characters[who]) return null;
+  const held = heldInventory(state, who);
+  return needItems(content, need).find((id) => (held[id] ?? 0) > 0) ?? null;
 }
 
 function itemNames(content: Pick<Content, "items">, need: string): string {
@@ -54,10 +58,10 @@ export type NeedCheck = { ok: true; item: string | null; parts: Part[] } | { ok:
  * 이 일을 할 수 있는가: 물건이 있으면 보정 없이, 없으면 without 보정 또는 못 한다.
  * move가 정해진 일은 없이 할 때 그 스킬로만 판정한다 (불을 비벼 피우는 것은 생존)
  */
-export function checkNeed(content: Pick<Content, "scenario" | "items">, who: Pick<Character, "inventory"> | undefined, need: string, move?: string | null): NeedCheck {
+export function checkNeed(content: Pick<Content, "scenario" | "items">, state: Holder, who: string, need: string, move?: string | null): NeedCheck {
   const def = needDef(content, need);
   if (!def) return { ok: false, error: `알 수 없는 일: ${need}` };
-  const item = needItem(content, who, need);
+  const item = needItem(content, state, who, need);
   if (item) return { ok: true, item, parts: [] };
   const names = itemNames(content, need);
   if (def.without === null) return { ok: false, error: `${def.label}에는 ${names || "물건"} 중 하나가 있어야 한다. 지닌 것이 없다.` };
@@ -76,20 +80,25 @@ export function needExtraMinutes(content: Pick<Content, "scenario">, need: strin
  * 물건을 한 번 쓴다: consume인 일은 하나 없어지고, 내구도가 있으면 하나 닳아 다 닳으면 없어진다 (손질로 아끼지 않는다).
  * 다 써서 없어졌으면 그 한 줄
  */
-export function useNeedItem(ctx: ToolContext, holder: string, need: string, itemId: string): string | null {
+export function useNeedItem(ctx: ToolContext, holder: string, need: string, itemId: string): string[] {
   const { store, content } = ctx;
   const item = content.items[itemId];
-  if (!item) return null;
-  if (needDef(content, need)?.consume) {
-    store.append({ type: "item_consumed", holder, itemId, quantity: 1 });
-    return null;
+  if (!item) return [];
+  const consume = !!needDef(content, need)?.consume;
+  if (!consume && !item.durability) return [];
+  // 가방 속이면 꺼내 쓰고 남은 것은 다시 넣는다 (공통 규칙 26)
+  const pulled = takeOut(ctx, holder, itemId, 1, item.breaks_into ?? null);
+  const lines = [...pulled.lines];
+  if (consume) store.append({ type: "item_consumed", holder, itemId, quantity: 1 });
+  else {
+    store.append({ type: "item_worn", characterId: holder, itemId, delta: 1 });
+    const wear = store.getState().characters[holder]?.wear[itemId] ?? 0;
+    if (wear >= item.durability!) {
+      store.append({ type: "item_broken", characterId: holder, itemId, into: item.breaks_into ?? null });
+      lines.push(`${josa(item.name, "을/를")} 다 썼다.`);
+    }
   }
-  if (!item.durability) return null;
-  store.append({ type: "item_worn", characterId: holder, itemId, delta: 1 });
-  const wear = store.getState().characters[holder]?.wear[itemId] ?? 0;
-  if (wear < item.durability) return null;
-  store.append({ type: "item_broken", characterId: holder, itemId, into: item.breaks_into ?? null });
-  return `${josa(item.name, "을/를")} 다 썼다.`;
+  return [...lines, ...pulled.restore()];
 }
 
 /** GM 안내: 판정에 붙이는 일과 물건 (도구 설명) */

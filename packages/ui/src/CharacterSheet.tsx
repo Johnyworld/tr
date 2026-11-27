@@ -8,7 +8,7 @@ import { Portrait } from "./Portrait.tsx";
 import { SheetTabs } from "./SheetTabs.tsx";
 import { MapPanel } from "./MapPanel.tsx";
 import { ConfirmPopover, Popover } from "./Dialog.tsx";
-import type { GearView, ItemView, PersonProfile, PlayerView, SymptomView, WarMapView } from "./types.ts";
+import type { BagSlotView, GearView, ItemView, PersonProfile, PlayerView, SymptomView, WarMapView } from "./types.ts";
 import { Button } from "./Button.tsx";
 
 /** 장비 칸 (core views/player.ts의 SLOT_LABELS 순서) */
@@ -189,6 +189,7 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
           ),
           items: (
             <EquipArea onStatus={onStatus}>
+            <MoveArea player={player} onStatus={onStatus}>
           {player.gear && (
             <section className="block">
               <h3>장비</h3>
@@ -206,8 +207,12 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
               <h3>소지품</h3>
               {player.gear && <WeightBar gear={player.gear} />}
             </div>
-            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" move={player.stash?.canPut ? { direction: "put", onStatus } : undefined} wearable={!!player.gear} />
+            <ItemGrid items={player.inventory} empty="가진 것이 없습니다" place="body" move={player.stash?.canPut ? { direction: "put", onStatus } : undefined} />
           </section>
+
+          {(player.bags ?? []).map((bag, i) => (
+            <BagSection key={bag.id ?? `${bag.item}-${i}`} bag={bag} />
+          ))}
 
           {player.stash?.canPut && (
             <section className="block stash">
@@ -215,17 +220,21 @@ export function CharacterSheet({ player, war, onStatus }: { player: PlayerView; 
                 <h3>창고</h3>
                 <span className="muted stash-where">{player.stash.label}</span>
               </div>
-              <ItemGrid items={player.stash.items} empty="비어 있습니다" move={{ direction: "take", onStatus }} />
+              <ItemGrid items={player.stash.items} empty="비어 있습니다" place="stash" move={{ direction: "take", onStatus }} />
             </section>
           )}
 
-          {player.sceneItems.length > 0 && (
+          {(player.ground?.items.length ?? 0) > 0 && (
             <section className="block">
-              <h3>주변에 놓인 물건</h3>
-              <ItemGrid items={player.sceneItems} empty="" />
+              <div className="block-head">
+                <h3>바닥</h3>
+                {player.ground?.blocked && <span className="muted">{player.ground.blocked}</span>}
+              </div>
+              <ItemGrid items={player.ground!.items} empty="" place="ground" />
             </section>
           )}
 
+            </MoveArea>
             </EquipArea>
           ),
           people: (
@@ -833,47 +842,177 @@ const HOLD_DELAY_MS = 500;
 /** 이만큼마다 하나씩 */
 const HOLD_EVERY_MS = 100;
 
-function ItemGrid({ items, empty, move, wearable }: { items: ItemView[]; empty: string; move?: StashMove; wearable?: boolean }) {
-  const equip = useContext(EquipContext);
+type Place = "body" | "ground" | "stash" | `bag:${string}`;
+
+function ItemGrid({ items, empty, move, place }: { items: ItemView[]; empty: string; move?: StashMove; place?: Place | null }) {
+  const mover = useContext(MoveContext);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
   if (items.length === 0) return empty ? <div className="muted">{empty}</div> : null;
   return (
     <>
       <ul className={move ? "item-grid item-grid-move" : "item-grid"}>
         {items.map((item) => {
-          const canWear = !!(wearable && equip && item.wear);
-          const wear = () => {
-            if (!equip!.busy) void equip!.send({ itemId: item.id });
-          };
+          const key = item.bagId ?? item.id;
+          const clickable = !!(place && mover);
+          const toggle = () => setOpen((o) => (o === key ? null : key));
           return (
-          <li
-            key={item.id}
-            className={canWear ? "item-wearable" : undefined}
-            {...(canWear
-              ? {
-                  role: "button",
-                  tabIndex: 0,
-                  title: item.wear === "weapon" ? `${item.name} 손에 들기` : `${item.name} 입기`,
-                  onClick: wear,
-                  onKeyDown: (e: React.KeyboardEvent) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      wear();
-                    }
-                  },
-                }
-              : {})}
-          >
-            <Icon name={item.icon} className={ICON_TONE[item.icon ?? ""] ?? "icon-muted"} />
-            <span className="item-name">{item.name}</span>
-            {item.quantity > 1 && <span className="muted">×{item.quantity}</span>}
-            {move && <MoveButton item={item} move={move} onError={setError} />}
-          </li>
+            <li
+              key={key}
+              className={clickable ? "item-wearable" : undefined}
+              aria-expanded={clickable ? open === key : undefined}
+              {...(clickable
+                ? {
+                    role: "button",
+                    tabIndex: 0,
+                    title: `${item.name}: 어디에 둘지 고릅니다`,
+                    onClick: toggle,
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggle();
+                      }
+                      if (e.key === "Escape") setOpen(null);
+                    },
+                  }
+                : {})}
+            >
+              <Icon name={item.icon} className={ICON_TONE[item.icon ?? ""] ?? "icon-muted"} />
+              <span className="item-name">{item.name}</span>
+              {item.bagId && <span className="muted">안에 {item.load}kg</span>}
+              {item.quantity > 1 && <span className="muted">×{item.quantity}</span>}
+              {move && !item.bagId && <MoveButton item={item} move={move} onError={setError} />}
+              {clickable && open === key && <ItemMenu item={item} place={place!} onClose={() => setOpen(null)} />}
+            </li>
           );
         })}
       </ul>
       {error && <div className="item-move-error">{error}</div>}
     </>
+  );
+}
+
+/** 물건 옮기기 (공통 규칙 26): 팝오버가 고를 자리와 보내기. 규칙은 core (GameWorld.moveItem) */
+type MoveBody = { itemId: string; quantity: number; from: string; to: string; bagId?: string };
+type MoveApi = { player: PlayerView; busy: boolean; send: (body: MoveBody) => Promise<void> };
+const MoveContext = createContext<MoveApi | null>(null);
+
+function MoveArea({ player, onStatus, children }: { player: PlayerView; onStatus?: (status: unknown) => void; children: ReactNode }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const send = async (body: MoveBody) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/item-move", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const out = (await res.json()) as { status?: unknown; error?: string };
+      if (!res.ok) setError(out.error ?? "옮기지 못했습니다");
+      else if (out.status) onStatus?.(out.status);
+    } catch {
+      setError("옮기지 못했습니다");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <MoveContext.Provider value={{ player, busy, send }}>
+      {error && <div className="item-move-error">{error}</div>}
+      {children}
+    </MoveContext.Provider>
+  );
+}
+
+/** 아이템을 누르면 뜨는 팝오버: 입기·들기, 가방마다 넣기, 바닥, 창고 (공통 규칙 26) */
+function ItemMenu({ item, place, onClose }: { item: ItemView; place: Place; onClose: () => void }) {
+  const mover = useContext(MoveContext)!;
+  const equip = useContext(EquipContext);
+  const ref = useRef<HTMLDivElement>(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    const away = (e: MouseEvent) => {
+      if (ref.current && !ref.current.parentElement?.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", away);
+    return () => document.removeEventListener("mousedown", away);
+  }, [onClose]);
+  const { player } = mover;
+  const quantity = all ? item.quantity : 1;
+  const weight = (item.weight ?? 0.5) * quantity;
+  const go = (to: string) => {
+    onClose();
+    void mover.send({ itemId: item.id, quantity: item.bagId ? 1 : quantity, from: place, to, ...(item.bagId ? { bagId: item.bagId } : {}) });
+  };
+  const blocked = player.ground?.blocked ?? null;
+  const options: { label: string; run: () => void; disabled?: string | null }[] = [];
+  if (place === "body" && item.wear && equip) options.push({ label: item.wear === "weapon" ? "손에 들기" : "입기", run: () => (onClose(), void equip.send({ itemId: item.id })) });
+  if (place !== "body") options.push({ label: place === "ground" ? `줍기${item.bagId ? " (안에 든 것째)" : ""}` : place === "stash" ? `꺼내기${item.bagId ? " (안에 든 것째)" : ""}` : "꺼내기 (맨몸으로)", run: () => go("body"), disabled: place === "ground" ? blocked : null });
+  if (!item.isBag) {
+    for (const bag of player.bags ?? []) {
+      const target = bag.id ? `bag:${bag.id}` : `newbag:${bag.item}`;
+      if (target === place) continue;
+      const over = bag.load + weight > bag.capacity + 1e-9;
+      options.push({ label: `${bag.worn ? "등의 " : ""}${bag.name}에 넣기 (${bag.load}/${bag.capacity}kg)`, run: () => go(target), disabled: over ? "다 들어가지 않습니다" : place === "ground" ? blocked : null });
+    }
+  }
+  if (place !== "ground") options.push({ label: `바닥에 내려놓기${item.bagId ? " (안에 든 것째)" : ""}`, run: () => go("ground"), disabled: blocked });
+  if (place !== "stash" && player.stash?.canPut) options.push({ label: `창고에 넣기${item.bagId ? " (안에 든 것째)" : ""}`, run: () => go("stash"), disabled: place === "ground" ? blocked : null });
+  return (
+    <div className="item-menu" ref={ref} role="menu" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
+      {item.quantity > 1 && !item.bagId && (
+        <div className="item-menu-qty">
+          <button type="button" className={!all ? "on" : ""} onClick={() => setAll(false)}>
+            하나
+          </button>
+          <button type="button" className={all ? "on" : ""} onClick={() => setAll(true)}>
+            모두 ({item.quantity})
+          </button>
+        </div>
+      )}
+      {options.map((o) => (
+        <button key={o.label} type="button" role="menuitem" disabled={!!o.disabled || mover.busy} title={o.disabled ?? undefined} onClick={o.run}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 지닌 가방 한 칸 (공통 규칙 26): 창고처럼 시트 아래쪽에. 메기·벗기, 내용물째 바닥·창고로 */
+function BagSection({ bag }: { bag: BagSlotView }) {
+  const mover = useContext(MoveContext);
+  const equip = useContext(EquipContext);
+  const player = mover?.player;
+  const move = (to: string) => void mover?.send({ itemId: bag.item, quantity: 1, from: "body", to, ...(bag.id ? { bagId: bag.id } : {}) });
+  const blocked = player?.ground?.blocked ?? null;
+  return (
+    <section className={`block bag-block${bag.worn ? " worn" : ""}`}>
+      <div className="block-head">
+        <h3>
+          {bag.worn ? "등: " : ""}
+          {bag.name}
+        </h3>
+        <span className="muted bag-load">
+          {bag.load}/{bag.capacity}kg · {bag.worn ? `무게 ${bag.reduce}% 줄임` : "메지 않음 (무게 그대로)"}
+        </span>
+      </div>
+      <div className="bag-actions">
+        {equip && (
+          <button type="button" disabled={equip.busy} onClick={() => void equip.send(bag.worn ? { slot: "back" } : bag.id ? { bagId: bag.id } : { itemId: bag.item })}>
+            {bag.worn ? "벗기" : "메기"}
+          </button>
+        )}
+        <button type="button" disabled={!!blocked || !!mover?.busy} title={blocked ?? undefined} onClick={() => move("ground")}>
+          바닥에 내려놓기
+        </button>
+        {player?.stash?.canPut && (
+          <button type="button" disabled={!!mover?.busy} onClick={() => move("stash")}>
+            창고에 넣기
+          </button>
+        )}
+      </div>
+      <ItemGrid items={bag.items} empty="비어 있습니다" place={bag.id ? `bag:${bag.id}` : null} />
+    </section>
   );
 }
 
@@ -1028,13 +1167,13 @@ function PortraitChooser({ player, onStatus }: { player: PlayerView; onStatus?: 
 
 
 /** 장비 착용·해제 (12-139): 아이템 탭 안의 들기·입기·벗기 단추가 함께 쓴다. 규칙은 core (GM의 equip tool과 같다) */
-type EquipApi = { busy: boolean; send: (body: { itemId?: string; slot?: string }) => Promise<void> };
+type EquipApi = { busy: boolean; send: (body: { itemId?: string; slot?: string; bagId?: string }) => Promise<void> };
 const EquipContext = createContext<EquipApi | null>(null);
 
 function EquipArea({ onStatus, children }: { onStatus?: (status: unknown) => void; children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const send = async (body: { itemId?: string; slot?: string }) => {
+  const send = async (body: { itemId?: string; slot?: string; bagId?: string }) => {
     if (busy) return;
     setBusy(true);
     setError(null);

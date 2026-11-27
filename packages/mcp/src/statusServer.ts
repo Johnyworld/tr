@@ -218,6 +218,29 @@ export async function handleEquip(source: StatusSource, req: IncomingMessage, re
   return json(res, 200, { ok: true, text: result.text, status: statusPayload(source) });
 }
 
+/** 물건 옮기기 (공통 규칙 26): 맨몸·가방·바닥·창고 사이로. JSON만 받는다. 규칙은 core(GameWorld.moveItem) */
+export async function handleItemMove(source: StatusSource, req: IncomingMessage, res: ServerResponse, gate?: TurnGate): Promise<void> {
+  if (req.method !== "POST") return json(res, 405, { error: "POST" });
+  if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return json(res, 415, { error: "JSON으로 보낸다" });
+  const w = source.world;
+  if (!w || source.creating) return json(res, 409, { error: "열린 게임이 없다" });
+  let body = "";
+  for await (const chunk of req) {
+    body += String(chunk);
+    if (body.length > 1024) return json(res, 413, { error: "너무 크다" });
+  }
+  let input: unknown;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    return json(res, 400, { error: "JSON이 아니다" });
+  }
+  const result = w.moveItem(input);
+  if (!result.ok) return json(res, 400, { error: result.error });
+  console.error(`[status] 옮기기: ${result.text}`);
+  return json(res, 200, { ok: true, text: result.text, status: statusPayload(source, gate) });
+}
+
 /** 얼굴 고르기 기회 (12-139): 얼굴 없는 주인공이 얼굴을 한 번 고른다. JSON만 받는다. 규칙은 core(GameWorld.choosePortrait) */
 export async function handlePortrait(source: StatusSource, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== "POST") return json(res, 405, { error: "POST" });
@@ -447,6 +470,10 @@ export async function startStatusServer(
     }
     if (url === "/api/stash") {
       void handleStash(source, req, res, gate);
+      return;
+    }
+    if (url === "/api/item-move") {
+      void handleItemMove(source, req, res, gate);
       return;
     }
     if (url === "/api/unlock-notice") {

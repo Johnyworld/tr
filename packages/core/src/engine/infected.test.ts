@@ -23,7 +23,7 @@ function setup(zone = "old_town") {
   s.playerZone = zone;
   const me = s.characters[s.playerId]!;
   me.traits = [];
-  me.equipped = { ...me.equipped, body: null, head: null, arms: null, outer: null };
+  me.equipped = { ...me.equipped, body: null, head: null, arms: null, outer: null, back: null };
   const spawn = (template = "infected_hungry", label = "감염체") => {
     const out = executeTool("spawn_extra", { template, label }, ctx);
     expect(out.ok).toBe(true);

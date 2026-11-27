@@ -78,6 +78,7 @@ import { PLACE_TOOLS } from "./placeTools.ts";
 import { fixedPlaceAway, hereWithMe, npcPlaceAt, placeById, sharesPlace, routineAway, sceneLeavesAt, knowsPlace } from "../rules/place.ts";
 import { zoneOf } from "../rules/place.ts";
 import { changeRelation } from "../rules/regard.ts";
+import { bagById, heldCount } from "../rules/bags.ts";
 
 export type { ToolContext, ToolDisplayEvent, ToolOutcome, ToolSpec } from "./toolkit.ts";
 
@@ -92,6 +93,7 @@ const transferItem = defineTool({
     to: z.string().describe("받는 쪽: 캐릭터 id 또는 scene"),
     item_id: z.string().describe("아이템 id (상태에 표시된 것)"),
     quantity: z.number().int().min(1).describe("옮길 수량 (1 이상의 정수)"),
+    bag_id: z.string().nullable().optional().describe("가방을 그 가방째(안에 든 것과 함께) 옮길 때 가방 id (상태의 가방 줄). 없으면 빈 가방부터 간다"),
     deposit: z
       .string()
       .max(60)
@@ -156,7 +158,9 @@ const transferItem = defineTool({
     }
     const item = content.items[input.item_id];
     if (!item) return { ok: false, error: `알 수 없는 아이템: ${input.item_id}` };
-    const have = fromInv[input.item_id] ?? 0;
+    // 주인공의 가방 속 것도 건넨다 (공통 규칙 26: 리듀서가 가방에서 덜어 낸다)
+    const have = input.from === state.playerId ? heldCount(state, input.from, input.item_id) : (fromInv[input.item_id] ?? 0);
+    if (input.bag_id && bagById(state, input.bag_id)?.at !== input.from) return { ok: false, error: `그 가방(${input.bag_id})은 ${holderName(state, content, input.from)}에게 없다.` };
     if (have < input.quantity) {
       return { ok: false, error: `${holderName(state, content, input.from)}에게 ${josa(item.name, "이/가")} ${have}개뿐입니다.` };
     }
@@ -164,7 +168,7 @@ const transferItem = defineTool({
     // 너무 무거우면 더 받지 못한다 (기획서 4.8)
     if (input.to === state.playerId && content.scenario.gear) {
       const me = state.characters[state.playerId]!;
-      const after = carriedWeight(content, me) + (item.weight ?? DEFAULT_WEIGHT) * input.quantity;
+      const after = carriedWeight(content, me, state) + (item.weight ?? DEFAULT_WEIGHT) * input.quantity;
       if (after > carryCapacity(content, me, state) * content.scenario.gear.carry.hard_limit) {
         return { ok: false, error: `${item.name}까지 들면 너무 무겁다 (${after.toFixed(1)}kg). 먼저 무언가를 내려놓는다.` };
       }
@@ -195,6 +199,7 @@ const transferItem = defineTool({
       itemId: item.id,
       quantity: input.quantity,
       ...(input.deposit && input.from === state.playerId && input.to !== SCENE_HOLDER ? { deposit: input.deposit } : {}),
+      ...(input.bag_id ? { bagId: input.bag_id } : {}),
     });
     // 약속한 물건을 그 사람에게 건넸으면 약속을 지킨 것이다 (12-174 부탁)
     const kept = input.from === state.playerId ? keepByGift(ctx, input.to, item.id, input.quantity) : [];

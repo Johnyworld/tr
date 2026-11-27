@@ -35,7 +35,7 @@ function setup(opts: { hour?: number; zone?: string; role?: string; season?: str
   const me = () => store.getState().characters[store.getState().playerId]!;
   me().traits = [];
   me().inventory = {};
-  me().equipped = { weapon: null, body: null, head: null, arms: null, outer: null };
+  me().equipped = { weapon: null, body: null, head: null, arms: null, outer: null, back: null };
   me().conditions.cold = "warm";
   store.getState().companions = [];
   return { store, ctx, me };

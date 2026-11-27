@@ -31,6 +31,10 @@ function offenders(pattern: RegExp, allowed: string[]): string[] {
 }
 
 describe("공통 규칙을 건너뛰지 않는다", () => {
+  it("가방 (공통 규칙 26): 가방 개체(state.bags)는 rules/bags.ts로만 읽는다", () => {
+    expect(offenders(/\.bags\b/, ["game/state.ts", "rules/bags.ts"])).toEqual([]);
+  });
+
   it("의뢰 (12-291): 의뢰 목표(quest)는 rules/request.ts로만 읽는다", () => {
     expect(offenders(/\.quest\b/, ["game/state.ts", "rules/request.ts"])).toEqual([]);
   });

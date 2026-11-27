@@ -3,7 +3,7 @@ import { renameContent, type NameSwaps } from "../game/names.ts";
 import { checkResolve } from "../engine/resolve.ts";
 import { choosePortrait } from "../game/portrait.ts";
 import { dayOf } from "../rules/time.ts";
-import { moveStash } from "../engine/stash.ts";
+import { moveItem, moveStash, type ItemPlace } from "../engine/stash.ts";
 import { parseMemoCommand, writeMemo, type MemoResult } from "../game/memo.ts";
 import { basename } from "node:path";
 import { runCheat } from "../debug/cheats.ts";
@@ -603,11 +603,32 @@ ${this.sceneForGm()}` };
     const o = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
     const itemId = typeof o.itemId === "string" ? o.itemId : null;
     const slot = typeof o.slot === "string" ? o.slot : null;
-    if (!itemId && !slot) return { ok: false, error: "itemId(입기·들기) 또는 slot(벗기)으로 보낸다." };
-    const out = this.#onScreen(() => this.executeTool("equip", { item_id: itemId, slot: itemId ? null : slot }));
+    const bagId = typeof o.bagId === "string" ? o.bagId : null;
+    if (!itemId && !slot && !bagId) return { ok: false, error: "itemId(입기·들기·메기) 또는 slot(벗기)으로 보낸다." };
+    const out = this.#onScreen(() => this.executeTool("equip", { item_id: itemId, slot: itemId || bagId ? null : slot, bag_id: bagId }));
     if (!out.ok) return { ok: false, error: out.error };
     this.#repo.saveSnapshot();
     return { ok: true, text: out.resultText };
+  }
+
+  /**
+   * 물건 옮기기 (공통 규칙 26, 상태 화면 팝오버): 맨몸·가방·바닥·창고 사이로. 게임 시간을 쓰지 않는다. 규칙은 core engine/stash.ts moveItem.
+   * 바닥·가방으로 옮긴 것은 GM의 다음 tool 결과 앞에 한 줄로 알린다
+   */
+  moveItem(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
+    const o = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+    const { itemId, quantity, from, to } = o;
+    const place = (v: unknown): v is ItemPlace => typeof v === "string" && (["body", "ground", "stash"].includes(v) || /^(bag|newbag):[A-Za-z0-9_]+$/.test(v));
+    if (typeof itemId !== "string" || !Number.isInteger(quantity) || (quantity as number) < 1 || !place(from) || !place(to)) {
+      return { ok: false, error: "itemId, quantity(1 이상), from·to(body·ground·stash·bag:<id>·newbag:<아이템>)로 보낸다." };
+    }
+    const bagId = typeof o.bagId === "string" ? o.bagId : null;
+    const stashOnly = (from === "stash" || from === "body") && (to === "stash" || to === "body");
+    const tracked = this.#tracked(() => this.#onScreen(() => moveItem(this.ctx(), { itemId, quantity: quantity as number, from, to, bagId }), (r) => (r.ok && !stashOnly ? r.lines.join(" ") : "")));
+    const r = tracked.value;
+    if (!r.ok) return r;
+    this.#repo.saveSnapshot();
+    return { ok: true, text: r.lines.join(" ") };
   }
 
   /**

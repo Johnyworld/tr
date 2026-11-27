@@ -19,6 +19,7 @@ import { needsSurgery, canOperate, surgeonRoll, operate } from "./surgery.ts";
 import { ownedBy } from "../../rules/home.ts";
 import { quarantineAfterCare } from "./quarantine.ts";
 import { hereWithMe, nearby, whereIs } from "../../rules/place.ts";
+import { heldCount } from "../../rules/bags.ts";
 /**
  * 이 환자를 돌볼 장면의 치료사 (12-256): GM이 고른 사람(treatment.healer)이 있으면 그 사람, 아니면 수술감이면 수술할 줄 아는 사람,
  * 그 밖에는 지혈 솜씨가 가장 좋은 사람 (PT15 분대장: 수술할 줄 아는 윤채원이 곁에 있는데 장면의 첫 치료사를 골라 "수술을 할 줄 몰라")
@@ -249,7 +250,7 @@ export function firstAidProblem(ctx: ToolContext, item: string | null, targetId:
   if (!target || target.dead || (!self && !state.scene.present.includes(targetId))) return no("그 사람이 장면에 없다.");
   if (item) {
     if (!isFirstAidItem(content, item)) return no(`${josa(content.items[item]?.name ?? item, "은/는")} 응급처치에 쓰는 물건이 아니다. 약은 use_item으로 쓴다.`);
-    if ((me.inventory[item] ?? 0) < 1) return no(`${josa(content.items[item]?.name ?? item, "이/가")} 없다.`);
+    if (heldCount(state, me.id, item) < 1) return no(`${josa(content.items[item]?.name ?? item, "이/가")} 없다.`);
   }
   const harm = harmTrack(content.scenario);
   const bleeding = levelIndex(ctx, state, targetId, w.track) > 0;

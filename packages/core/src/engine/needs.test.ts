@@ -31,19 +31,19 @@ function setup(opts: { entry?: boolean; rain?: boolean } = {}) {
   const me = () => store.getState().characters[store.getState().playerId]!;
   me().traits = [];
   me().inventory = {};
-  me().equipped = { weapon: null, body: null, head: null, arms: null, outer: null };
+  me().equipped = { weapon: null, body: null, head: null, arms: null, outer: null, back: null };
   store.getState().companions = [];
   return { store, ctx, me };
 }
 
 describe("필수품 (공통 규칙 25)", () => {
   it("필수품은 보정을 주지 않고, 없으면 시나리오가 정한 만큼 불리하거나 못 한다", () => {
-    const { me } = setup();
-    expect(checkNeed(content, me(), "climb")).toEqual({ ok: true, item: null, parts: [{ label: "밧줄 없이 맨손", value: -2 }] });
+    const { me, store } = setup();
+    expect(checkNeed(content, store.getState(), me().id, "climb")).toEqual({ ok: true, item: null, parts: [{ label: "밧줄 없이 맨손", value: -2 }] });
     me().inventory.rope = 1;
-    expect(checkNeed(content, me(), "climb")).toEqual({ ok: true, item: "rope", parts: [] });
+    expect(checkNeed(content, store.getState(), me().id, "climb")).toEqual({ ok: true, item: "rope", parts: [] });
     // 덫은 없으면 못 한다
-    expect(checkNeed(content, me(), "trap").ok).toBe(false);
+    expect(checkNeed(content, store.getState(), me().id, "trap").ok).toBe(false);
     // 필수품에는 스킬 보정이 없다
     for (const id of ["rope", "shovel", "lighter", "matchbox", "whistle", "tarp", "rat_trap", "purifier_tablets", "fishing_kit", "toolkit", "carpentry_kit"]) expect(content.items[id]!.tool).toBeUndefined();
     // 깡통 경보줄은 쳐 두고 쉴 때만 (걸어 다닐 때는 붙지 않는다)
@@ -191,6 +191,6 @@ describe("필수품 (공통 규칙 25)", () => {
     const out = executeTool("take_action", act({ use_item: "dirty_water" }), ctx);
     expect(out.ok && out.resultText).toContain("걸러 마셨다");
     expect(me().inventory.purifier_tablets).toBe(1);
-    expect(needItem(content, me(), "purify")).toBe("purifier_tablets");
+    expect(needItem(content, ctx.store.getState(), me().id, "purify")).toBe("purifier_tablets");
   });
 });

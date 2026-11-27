@@ -38,6 +38,10 @@ export type PlayerView = {
   sceneItems: ItemView[];
   /** 창고 (12-149). label: 지금 넣을 수 있는 자리(사물함·거처)의 이름, canPut: 지금 넣을 수 있다, items: 이 구역에 맡겨 둔 것, home: 떠돌이의 거처(다른 구역일 때) */
   stash?: { label: string | null; canPut: boolean; items: ItemView[]; home: string | null } | null;
+  /** 지닌 가방 (공통 규칙 26): 멘 것이 먼저 */
+  bags?: BagSlotView[];
+  /** 지금 자리의 바닥. blocked: 화면에서 못 줍는 까닭 */
+  ground?: { items: ItemView[]; blocked: string | null };
   present: {
     id: string;
     name: string;
@@ -82,7 +86,10 @@ export type PlayerView = {
 export type GearView = { id: string; name: string; slot?: string; slotLabel: string; detail: string; durability?: { left: number; max: number } | null; ammo: string | null; icon?: string };
 
 /** wear: 들거나 입을 수 있으면 그 자리 id */
-export type ItemView = { id: string; name: string; quantity: number; icon?: string; wear?: string };
+export type ItemView = { id: string; name: string; quantity: number; icon?: string; wear?: string; /** 든 가방 개체 (바닥·창고) */ bagId?: string; load?: number; weight?: number; isBag?: boolean };
+
+/** 지닌 가방 하나 (공통 규칙 26). id가 null이면 빈 가방 */
+export type BagSlotView = { id: string | null; item: string; name: string; icon?: string; worn: boolean; capacity: number; reduce: number; load: number; items: ItemView[] };
 
 export type TraitKind = "positive" | "negative" | "personality";
 

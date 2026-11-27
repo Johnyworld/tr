@@ -40,6 +40,7 @@ import { runNaturalRecovery, sleepHealBlocker, healFromSleep, runNpcRecovery, ru
 import { ownCount } from "../rules/entrusted.ts";
 import { onOwnLand, ownedBy } from "../rules/home.ts";
 import { resist } from "../rules/damage.ts";
+import { heldCount } from "../rules/bags.ts";
 
 /**
  * 몸 상태 (기획서 4.4, 4.5): 부상 회복, 소모품, 허기, 감염. 수치는 시나리오(recovery, consumables, body)에서 온다.
@@ -158,7 +159,7 @@ export function itemUseProblem(ctx: ToolContext, item: string, targetId?: string
     const usable = [...new Set([...Object.keys(content.scenario.consumables), ...(infection?.slow ?? []), ...(infection?.cure ?? [])])];
     return `${josa(name, "은/는")} 써서 몸이 나아지는 물건이 아니다 (가능: ${usable.join(", ")}).`;
   }
-  if ((player.inventory[item] ?? 0) < 1) return `${josa(name, "이/가")} 없다.`;
+  if (heldCount(ctx.store.getState(), player.id, item) < 1) return `${josa(name, "이/가")} 없다.`;
   // 구급상자·붕대는 응급처치 판정으로 쓴다 (플레이 테스트 11, A9)
   if (isFirstAidItem(content, item)) return `${josa(name, "은/는")} 응급처치로 쓴다: treatment {item: "${item}"}와 check(move: ${content.scenario.wounds!.staunch_move})를 함께 선언한다.`;
   // 다른 사람에게 쓴다 (12-52): 장면에 있는 살아 있는 사람만

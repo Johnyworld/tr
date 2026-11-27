@@ -277,7 +277,7 @@ export function underTarp(ctx: ToolContext, activity: Activity | string): boolea
   const need = climateOf(ctx.content)?.fire?.shelter;
   if (!need || !RESTING_ACTIVITIES.includes(activity)) return false;
   const state = ctx.store.getState();
-  return !!needItem(ctx.content, state.characters[state.playerId], need);
+  return !!needItem(ctx.content, state, state.playerId, need);
 }
 
 /** 방수 (12-350): 장비 칸에 입거나 든 것(우산은 무기 칸). splash(물일)는 waterproof: all만 막는다 */
@@ -344,10 +344,10 @@ export function ignitionFor(content: Content, state: GameState, move?: string | 
   const zone = state.playerZone;
   if (!need || !me || !zone) return { kind: "free" };
   if (fireLitHere(state) || state.homes?.[me.id] === zone || atOwnBase(state, content, zone) || myPeopleLiveHere(state, content, zone)) return { kind: "free" };
-  const r = checkNeed(content, me, need, move ?? undefined);
+  const r = checkNeed(content, state, me.id, need, move ?? undefined);
   if (!r.ok) return { kind: "blocked", error: r.error };
   if (r.item) return { kind: "item", item: r.item };
-  const shelter = fire.shelter ? needItem(content, me, fire.shelter) : null;
+  const shelter = fire.shelter ? needItem(content, state, me.id, fire.shelter) : null;
   if (rainingOnMe(content, state) && !shelter) return { kind: "blocked", error: "비 맞는 바깥이라 불 붙일 것 없이는 불이 붙지 않는다. 방수포를 치거나 지붕 아래 장소로 옮긴다." };
   return { kind: "hand", parts: r.parts, move: content.scenario.needs.find((n) => n.id === need)?.move ?? null };
 }
@@ -383,7 +383,7 @@ export function lightFire(ctx: ToolContext, item: string, opts: { handOutcome?: 
     if (!opts.handOutcome) return { ok: false, error: ignitionProblem(ctx.content, state, null) ?? "불 붙일 것이 없다." };
     if (opts.handOutcome === "miss") return { ok: true, lines: [`불 붙일 것 없이 비벼 보았지만 불이 붙지 않았다 (${josa(name, "은/는")} 그대로 남았다). 실패한 것을 서술한다.`] };
   }
-  const used = ig.kind === "item" ? useNeedItem(ctx, me.id, fire.ignite!, ig.item) : null;
+  const used = ig.kind === "item" ? useNeedItem(ctx, me.id, fire.ignite!, ig.item) : [];
   const how = ig.kind === "item" ? `${josa(ctx.content.items[ig.item]?.name ?? ig.item, "으로/로")} 불을 붙였다. ` : ig.kind === "hand" ? "불 붙일 것 없이 오래 비벼 겨우 불씨를 살렸다. " : "";
   // 난로가 있으면 같은 땔감이 오래 탄다 (12-190)
   const stove = stoveAt(ctx.content, state, zone);
@@ -399,7 +399,7 @@ export function lightFire(ctx: ToolContext, item: string, opts: { handOutcome?: 
       stove
         ? `난로에 ${josa(name, "을/를")} 넣었다. 앞으로 ${hoursLeft}시간쯤 탄다 (실내에 있으면 체감 +${fire.warmth}°). 연통의 연기는 멀리서도 보일 수 있다.`
         : `${how}${josa(name, "으로/로")} 불을 피웠다. 앞으로 ${hoursLeft}시간쯤 탄다 (곁에 있으면 체감 +${fire.warmth}°). 연기와 불빛은 멀리서도 보일 수 있다.`,
-      ...(used ? [used] : []),
+      ...used,
     ],
   };
 }

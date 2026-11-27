@@ -59,7 +59,8 @@ import { startingSkills } from "./creation.ts";
 // 127: 큰 이야기 (공통 규칙 24, docs/saga-plan.md). sagas, 이벤트 saga_*
 // 128: 큰 이야기 인물 (offstage, 이벤트 npc_arrived)
 // 130: 필수품 (공통 규칙 25, 12-357). traps.item, trap_set.item
-export const SAVE_SCHEMA_VERSION = 130;
+// 131: 가방 (공통 규칙 26, 12-358). bags, bagSeq, equipped.back, 이벤트 bag_packed·item_transferred.bagId·item_stashed.bagId·item_equipped.bagId
+export const SAVE_SCHEMA_VERSION = 131;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -489,6 +490,13 @@ export function createGameSchemas(s: Scenario) {
     zoneSeen: z.record(z.string(), z.string().nullable()).default({}),
     /** 구역마다 바닥에 놓인 물건 (장면을 떠나면 그 구역에 남는다, 플레이 테스트 13: 내려놓은 고철이 구역을 옮겨도 따라왔다) */
     groundItems: z.record(z.string(), inventorySchema).default({}),
+    /**
+     * 가방 개체 (공통 규칙 26, docs/bags-plan.md): 안에 든 것이 있거나 메고 있는 가방만. 내용물은 가방만 가진다 (그 자리 소지품에는 가방 물건 하나).
+     * at: 가방이 있는 곳 (캐릭터 id, "scene" 장면 바닥, "ground:<자리>" 구역 바닥, "stash:<사람>:<구역>" 창고). rules/bags.ts와 리듀서만 읽는다
+     */
+    bags: z.record(z.string(), z.strictObject({ item: z.string(), at: z.string(), contents: inventorySchema, worn: z.boolean().optional() })).default({}),
+    /** 다음 가방 개체 번호 */
+    bagSeq: z.number().int().min(0).default(0),
     /** 구역 안에서 지금 있는 장소 (12-244, 공통 규칙 15). null이면 구역의 장소를 정하지 않은 곳 (들어선 자리) */
     playerPlace: z.string().nullable().default(null),
     /** GM이 즉흥으로 만든 장소 (장소 id → 구역·이름·실내·주인). 세이브에 남아 다시 쓴다 */
@@ -892,7 +900,7 @@ export function createGameSchemas(s: Scenario) {
     /** 얼굴이 없는 주인공이 시트에서 얼굴을 고른다 (12-139, 한 번만) */
     z.strictObject({ type: z.literal("portrait_chosen"), characterId: z.string(), portrait: z.string() }),
     /** 내 물건을 창고에 넣거나(put) 꺼낸다(take) (12-149). zone: 창고가 있는 구역 */
-    z.strictObject({ type: z.literal("item_stashed"), characterId: z.string(), zone: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["put", "take"]) }),
+    z.strictObject({ type: z.literal("item_stashed"), characterId: z.string(), zone: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["put", "take"]), bagId: z.string().optional() }),
     /** 떠돌이가 이 구역을 거처로 삼았다 (12-149) */
     z.strictObject({ type: z.literal("home_settled"), characterId: z.string(), zone: z.string() }),
     /** 잠입을 시작했다 / 상태가 바뀌었다 / 끝났다 (12-154) */
@@ -1053,7 +1061,7 @@ export function createGameSchemas(s: Scenario) {
     /** 이름 없는 인물이 자랐다 (프로필은 틀의 재료에서 코드가 골랐다) */
     z.strictObject({ type: z.literal("extra_promoted"), characterId: z.string(), profile: z.custom<NonNullable<Character["profile"]>>((v) => typeof v === "object" && v !== null), ties: z.array(tieRecordSchema).default([]) }),
     /** 무기를 들거나 방어구를 입었다 (null이면 벗었다) */
-    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head", "arms", "outer"]), itemId: z.string().nullable() }),
+    z.strictObject({ type: z.literal("item_equipped"), characterId: z.string(), slot: z.enum(["weapon", "body", "head", "arms", "outer", "back"]), itemId: z.string().nullable(), /** 등 칸: 멘 가방 개체 (없으면 빈 가방) */ bagId: z.string().optional() }),
     /** 물건이 닳았다 (delta 음수면 고쳤다) */
     z.strictObject({ type: z.literal("item_worn"), characterId: z.string(), itemId: z.string(), delta: z.number().int() }),
     /** 물건이 망가졌다: 하나 줄고, 닳은 것은 처음으로, into가 있으면 그것이 남는다 */
@@ -1490,7 +1498,11 @@ export function createGameSchemas(s: Scenario) {
       quantity: z.number().int().positive(),
       /** 주인공이 맡긴 것이면 맡긴 조건 (예: "나갈 때 돌려준다", 12-196) */
       deposit: z.string().optional(),
+      /** 가방이면 그 가방 개체째 (공통 규칙 26). 없으면 빈 가방부터 */
+      bagId: z.string().optional(),
     }),
+    /** 가방에 넣기·꺼내기 (공통 규칙 26). bagId가 아직 없으면 그 가방 물건으로 새 개체를 만든다 */
+    z.strictObject({ type: z.literal("bag_packed"), characterId: z.string(), bagId: z.string(), bagItem: z.string(), itemId: z.string(), quantity: z.number().int().positive(), direction: z.enum(["pack", "unpack"]), /** 새 개체를 메고 있는 가방으로 만든다 */ worn: z.boolean().optional() }),
   ]);
 
   return { character, checkRecord, state, event };
@@ -1568,6 +1580,8 @@ export const EMPTY_STATE: GameState = {
   swarms: {},
   zoneSeen: {},
   groundItems: {},
+  bags: {},
+  bagSeq: 0,
   playerPlace: null,
   spawnedPlaces: {},
   npcStays: {},
@@ -1690,6 +1704,9 @@ function leaveBehind(next: GameState, ids: readonly string[], zone: string, plac
 }
 
 function swapGround(next: GameState, from: string | null, to: string) {
+  // 가방 개체도 바닥을 따라간다 (공통 규칙 26)
+  for (const b of Object.values(next.bags ?? {})) if (from !== null && b.at === SCENE_HOLDER) b.at = `ground:${from}`;
+  for (const b of Object.values(next.bags ?? {})) if (b.at === `ground:${to}`) b.at = SCENE_HOLDER;
   const ground = { ...next.groundItems };
   if (from !== null && Object.keys(next.scene.items).length) ground[from] = { ...next.scene.items };
   else if (from !== null) delete ground[from];
@@ -1729,7 +1746,13 @@ export function applyEvent(state: GameState, event: GameEvent): GameState {
     throw new Error(`세계가 만들어지기 전에 ${event.type} 이벤트를 적용할 수 없습니다.`);
   }
   // 바뀐 부분만 새로 만든다 (구조 공유, 기획서 11.6). 이전 상태는 그대로 남는다
-  const out = produce(state, (next: GameState) => reduce(state, next, event) as GameState | undefined);
+  const out = produce(state, (next: GameState) => {
+    const r = reduce(state, next, event) as GameState | undefined;
+    // 가방 개체를 그 자리 물건 수에 맞춘다 (공통 규칙 26): 가방이 없어진 자리는 내용물을 쏟는다
+    const target = r ?? next;
+    if (target.bags && Object.keys(target.bags).length) syncBags(target);
+    return r;
+  });
   // 있어 본 장소는 안다 (설계 목록 C-1): 어떤 일로 옮겨졌든(걸어서·이야기·붙잡힘·잠입) 그 자리에 놓이면 기록한다.
   // 함께 있던 사람(동행·장면 사람)도 그곳을 안다: 그 사람을 이어받으면 아는 곳이다 (PT22 하얀매: 함께 간 병원을 계승한 동료가 몰랐다)
   if (!out.playerZone || !out.playerPlace || !out.playerId) return out;
@@ -1870,6 +1893,35 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "item_equipped": {
       const c = mustGet(next.characters, event.characterId, "캐릭터");
       c.equipped = { ...c.equipped, [event.slot]: event.itemId };
+      // 등 칸: 멘 가방 개체 (공통 규칙 26)
+      if (event.slot === "back") {
+        for (const b of Object.values(next.bags)) if (b.at === c.id && b.worn) b.worn = false;
+        if (event.bagId) {
+          const b = next.bags[event.bagId];
+          if (!b || b.at !== c.id || b.item !== event.itemId) throw new Error(`멜 수 없는 가방: ${event.bagId}`);
+          b.worn = true;
+        }
+      }
+      return next;
+    }
+    case "bag_packed": {
+      const c = mustGet(next.characters, event.characterId, "캐릭터");
+      let bag = next.bags[event.bagId];
+      if (!bag) {
+        const have = c.inventory[event.bagItem] ?? 0;
+        const used = Object.values(next.bags).filter((b) => b.at === c.id && b.item === event.bagItem).length;
+        if (have <= used) throw new Error(`빈 가방이 없다: ${event.bagItem}`);
+        bag = next.bags[event.bagId] = { item: event.bagItem, at: c.id, contents: {}, ...(event.worn ? { worn: true } : {}) };
+        next.bagSeq = (next.bagSeq ?? 0) + 1;
+      }
+      if (bag.at !== c.id) throw new Error(`지닌 가방이 아니다: ${event.bagId}`);
+      const [from, to] = event.direction === "pack" ? [c.inventory, bag.contents] : [bag.contents, c.inventory];
+      const left = (from[event.itemId] ?? 0) - event.quantity;
+      if (left < 0) throw new Error(`수량 부족: ${event.itemId} (${event.direction})`);
+      if (left === 0) delete from[event.itemId];
+      else from[event.itemId] = left;
+      to[event.itemId] = (to[event.itemId] ?? 0) + event.quantity;
+      for (const slot of ["weapon", "body", "head", "arms", "outer", "back"] as const) if (c.equipped?.[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
       return next;
     }
     case "item_worn": {
@@ -1881,12 +1933,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     }
     case "item_broken": {
       const c = mustGet(next.characters, event.characterId, "캐릭터");
+      pullFromBags(next, c.id, event.itemId, 1);
       const have = c.inventory[event.itemId] ?? 0;
       if (have <= 1) delete c.inventory[event.itemId];
       else c.inventory[event.itemId] = have - 1;
       delete c.wear[event.itemId];
       if (event.into) c.inventory[event.into] = (c.inventory[event.into] ?? 0) + 1;
-      for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
+      for (const slot of ["weapon", "body", "head", "arms", "outer", "back"] as const) if (c.equipped[slot] === event.itemId && !c.inventory[event.itemId]) c.equipped = { ...c.equipped, [slot]: null };
       return next;
     }
     case "check_cost_paid":
@@ -2096,6 +2149,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
     case "item_stashed": {
       const holder = next.characters[event.characterId];
       if (!holder) throw new Error(`알 수 없는 캐릭터: ${event.characterId}`);
+      if (event.direction === "put") pullFromBags(next, holder.id, event.itemId, event.quantity);
+      const stashKey = `stash:${event.characterId}:${event.zone}`;
+      if (event.direction === "put") moveBags(next, holder.id, stashKey, event.itemId, event.quantity, holder.inventory[event.itemId] ?? 0, event.bagId);
+      else moveBags(next, stashKey, holder.id, event.itemId, event.quantity, next.stashes[event.characterId]?.[event.zone]?.[event.itemId] ?? 0, event.bagId);
       const places = { ...(next.stashes[event.characterId] ?? {}) };
       const box = { ...(places[event.zone] ?? {}) };
       const [from, to] = event.direction === "put" ? [holder.inventory, box] : [box, holder.inventory];
@@ -2366,6 +2423,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const rest = { ...next.stashes, [event.to]: places };
       delete rest[event.from];
       next.stashes = rest;
+      for (const b of Object.values(next.bags)) if (b.at.startsWith(`stash:${event.from}:`)) b.at = `stash:${event.to}:${b.at.slice(`stash:${event.from}:`.length)}`;
       return next;
     }
     case "stash_hinted":
@@ -2411,7 +2469,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
         if (left < 0) throw new Error(`빼앗을 것이 모자란다: ${item}`);
         if (left === 0) delete me.inventory[item];
         else me.inventory[item] = left;
-        for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
+        for (const slot of ["weapon", "body", "head", "arms", "outer", "back"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
       }
       next.deposits[`held:${event.by}`] = { ...(next.deposits[`held:${event.by}`] ?? {}), ...event.held };
       // 갇힌 곳으로 끌려간다. 동행은 따라오지 못한다 (그 자리에서 기다린다)
@@ -2467,12 +2525,13 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       const me = mustGet(next.characters, next.playerId, "캐릭터");
       const box = (next.deposits[event.zone] ??= {});
       for (const [item, n] of Object.entries(event.items)) {
+        pullFromBags(next, me.id, item, n);
         const have = me.inventory[item] ?? 0;
         if (have < n) throw new Error(`맡길 것이 모자란다: ${item}`);
         if (have === n) delete me.inventory[item];
         else me.inventory[item] = have - n;
         box[item] = (box[item] ?? 0) + n;
-        for (const slot of ["weapon", "body", "head", "arms", "outer"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
+        for (const slot of ["weapon", "body", "head", "arms", "outer", "back"] as const) if (me.equipped?.[slot] === item && !me.inventory[item]) me.equipped = { ...me.equipped, [slot]: null };
       }
       return next;
     }
@@ -3201,6 +3260,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       (next.preparations[event.zone] ??= []).push(event.preparation);
       break;
     case "item_consumed": {
+      if (next.characters[event.holder]) pullFromBags(next, event.holder, event.itemId, event.quantity);
       const inv = holderInventory(next, event.holder);
       const left = (inv[event.itemId] ?? 0) - event.quantity;
       if (left < 0) throw new Error(`수량 부족: ${event.holder}의 ${event.itemId}`);
@@ -3281,6 +3341,8 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       next.squad = [...(next.squad ?? []), event.characterId];
       break;
     case "item_transferred": {
+      if (next.characters[event.from]) pullFromBags(next, event.from, event.itemId, event.quantity);
+      moveBags(next, event.from, event.to, event.itemId, event.quantity, findHolderInventory(next, event.from)?.[event.itemId] ?? 0, event.bagId);
       const from = holderInventory(next, event.from);
       const to = holderInventory(next, event.to);
       const remaining = (from[event.itemId] ?? 0) - event.quantity;
@@ -3338,6 +3400,87 @@ function perceive(state: GameState, npcId: string) {
 export function findHolderInventory(state: GameState, holder: string): Inventory | undefined {
   if (holder === SCENE_HOLDER) return state.scene.items;
   return state.characters[holder]?.inventory;
+}
+
+/** 가방이 있는 곳의 소지품 (공통 규칙 26): 캐릭터, 장면 바닥, 구역 바닥, 창고 */
+export function bagPlaceInventory(state: GameState, at: string): Inventory | undefined {
+  if (at === SCENE_HOLDER) return state.scene.items;
+  if (at.startsWith("ground:")) return state.groundItems[at.slice("ground:".length)];
+  if (at.startsWith("stash:")) {
+    const [, who, ...zone] = at.split(":");
+    return state.stashes[who!]?.[zone.join(":")];
+  }
+  return state.characters[at]?.inventory;
+}
+
+/**
+ * 가방이 옮겨 간다 (공통 규칙 26): 물건이 from에서 to로 qty만큼 갈 때, 그 물건이 가방이면 개체도 옮긴다 (연결만, 내용물은 가방이 가진다).
+ * 고르는 차례: 집은 가방(bagId), 빈 가방, 든 가방, 멘 가방. countBefore: 옮기기 전 from의 그 물건 수
+ */
+function moveBags(next: GameState, from: string, to: string, itemId: string, qty: number, countBefore: number, bagId?: string) {
+  const here = Object.entries(next.bags ?? {}).filter(([, b]) => b.at === from && b.item === itemId);
+  if (!here.length) return;
+  let left = qty;
+  const move = (id: string) => {
+    const b = next.bags[id]!;
+    b.at = to;
+    if (b.worn) {
+      b.worn = false;
+      const c = next.characters[from];
+      if (c?.equipped?.back === itemId) c.equipped = { ...c.equipped, back: null };
+    }
+    left--;
+  };
+  if (bagId && here.some(([id]) => id === bagId)) move(bagId);
+  left -= Math.min(left, Math.max(0, countBefore - here.length));
+  const rest = here.filter(([id]) => id !== bagId).sort(([, a], [, b]) => Number(!!a.worn) - Number(!!b.worn));
+  for (const [id] of rest) if (left > 0) move(id);
+}
+
+/** 맨몸에 모자라면 지닌 가방에서 덜어 낸다 (공통 규칙 26: 쓰고 주고 빼앗기는 것은 가방 속에서도 나간다). 멘 가방은 맨 나중 */
+function pullFromBags(next: GameState, charId: string, itemId: string, need: number) {
+  const c = next.characters[charId];
+  if (!c) return;
+  let short = need - (c.inventory[itemId] ?? 0);
+  if (short <= 0) return;
+  const bags = Object.values(next.bags ?? {}).filter((b) => b.at === charId && (b.contents[itemId] ?? 0) > 0).sort((a, b) => Number(!!a.worn) - Number(!!b.worn));
+  for (const b of bags) {
+    if (short <= 0) break;
+    const take = Math.min(short, b.contents[itemId] ?? 0);
+    const left = (b.contents[itemId] ?? 0) - take;
+    if (left === 0) delete b.contents[itemId];
+    else b.contents[itemId] = left;
+    c.inventory[itemId] = (c.inventory[itemId] ?? 0) + take;
+    short -= take;
+  }
+}
+
+/** 가방 개체를 그 자리 물건 수에 맞춘다: 가방이 없어졌으면(망가짐·잃음) 내용물을 그 자리에 쏟고, 비고 메지 않은 개체는 지운다 */
+function syncBags(next: GameState) {
+  const groups = new Map<string, string[]>();
+  for (const [id, b] of Object.entries(next.bags)) {
+    const c = next.characters[b.at];
+    if (b.worn && c && c.equipped?.back !== b.item) b.worn = false;
+    if (!b.worn && !Object.keys(b.contents).length) {
+      delete next.bags[id];
+      continue;
+    }
+    const key = `${b.at}\u0000${b.item}`;
+    groups.set(key, [...(groups.get(key) ?? []), id]);
+  }
+  for (const ids of groups.values()) {
+    const first = next.bags[ids[0]!]!;
+    const inv = bagPlaceInventory(next, first.at);
+    const extra = ids.length - (inv?.[first.item] ?? 0);
+    if (extra <= 0) continue;
+    const spill = [...ids].sort((a, b) => Number(!!next.bags[a]!.worn) - Number(!!next.bags[b]!.worn)).slice(0, extra);
+    for (const id of spill) {
+      const b = next.bags[id]!;
+      const dest = inv ?? (b.at.startsWith("ground:") ? (next.groundItems[b.at.slice("ground:".length)] = {}) : undefined);
+      if (dest) for (const [item, n] of Object.entries(b.contents)) dest[item] = (dest[item] ?? 0) + n;
+      delete next.bags[id];
+    }
+  }
 }
 
 function holderInventory(state: GameState, holder: string): Inventory {

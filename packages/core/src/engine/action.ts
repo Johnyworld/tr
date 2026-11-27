@@ -79,6 +79,7 @@ import { slotOpensBetween } from "../rules/storySlot.ts";
 import { choiceAvailable, storyletOf } from "../story/storylets.ts";
 import { recordDeath } from "./succession.ts";
 import { incapacitatingSymptom } from "../scenario/scenario.ts";
+import { heldCount, takeOut, withBags } from "../rules/bags.ts";
 import { sleepChainStart } from "../game/state.ts";
 import { healersHere } from "./care/kinds.ts";
 import { applyTreatment, type FeeChoice, drinkWater, healFromSleep, sleepHealBlocker, itemUseProblem, maybeInfect, refillWater, treatmentProblem, useItem, wadeIn } from "./body.ts";
@@ -634,7 +635,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const attacking = !!input.check && !!gearRules && ((!!input.target && input.check.target_harm !== "none") || (inBattle && gearRules.attack_moves.includes(input.check.move)));
   // 맨손으로 치면 손에 든 무기는 이 판정에 쓰지 않는다 (12-256, PT15 졸병: 주먹을 날렸는데 "+1(야구방망이)")
   const fighter = input.check?.unarmed ? { ...player, equipped: { ...player.equipped, weapon: null } } : player;
-  const attack = attacking ? planAttack(content, fighter, input.check!.move, input.check!.target_harm) : null;
+  const attack = attacking ? planAttack(content, withBags(start, fighter), input.check!.move, input.check!.target_harm) : null;
   if (typeof attack === "string") return { ok: false, error: attack };
   // 사거리 (12-93): 장면의 인물을 치면 거리를 고르고, 무기가 닿는 거리여야 한다. 전투 라운드의 공격은 거리를 고르면 보정만
   const strikes = !!input.check && !!input.target && input.check.target_harm !== "none";
@@ -668,11 +669,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
   if (input.craft) {
     if (!input.check) return { ok: false, error: "만들거나 고치려면 판정(check)이 필요하다." };
-    const why = planCraft(content, player, input.craft, input.check.move);
+    const why = planCraft(content, withBags(start, player), input.craft, input.check.move);
     if (why) return { ok: false, error: why };
   }
   if (input.move_to && gearRules && encumbrance(content, player, store.getState()) === 2) {
-    return { ok: false, error: `짐이 너무 무겁다 (${carriedWeight(content, player).toFixed(1)}kg). 내려놓아야(transfer_item to scene) 옮겨 갈 수 있다.` };
+    return { ok: false, error: `짐이 너무 무겁다 (${carriedWeight(content, player, store.getState()).toFixed(1)}kg). 내려놓아야(transfer_item to scene) 옮겨 갈 수 있다.` };
   }
   if (inBattle) {
     if (input.activity && input.activity.kind !== "brief") return { ok: false, error: "전투 중에는 잠·보초·기다림 같은 활동을 할 수 없다. activity는 null로 둔다 (한 라운드가 흐른다)." };
@@ -768,8 +769,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     if (!prep) return { ok: false, error: `알 수 없는 준비물: ${input.prepare}` };
     const zone = start.playerZone;
     if (!zone || !ownedBy(start, zone, player.factionId)) return { ok: false, error: "준비물은 우리 무리의 구역에만 설치할 수 있다." };
-    if (prep.requires_item && (player.inventory[prep.requires_item] ?? 0) < 1) return { ok: false, error: `${prep.label}에는 ${josa(content.items[prep.requires_item]?.name ?? prep.requires_item, "이/가")} 필요하다.` };
-    const short = Object.entries(prep.materials ?? {}).filter(([id, n]) => (player.inventory[id] ?? 0) < n);
+    if (prep.requires_item && heldCount(start, player.id, prep.requires_item) < 1) return { ok: false, error: `${prep.label}에는 ${josa(content.items[prep.requires_item]?.name ?? prep.requires_item, "이/가")} 필요하다.` };
+    const short = Object.entries(prep.materials ?? {}).filter(([id, n]) => heldCount(start, player.id, id) < n);
     if (short.length) return { ok: false, error: `${prep.label}에는 재료가 모자라다: ${short.map(([id, n]) => `${content.items[id]?.name ?? id} ${n}개`).join(", ")}.` };
     if (!input.check) return { ok: false, error: `${prep.label} 설치에는 판정(check)이 필요하다.` };
   }
@@ -884,7 +885,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 없는 물건은 쓰지 못한다: 시간을 흘리기 전에 막는다 (플레이 테스트 8: 오류 없이 30분이 흘렀다)
-  if (input.use_item && (player.inventory[input.use_item] ?? 0) < 1) {
+  if (input.use_item && heldCount(start, player.id, input.use_item) < 1) {
     return { ok: false, error: `${josa(content.items[input.use_item]?.name ?? input.use_item, "이/가")} 없다. 가진 물건만 쓴다 (상태의 소지품).` };
   }
   // 물건 없이 치료를 부르면 같은 장소의 치료사를 장면에 들인다 (12-261, 공통 규칙 15)
@@ -1233,6 +1234,12 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     }
   }
 
+  // 가방 속 물건은 꺼내 쓰고 남은 것은 다시 넣는다 (공통 규칙 26, 사용자 결정: GM이 꺼내고 넣는 것을 서술한다)
+  const pulled = [
+    input.use_item && !inBattle ? takeOut(ctx, start.playerId, input.use_item, 1, content.items[input.use_item]?.used_into ?? null) : null,
+    input.treatment?.item && !inBattle ? takeOut(ctx, start.playerId, input.treatment.item, 1, content.items[input.treatment.item]?.used_into ?? null) : null,
+  ].filter((p): p is ReturnType<typeof takeOut> => !!p);
+  for (const p of pulled) lines.push(...p.lines);
   // 1-1-1. 치료 (낫는 정도는 시스템이 정한다)
   for (const [request, run] of [
     [input.treatment, () => applyTreatment(ctx, input.treatment!.item, input.treatment!.target, input.check && outcome ? { move: input.check.move, outcome } : null, feeChoice(input.treatment!.pay) ?? "default", chosenHealer)],
@@ -1253,6 +1260,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       lines.push(`${request === input.bury ? "묻지 못했다" : request === input.change_clothes ? "갈아입지 못했다" : request === input.wade ? "물에 들어가지 못했다" : request === input.drink ? "물을 마시지 못했다" : request === input.refill ? "물을 채우지 못했다" : "몸을 돌보지 못했다"}: ${t.error}`);
     }
   }
+  for (const p of pulled) lines.push(...p.restore());
 
   // 1-2. 전투 한 라운드 (판정이 없어도 라운드는 흐른다). 쓰러져 있으면 남은 전투를 코드가 한 번에 굴려 끝낸다
   const fellInBattle = inBattle && store.getState().battle !== null && !!incapacitatingSymptom(scenario, store.getState().characters[start.playerId]!);
@@ -2131,12 +2139,12 @@ function missionMinutesLeft(state: GameState, forMission: string | null | undefi
 /** 판정에 붙인 필수품 (12-350, 공통 규칙 25): 없는 일이거나 없으면 못 하는 일 */
 function needsProblem(content: Content, state: GameState, need: string, move: string): string | null {
   if (!checkNeedIds(content).includes(need)) return `check.needs는 ${checkNeedIds(content).join("/") || "없음"} 중 하나다.`;
-  const r = checkNeed(content, state.characters[state.playerId], need, move);
+  const r = checkNeed(content, state, state.playerId, need, move);
   return r.ok ? null : r.error;
 }
 
 function needsParts(content: Content, state: GameState, need: string, move: string): { label: string; value: number }[] {
-  const r = checkNeed(content, state.characters[state.playerId], need, move);
+  const r = checkNeed(content, state, state.playerId, need, move);
   return r.ok ? r.parts : [];
 }
 
@@ -2145,7 +2153,7 @@ function lureBonus(content: Content, state: GameState, input: { lure: boolean; c
   const lure = content.scenario.lure;
   if (!input.lure || !lure || !input.check || !lure.moves.includes(input.check.move)) return null;
   if (!input.check.opponent && !input.target) return null;
-  const item = needItem(content, state.characters[state.playerId], lure.need);
+  const item = needItem(content, state, state.playerId, lure.need);
   return item ? [{ label: `꾀어냄 (${content.items[item]?.name ?? item})`, value: lure.bonus }] : null;
 }
 
@@ -2156,7 +2164,7 @@ function lureAt(ctx: ToolContext): { ok: true; lines: string[]; displays: ToolDi
   const state = store.getState();
   if (!lure) return { ok: false, error: "이 월드에는 꾀어내기가 없다." };
   if (!state.playerZone) return { ok: false, error: "어디에 있는지 모른다." };
-  const item = needItem(content, state.characters[state.playerId], lure.need);
+  const item = needItem(content, state, state.playerId, lure.need);
   const noise = item ? lure.noise : lure.shout_noise;
   store.append({ type: "noise_made", zone: state.playerZone, level: noise, day: dayOf(state.time) });
   const line = item

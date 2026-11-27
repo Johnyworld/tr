@@ -381,7 +381,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
       // 덫은 하루가 지나야 걸린다: 놓은 지 하루 넘은 것만 거둔다
       const trapReady = !!s.playerZone && s.traps.some((t) => t.zone === s.playerZone && s.time - t.setAt >= 24 * 60);
       const trapNeed = content.scenario.foraging?.trap?.need;
-      const trapItem = trapNeed ? needItem(content, s.characters[s.playerId], trapNeed) : null;
+      const trapItem = trapNeed ? needItem(content, s, s.playerId, trapNeed) : null;
       const wet = !!s.playerZone && !!content.scenario.body?.thirst && (content.locations[s.playerZone]?.yields[content.scenario.body.thirst.resource] ?? 0) > 0;
       const survival = moves.find((m) => m.id === content.scenario.foraging?.move);
       let act: Record<string, unknown> | null = null;
@@ -402,7 +402,7 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         const kind = content.scenario.foraging.kinds.find((k) => k.id === (wet ? "fish" : "hunt"));
         const fm = moves.find((m) => m.id === (kind?.move ?? survival?.id));
         // 그 일의 필수품(낚시 도구)이 있을 때만 (12-350)
-        const equipped = !kind?.need || !!needItem(content, s.characters[s.playerId], kind.need);
+        const equipped = !kind?.need || !!needItem(content, s, s.playerId, kind.need);
         if (kind && fm && can(fm.id) && equipped) act = { intent: kind.label, forage: kind.id, check: check(fm, "none") };
       }
       if (act) {

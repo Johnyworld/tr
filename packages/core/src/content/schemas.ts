@@ -70,8 +70,8 @@ export const itemContentSchema = z.strictObject({
    * 따뜻함 (12-98): 체감 기온에 더하는 도. worn: 입고 있을 때 (외투), resting: 지니고 자거나 쉴 때 덮는다 (담요)
    */
   warmth: z.strictObject({ degrees: z.number().int().min(1).max(15), when: z.enum(["worn", "resting"]) }).optional(),
-  /** 지니고 있으면 들 수 있는 무게가 이만큼 는다 (배낭 틀 등, 가장 큰 것 하나) */
-  carry_bonus: z.number().min(0).max(20).optional(),
+  /** 가방 (공통 규칙 26, docs/bags-plan.md): 담을 수 있는 무게(kg)와, 등 칸에 메면 안의 무게를 줄이는 비율(%) */
+  bag: z.strictObject({ capacity: z.number().positive().max(50), reduce: z.number().int().min(0).max(90) }).optional(),
   /** 메모 (12-75): paper(메모장)와 tool(펜·연필)을 함께 지니면 메모를 적는다. paper만 있으면 읽기만 */
   writing: z.enum(["paper", "tool"]).optional(),
   /** 도구: 지니고 있으면 그 스킬에 보정 (가장 큰 것 하나) */

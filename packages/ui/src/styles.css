@@ -3410,10 +3410,10 @@ body {
   padding-right: var(--gutter);
 }
 
-/* 탭 단추는 가운데 440px 안에 (아래 선은 창 폭 전체) */
+/* 탭 단추는 본문과 같은 폭 안에 (왼쪽·오른쪽 끝을 본문에 맞춘다, 아래 선은 창 폭 전체) */
 .status-page .sheet-tabs {
-  padding-left: max(0px, calc((100% - 440px) / 2));
-  padding-right: max(0px, calc((100% - 440px) / 2));
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
 }
 
 /* 메모 탭 (12-75): 테두리 없는 글 칸 */

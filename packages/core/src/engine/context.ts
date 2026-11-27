@@ -456,10 +456,11 @@ function nameNotes(state: GameState, viewer: string, id: string): string[] {
   if (!knowsName(state, viewer, id)) {
     notes.push("당신은 이 인물의 이름을 모른다 (호칭으로 부른다). 상대가 이름을 밝히거나 누가 그 이름을 부르면 learn_name(who: player). 이름을 지어내지 않는다");
   }
+  // 아는 사이인지도 함께 (12-359, 튜토리얼: 통성명하고 같이 배식까지 한 취사 할머니가 저녁에 "새로 온 간호사 아가씨지?")
   notes.push(
     knowsName(state, id, viewer)
-      ? "이 인물은 당신의 이름을 안다"
-      : "이 인물은 당신의 이름을 모른다 (이름으로 부르지 않는다). 당신이 이름을 밝히거나 불리면 learn_name(who: target)",
+      ? "이 인물은 당신의 이름을 안다 (이미 아는 사이다. 처음 보는 사람처럼 대하거나 누구냐, 새로 왔냐고 묻지 않는다)"
+      : `이 인물은 당신의 이름을 모른다 (이름으로 부르지 않는다. ${hasMet(state, id, viewer) ? "얼굴은 안다: 전에 마주친 적이 있다" : "처음 보는 얼굴이다"}). 당신이 이름을 밝히거나 불리면 learn_name(who: target)`,
   );
   return notes;
 }

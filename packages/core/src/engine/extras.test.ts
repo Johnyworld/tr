@@ -68,10 +68,12 @@ describe("엑스트라", () => {
     // 이름 모르는 사람의 id는 겉 id로 (공통 규칙 7, PT21)
     expect(before).toContain(`망토 두른 상인 (이름 모름) (${maskedId("npc_stranger")})`);
     expect(before).not.toContain("낯선이");
+    // 장면에 들면 서로 얼굴은 안다 (12-359)
+    expect(before).toContain("얼굴은 안다: 전에 마주친 적이 있다");
     expect(executeTool("learn_name", { target: "npc_stranger", who: "target" }, env.ctx).ok).toBe(true);
     expect(env.store.getState().known.npc_stranger).toContain("player");
     expect(env.store.getState().known.player ?? []).not.toContain("npc_stranger");
-    expect(describePlayerState(env.store.getState(), env.content)).toContain("이 인물은 당신의 이름을 안다");
+    expect(describePlayerState(env.store.getState(), env.content)).toContain("이 인물은 당신의 이름을 안다 (이미 아는 사이다");
     expect(executeTool("learn_name", { target: "npc_stranger" }, env.ctx).ok).toBe(true);
     expect(describePlayerState(env.store.getState(), env.content)).toContain("### 낯선이 (npc_stranger)");
     // 장면에 없는 인물은 안 된다

@@ -121,7 +121,7 @@ creation:
   # 배치의 전문 기술은 과거가 가르쳐 준 것이다
   # 플레이어는 같은 포인트 안에서 고칠 수 있다. 무리원·떠돌이 모두 고른다 (떠돌이의 재주를 합쳤다)
   pasts:
-    - { id: firefighter, label: 소방관, icon: flame, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 2, athletics: 1, first_aid: 0, sense_danger: 0, fight: 0 }, items: [crowbar], min_age: 24 }
+    - { id: firefighter, label: 소방관, icon: flame, summary: 불길과 무너지는 건물 속으로 들어가던 사람, stats: { strength: 2, vitality: 1, nerve: 1, intellect: -1 }, skills: { endure: 2, athletics: 1, first_aid: 0, sense_danger: 0, fight: 0 }, items: [fire_axe], min_age: 24 }
     - { id: police, label: 경찰, icon: siren, summary: 순찰을 돌고 사건 현장을 보던 사람. 총을 쏴 본 적이 있다, stats: { senses: 2, nerve: 1, agility: 1, charm: -1 }, skills: { shoot: 2, insight: 1, sense_danger: 0, intimidate: 0, fight: 0 }, items: [flashlight], min_age: 24 }
     - { id: soldier, label: 군인, icon: crosshair, summary: 붕괴 때 부대에 있었다. 명령과 사격을 몸이 기억한다, stats: { agility: 2, vitality: 1, nerve: 1, charm: -1 }, skills: { shoot: 2, tactics: 1, fight: 0, athletics: 0, sense_danger: 0 }, items: [binoculars], min_age: 21 }
     - { id: doctor, label: 의사, icon: stethoscope, summary: 병원에서 일했다. 약이 없어도 무엇이 사람을 죽이는지 안다, stats: { intellect: 2, senses: 1, nerve: 1, strength: -1 }, skills: { first_aid: 2, surgery: 1, insight: 0, persuade: 0, endure: 0 }, items: [medkit], min_age: 30 }
@@ -232,7 +232,7 @@ crafting:
     # 훈연 (12-131): 날것을 땔감 연기에 그을려 오래 가게 한다
     - { id: smoke_fish, label: 생선 훈연, move: fishing, materials: { raw_fish: 2, firewood: 1 }, yields: { item: dried_fish, qty: 2 } }
     - { id: smoke_meat, label: 고기 훈연, move: hunt, materials: { raw_meat: 2, firewood: 1 }, yields: { item: smoked_meat, qty: 2 } }
-    - { id: split_firewood, label: 땔감 패기, move: carpentry, materials: { planks: 1 }, tools: [[carpentry_kit, machete]], yields: { item: firewood, qty: 2 } }
+    - { id: split_firewood, label: 땔감 패기, move: carpentry, materials: { planks: 1 }, tools: [[carpentry_kit, machete, hatchet, fire_axe]], yields: { item: firewood, qty: 2 } }
 
 # 판마다 다른 인물 사이의 관계 (기획서 7.10): 세계를 만들 때 이름 있는 인물들을 이만큼 무작위로 잇는다. 무리가 다르면 숨은 관계
 dynamic_ties: { count: 5, kinds: [sibling, parent, child, spouse, friend, rival] }

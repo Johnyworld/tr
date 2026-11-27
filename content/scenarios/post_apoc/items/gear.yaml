@@ -498,3 +498,26 @@
   durability: 6
   breaks_into: scrap_metal
   repair: { move: maintenance, materials: { scrap_metal: 1 } }
+# 도끼 (12-350): 손도끼는 가벼운 땔감 패기 도구, 소방도끼는 무겁고 오래가는 무기 (마체테는 가볍고 빨리 닳는다)
+- id: hatchet
+  name: 손도끼
+  icon: blade
+  description: 자루가 짧은 캠핑용 손도끼. 연장 상자 없이도 판자를 패서 땔감을 만든다. 휘두르면 가볍게 벤다.
+  kind: weapon
+  weight: 0.8
+  value: 6
+  weapon: { moves: [fight], max_harm: light, noise: 0, wound: { fight: cut } }
+  durability: 10
+  breaks_into: scrap_metal
+  repair: { move: maintenance, materials: { scrap_metal: 1 } }
+- id: fire_axe
+  name: 소방도끼
+  icon: blade
+  description: 붉은 칠이 벗겨진 소방도끼. 무겁지만 좀처럼 상하지 않고, 한 번 내려치면 깊게 박힌다. 땔감도 팬다.
+  kind: weapon
+  weight: 2.5
+  value: 14
+  weapon: { moves: [fight], max_harm: heavy, noise: 0, wound: { fight: cut } }
+  durability: 14
+  breaks_into: scrap_metal
+  repair: { move: maintenance, materials: { scrap_metal: 1 } }

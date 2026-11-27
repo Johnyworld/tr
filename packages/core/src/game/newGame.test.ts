@@ -133,8 +133,8 @@ describe("채팅과 상태 화면이 같은 것을 보여 준다", () => {
   const start = ["post_apoc", "role_t_visitor"];
   it("과거 배경의 물건은 이름으로 (id가 아니라)", () => {
     const text = describeNewGameStep(packs, run(start).draft);
-    expect(text).toContain("쇠지렛대");
-    expect(text).not.toContain("crowbar");
+    expect(text).toContain("소방도끼");
+    expect(text).not.toContain("fire_axe");
   });
 
   it("능력·스킬을 고치면 과거 배경의 배치를 보여 주고, 그 배치를 답 형식 그대로 넘기면 같은 값이 된다", () => {

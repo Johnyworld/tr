@@ -26,6 +26,7 @@
   loot:
     modifier: 1
     items:
+      - { item: fire_axe, weight: 0.5, qty: [1, 1] }
       - { item: rope, weight: 0.5, qty: [1, 1] }
       - { item: whistle, weight: 0.5, qty: [1, 1] }
       - { item: raincoat, weight: 0.5, qty: [1, 1] }
@@ -141,6 +142,7 @@
   loot:
     modifier: 1
     items:
+      - { item: hatchet, weight: 0.5, qty: [1, 1] }
       - { item: umbrella, weight: 0.5, qty: [1, 1] }
       - { item: raincoat, weight: 0.5, qty: [1, 1] }
       - { item: lighter, weight: 0.5, qty: [1, 1] }
@@ -266,6 +268,7 @@
   loot:
     modifier: -1
     items:
+      - { item: fire_axe, weight: 0.5, qty: [1, 1] }
       - { item: lighter, weight: 0.5, qty: [1, 1] }
       - { item: raincoat, weight: 0.5, qty: [1, 1] }
       - { item: umbrella, weight: 0.5, qty: [1, 1] }
@@ -548,6 +551,7 @@
   loot:
     modifier: -1
     items:
+      - { item: hatchet, weight: 0.5, qty: [1, 1] }
       - { item: sickle, weight: 0.5, qty: [1, 1] }
       - { item: shovel, weight: 0.5, qty: [1, 1] }
       - { item: rat_trap, weight: 0.5, qty: [1, 1] }

@@ -1,3 +1,4 @@
+import { pairOfferLine } from "./companionTools.ts";
 import { createPartyCheck, PARTY_INTERRUPT, runPartyInterrupt, runPartySightings } from "./partySight.ts";
 import {heldOf, heldKind, welcomeRescued } from "../rules/held.ts";
 import { applyBuild, planBuild } from "./facilities.ts";
@@ -437,7 +438,12 @@ export function takeAction(input: TakeActionInput, ctx: ToolContext): TakeAction
   const practice = !!s?.practice && !!input.check && s.choices.some((c) => c.check === input.check!.move);
   const before = ctx.store.getState();
   const result = withoutWear(practice, () => takeActionInner(input, ctx));
-  if (result.ok) settleDeeds(ctx, before);
+  if (result.ok) {
+    settleDeeds(ctx, before);
+    // 임무 없이 거점을 나서면 짝(2인 1조)을 붙일지 묻거나 여유 인원이 없다고 알린다 (12-351)
+    const pair = pairOfferLine(ctx, before);
+    if (pair) result.resultText += `\n${pair}`;
+  }
   return result;
 }
 

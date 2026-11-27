@@ -248,7 +248,7 @@ const assignMission = defineTool({
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
     // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
     const armoryLine = issueArmory(ctx, mission);
-    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (buddy ? `\n짝: ${josa(`${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})`, "이/가")} 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : "");
+    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (buddy ? `\n짝: ${josa(`${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})`, "이/가")} 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : template.buddy ? "\n짝: 이 임무는 둘이 짝지어 나서는 것이 규칙인데, 지금은 곁에 붙일 여유 인원이 없어 혼자 나선다 (불이익 없음). 상관이 그렇게 한마디 하는 정도로만 서술하고 짝을 지어내지 않는다." : "");
     // 가는 길 (플레이 테스트 11: "남쪽 텃밭"이 어디로 이어지는지 몰라 반나절을 헤맸다)
     const route = mission.place?.zone && state.playerZone ? routeBetween(ctx.content, state.playerZone, mission.place.zone) : null;
     const routeLine = route && route.length > 1 ? `\n가는 길: ${route.map((z) => `${ctx.content.locations[z]?.name ?? z}(${z})`).join(" → ")}` : mission.place?.zone && route === null ? "\n가는 길: 지금 아는 길로는 닿지 않는다" : "";
@@ -511,7 +511,7 @@ const reportMission = defineTool({
 const abandonMission = defineTool({
   name: "abandon_mission",
   description:
-    "플레이어 캐릭터가 수행 중인 임무를 거부하거나 포기한다. 무리의 규율에 따라 불복종으로 기록되고 공적이 깎인다 (자유로운 무리면 불이익이 적거나 없다). " +
+    "플레이어 캐릭터가 수행 중인 임무를 거부하거나 포기한다. 무리의 규율에 따라 임무 미수행으로 기록되고 공적이 깎인다 (자유로운 무리면 불이익이 적거나 없다). " +
     "플레이어가 분명히 임무를 거부·포기하는 행동을 할 때만 쓴다.",
   schema: z.strictObject({
     reason: z.string().min(1).max(200).describe("포기한 사정 한 문장"),
@@ -532,12 +532,12 @@ const abandonMission = defineTool({
         { npcId: mission.giverId, source: state.scene.present.includes(mission.giverId) ? "seen" : "report" },
       );
     }
-    const label = grace ? "포기 (적응 기간)" : d.countsDisobedience ? "불복종" : "포기";
+    const label = grace ? "포기 (적응 기간)" : d.countsDisobedience ? "임무 미수행" : "포기";
     return {
       ok: true,
       resultText:
         `임무 포기: ${mission.title}. 이 무리(규율: ${d.label})에서 ${josa(d.orderWord, "을/를")} 버린 것이다. ` +
-        (d.countsDisobedience ? "불복종으로 기록되고 " : "불복종으로 치지는 않고 ") +
+        (d.countsDisobedience ? "임무 미수행으로 기록되고 " : "임무 미수행으로 치지는 않고 ") +
         `공적 ${signed(d.abandonMerit)}. ` +
         (d.deedSeverity > 0 ? "이 일은 상관과 동료의 시선에 영향을 줄 수 있다." : "이 무리에서는 크게 문제 삼지 않는다.") +
         releaseBuddies(ctx, mission.id).map((l) => ` ${l}`).join("") +
@@ -611,7 +611,7 @@ export function leaveMissionsBehind(ctx: ToolContext, onlyLeftBehind = false): {
     const returned = returnArmory(ctx, mission.id, { excused: true });
     // 빌린 장비는 무리를 떠나기 전에 돌려준다 (사용자 결정): GM은 반납하는 장면을 짧게 연출한다
     const tail = [returned ? `${returned} (떠나기 전에 빌린 장비를 무기고에 돌려주는 장면을 짧게 서술한다)` : null, ...releaseBuddies(ctx, mission.id)].filter((l): l is string => !!l);
-    lines.push(`${name}에서 받은 임무 "${mission.title}"는 거기서 끝났다 (예전 무리의 기록으로만 남고, 지금 무리의 공적·불복종에는 들지 않는다).${tail.map((l) => ` ${l}`).join("")}`);
+    lines.push(`${name}에서 받은 임무 "${mission.title}"는 거기서 끝났다 (예전 무리의 기록으로만 남고, 지금 무리의 공적·임무 미수행 기록에는 들지 않는다).${tail.map((l) => ` ${l}`).join("")}`);
     displays.push({ type: "mission", event: "expired", title: mission.title, detail: "무리를 떠나 끝남", merit: 0 });
   }
   return { lines, displays };
@@ -655,7 +655,7 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
           { npcId: mission.giverId, source: "report" },
         );
       }
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (불복종)" : ""}`, merit: d.expireMerit });
+      displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (임무 미수행)" : ""}`, merit: d.expireMerit });
       // 기한이 지나도 빌린 장비는 거둬들인다
       returnArmory(ctx, mission.id);
       releaseBuddies(ctx, mission.id);
@@ -714,7 +714,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   // 손님이면 처지는 받아들임 줄 하나가 말한다 (12-310, PT 받아들임 두 판: "무소속. 배급이 없다"가 "손님: 끼니를 준다"와 함께 나왔다)
   const guest = !player.factionId && !!admissionOf(state);
   const lines = player.factionId
-    ? [`복무: ${service} · 공적 ${player.merit} · 임무 불복종 ${player.disobedience}회`]
+    ? [`복무: ${service} · 공적 ${player.merit} · 임무 미수행 ${player.disobedience}회`]
     : guest
       ? []
       : [`무소속 (${rankName(ctx.content, player.factionId, player.rank, player.occupation?.id)}). 상관·임무·배급이 없다. 먹을 것은 지닌 것과 수색으로 구한다`];
@@ -726,7 +726,7 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (visit) lines.push(visit);
   // 적응 기간 (12-258): 임무는 원하면 받고, 받은 임무를 버리거나 놓쳐도 탓하지 않는다
   if (player.factionId && state.missionGraceUntil !== null && state.missionGraceUntil > state.time) {
-    lines.push(`적응 기간 (${Math.max(1, Math.floor(state.missionGraceUntil / MINUTES_PER_DAY) - Math.floor(state.time / MINUTES_PER_DAY))}일 남음): 임무는 원하면 받는다. 이 기간에 받은 임무는 버리거나 놓쳐도 불복종이 아니다`);
+    lines.push(`적응 기간 (${Math.max(1, Math.floor(state.missionGraceUntil / MINUTES_PER_DAY) - Math.floor(state.time / MINUTES_PER_DAY))}일 남음): 임무는 원하면 받는다. 이 기간에 받은 임무는 버리거나 놓쳐도 임무 미수행이 아니다`);
   }
   const offer = describePromotionOffer(ctx.content, state);
   if (offer) lines.push(offer);

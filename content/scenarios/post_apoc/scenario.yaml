@@ -181,10 +181,11 @@ story_lint:
 
 # 무리의 규율 단계 (기획서 9.9). 무리마다 factions의 culture.discipline으로 고른다 (*임시* 수치)
 # abandon/expire_merit: 임무를 버리거나 놓쳤을 때의 공적, counts_disobedience: 불복종으로 치는지,
-# max_disobedience: 진급에 허용되는 불복종 수, deed_severity: 불복종 행적의 무게(0이면 남기지 않는다)
+# max_disobedience: 진급에 허용되는 불복종 수, deed_severity: 불복종 행적의 무게(0이면 남기지 않는다),
+# pair_rule: 임무 없이 거점을 나설 때 짝(2인 1조)을 붙일지 묻는지
 discipline:
-  strict: { label: 군율, abandon_merit: -3, expire_merit: -3, counts_disobedience: true, max_disobedience: 0, deed_severity: 3, order_word: 명령 }
-  orderly: { label: 질서, abandon_merit: -2, expire_merit: -2, counts_disobedience: true, max_disobedience: 1, deed_severity: 2, order_word: 명령 }
+  strict: { label: 군율, abandon_merit: -3, expire_merit: -3, counts_disobedience: true, max_disobedience: 0, deed_severity: 3, order_word: 명령, pair_rule: true }
+  orderly: { label: 질서, abandon_merit: -2, expire_merit: -2, counts_disobedience: true, max_disobedience: 1, deed_severity: 2, order_word: 명령, pair_rule: true }
   loose: { label: 느슨함, abandon_merit: -1, expire_merit: -1, counts_disobedience: false, max_disobedience: 3, deed_severity: 1, order_word: 당번 }
   free: { label: 자유, abandon_merit: 0, expire_merit: -1, counts_disobedience: false, max_disobedience: 99, deed_severity: 0, order_word: 일감 }
 

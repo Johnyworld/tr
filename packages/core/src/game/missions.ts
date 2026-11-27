@@ -231,7 +231,7 @@ export function checkPromotion(
   // 다 채운 날 수로 센다. 보여 주는 말은 시계("복무 N일째")와 같은 셈으로 (플레이 테스트 12·14: "복무 1일째"인데 "복무 0/7일"로 어긋나 보였다)
   if (days < PROMOTION.minDaysServed) missing.push(`복무 ${days + 1}일째 (${PROMOTION.minDaysServed}일을 다 채운 ${PROMOTION.minDaysServed + 1}일째부터)`);
   if (character.disobedience > maxDisobedience) {
-    missing.push(`임무 불복종 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
+    missing.push(`임무 미수행 ${character.disobedience}회 (최대 ${maxDisobedience}회)`);
   }
   if (commanderTrust !== null && commanderTrust < PROMOTION.minCommanderTrust) {
     // 신뢰를 올리는 길을 함께 (12-221: 판정이 걸린 임무를 완전히 해내면 하루 +1까지)

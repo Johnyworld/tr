@@ -140,7 +140,7 @@ const status: CommandDef = {
     const trust = commander ? (state.perceived[commander.id]?.trust ?? 0) : null;
     if (player.factionId) {
       lines.push(
-        `평판  공적 ${player.merit} · 임무 불복종 ${player.disobedience}회` +
+        `평판  공적 ${player.merit} · 임무 미수행 ${player.disobedience}회` +
           (trust !== null && commander ? ` · ${commander.name}의 신뢰 ${relationLabel(trust)}` : ""),
       );
       if (view.service.promotionMissing?.length) lines.push(`진급까지  ${view.service.promotionMissing.join(", ")}`);

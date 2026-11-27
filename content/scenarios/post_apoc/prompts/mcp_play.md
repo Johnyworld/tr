@@ -23,7 +23,8 @@
 - take_action의 check `{ move, stat, difficulty, harm_on_failure: "none" | "light" | "heavy", harm_cause? }` (harm_cause는 위험이 none이면 뺀다. stat은 스킬마다 쓸 수 있는 능력만: 상태의 스킬 줄에 적혀 있다) (상대가 있으면 target 또는 opponent, distance. 손에 든 무기를 두고 맨손으로 치면 unarmed: true. 함께 싸우는 사람은 with에 넣으면 스킬이 없어도 돕는다). activity는 `{ kind, until, hours }` (kind: brief·talk·eat·treat·search·work·rest·guard_duty·sleep·wait, until은 시간대 이름(dawn·morning·day·evening·night)으로 sleep·wait·rest·guard_duty·treat만, hours는 0.5 단위 시간 수로 그 다섯과 work, 둘 중 하나. eat·talk·brief·search는 둘 다 null, work는 hours만. 임무 보초·작업은 둘 다 비우면 임무에 남은 만큼). 물가에서 물에 들어가면 `wade: true`
 - stash `{ action: "put" | "take" | "settle", items: [{ item_id, quantity }] }` · spawn_extra `{ template, label, gender?, age? }` (서술에서 드러난 성별·나이만) · add_belief `{ fact, source: "seen" | "report" | "rumor" }` · look_for_witnesses `{ deed_id }`
 - take_action의 deed (남이 보면 평판이 남는 일) `{ summary, tags: [행적 태그], severity: 1~3, privacy: "public" | "semi_private" | "private", noisy, condition: "always" | "on_success" }`. 무리 사람을 때리면 tags는 cruelty
-- abandon_mission `{ reason }`: 불복종 행적은 이 도구가 남긴다. 거부하는 take_action에 deed를 따로 넣지 않는다 (두 번 셈한다)
+- pair_up `{ target, accept }`: 거점을 나설 때 "짝 제안"에 나온 사람을 붙일지 플레이어가 답한 뒤
+- abandon_mission `{ reason }`: 임무 미수행 행적은 이 도구가 남긴다. 거부하는 take_action에 deed를 따로 넣지 않는다 (두 번 셈한다)
 - 인자가 틀리면 오류 끝에 그 도구의 인자 모양이 붙는다. 그대로 고쳐 다시 부른다
 - 이야기가 열려 있으면: resolve_storylet `{ choice_id }`, 두고 가면 take_action에 `ignore_story: true`
 - 즉흥 이야기 자리가 열려 있으면 (12-247, 판정 check에는 주인공이 배운 스킬만 쓴다): improvise_storylet `{ title, setup, cast: [{ key, character_id }], choices: [{ id, label, check: "스킬 id 문자열", reward: "none"|"small"|"medium", reward_kind: "item"|"relation"|"merit"|null, reward_item, reward_who, reward_axis, cost: "none"|"relation"|"noise"|"time"|"body"|"give", cost_who, cost_item }] }`. 연 뒤는 보통 이야기처럼 resolve_storylet

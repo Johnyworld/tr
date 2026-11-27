@@ -427,7 +427,7 @@ function SubLine({ player }: { player: PlayerView }) {
     <>
       <div>
         {[s.rankLabel, `공적 ${s.merit}`, `복무 ${s.daysServed}일`].filter(Boolean).join(" · ")}
-        {s.disobedience > 0 && <span className="condition-worse"> · 불복종 {s.disobedience}</span>}
+        {s.disobedience > 0 && <span className="condition-worse"> · 임무 미수행 {s.disobedience}</span>}
       </div>
       {s.promotionMissing && s.promotionMissing.length > 0 && <div className="muted">진급까지: {s.promotionMissing.join(", ")}</div>}
     </>

@@ -17,7 +17,7 @@ import { keepsAway } from "../rules/crossed.ts";
 /**
  * 진급 제안과 분대 (12-190, 플레이 테스트 8).
  * - 진급 조건을 채운 채 임무를 보고하면 상관이 자리를 제안한다 (강제로 올리지 않는다). 거절해도 제안은 열려 있다
- * - 받을 때(promotion accept)는 조건을 다시 본다 (그사이 불복종이 늘거나 상관과 틀어졌으면 상관이 거절한다)
+ * - 받을 때(promotion accept)는 조건을 다시 본다 (그사이 임무 미수행이 늘거나 상관과 틀어졌으면 상관이 거절한다)
  * - 분대를 맡는 계급(시나리오 promotion.to)이 되면 분대를 꾸린다: 같은 무리에 비어 있는 분대(그 계급 역할의 squad)가 있어도
  *   NEW_SQUAD_CHANCE로 새 사람 1~3명으로 꾸린다 (늘 같은 사람이 분대원이 되지 않게). 빈 분대가 없으면 새 사람으로
  * - 분대가 MAX_SQUAD보다 적은 동안 우리 무리에 피난민이 들면 REFUGEE_TO_SQUAD 확률로 그중 한 명이 분대에 배치된다
@@ -137,7 +137,7 @@ export function offerPromotion(ctx: ToolContext, commanderTrust: number | null):
 const promotionTool = defineTool({
   name: "promotion",
   description:
-    "상관이 내놓은 진급 제안(GM 상태의 '진급 제안')에 플레이어가 답한다. 상관이 장면에 있어야 한다. accept: 맡는다 (조건을 다시 본다. 그사이 불복종이 늘거나 상관의 신뢰가 떨어졌으면 거절당한다). " +
+    "상관이 내놓은 진급 제안(GM 상태의 '진급 제안')에 플레이어가 답한다. 상관이 장면에 있어야 한다. accept: 맡는다 (조건을 다시 본다. 그사이 임무 미수행이 늘거나 상관의 신뢰가 떨어졌으면 거절당한다). " +
     "decline: 지금은 사양한다 (제안은 열려 있어, 나중에 플레이어가 맡겠다고 하면 accept). 분대는 시스템이 꾸린다.",
   schema: z.strictObject({ action: z.enum(["accept", "decline"]) }),
   run(input, ctx): ToolOutcome {

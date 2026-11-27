@@ -15,6 +15,7 @@ export type Discipline = {
   maxDisobedience: number;
   deedSeverity: number;
   orderWord: string;
+  pairRule: boolean;
 };
 
 const DEFAULT: Discipline = {
@@ -26,6 +27,7 @@ const DEFAULT: Discipline = {
   maxDisobedience: PROMOTION.maxDisobedience,
   deedSeverity: 2,
   orderWord: "명령",
+  pairRule: true,
 };
 
 export function disciplineOf(content: Content, factionId: string | null | undefined): Discipline {
@@ -41,6 +43,7 @@ export function disciplineOf(content: Content, factionId: string | null | undefi
     maxDisobedience: d.max_disobedience,
     deedSeverity: d.deed_severity,
     orderWord: d.order_word,
+    pairRule: d.pair_rule,
   };
 }
 
@@ -81,6 +84,6 @@ export function describeCultureForGm(content: Content, factionId: string): strin
     ...(c.punishment ? [`어기면: ${c.punishment}`] : []),
     // 점호 (플레이 테스트 13: 언제 세는지 보이지 않았다)
     ...(c.roll_call?.length ? [`점호: ${c.roll_call.map((x) => SEGMENT_LABELS[x]).join("·")}가 시작될 때. 우리 거점에서 자고 있으면 동료가 깨우고, 그대로 다시 자면 작은 불복종 행적이 남는다 (임무·외출로 거점 밖에 있으면 세지 않는다)`] : []),
-    `임무는 이 무리에서 "${d.orderWord}"이다. ${d.countsDisobedience ? `버리거나 기한을 넘기면 불복종으로 기록된다` : "버려도 불복종으로 치지 않는다"}. NPC는 이 문화대로 말하고 반응한다.`,
+    `임무는 이 무리에서 "${d.orderWord}"이다. ${d.countsDisobedience ? `버리거나 기한을 넘기면 임무 미수행으로 기록된다` : "버려도 임무 미수행으로 치지 않는다"}. NPC는 이 문화대로 말하고 반응한다.`,
   ].join("\n");
 }

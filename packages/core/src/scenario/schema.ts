@@ -526,6 +526,8 @@ export const scenarioFileSchema = z
           deed_severity: z.number().int().min(0).max(3),
           /** 임무를 부르는 말 (예: 명령, 당번, 일감) */
           order_word: z.string().min(1),
+          /** 둘이 짝지어 나서는 규칙 (2인 1조): 임무 없이 거점을 나설 때 짝을 붙일지 묻는다 */
+          pair_rule: z.boolean().default(false),
         }),
       )
       .default({}),

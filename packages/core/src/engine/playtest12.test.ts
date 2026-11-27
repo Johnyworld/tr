@@ -108,6 +108,40 @@ describe("플레이 테스트 12: 붙잡힘", () => {
   });
 });
 
+describe("물건을 구해 오는 임무: 찾아보았으나 못 구한 것은 탓하지 않는다", () => {
+  function expireAfter(tried: boolean) {
+    const { w, mission } = withMission("role_a_grunt", "hospital_supply_run");
+    const store = w.ctx().store;
+    if (tried) {
+      const i = mission.requirements.findIndex((r) => "check" in r && r.check === "scavenge");
+      store.append({
+        type: "check_rolled", checkId: "chk_x", turn: 1, actorId: w.state().playerId, move: "scavenge", stat: "senses", difficulty: "normal",
+        intent: "x", dice: [1, 1], modifiers: { stat: 0, skill: 0, difficulty: 0, condition: 0, trait: 0, gear: 0, opposition: 0 }, total: 2, outcome: "miss", forMission: mission.id,
+        dest: mission.place?.zone ?? w.state().playerZone,
+      } as never);
+      expect(i).toBeGreaterThanOrEqual(0);
+      expect(w.state().missions[mission.id]!.fails[i]).toBe(1);
+    }
+    store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: mission.deadline + 10 });
+    const before = w.state().characters[w.state().playerId]!.disobedience;
+    const out = runMissionStartOfTurn(w.ctx());
+    return { w, mission, before, out };
+  }
+
+  it("판정을 건 수색이 빗나가 기한이 지나면 임무 미수행이 아니다", () => {
+    const { w, mission, before, out } = expireAfter(true);
+    expect(w.state().missions[mission.id]!.status).not.toBe("active");
+    expect(w.state().characters[w.state().playerId]!.disobedience).toBe(before);
+    expect(JSON.stringify(out)).toContain("찾아보았으나 구하지 못함");
+  });
+
+  it("아무 시도 없이 기한이 지나면 지금처럼 임무 미수행이다", () => {
+    const { w, before, out } = expireAfter(false);
+    expect(w.state().characters[w.state().playerId]!.disobedience).toBe(before + 1);
+    expect(JSON.stringify(out)).not.toContain("찾아보았으나");
+  });
+});
+
 describe("플레이 테스트 12: 임무와 계승", () => {
   it("옮겨 가며 건 판정은 가는 곳이 임무 자리면 임무로 센다", () => {
     const { w, mission, place } = withMission("role_a_grunt", "front_recon");

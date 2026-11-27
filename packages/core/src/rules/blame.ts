@@ -14,7 +14,7 @@ import { heldOf, lastFreedAt } from "./held.ts";
 export const FREED_GRACE_MINUTES = 6 * 60;
 
 /** 탓할 수 없는 까닭 */
-export type Excuse = { cause: "incapacitated" | "captured" | "grace"; label: string };
+export type Excuse = { cause: "incapacitated" | "captured" | "grace" | "tried"; label: string };
 
 /**
  * 적응 기간에 받은 임무 (12-258, PT15 튜토리얼: 대표는 "일주일은 자유롭게"라 했는데 상태는 "버리면 불복종"): 버리거나 놓쳐도 탓하지 않는다
@@ -27,6 +27,7 @@ export function graceExcuse(state: GameState, mission: MissionInstance): Excuse 
  * 기한을 넘긴 임무를 탓할 수 없는 까닭 (없으면 null):
  * - 쓰러졌거나 치명상 이상으로 몸을 못 쓴다 (플레이 테스트 8, 11)
  * - 갇혀 있다, 또는 기한 무렵 갇혀 있다 막 빠져나와 돌아오는 길이다 (플레이 테스트 12, 13)
+ * - 물건을 구해 오는 일(bring)에서 찾아는 보았으나 구하지 못했다: 폐허에 물건이 없는 것은 주인공 탓이 아니다
  */
 export function missionExcuse(state: GameState, content: Content, mission: MissionInstance): Excuse | null {
   const who = state.characters[mission.assigneeId];
@@ -42,6 +43,10 @@ export function missionExcuse(state: GameState, content: Content, mission: Missi
   const freed = lastFreedAt(state);
   if (freed !== null && freed > mission.assignedAt && freed >= mission.deadline - FREED_GRACE_MINUTES) {
     return { cause: "captured", label: "붙잡혀 못 마침 (붙잡혔다 빠져나온 길)" };
+  }
+  // 찾아보았다는 기록(판정을 건 시도나 쌓인 활동)이 있으면 못 구한 것을 탓하지 않는다. 아무 시도 없이 기한이 지난 것만 미수행이다
+  if (mission.requirements.some((r) => "bring" in r) && (mission.progress.some((p) => p > 0) || (mission.fails ?? []).some((f) => f > 0))) {
+    return { cause: "tried", label: "찾아보았으나 구하지 못함" };
   }
   return graceExcuse(state, mission);
 }

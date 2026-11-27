@@ -20,6 +20,12 @@
       "port": 8799
     },
     {
+      "name": "ui-mock",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@trpg/ui", "exec", "vite", "--configLoader", "runner", "--port", "5174", "--strictPort"],
+      "port": 5174
+    },
+    {
       "name": "server",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [

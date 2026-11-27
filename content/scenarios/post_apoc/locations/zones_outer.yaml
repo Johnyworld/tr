@@ -268,6 +268,7 @@
   loot:
     modifier: -1
     items:
+      - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: fire_axe, weight: 0.5, qty: [1, 1] }
       - { item: lighter, weight: 0.5, qty: [1, 1] }
       - { item: raincoat, weight: 0.5, qty: [1, 1] }
@@ -416,6 +417,7 @@
   loot:
     modifier: 0
     items:
+      - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: oilskin, weight: 1, qty: [1, 1] }
       - { item: rope, weight: 0.5, qty: [1, 1] }
       - { item: tarp, weight: 0.5, qty: [1, 1] }
@@ -637,6 +639,7 @@
   loot:
     modifier: 0
     items:
+      - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: oilskin, weight: 1, qty: [1, 1] }
       - { item: raincoat, weight: 0.5, qty: [1, 1] }
       - { item: rope, weight: 0.5, qty: [1, 1] }

@@ -198,6 +198,7 @@
   loot:
     modifier: 1
     items:
+      - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: hatchet, weight: 0.5, qty: [1, 1] }
       - { item: rope, weight: 0.5, qty: [1, 1] }
       - { item: work_gloves, weight: 0.5, qty: [1, 1] }
@@ -244,6 +245,7 @@
   loot:
     modifier: 1
     items:
+      - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: fire_axe, weight: 0.5, qty: [1, 1] }
       - { item: hatchet, weight: 0.5, qty: [1, 1] }
       - { item: umbrella, weight: 0.5, qty: [1, 1] }

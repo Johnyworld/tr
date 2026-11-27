@@ -6,7 +6,7 @@ import { dayOf, MINUTES_PER_DAY, SEGMENT_START_HOUR } from "../rules/time.ts";
 import { seasonAt } from "../sim/season.ts";
 import { checkNeed, needItem } from "../rules/needs.ts";
 import { exposeToCold, soak } from "./climate.ts";
-import { handleTrap } from "./forage.ts";
+import { forageProblem, handleTrap } from "./forage.ts";
 import { executeTool } from "./tools.ts";
 import { loadRealContent } from "../testing.ts";
 
@@ -45,7 +45,9 @@ describe("필수품 (공통 규칙 25)", () => {
     // 덫은 없으면 못 한다
     expect(checkNeed(content, me(), "trap").ok).toBe(false);
     // 필수품에는 스킬 보정이 없다
-    for (const id of ["rope", "shovel", "lighter", "matchbox", "whistle", "tarp", "rat_trap", "purifier_tablets"]) expect(content.items[id]!.tool).toBeUndefined();
+    for (const id of ["rope", "shovel", "lighter", "matchbox", "whistle", "tarp", "rat_trap", "purifier_tablets", "fishing_kit", "toolkit", "carpentry_kit"]) expect(content.items[id]!.tool).toBeUndefined();
+    // 깡통 경보줄은 쳐 두고 쉴 때만 (걸어 다닐 때는 붙지 않는다)
+    expect(content.items.tin_alarm!.tool?.only?.activities).toEqual(["sleep", "rest", "guard_duty", "wait"]);
   });
 
   it("판정에 check.needs를 붙이면 밧줄 없이 -2가 판정 줄에 보이고, 밧줄이 있으면 붙지 않는다", () => {
@@ -140,6 +142,17 @@ describe("필수품 (공통 규칙 25)", () => {
     store.getState().weather = null;
     exposeToCold(ctx, "rest", store.getState().time, store.getState().time + 60);
     expect(store.getState().wet[me().id] ?? 0).toBeLessThan(wet);
+  });
+
+  it("낚시는 낚시 도구가 있어야 한다", () => {
+    const { ctx, store, me } = setup({ entry: true });
+    const water = Object.keys(content.locations).find((z) => content.locations[z]!.kind !== "base" && (content.locations[z]!.yields.water ?? 0) > 0)!;
+    store.getState().playerZone = water;
+    store.getState().playerPlace = null;
+    me().skills.fishing = 1;
+    expect(forageProblem(ctx, "fish")).toContain("낚시 도구");
+    me().inventory.fishing_kit = 1;
+    expect(forageProblem(ctx, "fish")).toBeNull();
   });
 
   it("쥐덫도 철사 뭉치처럼 덫으로 놓고, 거두면 놓은 덫이 돌아온다", () => {

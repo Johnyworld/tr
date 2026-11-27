@@ -1751,7 +1751,7 @@ spoilage:
 foraging:
   move: survival
   kinds:
-    - { id: fish, label: 낚시, move: fishing, water: true, modifier: 1, items: [{ item: raw_fish, weight: 1, qty: [1, 2] }] }
+    - { id: fish, label: 낚시, move: fishing, water: true, modifier: 1, need: fish, items: [{ item: raw_fish, weight: 1, qty: [1, 2] }] }
     - id: hunt
       label: 사냥
       move: hunt
@@ -1769,6 +1769,7 @@ needs:
   - { id: dig, label: "땅 파기 (구덩이·참호·묻기)", without: -2, without_label: "삽 없이 판자 조각으로", check: true }
   - { id: fire, label: "불 붙이기", without: -1, without_label: "불 붙일 것 없이 비벼 피움", move: survival, minutes: 60 }
   - { id: trap, label: "덫 놓기" }
+  - { id: fish, label: "낚시" }
   - { id: lure, label: "소리로 꾀어내기" }
   - { id: shelter, label: "바깥에서 비 가리고 쉬기" }
   - { id: purify, label: "물 거르기", consume: true }

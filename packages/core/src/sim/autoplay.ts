@@ -401,7 +401,9 @@ export function autoplay(world: GameWorld, content: Content, rng: Rng, turns: nu
         // 낚시·사냥은 그 일의 스킬로 (전문 기술이면 배웠을 때만)
         const kind = content.scenario.foraging.kinds.find((k) => k.id === (wet ? "fish" : "hunt"));
         const fm = moves.find((m) => m.id === (kind?.move ?? survival?.id));
-        if (kind && fm && can(fm.id)) act = { intent: kind.label, forage: kind.id, check: check(fm, "none") };
+        // 그 일의 필수품(낚시 도구)이 있을 때만 (12-350)
+        const equipped = !kind?.need || !!needItem(content, s.characters[s.playerId], kind.need);
+        if (kind && fm && can(fm.id) && equipped) act = { intent: kind.label, forage: kind.id, check: check(fm, "none") };
       }
       if (act) {
         const out = tool("take_action", { ...base, ...act });

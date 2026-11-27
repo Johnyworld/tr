@@ -1548,6 +1548,8 @@ export const scenarioFileSchema = z
               companions: z.array(id).default([]),
               /** 이 일의 판정 스킬 (없으면 foraging.move) */
               move: id.optional(),
+              /** 필수품 (공통 규칙 25, 12-350): 이 일에 있어야 하는 물건 (낚시 도구) */
+              need: id.optional(),
             }),
           )
           .min(1),

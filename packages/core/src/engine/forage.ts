@@ -40,6 +40,12 @@ export function forageProblem(ctx: ToolContext, kindId: string): string | null {
   if (!zone) return "어디에 있는지 모른다.";
   if (kind.water && !watery(ctx, zone)) return `여기는 물가가 아니라 ${josa(kind.label, "을/를")} 할 수 없다.`;
   if (!kind.water && content.locations[zone]?.kind === "base") return `거점 안에서는 ${josa(kind.label, "을/를")} 할 수 없다. 담 밖으로 나간다.`;
+  // 필수품 (공통 규칙 25, 12-350): 낚시는 낚시 도구가 있어야 한다
+  if (kind.need) {
+    const state = ctx.store.getState();
+    const r = checkNeed(content, state.characters[state.playerId], kind.need);
+    if (!r.ok) return r.error;
+  }
   return unlearned(ctx, kind.move ?? rules.move);
 }
 

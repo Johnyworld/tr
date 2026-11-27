@@ -21,6 +21,8 @@ function open(rng = 0) {
   // 낚시·사냥은 전문 기술이라 배워 둔다 (4.2.1)
   teachSkills(w, ["fishing", "hunt"]);
   const me = () => w.state().characters[w.state().playerId]!;
+  // 낚시는 낚시 도구가 있어야 한다 (12-350, 공통 규칙 25 필수품)
+  me().inventory.fishing_kit = 1;
   return { w, me, s: () => w.state() };
 }
 

@@ -193,11 +193,10 @@
 # ── 도구 ─────────────────────────────────────────
 - id: toolkit
   name: 공구 상자
-  description: 녹슨 렌치와 드라이버가 든 공구 상자. 총과 기계를 고칠 때 있어야 한다.
+  description: 녹슨 렌치와 드라이버가 든 공구 상자. 총과 기계를 고치고 탄을 다시 채울 때 있어야 한다.
   kind: tool
   weight: 3.0
   value: 12
-  tool: { bonus: { mechanics: 1 } }
 - id: flashlight
   name: 손전등
   icon: light
@@ -208,18 +207,17 @@
   tool: { bonus: { scavenge: 1 }, only: { dark: true } }
 - id: fishing_kit
   name: 낚시 도구
-  description: 낚싯줄과 바늘 몇 개, 접는 낚싯대. 물가에서 먹을 것을 구할 때 좋다.
+  description: 낚싯줄과 바늘 몇 개, 접는 낚싯대. 물가에서 고기를 낚으려면 있어야 한다.
   kind: tool
   weight: 0.5
   value: 4
-  tool: { bonus: { fishing: 1 }, forage: [fish] }
+  serves: [fish]
 - id: carpentry_kit
   name: 목수 연장
   description: 톱과 망치, 끌 몇 자루를 천에 말아 둔 것. 나무를 다룰 때 있어야 한다.
   kind: tool
   weight: 2.5
   value: 8
-  tool: { bonus: { carpentry: 1 } }
 
 # 메모 (12-75): 메모장(writing: paper)과 펜·연필(writing: tool)을 함께 지니면 상태 화면에 메모 탭이 열린다
 - id: notebook
@@ -326,11 +324,11 @@
   repair: { move: improvise, materials: { duct_tape: 1 } }
 - id: tin_alarm
   name: 깡통 경보줄
-  description: 빈 깡통을 철사에 꿴 줄. 쉴 곳 둘레에 쳐 두면 무언가 다가올 때 먼저 안다.
+  description: 빈 깡통을 철사에 꿴 줄. 쉴 곳 둘레에 쳐 두면 무언가 다가올 때 먼저 안다 (쉬기·잠·보초·기다림에 경계 +1).
   kind: tool
   weight: 0.8
   value: 3
-  tool: { bonus: { sense_danger: 1 } }
+  tool: { bonus: { sense_danger: 1 }, only: { activities: [sleep, rest, guard_duty, wait] } }
 - id: pack_frame
   name: 배낭 틀
   icon: bag

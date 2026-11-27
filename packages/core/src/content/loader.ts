@@ -542,6 +542,7 @@ function checkReferences(content: Content): string[] {
     const fire = content.scenario.body?.cold?.climate?.fire;
     const used: [string, string | undefined][] = [
       ["foraging.trap.need", f?.trap?.need],
+      ...(f?.kinds ?? []).map((k): [string, string | undefined] => [`foraging.kinds.${k.id}.need`, k.need]),
       ["foraging.purify", f?.purify],
       ["lure.need", content.scenario.lure?.need],
       ["body.cold.climate.fire.ignite", fire?.ignite],

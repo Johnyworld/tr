@@ -59,16 +59,11 @@ describe("플레이 테스트 8", () => {
     expect(maskUnknownNames(w.state(), real, "주옥희는 짐꾼 수를 두 번 셌다")).toContain("주옥희");
   });
 
-  it("B9: 낚시 도구는 낚시에만 보정을 준다", () => {
+  it("B9: 낚시 도구는 낚시의 필수품이라 보정을 주지 않는다 (12-350, 공통 규칙 25)", () => {
     const w = make("role_l_wanderer");
-    // 떠돌이는 낚시 도구 없이 시작한다 (플레이 테스트 12: 낚시를 못 하는데 들고 있었다). 쥐여 주고 본다
     w.ctx().store.append({ type: "item_granted", to: w.state().playerId, itemId: "fishing_kit", quantity: 1 });
     const me = w.state().characters[w.state().playerId]!;
-    expect(me.inventory.fishing_kit).toBeGreaterThan(0);
-    // 4.2.1: 낚시는 따로 된 전문 기술(fishing)이 됐고, 낚시 도구의 보정도 그 스킬에 붙는다
-    expect(gearModifiers(real, me, "fishing", null, w.state(), "fish").skill).toBe(1);
-    expect(gearModifiers(real, me, "fishing", null, w.state(), "hunt").skill).toBe(0);
-    expect(gearModifiers(real, me, "fishing", null, w.state(), null).skill).toBe(0);
+    expect(gearModifiers(real, me, "fishing", null, w.state(), "fish").skill).toBe(0);
     expect(gearModifiers(real, me, "survival", null, w.state(), "fish").skill).toBe(0);
   });
 

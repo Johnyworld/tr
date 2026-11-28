@@ -442,6 +442,14 @@
   weight: 0.5
   value: 3
   serves: [trap]
+- id: spare_clothes
+  name: 여벌 옷
+  icon: cloth
+  description: 접어서 둘둘 만 마른 옷 한 벌. 비에 젖어도 바깥에서 갈아입을 수 있다 (한 벌을 한 번 입으면 다시 젖은 옷은 버린다). 입고 있는 옷에는 보정이 없다.
+  kind: misc
+  weight: 1.0
+  value: 5
+  serves: [change]
 - id: purifier_tablets
   name: 정수 알약
   icon: medicine

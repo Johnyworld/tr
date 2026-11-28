@@ -1569,6 +1569,80 @@ search_scopes:
     - { id: room, label: 방 하나, examples: "방 하나, 약국 같은 작은 가게, 조제실, 사무실 한 칸, 버스·차 한 대 안, 골목 한 구간, 마당 한쪽", minutes: 15, finds: { success: [1, 3], partial: [1, 1] } }
     - { id: floor, label: 건물 한 층, examples: "작은 건물 전체, 빌딩 한 층, 주차장, 넓은 마당 하나 (큰 건물은 층마다 따로)", minutes: 60, finds: { success: [2, 5], partial: [1, 2] } }
 
+# 가게 (12-367, 공통 규칙 28, docs/shops-plan.md, *임시* 수치): 바깥 장소의 places.shops가 가게 수를 정하고, 가게를 찾는 수색(activity.target)이 성공할 때마다 코드가 가게 장소를 만든다.
+# 가게 장소를 뒤지면 구역 표 대신 이 표가 쓰인다 (구역 표에는 가게 몫인 약·옷·전자 부품을 빼고 잡동사니·식량을 둔다)
+shops:
+  kinds:
+    pharmacy:
+      name: 약국
+      loot:
+        modifier: -1
+        items:
+          - { item: bandage, weight: 3, qty: [1, 2] }
+          - { item: fever_reducer, weight: 2, qty: [1, 1] }
+          - { item: painkiller, weight: 2, qty: [1, 1] }
+          - { item: antibiotics, weight: 0.5, qty: [1, 1] }
+          - { item: purifier_tablets, weight: 1, qty: [1, 2] }
+          - { item: medkit, weight: 0.3, qty: [1, 1] }
+    convenience:
+      name: 편의점
+      loot:
+        modifier: -1
+        items:
+          - { item: canned_food, weight: 3, qty: [1, 2] }
+          - { item: dry_ration, weight: 2, qty: [1, 1] }
+          - { item: cigarettes, weight: 2, qty: [1, 2] }
+          - { item: lighter, weight: 1.5, qty: [1, 1] }
+          - { item: matchbox, weight: 1.5, qty: [1, 2] }
+          - { item: water_bottle, weight: 2, qty: [1, 1] }
+          - { item: soju, weight: 1, qty: [1, 1] }
+    clothes:
+      name: 옷가게
+      loot:
+        modifier: -1
+        items:
+          - { item: spare_clothes, weight: 3, qty: [1, 2] }
+          - { item: coat, weight: 1, qty: [1, 1] }
+          - { item: raincoat, weight: 1, qty: [1, 1] }
+          - { item: wool_hat, weight: 1.5, qty: [1, 1] }
+          - { item: work_gloves, weight: 1.5, qty: [1, 1] }
+          - { item: umbrella, weight: 1, qty: [1, 1] }
+          - { item: leather_jacket, weight: 0.5, qty: [1, 1] }
+          - { item: cloth, weight: 1.5, qty: [1, 2] }
+    electronics:
+      name: 전파상
+      loot:
+        modifier: -1
+        items:
+          - { item: flashlight, weight: 3, qty: [1, 1] }
+          - { item: radio, weight: 1, qty: [1, 1] }
+          - { item: binoculars, weight: 0.5, qty: [1, 1] }
+          - { item: wire_roll, weight: 2, qty: [1, 1] }
+    hardware:
+      name: 철물점
+      loot:
+        modifier: -1
+        items:
+          - { item: toolkit, weight: 1, qty: [1, 1] }
+          - { item: rope, weight: 2, qty: [1, 1] }
+          - { item: shovel, weight: 1, qty: [1, 1] }
+          - { item: hatchet, weight: 1, qty: [1, 1] }
+          - { item: fire_axe, weight: 0.5, qty: [1, 1] }
+          - { item: duct_tape, weight: 2, qty: [1, 2] }
+          - { item: tarp, weight: 1, qty: [1, 1] }
+    general:
+      name: 잡화점
+      loot:
+        modifier: -1
+        items:
+          - { item: tote_bag, weight: 1, qty: [1, 1] }
+          - { item: shoulder_bag, weight: 1, qty: [1, 1] }
+          - { item: school_bag, weight: 1, qty: [1, 1] }
+          - { item: sewing_kit, weight: 1.5, qty: [1, 1] }
+          - { item: notebook, weight: 1.5, qty: [1, 1] }
+          - { item: pen, weight: 1.5, qty: [1, 2] }
+          - { item: whistle, weight: 1, qty: [1, 1] }
+
 exploration:
   move: sense_danger
   search_move: scavenge
@@ -1784,6 +1858,7 @@ needs:
   - { id: lure, label: "소리로 꾀어내기" }
   - { id: shelter, label: "바깥에서 비 가리고 쉬기" }
   - { id: purify, label: "물 거르기", consume: true }
+  - { id: change, label: "젖은 옷 갈아입기 (바깥에서)", consume: true }
 
 # 꾀어내기 (12-357, take_action.lure): 호루라기를 불면 이 구역에 소음 1, 같은 턴에 그 상대를 몰래 지나가거나 치는 판정 +1. 없으면 소리쳐 소음 2, 보정 없음
 lure: { need: lure, moves: [stealth, fight, shoot], bonus: 1, noise: 1, shout_noise: 2 }

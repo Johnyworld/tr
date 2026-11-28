@@ -442,7 +442,7 @@
   places:
     - { id: to_old_town, name: "구시가 가는 뒷길 입구", indoor: false, map: { x: 85, y: 15 }, description: "구시가 쪽으로 열린 뒷길 입구. 무너진 담 사이로 큰길이 보인다", near: [backyard], road: true, to: [old_town] }
     - { id: to_willow, name: "버들마을 가는 뒷길 끝", indoor: false, map: { x: 15, y: 85 }, description: "버들마을 정문 망루가 보이는 뒷길 끝. 텃밭 냄새가 난다", near: [backyard, empty_block], road: true, to: [b_base] }
-    - { id: backyard, name: "아파트 뒷마당", indoor: false, map: { x: 50, y: 50 }, kinds: [street], description: "빨랫줄이 끊어진 뒷마당. 놀이터 미끄럼틀이 녹슬었다", aliases: ["뒷마당", "놀이터"] }
+    - { id: backyard, name: "아파트 뒷마당", indoor: false, map: { x: 50, y: 50 }, kinds: [street], description: "빨랫줄이 끊어진 뒷마당. 놀이터 미끄럼틀이 녹슬었다", aliases: ["뒷마당", "놀이터"], shops: { convenience: 1 } }
     - { id: empty_block, name: "빈 동 일층 상가", indoor: true, map: { x: 45, y: 80 }, kinds: [ruin], description: "셔터가 반쯤 열린 일층 상가. 안쪽 계단이 위층으로 이어진다", aliases: ["빈 동", "일층 상가"] }
   cover: 4
   owner: null
@@ -503,7 +503,7 @@
   places:
     - { id: to_old_town, name: "구시가 가는 골목 북쪽 입구", indoor: false, map: { x: 70, y: 10 }, description: "골목이 큰길로 열리는 입구. 무너진 간판 아래로 몸을 숙여 나간다", near: [alley_mid], road: true, to: [old_town] }
     - { id: to_clinic, name: "진료소 가는 골목 남쪽 끝", indoor: false, map: { x: 30, y: 92 }, description: "흰 천을 맨 말뚝이 서 있는 골목 끝. 진료소 줄이 여기까지 늘어설 때도 있다", near: [alley_mid, looted_pharmacy], road: true, to: [d_clinic] }
-    - { id: alley_mid, name: "간판 골목", indoor: false, map: { x: 50, y: 50 }, kinds: [street], description: "녹색 십자 간판이 줄지어 매달린 골목. 바람이 불면 간판끼리 부딪혀 덜그럭거린다", aliases: ["골목", "간판 골목"] }
+    - { id: alley_mid, name: "간판 골목", indoor: false, map: { x: 50, y: 50 }, kinds: [street], description: "녹색 십자 간판이 줄지어 매달린 골목. 바람이 불면 간판끼리 부딪혀 덜그럭거린다", aliases: ["골목", "간판 골목"], shops: { pharmacy: 2 } }
     - { id: looted_pharmacy, name: "털린 약국", indoor: true, map: { x: 25, y: 60 }, kinds: [ruin], description: "셔터가 뜯긴 약국. 진열장은 비고 바닥에 빈 약상자와 처방전이 눈처럼 쌓였다", aliases: ["약국"] }
   cover: 4
   owner: null

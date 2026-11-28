@@ -1238,6 +1238,9 @@ export function checkStorylets(content: Content): string[] {
     const ids = [...Object.keys(m.carries ?? {}), ...Object.keys(m.collects ?? {}), ...m.requirements.flatMap((r) => ("deliver" in r ? [r.deliver] : []))];
     for (const id of ids) if (!content.items[id]) problems.push(`임무 ${m.id}: 알 수 없는 아이템 ${id}`);
   }
+  for (const [kind, def] of Object.entries(content.scenario.shops?.kinds ?? {})) {
+    for (const it of def.loot.items) if (!content.items[it.item]) problems.push(`scenario.shops.${kind}.loot: 알 수 없는 아이템 ${it.item}`);
+  }
   // 구역 안의 장소 id는 구역 안에서 하나씩 (12-244)
   for (const l of Object.values(content.locations)) {
     const ids = l.places.map((p) => p.id);
@@ -1247,6 +1250,12 @@ export function checkStorylets(content: Content): string[] {
       for (const n of p.near ?? []) if (!ids.includes(n) || n === p.id) problems.push(`locations.${l.id}.places.${p.id}.near: ${n === p.id ? "자기 자신" : `이 구역에 없는 장소 ${n}`}`);
       for (const z of p.to ?? []) if (!content.locations[z]) problems.push(`locations.${l.id}.places.${p.id}.to: 알 수 없는 구역 ${z}`);
       if (p.to?.length && !p.road) problems.push(`locations.${l.id}.places.${p.id}: 길이 아닌데 to가 있다 (road: true)`);
+      // 가게 (공통 규칙 28): 바깥 장소에만, 월드에 있는 종류로, 거점 안이 아닌 곳에
+      for (const k of Object.keys(p.shops ?? {})) {
+        if (!content.scenario.shops?.kinds[k]) problems.push(`locations.${l.id}.places.${p.id}.shops: 알 수 없는 가게 종류 ${k} (scenario.shops.kinds)`);
+        if (p.indoor) problems.push(`locations.${l.id}.places.${p.id}.shops: 실내 장소에는 가게를 두지 않는다 (바깥 길에서 찾는다)`);
+        if (l.kind === "base") problems.push(`locations.${l.id}.places.${p.id}.shops: 거점 안에는 가게를 두지 않는다`);
+      }
     }
     problems.push(...checkZonePlaces(content, l.id));
   }

@@ -47,6 +47,7 @@ function tempContent(files: Record<string, string>) {
   delete scenario.facilities;
   // 필수품(12-357)은 그 일에 쓰는 실제 아이템이 있어야 한다
   delete scenario.needs;
+  delete scenario.shops;
   delete scenario.lure;
   // 모닥불 연료도 실제 아이템을 참조한다 (12-98)
   const cold = (scenario.body as Record<string, Record<string, Record<string, unknown>>> | undefined)?.cold?.climate;

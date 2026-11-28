@@ -26,7 +26,7 @@ import { isCreature } from "../game/kinds.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { routeMinutes } from "./time.ts";
 
-export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; kinds: readonly string[]; map?: { x: number; y: number }; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean };
+export type Place = { id: string; zone: string; name: string; indoor: boolean; owner: string | null; spawned: boolean; aliases: readonly string[]; kinds: readonly string[]; map?: { x: number; y: number }; jail?: boolean; wade?: boolean; description?: string; near: readonly string[]; road: boolean; to: readonly string[]; gate: boolean; shop?: string; shops?: Readonly<Record<string, number>> };
 
 /** 장소 종류 (12-300): 콘텐츠의 kinds에 길(road)·가두는 곳(jail) 표시를 더한다 */
 export function kindsOf(p: { kinds?: readonly string[]; road?: boolean; jail?: boolean }): string[] {
@@ -40,9 +40,9 @@ export function placesIn(state: GameState, content: Content, zone: string | null
   // 즉흥 장소는 만든 자리의 이웃이다 (장소 개편)
   const fixed = (content.locations[zone]?.places ?? []).map((p) => ({
     id: p.id, zone, name: p.name, indoor: p.indoor, owner: null, spawned: false, aliases: p.aliases, kinds: kindsOf(p), ...(p.map ? { map: p.map } : {}), jail: p.jail, wade: p.wade, description: p.description,
-    near: [...(p.near ?? []), ...spawned.filter(([, x]) => x.at === p.id).map(([id]) => id)], road: !!p.road, to: p.to ?? [], gate: !!p.gate,
+    near: [...(p.near ?? []), ...spawned.filter(([, x]) => x.at === p.id).map(([id]) => id)], road: !!p.road, to: p.to ?? [], gate: !!p.gate, shops: p.shops ?? {},
   }));
-  const extra = spawned.map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[], kinds: [] as string[], near: p.at ? [p.at] : [], road: false, to: [] as string[], gate: false }));
+  const extra = spawned.map(([id, p]) => ({ id, zone, name: p.name, indoor: p.indoor, owner: p.owner, spawned: true, aliases: [] as string[], kinds: [] as string[], near: p.at ? [p.at] : [], road: false, to: [] as string[], gate: false, ...(p.shop ? { shop: p.shop } : {}) }));
   return [...fixed, ...extra];
 }
 

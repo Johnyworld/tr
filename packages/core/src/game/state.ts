@@ -60,7 +60,7 @@ import { startingSkills } from "./creation.ts";
 // 128: 큰 이야기 인물 (offstage, 이벤트 npc_arrived)
 // 130: 필수품 (공통 규칙 25, 12-357). traps.item, trap_set.item
 // 131: 가방 (공통 규칙 26, 12-358). bags, bagSeq, equipped.back, 이벤트 bag_packed·item_transferred.bagId·item_stashed.bagId·item_equipped.bagId
-export const SAVE_SCHEMA_VERSION = 131;
+export const SAVE_SCHEMA_VERSION = 132;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -500,7 +500,7 @@ export function createGameSchemas(s: Scenario) {
     /** 구역 안에서 지금 있는 장소 (12-244, 공통 규칙 15). null이면 구역의 장소를 정하지 않은 곳 (들어선 자리) */
     playerPlace: z.string().nullable().default(null),
     /** GM이 즉흥으로 만든 장소 (장소 id → 구역·이름·실내·주인). 세이브에 남아 다시 쓴다 */
-    spawnedPlaces: z.record(z.string(), z.strictObject({ zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().default(null) })).default({}),
+    spawnedPlaces: z.record(z.string(), z.strictObject({ zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().default(null), shop: z.string().nullable().default(null) })).default({}),
     /**
      * 머무는 자리 (12-253, 공통 규칙 15): 장면에 있다가 주인공이 두고 떠난 인물은 그 시간대가 끝날 때(until)까지 그 자리에 있다.
      * 그 뒤엔 일과로 돌아간다 (PT15: 교무실에 부른 상관이 주인공이 나가자마자 일과의 보급 창고로 순간이동했다). 읽기는 rules/place.ts로만
@@ -1260,7 +1260,7 @@ export function createGameSchemas(s: Scenario) {
     z.strictObject({ type: z.literal("npc_knocked_out"), npcId: z.string(), until: z.number().int() }),
     z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
     /** GM이 즉흥 장소를 만들었다 (12-244) */
-    z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().optional() }),
+    z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().optional(), shop: z.string().optional() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("weather_forecast"), day: z.number().int(), weatherId: z.string() }),
     z.strictObject({ type: z.literal("character_died"), record: runRecordSchema }),
@@ -2913,7 +2913,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       return next;
     }
     case "place_spawned":
-      next.spawnedPlaces = { ...next.spawnedPlaces, [event.id]: { zone: event.zone, name: event.name, indoor: event.indoor, owner: event.owner, at: event.at ?? null } };
+      next.spawnedPlaces = { ...next.spawnedPlaces, [event.id]: { zone: event.zone, name: event.name, indoor: event.indoor, owner: event.owner, at: event.at ?? null, shop: event.shop ?? null } };
       return next;
     case "zone_moved": {
       // 시작하는 시각에 놓인 구역이 시작한 구역이다 (새 세계·이어받기)

@@ -224,16 +224,15 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: alleys, name: "시장 골목", indoor: false, map: { x: 68, y: 42 }, kinds: [street], description: "좌판 뼈대만 남은 시장 골목. 길이 좁고 굽는다", aliases: ["골목", "시장"], near: [shops, boiler_room, electronics_shop] }
+    - { id: alleys, name: "시장 골목", indoor: false, map: { x: 68, y: 42 }, kinds: [street], description: "좌판 뼈대만 남은 시장 골목. 길이 좁고 굽는다", aliases: ["골목", "시장"], near: [shops, boiler_room], shops: { pharmacy: 1, convenience: 1, electronics: 1 } }
     - { id: shops, name: "상가·약국 안", indoor: true, map: { x: 80, y: 22 }, kinds: [ruin], description: "셔터가 반쯤 내려간 상가와 약국. 유리 조각이 바닥에 깔렸다", aliases: ["상가", "약국"], near: [basement, shop_roof] }
-    - { id: electronics_shop, name: "전파상", indoor: true, map: { x: 68, y: 62 }, kinds: [ruin], description: "라디오와 손전등을 팔던 작은 전자제품 가게. 진열대는 비었지만 서랍과 계산대 밑에 쓸 만한 것이 남았을지 모른다", aliases: ["전자제품 가게", "전자상가", "가전 가게"], near: [alleys, crossroads] }
     - { id: boiler_room, name: "목욕탕 보일러실", indoor: true, map: { x: 58, y: 22 }, kinds: [ruin], description: "옛 목욕탕 지하 보일러실. 아직 온기가 조금 남는다", aliases: ["보일러실", "목욕탕"] }
     - { id: basement, name: "상가 지하", indoor: true, map: { x: 92, y: 10 }, kinds: [ruin], description: "상가 지하. 천장이 낮고 썩은 물 냄새가 난다", aliases: ["지하"] }
     - { id: to_east, name: "차고지·붉은 다리·고가 가는 길", indoor: false, map: { x: 96, y: 42 }, description: "동쪽으로 뻗은 큰길. 버려진 차를 밀어 길을 냈다", near: [crossroads, alleys], road: true, to: [bus_depot, red_bridge, overpass] }
     - { id: to_west, name: "병원·약국 골목·아파트 뒷길 가는 길", indoor: false, map: { x: 4, y: 62 }, description: "서쪽 큰길. 무너진 간판이 길을 반쯤 막았다", near: [crossroads, theater], road: true, to: [hospital_ruins, pharmacy_alley, apt_backroad] }
     - { id: hill_steps, name: "성당 가는 언덕 계단", indoor: false, map: { x: 40, y: 4 }, description: "언덕 위 성당으로 오르는 돌계단. 꼭대기에 종탑이 보인다", near: [crossroads, vacant_lot], road: true, to: [cathedral] }
     - { id: subway_entrance, name: "지하철 입구", indoor: false, map: { x: 68, y: 94 }, description: "셔터가 뜯긴 지하철 입구. 계단 아래로 찬 바람이 올라온다", near: [crossroads], road: true, to: [subway_hub] }
-    - { id: crossroads, name: "시장 앞 네거리", indoor: false, map: { x: 48, y: 55 }, kinds: [street], description: "뒤집힌 버스가 가로누운 네거리. 사방이 트여 몸이 드러난다", aliases: ["네거리"], near: [alleys] }
+    - { id: crossroads, name: "시장 앞 네거리", indoor: false, map: { x: 48, y: 55 }, kinds: [street], description: "뒤집힌 버스가 가로누운 네거리. 사방이 트여 몸이 드러난다", aliases: ["네거리"], near: [alleys], shops: { clothes: 1, hardware: 1, general: 1 } }
     - { id: theater, name: "옛 극장", indoor: true, map: { x: 20, y: 82 }, kinds: [ruin], description: "간판이 떨어진 옛 극장. 객석 의자를 뜯어 가 바닥이 휑하고 영사실 창이 어둡다", aliases: ["극장", "영사실"], near: [to_west] }
     - { id: vacant_lot, name: "빨래방 옆 공터", indoor: false, map: { x: 30, y: 30 }, kinds: [yard], description: "무너진 빨래방 옆 공터. 누가 빨랫줄을 새로 걸어 두었고, 불 피운 자국이 둥글게 남았다", aliases: ["공터", "빨랫줄"], near: [hill_steps] }
     - { id: shop_roof, name: "상가 옥상", indoor: false, map: { x: 88, y: 30 }, kinds: [watch], description: "상가 건물 옥상. 물탱크 뒤에 앉으면 네거리와 큰길이 한눈에 내려다보인다", aliases: ["옥상"], near: [shops] }
@@ -247,29 +246,18 @@
   loot:
     modifier: 1
     items:
-      - { item: flashlight, weight: 2, qty: [1, 1] }
-      - { item: shoulder_bag, weight: 0.5, qty: [1, 1] }
       - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: fire_axe, weight: 0.5, qty: [1, 1] }
       - { item: hatchet, weight: 0.5, qty: [1, 1] }
-      - { item: umbrella, weight: 0.5, qty: [1, 1] }
-      - { item: raincoat, weight: 0.5, qty: [1, 1] }
-      - { item: lighter, weight: 0.5, qty: [1, 1] }
-      - { item: matchbox, weight: 0.5, qty: [1, 2] }
-      - { item: wool_hat, weight: 0.5, qty: [1, 1] }
-      - { item: sewing_kit, weight: 0.5, qty: [1, 1] }
-      - { item: whistle, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: mushroom, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 3, qty: [1, 2] }
-      - { item: cigarettes, weight: 2, qty: [1, 3] }
       - { item: soju, weight: 2, qty: [1, 2] }
       - { item: painkiller, weight: 1, qty: [1, 1] }
       - { item: blanket, weight: 2, qty: [1, 1] }
       - { item: coat, weight: 1, qty: [1, 1] }
       - { item: kitchen_knife, weight: 1, qty: [1, 1] }
       - { item: dry_ration, weight: 1, qty: [1, 1] }
-      - { item: radio, weight: 0.5, qty: [1, 1] }
       - { item: duct_tape, weight: 2, qty: [1, 1] }
       - { item: bicycle, weight: 0.3, qty: [1, 1] }
       - { item: cloth, weight: 2, qty: [1, 2] }

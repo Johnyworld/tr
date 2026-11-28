@@ -1301,6 +1301,25 @@ export const scenarioFileSchema = z
           .min(1),
       })
       .optional(),
+    /**
+     * 가게 (12-367, 공통 규칙 28): 바깥 장소(places.shops)에 가게가 몇 곳 있는지 적으면, 플레이어가 그 가게를 찾는 수색(take_action.activity.target)이 성공할 때마다
+     * 코드가 가게 장소 하나를 만든다 (길 하나가 가진 수까지만, 무한히 늘지 않는다). 가게 장소를 뒤지면 구역 표 대신 그 종류의 표(loot)가 쓰인다.
+     * name: 가게 장소 이름, loot: 구역 loot와 같은 모양 (modifier는 수색 판정 보정)
+     */
+    shops: z
+      .strictObject({
+        kinds: z.record(
+          id,
+          z.strictObject({
+            name: z.string().min(1),
+            loot: z.strictObject({
+              modifier: z.number().int().min(-2).max(2).default(0),
+              items: z.array(z.strictObject({ item: id, weight: z.number().positive(), qty: z.tuple([z.number().int().positive(), z.number().int().positive()]) })).min(1),
+            }),
+          }),
+        ),
+      })
+      .optional(),
     exploration: z
       .strictObject({
         move: id,

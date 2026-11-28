@@ -1,5 +1,6 @@
 import { darknessOf, darkSightMove } from "../rules/darkness.ts";
 import { searchSpot } from "../rules/place.ts";
+import { shopHere } from "../rules/shop.ts";
 import { ownedBy } from "../rules/home.ts";
 import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -25,7 +26,8 @@ export function scavengeParts(ctx: ToolContext): Part[] {
   const { content } = ctx;
   const state = ctx.store.getState();
   const zone = state.playerZone;
-  const loot = zone ? content.locations[zone]?.loot : undefined;
+  // 가게 안이면 그 가게 종류의 표 (공통 규칙 28)
+  const loot = shopHere(state, content)?.loot ?? (zone ? content.locations[zone]?.loot : undefined);
   if (!zone || !loot) return [];
   const lore = content.scenario.search_lore;
   // 어둠 (공통 규칙 27): 불빛이 없으면 눈이 나쁘다
@@ -34,7 +36,7 @@ export function scavengeParts(ctx: ToolContext): Part[] {
   const known = lore && effectiveSkill(content, state.characters[state.playerId]!, lore.skill) >= 1;
   // 우리 거점은 털린 폐허가 아니다: 구역의 넉넉함을 셈하지 않는다 (12-261, PT16 분대장·졸병: 우리 보급 창고에 "-1(털린 구역)")
   const me = state.characters[state.playerId];
-  const ownBase = content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId);
+  const ownBase = !shopHere(state, content) && content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId);
   return [
     // 판정 줄만 보고 까닭을 알게 (플레이 테스트 14: "+1(넉넉한 곳) +1(역사)"가 무슨 뜻인지 몰랐다)
     { label: loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: ownBase ? 0 : loot.modifier },
@@ -82,7 +84,7 @@ export function scavenge(ctx: ToolContext, outcome: CheckOutcome | null, opts: {
   const { store, content, rng } = ctx;
   const state = store.getState();
   const zone = state.playerZone;
-  const loot = zone ? content.locations[zone]?.loot : undefined;
+  const loot = shopHere(state, content)?.loot ?? (zone ? content.locations[zone]?.loot : undefined);
   if (!zone || !loot || loot.items.length === 0) return { lines: ["이 구역에는 뒤져서 나올 만한 것이 없다."], displays: [] };
 
   // 장소마다 센다 (12-258)

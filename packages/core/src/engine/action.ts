@@ -32,7 +32,8 @@ import { shakeNerves, sleepNerves } from "./body.ts";
 import { withoutWear } from "./gear.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { darknessOf, darkSearchMinutes } from "../rules/darkness.ts";
-import { scavenge, scavengeParts, searchedToday, searchScopeOf } from "./scavenge.ts";
+import { scavenge, scavengeParts, searchedToday, searchScopeOf, searchUnits } from "./scavenge.ts";
+import { findShop, shopSearchProblem } from "../rules/shop.ts";
 import { josa, sentence } from "../text.ts";
 import { isInfected } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -113,6 +114,7 @@ export const PARTIAL_TIME_COST = 30;
 
 export function createTakeActionSchema(s: Scenario) {
   const scopeIds = s.search_scopes?.scopes.map((x) => x.id) ?? [];
+  const shopIds = Object.keys(s.shops?.kinds ?? {});
   return z.strictObject({
     intent: z.string().min(1).max(300).describe("플레이어 캐릭터가 이번 턴에 하려는 것 한두 문장"),
     check: z
@@ -182,6 +184,14 @@ export function createTakeActionSchema(s: Scenario) {
         ),
         until: timeSegmentSchema.nullable().default(null).describe("sleep·wait·rest·guard_duty·treat 전용: 이 시간대가 시작될 때까지. 다른 활동은 null. 임무 보초는 until·hours 없이 걸면 임무에 남은 시간만큼 선다"),
         hours: z.number().min(0.5).max(12).multipleOf(0.5).nullable().default(null).describe("sleep·wait·rest·guard_duty·treat·work: 몇 시간 할지 (0.5 단위, until 대신). 없으면 null"),
+        target: (shopIds.length ? z.enum(shopIds as [string, ...string[]]) : z.string())
+          .nullable()
+          .default(null)
+          .describe(
+            s.shops
+              ? `search 전용: 가게를 찾는 수색일 때만. 플레이어가 "약국이 있나 찾아본다"처럼 가게를 찾으면 그 종류. ${shopIds.map((k) => `${k} ${s.shops!.kinds[k]!.name}`).join(" / ")}. 바깥(길) 장소에서만 되고, 있을 만한 길인지·몇 곳인지·가게 안 물건은 코드가 정한다 (콘텐츠에 없는 가게를 spawn_place로 만들지 않는다). 물건을 뒤지는 수색이면 null`
+              : "이 월드에는 없다. null",
+          ),
         scope: (scopeIds.length ? z.enum(scopeIds as [string, ...string[]]) : z.string())
           .nullable()
           .default(null)
@@ -900,6 +910,8 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
       (input.use_item && !fuel ? itemUseProblem(ctx, input.use_item) : null) ??
       (input.treatment && !destHealers.length ? treatmentProblem(ctx, input.treatment.item, input.treatment.target, input.check?.move ?? null, feeChoice(input.treatment.pay), chosenHealer) : null) ??
       (input.forage && !input.move_to ? forageProblem(ctx, input.forage) : null) ??
+      // 가게를 찾는 수색 (공통 규칙 28): 길이 아니거나 있을 만하지 않은 곳이면 판정 전에 막는다
+      (input.activity?.kind === "search" && input.activity.target && !input.move_to && !input.place_to ? shopSearchProblem(start, content, input.activity.target) : null) ??
       (input.trap ? trapProblem(ctx, input.trap) : null) ??
       // 불 붙이기 (12-357, 공통 규칙 25): 밖에서는 라이터·성냥, 없으면 판정을 걸어 비벼 피운다
       (fuel ? ignitionProblem(content, start, input.check) : null) ??
@@ -1185,7 +1197,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   if (input.activity?.kind === "search" && !inBattle && !lootRoll) lines.push(`${moveLabel(scenario, input.check!.move)} 판정이라 뒤져서 찾은 물건은 없다 (찾을 거리는 ${moveLabel(scenario, searchMove!)} 판정으로 뒤질 때 나온다).`);
   if (input.activity?.kind === "search" && !inBattle && lootRoll) {
     // 찾을 거리 표대로만 나온다: 임무로 찾는 자원도 따로 보장하지 않는다 (12-355)
-    const found = scavenge(ctx, outcome, { scope: input.activity.scope, hurt: searchHurt });
+    const target = input.activity.target && !input.move_to && !input.place_to ? input.activity.target : null;
+    const scopeFor = searchScopeOf(content, input.activity.scope);
+    const found = target
+      ? { ...findShop(ctx, target, outcome, scopeFor ? searchUnits(content, scopeFor) : 1, searchHurt), displays: [] as ToolDisplayEvent[] }
+      : scavenge(ctx, outcome, { scope: input.activity.scope, hurt: searchHurt });
     // 적 땅에서는 숨는 판정 하나로 찾는 양까지 정한다 (한 행동에 판정은 하나, 플레이 테스트 13: 수색을 굴리지 않았는데 물건이 나왔다)
     if (exposed && input.check) lines.push(`숨어서 뒤졌다: ${moveLabel(scenario, input.check.move)} 판정 결과로 찾는 양도 정했다.`);
     lines.push(...found.lines);

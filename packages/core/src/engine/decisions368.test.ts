@@ -94,4 +94,27 @@ describe("함께 걷던 사람 (12-368)", () => {
     const r3 = w.executeTool("take_action", act({ place_to: here.id }));
     expect(r3.ok, r3.ok ? "" : r3.error).toBe(true);
   });
+
+  it("짝 없는 임무 중에 장면의 같은 무리 사람을 짝으로 청하면 동행이 되고, 보고하면 돌아간다 (12-370)", () => {
+    const w = world();
+    const commander = content.roles.role_a_grunt!.commander!;
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const tid = w.state().offers!.templateIds.find((id) => !content.missions[id]?.buddy)!;
+    expect(w.executeTool("assign_mission", { template_id: tid }).ok).toBe(true);
+    expect(Object.values(w.state().bonds).some((b) => b.kind === "buddy")).toBe(false);
+    const me = w.state().characters[w.state().playerId]!;
+    // 계급이 달라도 청할 수 있다 (길잡이)
+    const mate = Object.values(w.state().characters).find((c) => content.npcs[c.id] && c.factionId === me.factionId && c.id !== commander && c.id !== me.id && (w.state().known[me.id] ?? []).includes(c.id) && !c.dead)!.id;
+    // 장면에 없으면 거절
+    expect(w.executeTool("pair_up", { target: mate, accept: true }).ok).toBe(false);
+    w.executeTool("npc_presence", { npc_id: mate, action: "enter" });
+    // 임무를 준 사람은 짝이 아니다
+    expect(w.executeTool("pair_up", { target: commander, accept: true }).ok).toBe(false);
+    const r = w.executeTool("pair_up", { target: mate, accept: true });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(w.state().companions).toContain(mate);
+    const rep = w.executeTool("report_mission", { final: true });
+    expect(rep.ok, rep.ok ? "" : rep.error).toBe(true);
+    expect(w.state().companions).not.toContain(mate);
+  });
 });

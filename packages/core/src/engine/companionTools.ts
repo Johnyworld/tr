@@ -145,8 +145,9 @@ function buddyDone(state: GameState, bond: Bond): boolean {
   return !bond.until?.zone || state.playerZone === bond.until.zone;
 }
 
-/** 짝이 될 수 있는 여유 인원: 같은 무리의 아는 동료로, 같은 계급이고 다른 일을 맡지 않은 사람 */
-function buddyPool(ctx: ToolContext, commander: string | null): string[] {
+/** 짝이 될 수 있는 여유 인원: 같은 무리의 아는 동료로, 같은 계급이고 다른 일을 맡지 않은 사람.
+ * anyRank: 플레이어가 직접 청한 짝(12-370)은 계급을 따지지 않는다 (길잡이로 청한 보급 창고 사람) */
+function buddyPool(ctx: ToolContext, commander: string | null, anyRank = false): string[] {
   const { store, content } = ctx;
   const state = store.getState();
   const player = state.characters[state.playerId];
@@ -156,7 +157,7 @@ function buddyPool(ctx: ToolContext, commander: string | null): string[] {
     Object.values(state.characters)
       .filter((c) => content.npcs[c.id] && c.id !== state.playerId && c.id !== commander && c.factionId === player.factionId)
       .filter((c) => !c.dead && !c.away && !heldOf(c) && !state.squadOrders?.[c.id] && !state.companions.includes(c.id) && !state.bonds?.[c.id])
-      .filter((c) => known.has(c.id) && c.rank === player.rank)
+      .filter((c) => known.has(c.id) && (anyRank || c.rank === player.rank))
       // 원수는 짝으로 붙이지 않는다 (공통 규칙 20)
       .filter((c) => !keepsAway(state, content, c.id))
       .map((c) => c.id)
@@ -213,7 +214,8 @@ export function pairOfferLine(ctx: ToolContext, before: GameState): string | nul
 const pairUp = defineTool({
   name: "pair_up",
   description:
-    "임무 없이 거점을 나설 때 짝(2인 1조)을 붙일지 플레이어가 답한 뒤 부른다. 결과의 '짝 제안'에 나온 사람 id만 쓴다. accept true면 그 사람이 우리 거점으로 돌아올 때까지 함께 다닌다 (돌아오면 자기 자리로). false면 혼자 간다 (불이익 없음).",
+    "짝(2인 1조)을 붙인다. 두 경우에 쓴다. (1) 임무 없이 거점을 나설 때 결과의 '짝 제안'에 플레이어가 답한 뒤: 제안에 나온 사람 id만, accept true면 우리 거점으로 돌아올 때까지 함께 다니고 false면 혼자 간다 (불이익 없음). " +
+    "(2) 짝 없는 임무를 수행 중에 플레이어가 장면의 같은 무리 사람에게 같이 가 달라고 청해 그 사람이 받아들였을 때 (받아들일지는 그 사람의 처지·관계로 정하고, 망설일 만하면 교섭 판정을 먼저): accept true면 그 사람이 이 임무의 짝이 되어 함께 다니고, 임무를 보고하면 자기 자리로 돌아간다. with로 끌고 다니지 않는다 (12-370)",
   schema: z.strictObject({
     target: z.string().describe("짝 제안에 나온 사람의 id"),
     accept: z.boolean(),
@@ -224,9 +226,21 @@ const pairUp = defineTool({
     const name = playerCalls(state, content, input.target);
     if (!input.accept) return { ok: true, resultText: "짝을 붙이지 않는다. 혼자 간다. 불이익은 없다.", display: { type: "presence", npcName: name, action: "leave" }, silent: true };
     const me = state.characters[state.playerId];
-    const base = baseOfNow(state, content, me?.factionId);
-    if (!base || atOwnBase(state, content)) return { ok: false, error: "거점을 나선 뒤에만 짝을 붙인다." };
     if (Object.values(state.bonds ?? {}).some((b) => b.kind === "buddy")) return { ok: false, error: "이미 짝이 있다." };
+    // 임무 중 청한 짝 (12-370, 유소진 판: 길잡이로 청해 교섭에 성공한 하늘이 동행이 될 길이 없어 with로 끌려다녔다)
+    const mission = me ? activeMissionOf(state.missions, me.id) : undefined;
+    if (mission) {
+      if (!state.scene.present.includes(input.target)) return { ok: false, error: `${josa(name, "은/는")} 장면에 없다. 짝으로 청하려면 그 사람 앞에서 (npc_presence로 들인 뒤) 부른다.` };
+      if (!buddyPool(ctx, mission.giverId, true).includes(input.target)) return { ok: false, error: `${josa(name, "은/는")} 짝으로 붙일 수 없다: 같은 무리의 아는 사람이고, 임무를 준 사람이 아니고, 분대·다른 짝 같은 다른 일을 맡지 않았어야 한다.` };
+      store.append({ type: "companion_joined", characterId: input.target, kind: "buddy", missionId: mission.id });
+      return {
+        ok: true,
+        resultText: `${josa(name, "이/가")} 이 임무("${mission.title}")의 짝으로 함께 다닌다 (동행: 말하지 않아도 따라온다). 임무를 보고하거나 포기하면 자기 자리로 돌아간다. 따라나서는 장면을 짧게 서술한다.`,
+        display: { type: "presence", npcName: name, action: "enter" },
+      };
+    }
+    const base = baseOfNow(state, content, me?.factionId);
+    if (!base || atOwnBase(state, content)) return { ok: false, error: "거점을 나선 뒤에만 짝을 붙인다 (임무 중이면 그 임무의 짝으로 청할 수 있다)." };
     if (!buddyPool(ctx, null).includes(input.target)) return { ok: false, error: "지금은 짝으로 붙일 수 없는 사람이다 (짝 제안에 나온 사람만)." };
     store.append({ type: "companion_joined", characterId: input.target, kind: "buddy", until: { zone: base } });
     return {

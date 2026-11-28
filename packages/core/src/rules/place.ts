@@ -336,6 +336,60 @@ export function knowsZone(state: GameState, content: Content, zone: string): boo
   return role?.start_location === zone;
 }
 
+/**
+ * 이 인물(주인공 말고)이 훤히 아는 구역 (12-360, 튜토리얼: 구시가 상가 지하를 아는 길잡이가 바로 옆 약국을 "모른다"고 했다).
+ * 사는 구역(떠돌면 도는 구역 모두), 자기 무리 땅, 카드의 "아는 것"에 이름이 나오는 구역. 그 구역의 장소는 다 안다.
+ * 사람만 (동물은 길을 일러 주지 않는다)
+ */
+export function npcKnownZones(state: GameState, content: Content, id: string): string[] {
+  const c = state.characters[id];
+  if (!c || id === state.playerId || isCreature(content, c)) return [];
+  const npc = content.npcs[id];
+  const zones = new Set<string>();
+  if (npc?.zone) zones.add(npc.zone);
+  for (const z of npc?.roams ?? []) zones.add(z);
+  if (c.extra?.zone) zones.add(c.extra.zone);
+  if (c.factionId) for (const z of Object.keys(state.zones)) if (ownedBy(state, z, c.factionId)) zones.add(z);
+  for (const fact of npc?.knows ?? []) {
+    for (const [z, loc] of Object.entries(content.locations)) if (loc.name && fact.includes(loc.name)) zones.add(z);
+  }
+  return [...zones];
+}
+
+/** 이 인물(주인공 말고)이 아는 장소인가: 훤히 아는 구역의 장소, 함께 가 본 장소, 즉흥 장소 */
+export function npcKnowsPlace(state: GameState, content: Content, id: string, zone: string, placeId: string): boolean {
+  const p = placeById(state, content, placeId, zone);
+  if (!p || id === state.playerId || isCreature(content, state.characters[id])) return false;
+  if (p.spawned || npcKnownZones(state, content, id).includes(zone)) return true;
+  return (state.knownPlaces?.[id] ?? []).includes(`${zone}:${placeId}`);
+}
+
+/** 길을 일러 줄 수 있는 문 하나: 지금 자리의 '알 수 없는 문' 가운데 이 인물이 아는 곳으로 이어지는 문 */
+export type GuideDoor = { door: number; place: Place; direction: string | null };
+/** 멀리 있는 아는 곳: 이름과 어림(이웃·실내외)·방위만. 들어도 주인공은 그곳을 모른다 (가 봐야 안다) */
+export type GuideFar = { place: Place; hint: string | null; direction: string | null };
+
+/**
+ * 이 인물이 지금 구역에서 주인공에게 일러 줄 수 있는 길 (12-360). 들은 것으로 주인공이 장소를 알게 되지는 않는다:
+ * 그 장소는 여전히 '알 수 없는 문'이고, 문을 하나씩 지나 닿아야 안다 (듣기만 하고 place_to 한 번으로 가지 않게).
+ * knows: 이 구역을 훤히 아는가 (아니면 함께 가 본 곳만 안다)
+ */
+export function npcPlaceGuide(state: GameState, content: Content, id: string): { knows: boolean; doors: GuideDoor[]; far: GuideFar[]; seen: Place[] } | null {
+  const zone = state.playerZone;
+  const c = state.characters[id];
+  if (!zone || !c || id === state.playerId || isCreature(content, c)) return null;
+  const places = placesIn(state, content, zone).filter((p) => !p.spawned);
+  if (!places.length) return null;
+  const knows = npcKnownZones(state, content, id).includes(zone);
+  const unknownToMe = places.filter((p) => !knowsPlace(state, content, zone, p.id) && npcKnowsPlace(state, content, id, zone, p.id));
+  const doorIds = new Set(unknownDoors(state, content).map((p) => p.id));
+  const from = state.playerPlace;
+  const doors = unknownToMe.filter((p) => doorIds.has(p.id)).map((p) => ({ door: doorNumber(state, content, p.id), place: p, direction: directionTo(state, content, from, p.id) }));
+  const far = unknownToMe.filter((p) => !doorIds.has(p.id)).map((p) => ({ place: p, hint: placeHint(state, content, zone, p.id), direction: directionTo(state, content, from, p.id) }));
+  const seen = knows ? [] : places.filter((p) => (state.knownPlaces?.[id] ?? []).includes(`${zone}:${p.id}`));
+  return { knows, doors, far, seen };
+}
+
 /** 이 깊이의 장소들 (지금 구역, 가두는 곳 포함) */
 export function placesAtDepth(state: GameState, content: Content, depth: number): Place[] {
   return placesIn(state, content, state.playerZone).filter((p) => depthAt(state, content, p.id) === depth);

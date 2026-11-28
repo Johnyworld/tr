@@ -79,7 +79,7 @@ import { tracesHere } from "./felt.ts";
 import { alertablePartiesLines, seenPartiesLines } from "./partySight.ts";
 import { maskUnknownIds } from "../rules/knowledge.ts";
 import { currentPlace, depthAt, directionTo, doorLabel, homeHidden, knowsPlace, knowsWhoIsAt, knowsZone, peopleAt, placesIn, sharesPlace, unknownDoors } from "../rules/place.ts";
-import { inZone, nearby, whereIs } from "../rules/place.ts";
+import { inZone, nearby, npcPlaceGuide, whereIs } from "../rules/place.ts";
 import { beliefText, deedText, matureCard, MENACE_COVER, shownOccupationTitle, toneDownLine } from "../rules/lens.ts";
 
 /**
@@ -412,6 +412,7 @@ function describeNpcCard(
     ...nameNotes(state, player.id, npc.id),
     `행동 규칙:\n${npc.rules.map((r) => `  - ${m(r)}`).join("\n") || "  - 없음"}`,
     `이 인물이 아는 것 (물으면 말해 줄 수 있다):\n${knows.join("\n") || "  - 특별히 없음"}`,
+    ...placeGuideLines(state, content, npc.id),
     ...(keeps.length ? [`이 인물이 알지만 지키는 것 (먼저 말하지 않고, 물어도 둘러댄다. 행동 규칙을 어길 만큼 몰리거나 깊이 믿을 때만 입을 연다. 판정·이야기 없이 털어놓지 않는다):\n${keeps.join("\n")}`] : []),
     ...rumorLines(state, content, npc.id),
     ...(knownDeeds.length > 0
@@ -428,6 +429,29 @@ function describeNpcCard(
     ...stanceLines(state, content, npc.id),
     ...describeTieLines(state, content, npc.id),
   ].join("\n");
+}
+
+/**
+ * 이 인물이 지금 구역에서 일러 줄 수 있는 길 (12-360, 공통 규칙 15). 들어도 주인공은 그곳을 모른다: 문을 하나씩 지나 닿아야 안다.
+ * 이 구역을 모르면 "잘 모른다"를 붙여, 길잡이가 "잘 안다"고 했다가 "모른다"고 하지 않게 한다
+ */
+function placeGuideLines(state: GameState, content: Content, id: string): string[] {
+  const g = npcPlaceGuide(state, content, id);
+  if (!g) return [];
+  const zone = content.locations[state.playerZone ?? ""]?.name ?? state.playerZone;
+  const dir = (d: string | null) => (d ? `, ${d}` : "");
+  const items = [
+    ...g.doors.map((d) => `  - 문${d.door} → ${d.place.name} (이 문으로 간다${dir(d.direction)})`),
+    ...g.far.map((f) => `  - ${f.place.name} (${[f.hint, f.direction].filter(Boolean).join(", ") || "이 구역 안"})`),
+  ];
+  const lines: string[] = [];
+  if (!g.knows) lines.push(`이 인물은 ${josa(zone ?? "이 구역", "을/를")} 잘 모른다${g.seen.length ? ` (함께 가 본 곳만 안다: ${g.seen.map((p) => p.name).join(", ")})` : " (와 본 적이 거의 없다)"}. 길을 물으면 모른다고 하거나 짐작으로만 말한다`);
+  if (items.length) {
+    lines.push(
+      `이 인물이 아는 ${zone}의 곳 (당신은 아직 모른다. 길을 물으면 방향과 문을 일러 줄 수 있다. 들어도 그곳을 아는 것은 아니다: 문을 하나씩 지나 닿아야 안다. 들은 말은 add_belief로):\n${items.join("\n")}`,
+    );
+  }
+  return lines;
 }
 
 /** 이미 기록된 플레이어의 최근 행적 (같은 행동을 다시 기록하지 않게). 숨은 목격자는 넣지 않는다 */

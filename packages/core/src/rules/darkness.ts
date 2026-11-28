@@ -1,5 +1,5 @@
 /**
- * 공통 규칙 27: 어둠 속 눈 (docs/design.md "공통 규칙", 12-360).
+ * 공통 규칙 27: 어둠 속 눈 (docs/design.md "공통 규칙", 12-366).
  *
  * 어두우면(`darkHere`) 주인공의 수색·부대 알아채기가 나빠지고 수색이 오래 걸린다. 불빛(`tool.light`, 손전등)이 있으면 지워지지만
  * 그 불빛이 남의 눈에 띈다(밤의 가림을 못 받는다). 트레잇: 어둠에 익숙함(adapted)은 둘 다 없고, 야맹증은 감점·시간이 더 크다.
@@ -9,7 +9,8 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import { traitsOf } from "../engine/traits.ts";
 import { withBags } from "./bags.ts";
-import { darkHere } from "./place.ts";
+import { heatedHere } from "../engine/climate.ts";
+import { darkHere, shelterAt } from "./place.ts";
 
 export type Darkness = {
   /** 어두운가 (불 켠 지붕 아래가 아니고 어두운 시간대) */
@@ -24,12 +25,23 @@ export type Darkness = {
 
 const NONE: Darkness = { dark: false, penalty: 0, searchTime: 1, glare: false };
 
+/**
+ * 어두운가: `darkHere`(불 켠 지붕 아래는 밝다)에 더해, 우리 쪽 거점 난방(불 땐 거처)·피난처 안도 밝다
+ * (PT45: 기온 줄은 "불 땐 거처"인데 수색은 어둡게 셌다). 숨기의 어둠 보정과 어둠 공포도 이것으로 본다
+ */
+export function darkAround(state: GameState, content: Content, segments: Parameters<typeof darkHere>[2], at: number = state.time): boolean {
+  if (!darkHere(state, content, segments, at)) return false;
+  const zone = state.playerZone;
+  const warmRoof = shelterAt(content, state, "rest").indoor && (heatedHere(content, state) || (!!zone && !!content.locations[zone]?.sanctuary));
+  return !warmRoof;
+}
+
 /** 주인공이 지금(또는 at 시각에) 어둠에서 어떤지. 월드 팩에 어둠 속 눈 규칙이 없으면 늘 NONE */
 export function darknessOf(state: GameState, content: Content, at: number = state.time): Darkness {
   const cfg = content.scenario.opposition?.dark;
   const sight = cfg?.sight;
   const me = state.characters[state.playerId];
-  if (!cfg || !sight || !me || !darkHere(state, content, cfg.segments, at)) return NONE;
+  if (!cfg || !sight || !me || !darkAround(state, content, cfg.segments, at)) return NONE;
   const dark = traitsOf(content, me).flatMap((t) => (t.effects.dark ? [t.effects.dark] : []));
   if (dark.some((d) => d.adapted)) return { ...NONE, dark: true };
   const lit = Object.entries(withBags(state, me).inventory).some(([id, q]) => q > 0 && content.items[id]?.tool?.light);

@@ -31,7 +31,7 @@ export { welcomedAsGuest } from "../rules/place.ts";
 const climateOf = (content: Content) => content.scenario.body?.cold?.climate;
 
 /** 불 땐 거처: 우리 무리 땅이고 무리의 연료가 넉넉하다 (body.cold.shelter) */
-function heatedHere(content: Content, state: GameState): boolean {
+export function heatedHere(content: Content, state: GameState): boolean {
   const shelter = content.scenario.body?.cold?.shelter;
   const me = state.characters[state.playerId];
   const zone = state.playerZone;

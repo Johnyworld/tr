@@ -9,7 +9,7 @@ import { scavengeParts } from "../engine/scavenge.ts";
 import { darknessOf, darkSearchMinutes } from "./darkness.ts";
 import { segmentOf } from "./time.ts";
 
-/** 공통 규칙 27: 어둠 속 눈 (12-360). 실제 콘텐츠로 본다 */
+/** 공통 규칙 27: 어둠 속 눈 (12-366). 실제 콘텐츠로 본다 */
 const content = loadRealContent();
 const make = () =>
   new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-dark-")), content, rngFactory: () => () => 0.5 }).create("mcp", "role_a_grunt", { name: "서진", gender: "female", abilities: null, portrait: null, traits: [] } as never);
@@ -65,6 +65,19 @@ describe("어둠 속 눈 (공통 규칙 27)", () => {
     const lit = { ...night, characters: { ...night.characters, [night.playerId]: { ...night.characters[night.playerId]!, inventory: { flashlight: 1 } } } };
     expect(scavengeParts(ctx(lit)).find((p) => p.label === "어둠")).toBeUndefined();
     expect(scavengeParts(ctx({ ...night, time: at(night, "day") })).find((p) => p.label === "어둠")).toBeUndefined();
+  });
+
+  it("거점 난방(불 땐 거처) 안은 밝다 (PT45): 연료가 없으면 어둡다", () => {
+    const base = situation("night");
+    const inside = { ...base, playerZone: "a_base", playerPlace: "barracks" };
+    const fid = inside.characters[inside.playerId]!.factionId!;
+    const host = inside.factions[fid]!;
+    const withFuel = { ...inside, factions: { ...inside.factions, [fid]: { ...host, resources: { ...host.resources, fuel: 999 } } } };
+    const without = { ...inside, factions: { ...inside.factions, [fid]: { ...host, resources: { ...host.resources, fuel: 0 } } } };
+    expect(darknessOf(withFuel, content).dark).toBe(false);
+    expect(darknessOf(without, content).dark).toBe(true);
+    // 바깥은 난방과 상관없이 어둡다
+    expect(darknessOf({ ...withFuel, playerPlace: "yard_gate" }, content).dark).toBe(true);
   });
 
   it("두 트레잇은 함께 고르지 못한다", () => {

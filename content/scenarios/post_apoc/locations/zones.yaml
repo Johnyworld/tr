@@ -224,8 +224,9 @@
   kind: zone
   # 구역 안의 장소 (12-244, 장소 개편 docs/places-v2-zones.md). near: 이웃(한쪽만 적어도 양쪽), road: 구역에 들어오면 도착하는 길(to: 이어지는 구역), gate: 담을 지나 처음 닿는 곳
   places:
-    - { id: alleys, name: "시장 골목", indoor: false, map: { x: 68, y: 42 }, kinds: [street], description: "좌판 뼈대만 남은 시장 골목. 길이 좁고 굽는다", aliases: ["골목", "시장"], near: [shops, boiler_room] }
+    - { id: alleys, name: "시장 골목", indoor: false, map: { x: 68, y: 42 }, kinds: [street], description: "좌판 뼈대만 남은 시장 골목. 길이 좁고 굽는다", aliases: ["골목", "시장"], near: [shops, boiler_room, electronics_shop] }
     - { id: shops, name: "상가·약국 안", indoor: true, map: { x: 80, y: 22 }, kinds: [ruin], description: "셔터가 반쯤 내려간 상가와 약국. 유리 조각이 바닥에 깔렸다", aliases: ["상가", "약국"], near: [basement, shop_roof] }
+    - { id: electronics_shop, name: "전파상", indoor: true, map: { x: 68, y: 62 }, kinds: [ruin], description: "라디오와 손전등을 팔던 작은 전자제품 가게. 진열대는 비었지만 서랍과 계산대 밑에 쓸 만한 것이 남았을지 모른다", aliases: ["전자제품 가게", "전자상가", "가전 가게"], near: [alleys, crossroads] }
     - { id: boiler_room, name: "목욕탕 보일러실", indoor: true, map: { x: 58, y: 22 }, kinds: [ruin], description: "옛 목욕탕 지하 보일러실. 아직 온기가 조금 남는다", aliases: ["보일러실", "목욕탕"] }
     - { id: basement, name: "상가 지하", indoor: true, map: { x: 92, y: 10 }, kinds: [ruin], description: "상가 지하. 천장이 낮고 썩은 물 냄새가 난다", aliases: ["지하"] }
     - { id: to_east, name: "차고지·붉은 다리·고가 가는 길", indoor: false, map: { x: 96, y: 42 }, description: "동쪽으로 뻗은 큰길. 버려진 차를 밀어 길을 냈다", near: [crossroads, alleys], road: true, to: [bus_depot, red_bridge, overpass] }
@@ -246,6 +247,7 @@
   loot:
     modifier: 1
     items:
+      - { item: flashlight, weight: 2, qty: [1, 1] }
       - { item: shoulder_bag, weight: 0.5, qty: [1, 1] }
       - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: fire_axe, weight: 0.5, qty: [1, 1] }

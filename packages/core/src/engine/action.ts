@@ -1400,7 +1400,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   const searchBase = scopeNow ? scopeNow.minutes + searchExtra : null;
   const searchMinutes = searchBase !== null && darkNow ? darkSearchMinutes(searchBase, darkNow) : searchBase;
   if (searchExtra) lines.push(`대가 있는 성공이라 뒤지는 데 ${searchExtra}분이 더 들었다 (${scopeNow!.label}, 모두 ${searchBase}분).`);
-  if (searchBase !== null && searchMinutes !== searchBase) lines.push(`어두워서 뒤지는 데 ${searchMinutes! - searchBase}분이 더 들었다 (모두 ${searchMinutes}분).`);
+  if (searchBase !== null && searchMinutes !== searchBase) lines.push(`어두워서 뒤지는 데 ${searchMinutes! - searchBase}분이 더 들었다 (${searchBase}분 × ${darkNow!.searchTime}, 모두 ${searchMinutes}분).`);
   const time = cutShort ? advanceTime(ctx, "brief", null, forMission) : advanceTime(ctx, activity, input.activity?.until ?? null, forMission, rideUsed?.speed ?? (input.broadcast && activity === "talk" ? 3 : 1), input.move_to ?? null, exposure, inMove ? 0 : (workMinutes ?? searchMinutes), hours);
   // 배달 (F5): 임무 자리에서 임무 일을 하면 지닌 짐을 넘긴다
   if (forMission && !input.move_to) {

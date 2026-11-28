@@ -21,7 +21,7 @@ import { harmIncapacitates, incapacitatingSymptom } from "../scenario/scenario.t
 import { partyZoneAt } from "../sim/parties.ts";
 import {ownedBy, baseOfNow, hostileLand, onOwnLand } from "./home.ts";
 import { heldOf, inQuarantine, pausedWhileHeld } from "./held.ts";
-import { disposition, HOSTILE as HOSTILE_AT } from "../sim/war.ts";
+import { disposition, HOSTILE as HOSTILE_AT, neighbors } from "../sim/war.ts";
 import { isCreature } from "../game/kinds.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { routeMinutes } from "./time.ts";
@@ -339,6 +339,7 @@ export function knowsZone(state: GameState, content: Content, zone: string): boo
 /**
  * 이 인물(주인공 말고)이 훤히 아는 구역 (12-360, 튜토리얼: 구시가 상가 지하를 아는 길잡이가 바로 옆 약국을 "모른다"고 했다).
  * 사는 구역(떠돌면 도는 구역 모두), 자기 무리 땅, 카드의 "아는 것"에 이름이 나오는 구역. 그 구역의 장소는 다 안다.
+ * 직분에 길을 아는 넓이(knows_range, 수색대원 2)가 있으면 사는 구역에서 이웃 그 칸까지 (남의 무리 거점은 빼고, 12-361).
  * 사람만 (동물은 길을 일러 주지 않는다)
  */
 export function npcKnownZones(state: GameState, content: Content, id: string): string[] {
@@ -350,6 +351,17 @@ export function npcKnownZones(state: GameState, content: Content, id: string): s
   for (const z of npc?.roams ?? []) zones.add(z);
   if (c.extra?.zone) zones.add(c.extra.zone);
   if (c.factionId) for (const z of Object.keys(state.zones)) if (ownedBy(state, z, c.factionId)) zones.add(z);
+  // 길을 아는 넓이 (12-361, 수색대원): 사는 구역에서 이웃 몇 칸까지. 남의 무리 거점은 담 안을 모르니 뺀다
+  const range = content.scenario.occupations.find((o) => o.id === c.occupation?.id)?.knows_range ?? 0;
+  if (range > 0) {
+    const homes = [...new Set([npc?.zone, ...(npc?.roams ?? []), c.extra?.zone].filter((z): z is string => !!z))];
+    const seen = new Set(homes);
+    let front = homes;
+    for (let i = 0; i < range; i++) {
+      front = front.flatMap((z) => neighbors(content, z)).filter((z) => !seen.has(z) && (seen.add(z), true));
+    }
+    for (const z of seen) if (content.locations[z]?.kind !== "base" || homes.includes(z) || ownedBy(state, z, c.factionId)) zones.add(z);
+  }
   for (const fact of npc?.knows ?? []) {
     for (const [z, loc] of Object.entries(content.locations)) if (loc.name && fact.includes(loc.name)) zones.add(z);
   }

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createSeededRng } from "../rng.ts";
 import { knowsPlace, npcKnownZones, npcKnowsPlace, npcPlaceGuide, placesIn } from "./place.ts";
 import { isCreature } from "../game/kinds.ts";
+import { neighbors } from "../sim/war.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 
@@ -69,5 +70,34 @@ describe("인물이 아는 곳 (12-360)", () => {
     w.runCheat(`~summon ${s.characters[stranger!]!.name}`);
     expect(w.sceneForGm()).toContain("구시가를 잘 모른다");
     expect(npcPlaceGuide(w.state(), content, stranger!)!.knows).toBe(false);
+  });
+
+  it("수색대원은 사는 구역에서 이웃 2칸까지 알고, 그 안의 남의 무리 거점은 모른다 (12-361)", () => {
+    const w = inOldTown();
+    const s = w.state();
+    const scouts = Object.entries(content.npcs).filter(([id, n]) => n.occupation === "scavenger" && n.zone && s.characters[id]);
+    expect(scouts.length).toBeGreaterThan(10);
+    for (const [id, n] of scouts) {
+      const zones = npcKnownZones(s, content, id);
+      for (const z of neighbors(content, n.zone!)) if (content.locations[z]?.kind !== "base") expect(zones, `${id} ${z}`).toContain(z);
+      for (const z of zones) {
+        if (content.locations[z]?.kind !== "base" || z === n.zone) continue;
+        const own = s.zones[z]?.owner === s.characters[id]!.factionId;
+        const told = n.knows.some((f) => f.includes(content.locations[z]!.name));
+        expect(own || told, `${id}: 남의 거점 ${z}`).toBe(true);
+      }
+    }
+    // 청솔 거점 수색대원은 '아는 것'이 없어도 차고지 너머 구시가를 안다
+    const aScout = scouts.find(([, n]) => n.zone === "a_base" && !n.knows.some((f) => f.includes("구시가")));
+    expect(aScout).toBeDefined();
+    expect(npcKnownZones(s, content, aScout![0])).toContain("old_town");
+  });
+
+  it("길을 아는 넓이가 없는 직분은 사는 구역·무리 땅·'아는 것'만 안다", () => {
+    const w = inOldTown();
+    const s = w.state();
+    const cook = Object.entries(content.npcs).find(([id, n]) => n.occupation === "cook" && n.zone && s.characters[id] && !n.knows.some((f) => f.includes("구시가")) && s.zones.old_town?.owner !== s.characters[id]!.factionId);
+    expect(cook).toBeDefined();
+    expect(npcKnownZones(s, content, cook![0])).not.toContain("old_town");
   });
 });

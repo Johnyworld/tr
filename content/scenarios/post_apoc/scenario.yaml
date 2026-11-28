@@ -1051,6 +1051,8 @@ occupations:
     summary: 담 밖으로 나가는 사람. 폐허를 뒤지고, 길을 살피고, 싸움이 나면 총을 든다. 무리의 시나리오 임무와 이야기를 그대로 받는다
     skills: [shoot, scavenge]
     kit: [flashlight, crowbar]
+    # 길을 아는 넓이: 사는 구역에서 이웃 2칸까지, 남의 거점 빼고 (12-361)
+    knows_range: 2
     missions: [occ_scavenger_sweep, occ_scavenger_mark_route, occ_scavenger_medicine, occ_scavenger_haul, occ_scavenger_war_traces]
   - id: guard
     label: 수비대원

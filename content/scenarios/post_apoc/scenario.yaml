@@ -1596,19 +1596,6 @@ shops:
           - { item: matchbox, weight: 1.5, qty: [1, 2] }
           - { item: water_bottle, weight: 2, qty: [1, 1] }
           - { item: soju, weight: 1, qty: [1, 1] }
-    clothes:
-      name: 옷가게
-      loot:
-        modifier: -1
-        items:
-          - { item: spare_clothes, weight: 3, qty: [1, 2] }
-          - { item: coat, weight: 1, qty: [1, 1] }
-          - { item: raincoat, weight: 1, qty: [1, 1] }
-          - { item: wool_hat, weight: 1.5, qty: [1, 1] }
-          - { item: work_gloves, weight: 1.5, qty: [1, 1] }
-          - { item: umbrella, weight: 1, qty: [1, 1] }
-          - { item: leather_jacket, weight: 0.5, qty: [1, 1] }
-          - { item: cloth, weight: 1.5, qty: [1, 2] }
     electronics:
       name: 전파상
       loot:
@@ -1858,7 +1845,6 @@ needs:
   - { id: lure, label: "소리로 꾀어내기" }
   - { id: shelter, label: "바깥에서 비 가리고 쉬기" }
   - { id: purify, label: "물 거르기", consume: true }
-  - { id: change, label: "젖은 옷 갈아입기 (바깥에서)", consume: true }
 
 # 꾀어내기 (12-357, take_action.lure): 호루라기를 불면 이 구역에 소음 1, 같은 턴에 그 상대를 몰래 지나가거나 치는 판정 +1. 없으면 소리쳐 소음 2, 보정 없음
 lure: { need: lure, moves: [stealth, fight, shoot], bonus: 1, noise: 1, shout_noise: 2 }

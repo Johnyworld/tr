@@ -321,17 +321,13 @@ export function clothesHere(content: Content, state: GameState): boolean {
 export function changeClothes(ctx: ToolContext): { ok: true; lines: string[]; displays: ToolDisplayEvent[] } | { ok: false; error: string } {
   const state = ctx.store.getState();
   if (!climateOf(ctx.content)?.wet) return { ok: false, error: "이 월드에는 젖은 옷 규칙이 없다." };
-  // 갈아입을 옷이 있는 곳이 아니어도 여벌 옷(필수품 change, 공통 규칙 25)을 지니면 주인공은 갈아입는다. 한 번 쓰면 없어진다. 곁의 사람은 곳에서만
-  const home = clothesHere(ctx.content, state);
-  const spare = home ? null : needItem(ctx.content, state, state.playerId, "change");
-  if (!home && !spare) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 우리 무리나 가족이 사는 곳, 옷이 남은 곳에서만. 여벌 옷을 지니면 바깥에서도 된다)." };
+  if (!clothesHere(ctx.content, state)) return { ok: false, error: "여기에는 갈아입을 옷이 없다 (우리 무리의 거점, 내 거처, 우리 무리나 가족이 사는 곳, 옷이 남은 곳에서만)." };
   if (rainingOnMe(ctx.content, state) && !wearsWaterproof(ctx, state.playerId)) return { ok: false, error: "비를 맞는 바깥이라 갈아입어도 곧 젖는다. 지붕 아래 장소(place_to)로 옮겨 갈아입는다." };
   // 끌고 다니는 포로는 빼고 (묶인 사람의 옷까지 갈아입히지 않는다)
-  const who = (spare ? [state.playerId] : [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]) && state.bonds?.[id]?.kind !== "prisoner")]).filter((id) => (state.wet?.[id] ?? 0) > 0);
+  const who = [state.playerId, ...activeCompanions(state).filter((id) => !isCreature(ctx.content, state.characters[id]) && state.bonds?.[id]?.kind !== "prisoner")].filter((id) => (state.wet?.[id] ?? 0) > 0);
   if (!who.length) return { ok: false, error: "젖은 옷을 입은 사람이 없다." };
   const displays = who.map((id) => dryOff(ctx, id, playerCalls(state, ctx.content, id), "마른 옷으로 갈아입었다"));
-  const used = spare ? useNeedItem(ctx, state.playerId, "change", spare) : [];
-  return { ok: true, lines: [`${who.map((id) => playerCalls(state, ctx.content, id)).join(", ")}: 마른 옷으로 갈아입었다${spare ? ` (${ctx.content.items[spare]?.name ?? spare}을 한 벌 썼다)` : ""}.`, ...used], displays };
+  return { ok: true, lines: [`${who.map((id) => playerCalls(state, ctx.content, id)).join(", ")}: 마른 옷으로 갈아입었다.`], displays };
 }
 
 /**

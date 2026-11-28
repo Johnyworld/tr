@@ -232,7 +232,7 @@
     - { id: to_west, name: "병원·약국 골목·아파트 뒷길 가는 길", indoor: false, map: { x: 4, y: 62 }, description: "서쪽 큰길. 무너진 간판이 길을 반쯤 막았다", near: [crossroads, theater], road: true, to: [hospital_ruins, pharmacy_alley, apt_backroad] }
     - { id: hill_steps, name: "성당 가는 언덕 계단", indoor: false, map: { x: 40, y: 4 }, description: "언덕 위 성당으로 오르는 돌계단. 꼭대기에 종탑이 보인다", near: [crossroads, vacant_lot], road: true, to: [cathedral] }
     - { id: subway_entrance, name: "지하철 입구", indoor: false, map: { x: 68, y: 94 }, description: "셔터가 뜯긴 지하철 입구. 계단 아래로 찬 바람이 올라온다", near: [crossroads], road: true, to: [subway_hub] }
-    - { id: crossroads, name: "시장 앞 네거리", indoor: false, map: { x: 48, y: 55 }, kinds: [street], description: "뒤집힌 버스가 가로누운 네거리. 사방이 트여 몸이 드러난다", aliases: ["네거리"], near: [alleys], shops: { clothes: 1, hardware: 1, general: 1 } }
+    - { id: crossroads, name: "시장 앞 네거리", indoor: false, map: { x: 48, y: 55 }, kinds: [street], description: "뒤집힌 버스가 가로누운 네거리. 사방이 트여 몸이 드러난다", aliases: ["네거리"], near: [alleys], shops: { hardware: 1, general: 1 } }
     - { id: theater, name: "옛 극장", indoor: true, map: { x: 20, y: 82 }, kinds: [ruin], description: "간판이 떨어진 옛 극장. 객석 의자를 뜯어 가 바닥이 휑하고 영사실 창이 어둡다", aliases: ["극장", "영사실"], near: [to_west] }
     - { id: vacant_lot, name: "빨래방 옆 공터", indoor: false, map: { x: 30, y: 30 }, kinds: [yard], description: "무너진 빨래방 옆 공터. 누가 빨랫줄을 새로 걸어 두었고, 불 피운 자국이 둥글게 남았다", aliases: ["공터", "빨랫줄"], near: [hill_steps] }
     - { id: shop_roof, name: "상가 옥상", indoor: false, map: { x: 88, y: 30 }, kinds: [watch], description: "상가 건물 옥상. 물탱크 뒤에 앉으면 네거리와 큰길이 한눈에 내려다보인다", aliases: ["옥상"], near: [shops] }
@@ -249,6 +249,9 @@
       - { item: fishing_kit, weight: 0.5, qty: [1, 1] }
       - { item: fire_axe, weight: 0.5, qty: [1, 1] }
       - { item: hatchet, weight: 0.5, qty: [1, 1] }
+      - { item: umbrella, weight: 0.5, qty: [1, 1] }
+      - { item: raincoat, weight: 0.5, qty: [1, 1] }
+      - { item: wool_hat, weight: 0.5, qty: [1, 1] }
       - { item: firewood, weight: 2, qty: [1, 2] }
       - { item: mushroom, weight: 1, qty: [1, 1] }
       - { item: canned_food, weight: 3, qty: [1, 2] }

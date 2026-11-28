@@ -205,22 +205,6 @@ describe("기온", () => {
     expect(store.getState().wet[me().id]).toBeUndefined();
   });
 
-  it("여벌 옷이 있으면 바깥에서도 갈아입는다: 한 벌을 쓰고, 곁의 사람은 곳에서만 (12-367)", () => {
-    const { store, ctx, me } = setup({ quiet: true });
-    store.getState().playerZone = "overpass";
-    store.append({ type: "wet_set", characterId: me().id, left: 120, cause: "test" });
-    store.append({ type: "item_granted", to: me().id, itemId: "spare_clothes", quantity: 1 });
-    const act = { intent: "갈아입는다", check: null, activity: null, deed: null, target: null, narration_summary: null, for_mission: false, change_clothes: true };
-    const yes = executeTool("take_action", act, ctx);
-    expect(yes.ok && yes.resultText).toContain("갈아입었다");
-    expect(store.getState().wet[me().id]).toBeUndefined();
-    expect(me().inventory.spare_clothes ?? 0).toBe(0);
-    // 다시 젖으면 갈아입을 옷이 없다
-    store.append({ type: "wet_set", characterId: me().id, left: 120, cause: "test" });
-    const no = executeTool("take_action", act, ctx);
-    expect(no.ok && no.resultText).toContain("갈아입지 못했다");
-  });
-
   it("이야기에서 물에 빠지면 젖는다 (soak)", () => {
     const { store, ctx, me } = setup({ quiet: true });
     const base = content.storylets.wg_gunshot_wave!;

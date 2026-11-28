@@ -11,6 +11,7 @@ import type { Content } from "../content/schemas.ts";
 import type { GameState } from "../game/state.ts";
 import type { ToolContext } from "../engine/toolkit.ts";
 import { currentPlace, nextPlaceId, placesIn } from "./place.ts";
+import { josa } from "../text.ts";
 import { dayOf } from "./time.ts";
 
 export type ShopLoot = { modifier: number; items: { item: string; weight: number; qty: [number, number] }[] };
@@ -40,18 +41,23 @@ export function shopsLeft(state: GameState, content: Content): Record<string, nu
   return out;
 }
 
+/** 가게 찾기의 같은 날 다시 뒤지기를 세는 자리: 길@장소#가게 종류 (물건 뒤지기와 따로, 종류마다 따로) */
+export function shopSearchSpot(spot: string, kind: string): string {
+  return `${spot}#shop:${kind}`;
+}
+
 /** 찾는 수색을 하기 전에 막히는 까닭 (시간이 흐르기 전). 없으면 null */
 export function shopSearchProblem(state: GameState, content: Content, kind: string): string | null {
   const def = content.scenario.shops?.kinds[kind];
   if (!def) return `target은 ${shopKindIds(content).join("/") || "없음"} 중 하나다.`;
   const here = currentPlace(state, content);
-  if (!here || here.indoor || here.shop) return `${def.name}을 찾는 수색은 바깥(길) 장소에서 한다. 지금 자리에서는 둘러봐도 가게가 따로 보이지 않는다.`;
+  if (!here || here.indoor || here.shop) return `${josa(def.name, "을/를")} 찾는 수색은 바깥(길) 장소에서 한다. 지금 자리에서는 둘러봐도 가게가 따로 보이지 않는다.`;
   const left = shopsLeft(state, content);
   if (left[kind]) return null;
   const known = Object.keys(here.shops ?? {});
   return known.includes(kind)
-    ? `이 길의 ${def.name}은 이미 다 찾았다. 다시 가려면 take_action place_to로 찾아 둔 가게로 간다.`
-    : `이 길에는 ${def.name}이 있을 만하지 않다 (둘러봐도 그런 가게는 보이지 않는다). 다른 길에서 찾는다.${Object.keys(left).length ? ` 이 길에서 찾을 수 있는 가게: ${Object.keys(left).map((k) => content.scenario.shops?.kinds[k]?.name ?? k).join(", ")}` : ""}`;
+    ? `이 길의 ${josa(def.name, "은/는")} 이미 다 찾았다. 다시 가려면 take_action place_to로 찾아 둔 가게로 간다.`
+    : `이 길에는 ${josa(def.name, "이/가")} 있을 만하지 않다 (둘러봐도 그런 가게는 보이지 않는다). 다른 길에서 찾는다.${Object.keys(left).length ? ` 이 길에서 찾을 수 있는 가게: ${Object.keys(left).map((k) => content.scenario.shops?.kinds[k]?.name ?? k).join(", ")}` : ""}`;
 }
 
 /**
@@ -65,13 +71,13 @@ export function findShop(ctx: ToolContext, kind: string, outcome: "success" | "p
   const here = currentPlace(state, content);
   const def = content.scenario.shops?.kinds[kind];
   if (!zone || !here || !def) return { lines: ["여기서는 가게를 찾을 수 없다."] };
-  store.append({ type: "zone_searched", zone: `${zone}@${here.id}`, day: dayOf(state.time), units, ...(hurt ? { hurt: true } : {}) });
+  store.append({ type: "zone_searched", zone: shopSearchSpot(`${zone}@${here.id}`, kind), day: dayOf(state.time), units, ...(hurt ? { hurt: true } : {}) });
   if (outcome !== "success" && outcome !== "partial") {
-    return { lines: [outcome === null ? `판정 없이 둘러봐서는 ${def.name}을 찾지 못했다. 제대로 찾으려면 수색 판정을 건다.` : `${def.name}을 찾지 못했다. 이 길에 있기는 하지만 아직 눈에 띄지 않았다고 서술한다 (다시 찾을 수 있다).`] };
+    return { lines: [outcome === null ? `판정 없이 둘러봐서는 ${josa(def.name, "을/를")} 찾지 못했다. 제대로 찾으려면 수색 판정을 건다.` : `${josa(def.name, "을/를")} 찾지 못했다. 이 길에 있기는 하지만 아직 눈에 띄지 않았다고 서술한다 (다시 찾을 수 있다).`] };
   }
   const already = placesIn(state, content, zone).filter((p) => p.shop === kind && p.near.includes(here.id)).length;
   const name = already > 0 ? `${def.name} (${already + 1}번째)` : def.name;
   const id = nextPlaceId(state);
   store.append({ type: "place_spawned", id, zone, name, indoor: true, owner: null, at: here.id, shop: kind });
-  return { lines: [`${name}을 찾았다 (장소 ${id}, 실내, 지금 자리의 이웃). 들어가려면 take_action place_to: "${id}", 거기서 수색하면 이 가게의 물건이 나온다. 가게 안의 물건은 지어내지 않는다 (코드가 정한다).`] };
+  return { lines: [`${josa(name, "을/를")} 찾았다 (장소 ${id}, 실내, 지금 자리의 이웃). 들어가려면 take_action place_to: "${id}", 거기서 수색하면 이 가게의 물건이 나온다. 가게 안의 물건은 지어내지 않는다 (코드가 정한다).`] };
 }

@@ -33,7 +33,7 @@ import { withoutWear } from "./gear.ts";
 import { afterAttack, applyCraft, armorAbsorb, armorBlocksInfection, carriedWeight, encumbrance, planAttack, planCraft, rangeProblem } from "./gear.ts";
 import { darknessOf, darkSearchMinutes } from "../rules/darkness.ts";
 import { scavenge, scavengeParts, searchedToday, searchScopeOf, searchUnits } from "./scavenge.ts";
-import { findShop, shopSearchProblem } from "../rules/shop.ts";
+import { findShop, shopSearchProblem, shopSearchSpot } from "../rules/shop.ts";
 import { josa, sentence } from "../text.ts";
 import { isInfected } from "../game/kinds.ts";
 import { playerCalls } from "../game/acquaintance.ts";
@@ -1001,11 +1001,11 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
           exposed,
           gathering: !!input.forage || !!input.trap,
           // 같은 칸을 같은 날 다시 뒤지는 수색은 경험치를 주지 않는다 (12-355): 한 번만
-          activity: !!input.activity && input.activity.kind !== "brief" && !(input.activity.kind === "search" && searchedToday(start, searchSpot(start) ?? start.playerZone ?? "") > 0),
+          activity: !!input.activity && input.activity.kind !== "brief" && !(input.activity.kind === "search" && searchedToday(start, input.activity.target ? shopSearchSpot(searchSpot(start) ?? start.playerZone ?? "", input.activity.target) : (searchSpot(start) ?? start.playerZone ?? "")) > 0),
         }).stake,
         // 수색할 곳의 보정은 찾을 거리를 정하는 수색 판정에만 (플레이 테스트 14: 뒤지며 굴린 생존 판정에 "+1(넉넉한 곳) +1(역사)")
         situation: [
-          ...(exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? (!scenario.exploration?.search_move || input.check.move === scenario.exploration.search_move ? scavengeParts(ctx) : []) : input.forage ? forageParts(ctx, input.forage) : []),
+          ...(exposed || inBattle || input.move_to ? [] : input.activity?.kind === "search" ? (!scenario.exploration?.search_move || input.check.move === scenario.exploration.search_move ? scavengeParts(ctx, input.activity.target) : []) : input.forage ? forageParts(ctx, input.forage) : []),
           // 방금 빗나간 상대에게 같은 스킬로 다시 하는 임무 판정은 한 단계 어렵다 (12-258, PT15 섬: 위협 실패 5분 뒤 같은 상대에게 다시 위협해 성공).
           // 맞서는 상대(opponent)에게만: 시범을 보이는 내 편 대상(target)에게는 붙지 않는다 (설계 목록 4-3, PT16·17 분대장)
           ...(forMission && !storyCheck && justMissedAgainst(start, input.check.move, input.check.opponent) ? [{ label: "방금 빗나간 상대", value: -1 }] : []),

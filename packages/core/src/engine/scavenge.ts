@@ -1,6 +1,6 @@
 import { darknessOf, darkSightMove } from "../rules/darkness.ts";
 import { searchSpot } from "../rules/place.ts";
-import { shopHere } from "../rules/shop.ts";
+import { shopHere, shopSearchSpot } from "../rules/shop.ts";
 import { ownedBy } from "../rules/home.ts";
 import { findRuin } from "./exploration.ts";
 import { effectiveSkill } from "./traits.ts";
@@ -22,12 +22,13 @@ export function searchedToday(state: ReturnType<ToolContext["store"]["getState"]
  * 수색 판정의 상황 보정 (12-220). 판정 줄에 보인다:
  * 구역의 넉넉함(loot.modifier: 털린 곳 -, 넉넉한 곳 +), 오늘 이미 뒤진 횟수만큼 -, 옛 지도·건물 용도를 아는 사람(search_lore) +
  */
-export function scavengeParts(ctx: ToolContext): Part[] {
+export function scavengeParts(ctx: ToolContext, target: string | null = null): Part[] {
   const { content } = ctx;
   const state = ctx.store.getState();
   const zone = state.playerZone;
   // 가게 안이면 그 가게 종류의 표 (공통 규칙 28)
-  const loot = shopHere(state, content)?.loot ?? (zone ? content.locations[zone]?.loot : undefined);
+  const shop = shopHere(state, content);
+  const loot = shop?.loot ?? (zone ? content.locations[zone]?.loot : undefined);
   if (!zone || !loot) return [];
   const lore = content.scenario.search_lore;
   // 어둠 (공통 규칙 27): 불빛이 없으면 눈이 나쁘다
@@ -39,9 +40,9 @@ export function scavengeParts(ctx: ToolContext): Part[] {
   const ownBase = !shopHere(state, content) && content.locations[zone]?.kind === "base" && !!me?.factionId && ownedBy(state, zone, me.factionId);
   return [
     // 판정 줄만 보고 까닭을 알게 (플레이 테스트 14: "+1(넉넉한 곳) +1(역사)"가 무슨 뜻인지 몰랐다)
-    { label: loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: ownBase ? 0 : loot.modifier },
+    { label: shop ? `${shop.name}에 남은 것` : loot.modifier > 0 ? "뒤질 거리가 많은 구역" : "털린 구역", value: ownBase ? 0 : loot.modifier },
     { label: "어둠", value: dark.penalty && darkSightMove(content, searchMove) ? -dark.penalty : 0 },
-    { label: "오늘 다시 뒤짐", value: -searchedToday(state, searchSpot(state) ?? zone) },
+    { label: "오늘 다시 뒤짐", value: -searchedToday(state, target ? shopSearchSpot(searchSpot(state) ?? zone, target) : (searchSpot(state) ?? zone)) },
     ...(lore && known ? [{ label: `${moveLabel(content.scenario, lore.skill)}: 옛 건물 쓰임을 앎`, value: lore.bonus }] : []),
   ].filter((p) => p.value !== 0);
 }

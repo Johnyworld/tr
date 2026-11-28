@@ -23,6 +23,9 @@ const spawnPlace = defineTool({
     const zone = state.playerZone;
     if (!zone) return { ok: false, error: "지금 구역이 없다." };
     if (input.owner && !state.characters[input.owner]) return { ok: false, error: `알 수 없는 인물: ${input.owner}` };
+    // 가게는 지어내지 않는다 (공통 규칙 28): 가게 종류 이름이면 찾는 수색으로 안내
+    const kind = Object.entries(ctx.content.scenario.shops?.kinds ?? {}).find(([, d]) => input.name.includes(d.name));
+    if (kind && !input.owner) return { ok: false, error: `${josa(kind[1].name, "은/는")} 지어내는 장소가 아니다. 플레이어가 찾는 것이면 바깥(길) 장소에서 take_action activity {kind: search, target: "${kind[0]}"}와 수색 판정으로 찾는다 (있을 만한 길인지·몇 곳인지는 시스템이 정한다).` };
     const same = placesIn(state, ctx.content, zone).find((p) => p.name === input.name.trim() || p.aliases.includes(input.name.trim()));
     // 주인공이 모르는 콘텐츠 장소와 이름이 같으면 id를 알려 주지 않는다 (설계 목록 C-1: 이름을 넣어 보는 우회로)
     if (same && !knowsPlace(state, ctx.content, zone, same.id)) {

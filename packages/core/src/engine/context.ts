@@ -622,7 +622,7 @@ function describePlaces(state: GameState, content: Content): string {
     const dir = here && p.id !== here.id ? directionTo(state, content, here.id, p.id) : null;
     // "· 이웃: 이름들"이 "이웃이 그 사람"으로 읽혔다 (PT20·PT21 세 판): 이웃 칸과 사람을 나눠 적는다
     const nearLine = here && here.near.includes(p.id) ? " (이웃 칸)" : "";
-    return `- ${dir ? `${dir}: ` : ""}${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? ` — 있을 사람: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
+    return `- ${dir ? `${dir}: ` : ""}${p.id} ${p.name}${wallOf(p)} (${p.indoor ? "실내" : "바깥"}${p.shop ? ", 가게" : p.spawned ? ", 즉흥" : ""}${toZones})${p.description ? ` ${p.description}` : ""}${p.id === here?.id ? " ← 지금 여기" : nearLine}${people.length ? ` — 있을 사람: ${people.map((id) => playerCalls(state, content, id)).join(", ")}` : ""}`;
   };
   const doors = unknownDoors(state, content);
   const hidden = all.length - places.length - doors.length;

@@ -7,6 +7,7 @@ import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
 import { createTakeActionSchema, takeAction } from "../engine/action.ts";
 import { placesIn } from "./place.ts";
+import { scavengeParts } from "../engine/scavenge.ts";
 import { shopHere, shopsLeft } from "./shop.ts";
 
 /** 공통 규칙 28: 가게 (12-367). 실제 콘텐츠로 본다 */
@@ -81,5 +82,21 @@ describe("가게 찾기 (공통 규칙 28)", () => {
     const got = Object.keys(after).filter((k) => (after[k] ?? 0) > (before[k] ?? 0));
     expect(got.length).toBeGreaterThan(0);
     for (const k of got) expect(table.has(k)).toBe(true);
+  });
+
+  it("가게 찾기의 다시 뒤짐은 종류마다 따로 센다 (PT46)", () => {
+    const w = world();
+    for (let i = 0; i < 3; i++) takeAction(search("electronics"), lose(w));
+    const penalty = (target: string | null) => Math.abs(scavengeParts(w.ctx(), target).find((p) => p.label === "오늘 다시 뒤짐")?.value ?? 0);
+    expect(penalty("electronics")).toBeGreaterThanOrEqual(3);
+    expect(penalty("pharmacy")).toBe(0);
+    expect(penalty(null)).toBe(0);
+  });
+
+  it("GM이 가게를 spawn_place로 지어내면 찾는 수색으로 안내한다", () => {
+    const w = world();
+    const r = w.executeTool("spawn_place", { name: "작은 약국", indoor: true, owner: null });
+    expect(JSON.stringify(r)).toContain("target");
+    expect(placesIn(w.state(), content, "old_town").some((p) => p.name === "작은 약국")).toBe(false);
   });
 });

@@ -3,12 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkNpcRoutines } from "../content/loader.ts";
-import { darkHere, needsLight, storyPlaceFits, storyPlaces } from "../rules/place.ts";
+import { darkHere, storyPlaceFits, storyPlaces } from "../rules/place.ts";
 import { segmentOf } from "../rules/time.ts";
 import type { GameState } from "../game/state.ts";
 import { loadRealContent } from "../testing.ts";
 import { WorldManager } from "../world/manager.ts";
-import { gearModifiers } from "./gear.ts";
 
 /** 구역·장소 설계 ① 장소 맞추기 (12-270): 이야기의 실내외·별칭, 일과 검사, 어둠·손전등. 실제 콘텐츠로 본다 */
 const content = loadRealContent();
@@ -59,14 +58,4 @@ describe("장소 맞추기 (12-270)", () => {
     expect(darkHere({ ...inside, playerPlace: "yard_gate", fires: { "a_base@yard_gate": night + 600 } }, content, segments)).toBe(true);
   });
 
-  it("손전등은 어둡거나 지붕 아래일 때만 수색을 거든다", () => {
-    const base = make().state();
-    const me = { ...base.characters[base.playerId]!, inventory: { flashlight: 1 } };
-    const day = at(base, "day");
-    const outsideDay = { ...base, playerZone: "a_base", playerPlace: "yard_gate", time: day };
-    expect(needsLight(outsideDay, content)).toBe(false);
-    expect(gearModifiers(content, me, "scavenge", null, outsideDay).skill).toBe(0);
-    expect(gearModifiers(content, me, "scavenge", null, { ...outsideDay, playerPlace: "storehouse" }).skill).toBe(1);
-    expect(gearModifiers(content, me, "scavenge", null, { ...outsideDay, time: at(base, "night") }).skill).toBe(1);
-  });
 });

@@ -200,11 +200,11 @@
 - id: flashlight
   name: 손전등
   icon: light
-  description: 손으로 돌려 충전하는 손전등. 어두운 데를 뒤질 때 좋지만 빛은 감염체를 부른다.
+  description: 손으로 돌려 충전하는 손전등. 어두워도 뒤질 수 있지만, 켜고 있으면 멀리서도 보이고 빛은 감염체를 부른다.
   kind: tool
   weight: 0.4
   value: 6
-  tool: { bonus: { scavenge: 1 }, only: { dark: true } }
+  tool: { light: true }
 - id: fishing_kit
   name: 낚시 도구
   description: 낚싯줄과 바늘 몇 개, 접는 낚싯대. 물가에서 고기를 낚으려면 있어야 한다.

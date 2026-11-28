@@ -1,4 +1,5 @@
 import { startPartyFight } from "./partyTools.ts";
+import { darknessOf } from "../rules/darkness.ts";
 import { traitSight } from "./traits.ts";
 import type { Content } from "../content/schemas.ts";
 import type { GameState, Party } from "../game/state.ts";
@@ -146,10 +147,12 @@ export function rollPartySight(state: GameState, content: Content, rng: Rng, par
   const cover = content.locations[zone]?.cover ?? 0;
   const night = isNight(at);
   const partyHidden: Concealment = { hiding: hidingAt(party, at), night, cover };
-  const meHidden: Concealment = { hiding: !!state.ambush, night, cover };
+  // 어둠 속 눈 (공통 규칙 27): 불빛이 없으면 잘 못 보고, 불빛을 켰으면 밤의 가림을 못 받는다
+  const dark = darknessOf(state, content, at);
+  const meHidden: Concealment = { hiding: !!state.ambush, night: night && !dark.glare, cover };
   // 잠든 사람은 보지 못한다. 불침번은 그 사람의 눈으로 본다 (보정 없음)
   const myBonus = opts.asleep ? (opts.watched ? 0 : null) : personNoticeBonus(content, me);
-  const seen = sightings(rng, { bonus: (myBonus ?? -99) + dist.mine, hidden: meHidden }, { bonus: partyNoticeBonus(party.kind) + dist.theirs, hidden: partyHidden });
+  const seen = sightings(rng, { bonus: (myBonus ?? -99) - dark.penalty + dist.mine, hidden: meHidden }, { bonus: partyNoticeBonus(party.kind) + dist.theirs, hidden: partyHidden });
   // 보초를 서는 사람은 보이는 거리에 든 무리를 놓치지 않는다 (PT35 졸병·PT34 분대장: 보초 중 공세 부대가 들어서도 끝날 때야 알았다)
   const player = myBonus !== null && (seen.aSees || !!opts.guarding);
   const partySaw = seen.bSees;

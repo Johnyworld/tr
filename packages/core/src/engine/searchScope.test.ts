@@ -18,6 +18,8 @@ function world() {
   const m = new WorldManager({ savesDir: mkdtempSync(join(tmpdir(), "trpg-search-")), content, rngFactory: () => createSeededRng(3) });
   const w = m.create("mcp", "role_t_visitor", choice);
   w.runCheat("~goto bus_depot");
+  // 게임은 밤에 시작한다: 어둠 속 눈(공통 규칙 27)이 시간을 늘리지 않게 낮으로
+  w.runCheat("~time morning");
   return w;
 }
 
@@ -44,6 +46,27 @@ describe("수색 범위", () => {
     const t0 = w.state().time;
     expect(w.executeTool("take_action", search(null)).ok).toBe(true);
     expect(w.state().time - t0).toBe(15);
+  });
+
+  it("어두우면 수색이 오래 걸린다 (공통 규칙 27): 손전등·어둠에 익숙함이면 그대로, 야맹증은 두 배", () => {
+    const minutes = (setup: (w: ReturnType<typeof world>) => void) => {
+      const w = world();
+      w.runCheat("~time night");
+      w.state().scene.present = []; // 밤에 막 나타난 감염체는 이 시험과 상관없다
+      setup(w);
+      const t0 = w.state().time;
+      const r = w.executeTool("take_action", search("room"));
+      expect(JSON.stringify(r)).toContain('"ok":true');
+      return w.state().time - t0;
+    };
+    const give = (w: ReturnType<typeof world>, patch: { traits?: string[]; inventory?: Record<string, number> }) => {
+      const me = w.state().characters[w.state().playerId]!;
+      Object.assign(me, patch);
+    };
+    expect(minutes(() => {})).toBe(25);
+    expect(minutes((w) => give(w, { inventory: { flashlight: 1 } }))).toBe(15);
+    expect(minutes((w) => give(w, { traits: ["dark_adapted"] }))).toBe(15);
+    expect(minutes((w) => give(w, { traits: ["night_blind"] }))).toBe(30);
   });
 
   it("찾는 수는 범위 안에서 굴리고, 대가 있는 성공은 최소 1, 실패는 0", () => {

@@ -1,7 +1,6 @@
 import { stakesOf } from "../rules/stakes.ts";
 import { sagaMarketFactor } from "../rules/saga.ts";
 import { heldOf } from "../rules/held.ts";
-import { needsLight } from "../rules/place.ts";
 import { animalCarry } from "../game/companions.ts";
 import { effectiveSkill, traitsOf } from "./traits.ts";
 import { marketValue } from "./market.ts";
@@ -123,8 +122,7 @@ export function gearModifiers(content: Content, c: Character, move: string, dist
   for (const [id, q] of Object.entries(state ? withBags(state, c).inventory : c.inventory)) {
     const tool = content.items[id]?.tool;
     const only = tool?.only;
-    // only.dark: 어둡거나 지붕 아래일 때만 (손전등, 공통 규칙 15 needsLight, B①)
-    const situated = !only || (!!distance && !!only.distances?.includes(distance)) || (!!tools.activity && !!only.activities?.includes(tools.activity)) || (!!only.dark && !!state && needsLight(state, content));
+    const situated = !only || (!!distance && !!only.distances?.includes(distance)) || (!!tools.activity && !!only.activities?.includes(tools.activity));
     const chosen = tools.item === undefined || tools.item === id;
     const fits = (!tool?.forage || (!!forageKind && tool.forage.includes(forageKind))) && situated && chosen;
     const b = q > 0 && fits ? (tool?.bonus[move] ?? 0) : 0;

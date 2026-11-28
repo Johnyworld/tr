@@ -79,10 +79,11 @@ export const itemContentSchema = z.strictObject({
   /** only: 이 거리(check.distance)나 활동일 때만 보정 (플레이 테스트 12: 쌍안경이 총구를 피해 뛰는 판정에도 +1) */
   tool: z
     .strictObject({
-      bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)),
+      bonus: z.record(contentIdSchema, z.number().int().min(1).max(2)).default({}),
       forage: z.array(contentIdSchema).optional(),
-      /** dark: 어둡거나(opposition.dark 시간대, 불 켠 실내 빼고) 지붕 아래일 때만 (손전등, B①) */
-      only: z.strictObject({ distances: z.array(z.string()).optional(), activities: z.array(z.string()).optional(), dark: z.boolean().optional() }).optional(),
+      only: z.strictObject({ distances: z.array(z.string()).optional(), activities: z.array(z.string()).optional() }).optional(),
+      /** 불빛 (공통 규칙 27, 손전등): 지니고 있으면 어둠의 감점을 지우고, 그 대신 남의 눈에 띈다 */
+      light: z.boolean().optional(),
     })
     .optional(),
   /** 몇 번 닳으면 망가지는지, 망가지면 남는 것 */

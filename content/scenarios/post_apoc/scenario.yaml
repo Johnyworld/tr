@@ -79,7 +79,8 @@ opposition:
   # 장면에 지켜보는 눈(동행 빼고)이 3·6을 넘을 때마다 -1
   crowd: { moves: [stealth, deceive], at: [3, 6] }
   # 밤이나 새벽이면 숨기 +1, 안개·비처럼 잘 안 보이는 날씨(visibility 0.7 아래)도 +1
-  dark: { moves: [stealth], segments: [night, dawn], value: 1 }
+  # 어둠 속 눈 (공통 규칙 27, *임시* 수치): 어두우면 수색·부대 알아채기 -1, 수색 시간 ×1.5. 손전등(tool.light)이 지우지만 남의 눈에 띈다
+  dark: { moves: [stealth], segments: [night, dawn], value: 1, sight: { moves: [scavenge], penalty: 1, search_time: 1.5 } }
   visibility: { moves: [stealth], below: 0.7, value: 1 }
   # 다칠 때 상대의 근접전·사격 점수가 3 이상이면 한 단계 더, 0 이하면 한 단계 덜 (적어도 1단계)
   # 상대가 무거운 피해를 낼 무기(엽총·소총·마체테 등, 탄약이 있으면)를 지녔으면 +1. 합쳐서 -1 ~ +1 (12-121)
@@ -582,6 +583,8 @@ traits:
   - { id: steel_nerves, label: 강심장, kind: positive, cost: 1, description: 공포가 덜 오른다, acting: 위험 앞에서도 목소리가 흔들리지 않는다, opposites: [coward], effects: { fear: -1 } }
   - { id: beautiful, label: 아름다운 외모, kind: positive, cost: 2, visible: true, description: "첫인상이 좋다 (외모 +2). 이성에게 끌리는 사람은 더 끌리고, 같은 성별은 질투할 수 있다", opposites: [attractive, ugly], effects: { looks: 2 } }
   - { id: attractive, label: 호감형 외모, kind: positive, cost: 1, visible: true, description: 첫인상이 좋다 (외모 +1), opposites: [beautiful, ugly], effects: { looks: 1 } }
+  # 어둠 속 눈 (공통 규칙 27): 어둠에 익숙하면 어둠의 감점도 손전등의 눈에 띔도 없다
+  - { id: dark_adapted, label: 어둠에 익숙함, kind: positive, cost: 2, description: "어둠에서도 잘 본다 (밤 수색·알아채기 감점 없음, 손전등 없이도 된다)", acting: 불빛 없는 곳에서도 걸음이 막힘없고 눈이 먼저 어둠에 적응한다, opposites: [night_blind], effects: { dark: { adapted: true } } }
   # ── 부정 ──
   - { id: slow_learner, label: 느린 학습, kind: negative, cost: 2, description: 경험치 0.6배, opposites: [quick_learner], effects: { xp: 0.6 } }
   - { id: slow_healer, label: 더디게 낫는 체질, kind: negative, cost: 1, description: 저절로 낫는 데 하루 더 걸린다, opposites: [fast_healer], effects: { recovery_days: 1 } }
@@ -593,6 +596,8 @@ traits:
   - { id: conspicuous, label: 눈에 띄는 사람, kind: negative, cost: 1, visible: true, description: 하는 일이 잘 들킨다, opposites: [shadow], effects: { noticed: 1.3 } }
   - { id: bad_liar, label: 서툰 거짓말, kind: negative, cost: 1, description: 거짓말 -1, acting: 거짓말을 하면 눈을 피하고 말이 꼬인다, opposites: [silver_tongue], effects: { skills: { deceive: -1 } } }
   - { id: coward, label: 겁쟁이, kind: negative, cost: 1, description: 공포가 더 오른다, acting: 위험 앞에서 망설이고 먼저 몸을 뺀다, opposites: [steel_nerves], effects: { fear: 1 } }
+  # 야맹증 (공통 규칙 27): 어둠의 감점 -2, 수색 시간 ×2. 손전등이 있으면 보통 사람과 같다
+  - { id: night_blind, label: 야맹증, kind: negative, cost: 1, description: "어두우면 잘 못 본다 (밤 수색·알아채기 -2, 수색 시간 2배). 손전등이 꼭 있어야 한다", acting: 해가 지면 손으로 더듬어 걷고 손전등을 놓지 못한다, opposites: [dark_adapted], effects: { dark: { penalty: 2, search_time: 2 } } }
   # 공포증 (12-103): 그것이 나오는 장면이면 공포가 한 단계 더 오른다 (보통 사람에게 무섭지 않은 장면이어도). 겪을수록 둔감해진다
   - { id: nyctophobia, label: 어둠 공포, kind: negative, cost: 2, description: "어둠이 무섭다 (밤에는 겁이 더 난다)", acting: 불빛 없는 곳에서는 말이 빨라지고 손전등을 놓지 않는다, effects: { phobia: [dark] } }
   - { id: claustrophobia, label: 폐소 공포, kind: negative, cost: 2, description: "좁고 갇힌 곳이 무섭다 (지하·터널에서 겁이 난다)", acting: 지하로 내려가면 숨이 가빠지고 출구 쪽을 자꾸 돌아본다, effects: { phobia: [enclosed] } }

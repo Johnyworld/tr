@@ -19,6 +19,7 @@ describe("수색 판정의 상황 보정 (12-220)", () => {
     const poor = Object.values(content.locations).find((l) => l.loot && l.loot.modifier < 0)!;
     const w = world(() => 0.5);
     w.store.getState().playerZone = poor.id;
+    w.store.getState().time = 9 * 60; // 낮: 어둠 속 눈(공통 규칙 27)이 붙지 않게
     w.me().skills.history = -1;
     expect(scavengeParts(w.ctx)).toEqual([{ label: "털린 구역", value: poor.loot!.modifier }]);
     const day = Math.floor(w.store.getState().time / 1440) + 1;

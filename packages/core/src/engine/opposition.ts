@@ -4,6 +4,7 @@ import type { Content } from "../content/schemas.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import type { Character } from "../game/character.ts";
 import type { GameState } from "../game/state.ts";
+import { darknessOf } from "../rules/darkness.ts";
 import { darkHere, peopleHere } from "../rules/place.ts";
 import { ableNow, fightingAllies } from "../rules/company.ts";
 import { weatherNow } from "../sim/weather.ts";
@@ -76,7 +77,8 @@ export function oppositionParts(content: Content, state: GameState, moveId: stri
     if (value) parts.push({ label, value });
   }
   // 불 켠 지붕 아래는 어둡지 않다 (공통 규칙 15 darkHere, B①)
-  if (r.dark?.moves.includes(moveId) && darkHere(state, content, r.dark.segments)) parts.push({ label: "어둠", value: r.dark.value });
+  // 불빛을 켠 사람은 어둠에 숨지 못한다 (공통 규칙 27)
+  if (r.dark?.moves.includes(moveId) && darkHere(state, content, r.dark.segments) && !darknessOf(state, content).glare) parts.push({ label: "어둠", value: r.dark.value });
   if (r.visibility?.moves.includes(moveId)) {
     const weather = weatherNow(content.scenario, state);
     if (weather && weather.visibility < r.visibility.below) parts.push({ label: weather.label, value: r.visibility.value });

@@ -861,18 +861,9 @@ export function shelterAt(content: Content, state: GameState, activity: string, 
  * 어두운가 (B① 2026-11-23, PT19: 불 땐 숙소 안 새벽에도 "어둠 +1"): 어두운 시간대(segments)이고, 불이 타는 지붕 아래가 아니면.
  * 숨기의 어둠 보정(opposition.dark)과 어둠 공포(fear.dark)가 이것으로 본다
  */
-export function darkHere(state: GameState, content: Content, segments: readonly TimeSegment[]): boolean {
-  if (!segments.includes(segmentOf(state.time))) return false;
+export function darkHere(state: GameState, content: Content, segments: readonly TimeSegment[], at: number = state.time): boolean {
+  if (!segments.includes(segmentOf(at))) return false;
   return !(shelterAt(content, state, "rest").indoor && fireLitHere(state));
-}
-
-/**
- * 불빛이 쓸모 있는가 (B①, PT19: 한낮 바깥 수색에도 손전등 +1): 어둡거나 지붕 아래. 도구의 only.dark가 이것으로 본다.
- * 어두운 시간대는 시나리오의 opposition.dark
- */
-export function needsLight(state: GameState, content: Content): boolean {
-  const segments = content.scenario.opposition?.dark?.segments ?? [];
-  return darkHere(state, content, segments) || shelterAt(content, state, "rest").indoor;
 }
 
 /**

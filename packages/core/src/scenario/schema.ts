@@ -237,6 +237,11 @@ export const scenarioFileSchema = z
               fear: z.number().int().optional(),
               /** 공포증 (12-103): 계기에 이 태그가 있으면 공포가 한 단계 더 오른다 (그 계기가 보통 사람에게 무섭지 않아도). dark는 어둠 시간대 전부 */
               phobia: z.array(id).optional(),
+              /**
+               * 어둠 속 눈 (공통 규칙 27). adapted: 어둠의 감점도 불빛의 눈에 띔도 없다. penalty·search_time: 어둠 감점과 수색 시간 배수를
+               * 시나리오 기본값(opposition.dark.sight)보다 크게 (야맹증)
+               */
+              dark: z.strictObject({ adapted: z.boolean().optional(), penalty: z.number().int().min(1).optional(), search_time: z.number().min(1).optional() }).optional(),
               /** 내가 한 일이 숨은 목격자에게 들킬 확률 배수 */
               noticed: z.number().min(0).optional(),
               /** 내가 남의 일을 목격할 확률 배수 */
@@ -1829,7 +1834,18 @@ export const scenarioFileSchema = z
         /** 함께하는 말이 될 수 있는 스킬 (플레이 테스트 11): 대상(target)만 있으면 상대로 치지 않는다. 맞서는 흥정이면 GM이 check.opponent로 둔다 */
         cooperative: z.array(id).default([]),
         crowd: z.strictObject({ moves: z.array(id), at: z.array(z.number().int().positive()) }).optional(),
-        dark: z.strictObject({ moves: z.array(id), segments: z.array(z.enum(TIME_SEGMENTS)), value: z.number().int() }).optional(),
+        dark: z
+          .strictObject({
+            moves: z.array(id),
+            segments: z.array(z.enum(TIME_SEGMENTS)),
+            value: z.number().int(),
+            /**
+             * 어둠 속 눈 (공통 규칙 27): 어두우면 moves 스킬과 부대 알아채기 -penalty, 수색 시간 ×search_time.
+             * 불빛(tool.light)이 있으면 지워지지만 그 불빛이 남의 눈에 띈다 (밤의 가림을 못 받고 숨기의 어둠 보정도 없다)
+             */
+            sight: z.strictObject({ moves: z.array(id).min(1), penalty: z.number().int().min(1), search_time: z.number().min(1) }).optional(),
+          })
+          .optional(),
         visibility: z.strictObject({ moves: z.array(id), below: z.number(), value: z.number().int() }).optional(),
         /** armed (12-121): 상대가 무거운 피해를 낼 무기(max_harm heavy, 탄약이 있으면)를 지녔으면 이만큼 더한다. 상대의 몫은 -1 ~ +1로 자른다 */
         harm: z.strictObject({ moves: z.array(id), strong: z.number().int(), weak: z.number().int(), armed: z.number().int().min(0).max(1).default(0) }).optional(),
@@ -2027,6 +2043,8 @@ export const scenarioFileSchema = z
       if (s.creation.cost["0"] !== 0) problem("creation.cost: 0의 값은 0이어야 한다");
     }
     {
+      if (!s.opposition?.dark?.sight) for (const t of s.traits) if (t.effects.dark) problem(`traits.${t.id}.dark: opposition.dark.sight가 있어야 쓴다`);
+      for (const m of s.opposition?.dark?.sight?.moves ?? []) if (!moves.has(m)) problem(`opposition.dark.sight.moves: 알 수 없는 스킬 ${m}`);
       const traitIds = new Set(s.traits.map((t) => t.id));
       for (const t of s.traits) {
         for (const o of t.opposites) if (!traitIds.has(o)) problem(`traits.${t.id}.opposites: 알 수 없는 트레잇 ${o}`);

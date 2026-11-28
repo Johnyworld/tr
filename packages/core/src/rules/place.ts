@@ -571,6 +571,14 @@ export function comesAlong(state: GameState, content: Content, to: string | null
 }
 
 /**
+ * 바로 앞 이동에 함께 온 사람 중 이번 이동에서 데려갈지(with) 두고 갈지(leave) 정하지 않은 사람 (12-368, 유소진 판:
+ * 두 번 함께 걸은 하늘을 with를 빠뜨려 구시가에 두고 떠났다). 이동하기 전에 묻는다. 동행은 늘 따라오니 빼고, 장면에 있는 사람만
+ */
+export function undecidedWalkers(state: GameState, decided: readonly (string | null | undefined)[]): string[] {
+  return (state.walkingWith ?? []).filter((id) => state.scene.present.includes(id) && !state.companions.includes(id) && !decided.includes(id) && !state.characters[id]?.dead);
+}
+
+/**
  * 판정을 건 이동(물러나기·달아나기)이 빗나가면 쫓아오는 사람 (공통 규칙 15, PT32 사용자 결정: 맞붙은 부대원·싸움 상대도 쫓아온다).
  * 옮기기 전 장면에 있었고, 스스로 걸을 수 있고, 기어다니는 것(엑스트라 틀 slow)이 아니어야 한다
  */
@@ -936,12 +944,14 @@ export type MoveReason = "walk" | "travel" | "start" | "summoned" | "captured" |
  * - 돌려주는 줄: 플레이어가 고르지 않은 이동(불려 감·끌려감·업혀 감·보냄)은 결과에 알린다
  * 이 함수 밖에서 place_moved·zone_moved를 직접 남기면 rules/guards.test.ts가 실패한다
  */
-export function movePlayer(ctx: ToolContext, to: { zone: string; place?: string | null }, reason: MoveReason, opts: { with?: readonly string[]; minutes?: number } = {}): string | null {
+export function movePlayer(ctx: ToolContext, to: { zone: string; place?: string | null }, reason: MoveReason, opts: { with?: readonly string[]; minutes?: number; walking?: readonly string[] } = {}): string | null {
   const { store, content } = ctx;
   const s = store.getState();
   const from = s.playerZone;
   const fromPlace = s.playerPlace;
-  const along = opts.with?.length ? { with: [...opts.with] } : {};
+  // 함께 걷는 사람(GM이 with로 고른 사람)만 다음 이동에서 데려갈지 묻는다 (12-368). 가던 참인 사람·행동의 대상은 아니다
+  const walking = (opts.walking ?? []).filter((id) => opts.with?.includes(id));
+  const along = { ...(opts.with?.length ? { with: [...opts.with] } : {}), ...(walking.length ? { walking } : {}) };
   if (from !== to.zone || from === null) {
     const place = to.place !== undefined && to.place !== null ? to.place : arrivalPlace(s, content, to.zone, from);
     store.append({ type: "zone_moved", from, to: to.zone, place, ...along });

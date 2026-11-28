@@ -31,7 +31,7 @@ import { moveOf } from "../scenario/scenario.ts";
 import { effectiveSkill } from "./traits.ts";
 import type { Character } from "../game/character.ts";
 import { baseOf } from "./captivity.ts";
-import { hereWithMe, whereLabel } from "../rules/place.ts";
+import { hereWithMe, undecidedWalkers, whereLabel } from "../rules/place.ts";
 import { enterScene } from "./extras.ts";
 
 /** 상관이 장면에 있는가. 같은 장소에 있으면 장면에 들인다 (12-261, 공통 규칙 15. PT16 분대장·섬: 막사에 있는 상관을 매번 따로 들였다) */
@@ -345,8 +345,22 @@ const reportMission = defineTool({
     }
     ctx.store.append({ type: "cargo_set", missionId: mission.id, items: {} });
     const reported = ctx.store.getState().missions[mission.id]!;
-    const result = evaluateMission(reported, state.time, short, outsideMission(state, ctx.content, ctx.content.missions[mission.templateId]?.where));
-    ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result });
+    const outside = outsideMission(state, ctx.content, ctx.content.missions[mission.templateId]?.where);
+    const evaluated = evaluateMission(reported, state.time, short, outside);
+    // 늦은 보고 (12-369, 사용자 결정: 기한이 아니라 보고가 임무를 끝낸다). 탓할 수 없는 까닭(공통 규칙 2)이 있으면 늦은 만큼 깎지 않고,
+    // 까닭 없이(아무 시도 없이) 빈손이면 예전의 기한 초과처럼 무리의 규율로 셈한다. 바깥 일도 같다: 해 보다 못 한 것만 꾸짖지 않는다 (12-363)
+    // 까닭은 건네기 전의 임무로 본다 (보고 자리에서 건넨 것은 '찾아본 기록'이 아니다)
+    const excuse = evaluated.late ? missionExcuse(state, ctx.content, mission) : null;
+    const neglect = evaluated.late && !excuse && evaluated.outcome === "failed" ? disciplineOf(ctx.content, state.characters[mission.assigneeId]?.factionId) : null;
+    const result = excuse ? { ...evaluated, merit: evaluateMission(reported, state.time, short, true).merit } : neglect ? { ...evaluated, merit: neglect.expireMerit } : evaluated;
+    ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result, ...(neglect?.countsDisobedience ? { disobedience: true } : {}) });
+    if (neglect && neglect.deedSeverity > 0) {
+      recordDeed(
+        ctx,
+        { summary: `임무 기한 초과: ${mission.title}`, tags: ["disobedience"], severity: neglect.deedSeverity, privacy: "public", noisy: false },
+        { npcId: mission.giverId, source: "seen" },
+      );
+    }
     // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산).
     // 판정이 걸린 임무(위험한 일)를 다 해냈을 때만 상관의 믿음과 존중이 오른다. 시간만 채우는 보초·일부 완수는 오르지 않는다 (플레이 테스트 13: 신뢰가 13일 내내 0이라 진급이 막혔다)
     const risky = reported.requirements.some((r) => "check" in r);
@@ -462,7 +476,7 @@ const reportMission = defineTool({
     }
     const label = MISSION_STATUS_LABELS[result.outcome === "success" ? "completed" : result.outcome];
     const lines = [
-      `임무 보고: ${mission.title} — ${label}${result.late ? " (기한을 넘겨 보고)" : ""}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
+      `임무 보고: ${mission.title} — ${label}${!result.late ? "" : excuse ? ` (기한을 넘겼으나 탓하지 않는다: ${excuse.label})` : neglect ? ` (기한을 넘겨 빈손으로 보고${neglect.countsDisobedience ? ": 임무 미수행" : ""})` : " (기한을 넘겨 보고)"}. 공적 ${signed(result.merit)}.${repaid ? ` 빚을 갚았다 (장부에서 ${repaid} 줄었다).` : ""}`,
       ...(handed.length ? [`구해 온 것을 상관에게 건넸다: ${handed.join(", ")}`] : []),
       ...(returned.length ? [`맡은 짐·받아 온 값을 상관에게 넘겼다: ${returned.join(", ")}`] : []),
       ...(learns ? [knewInField ? `현장에서 알게 된 것을 상관에게 보고했다: ${learns}` : `알게 된 것 (임무로 확인했다, 상관에게도 보고했다): ${learns}`] : []),
@@ -484,6 +498,7 @@ const reportMission = defineTool({
       ...(cleared ? [`${cleared}에 몰려든 감염체를 쓸어 냈다. 한동안 조용할 것이다.`] : []),
       ...(putDown.length ? [`남아 있던 ${putDown.join(", ")}도 처리했다.`] : []),
       ...releaseBuddies(ctx, mission.id),
+      ...releaseWalkers(ctx),
       ...[returnArmory(ctx, mission.id, { excused: capturedDuringMission(ctx.store.getState(), mission) })].filter((l): l is string => !!l),
       ...(occNote ? [occNote] : []),
       ...regardNotes,
@@ -548,6 +563,16 @@ const abandonMission = defineTool({
     };
   },
 });
+
+/** 임무를 보고하면 임무로 함께 걷던 사람(with로 데리고 다닌 사람)은 더 따라다니지 않는다 (12-369, 유소진 판의 하늘. 공통 규칙 15 undecidedWalkers) */
+function releaseWalkers(ctx: ToolContext): string[] {
+  const state = ctx.store.getState();
+  const walkers = undecidedWalkers(state, []);
+  if (!walkers.length) return [];
+  ctx.store.append({ type: "walkers_released" });
+  const names = walkers.map((id) => playerCalls(state, ctx.content, id)).join(", ");
+  return [`임무로 함께 다니던 ${josa(names, "은/는")} 이제 따라다니지 않는다 (지금은 장면에 남아 있다. 자리를 옮기면 따라오지 않고, 데려가려면 with).`];
+}
 
 /** 바깥 일에서 돌아온 사람을 맞는 마음 (12-364): 시나리오의 outside_regard + 무리의 결. 바깥 일이 아니거나 글이 없으면 빈 글 */
 function outsideRegardFor(ctx: ToolContext, factionId: string | null | undefined): string {
@@ -660,7 +685,7 @@ export function leaveMissionsBehind(ctx: ToolContext, onlyLeftBehind = false): {
 
 /**
  * 임무의 턴 시작 처리 (코드가 하는 일, AI 요청 없음).
- * - 기한이 지난 임무는 기한 초과(명령 불이행)로 끝낸다
+ * - 기한이 지나도 임무는 끝내지 않는다 (보고해야 끝난다, 12-369)
  * - 날이 바뀌면 상관이 오늘의 임무 후보를 정한다
  */
 export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
@@ -674,33 +699,8 @@ export function runMissionStartOfTurn(ctx: ToolContext): ToolDisplayEvent[] {
       ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false });
       continue;
     }
-    // 조건을 기한 안에 다 채운 임무는 기한이 지나도 끝내지 않는다: 보고하면 된다 (플레이 테스트 13: 3시간 보초를 기한 안에 채웠는데 4시간 활동이 끝난 뒤라 기한 초과)
-    if (mission.status === "active" && mission.metAt !== undefined && mission.metAt <= mission.deadline) continue;
-    // 탓할 수 없는 까닭이 있으면 불복종이 아니다 (공통 규칙 2, rules/blame.ts)
-    const excuse = mission.status === "active" && state.time > mission.deadline ? missionExcuse(state, ctx.content, mission) : null;
-    if (excuse) {
-      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: 0, disobedience: false, excused: excuse.label });
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: excuse.label, merit: 0 });
-      // 붙잡혀 빼앗긴 장비는 잃어버린 것으로 치지 않는다
-      returnArmory(ctx, mission.id, { excused: excuse.cause === "captured" });
-      releaseBuddies(ctx, mission.id);
-      continue;
-    }
-    if (mission.status === "active" && state.time > mission.deadline) {
-      const d = disciplineOf(ctx.content, state.characters[mission.assigneeId]?.factionId);
-      ctx.store.append({ type: "mission_expired", missionId: mission.id, merit: d.expireMerit, disobedience: d.countsDisobedience });
-      if (d.deedSeverity > 0) {
-        recordDeed(
-          ctx,
-          { summary: `임무 기한 초과: ${mission.title}`, tags: ["disobedience"], severity: d.deedSeverity, privacy: "public", noisy: false },
-          { npcId: mission.giverId, source: "report" },
-        );
-      }
-      displays.push({ type: "mission", event: "expired", title: mission.title, detail: `기한 초과${d.countsDisobedience ? " (임무 미수행)" : ""}`, merit: d.expireMerit });
-      // 기한이 지나도 빌린 장비는 거둬들인다
-      returnArmory(ctx, mission.id);
-      releaseBuddies(ctx, mission.id);
-    }
+    // 기한이 지나도 임무는 끝나지 않는다: 보고하거나 포기해야 끝난다 (12-369, 사용자 결정. 유소진 판: 약 찾기가 기한에 저절로 사라졌다).
+    // 늦은 셈(공적·임무 미수행·탓할 수 없는 까닭)은 보고할 때 한다 (lateReport)
   }
   // 오래된 불복종은 하나씩 지워진다 (C8): 마지막 불복종(또는 지운 때)에서 FORGIVE_DAYS가 지나면 하나
   const me0 = ctx.store.getState().characters[state.playerId];
@@ -773,6 +773,8 @@ export function describeMissionsForGm(state: GameState, ctx: Pick<ToolContext, "
   if (offer) lines.push(offer);
   if (active) {
     lines.push(`수행 중인 임무 (보고는 상관에게 report_mission):\n${describeMission(ctx.content.scenario, active)}`);
+    // 기한이 지나도 임무는 보고해야 끝난다 (12-369, 유소진 판: 약 찾기가 기한에 저절로 사라졌다)
+    if (state.time > active.deadline && !(active.metAt !== undefined && active.metAt <= active.deadline)) lines.push("  기한이 지났다: 임무는 그대로 남아 있고, 상관에게 돌아가 보고해야 끝난다 (늦은 보고다. 탓할 수 없는 까닭이 있으면 깎지 않는다). 그만두려면 abandon_mission");
     // 남은 시간만 서는 길 (12-255, PT15 섬: 30분 더 서려다 다음 시간대까지 7시간을 섰다)
     const left = active.requirements.flatMap((r, i) => ("activity" in r && r.minutes > (active.progress[i] ?? 0) ? [`${ACTIVITY_LABELS[r.activity]} ${formatDuration(r.minutes - (active.progress[i] ?? 0))}`] : []));
     if (left.length) lines.push(`남은 시간: ${left.join(", ")}. for_mission으로 그 활동을 until·hours 없이 걸면 남은 만큼만 한다`);

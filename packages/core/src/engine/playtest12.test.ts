@@ -1,3 +1,4 @@
+import { missionExcuse } from "../rules/blame.ts";
 import { neighbors } from "../sim/war.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -102,10 +103,11 @@ describe("플레이 테스트 12: 붙잡힘", () => {
     store.append({ type: "player_captured", by: "faction_c", zone: w.state().playerZone!, held: {} });
     store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: mission.deadline + 10 });
     const before = w.state().characters[w.state().playerId]!.disobedience;
-    const out = runMissionStartOfTurn(w.ctx());
-    expect(w.state().missions[mission.id]!.status).not.toBe("active");
+    runMissionStartOfTurn(w.ctx());
+    // 기한이 지나도 임무는 남고 불복종도 아니다 (12-369: 보고해야 끝난다)
+    expect(w.state().missions[mission.id]!.status).toBe("active");
     expect(w.state().characters[w.state().playerId]!.disobedience).toBe(before);
-    expect(JSON.stringify(out)).toContain("붙잡혀 못 마침");
+    expect(missionExcuse(w.state(), content, w.state().missions[mission.id]!)?.label).toContain("붙잡혀 못 마침");
   });
 });
 
@@ -125,7 +127,14 @@ describe("물건을 구해 오는 임무: 찾아보았으나 못 구한 것은 �
     }
     store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: mission.deadline + 10 });
     const before = w.state().characters[w.state().playerId]!.disobedience;
-    const out = runMissionStartOfTurn(w.ctx());
+    runMissionStartOfTurn(w.ctx());
+    // 기한이 지나도 남는다 (12-369). 늦은 셈은 보고할 때
+    expect(w.state().missions[mission.id]!.status).toBe("active");
+    // 빈손으로 (시작 짐의 붕대를 건네지 않게)
+    if (!tried) for (const [itemId, quantity] of Object.entries(w.state().characters[w.state().playerId]!.inventory)) if (quantity > 0) store.append({ type: "item_consumed", holder: w.state().playerId, itemId, quantity });
+    if (!w.state().scene.present.includes(mission.giverId)) store.append({ type: "npc_entered", npcId: mission.giverId });
+    const out = w.executeTool("report_mission", { final: true });
+    expect(out.ok, out.ok ? "" : out.error).toBe(true);
     return { w, mission, before, out };
   }
 

@@ -1,4 +1,4 @@
-import { admissionLine } from "../rules/admission.ts";
+import { admissionLine, passLine } from "../rules/admission.ts";
 import { describeSaga } from "../rules/saga.ts";
 import { staunchHelper } from "../rules/company.ts";
 import { heldOf, heldSeenZone, pausedWhileHeld } from "../rules/held.ts";
@@ -628,6 +628,7 @@ function describePlaces(state: GameState, content: Content): string {
   const hidden = all.length - places.length - doors.length;
   return [
     `지금 있는 곳: ${here ? `${here.name} (${here.indoor ? "실내" : "바깥"}${here.road ? ", 구역에 드나드는 길" : ""})` : "장소를 모른다"}. 같은 구역 안의 다른 장소로는 take_action place_to (이웃 5분, 한 칸 멀 때마다 5분). 목록에 없는 곳은 spawn_place로 만든다 (지금 자리의 이웃이 된다). 방향(북쪽·남동쪽 등)은 지금 자리에서 본 것이다: 방향과 보이는 모습으로 묘사하고, 모르는 곳의 이름·쓰임은 지어내지 않는다. 처음 가는 구역은 그 구역으로 가는 길에 서 있어야 떠난다`,
+    ...(passLine(state, content) ? [passLine(state, content)!] : []),
     "이 구역의 장소 (주인공이 아는 곳, 그곳에 있을 아는 사람):",
     ...places.map(line),
     ...(doors.length

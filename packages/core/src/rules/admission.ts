@@ -18,7 +18,7 @@ import type { GameState } from "../game/state.ts";
 import type { Rng } from "../rng.ts";
 import { josa } from "../text.ts";
 import { playerHeld } from "./held.ts";
-import { baseOfNow, ownedBy } from "./home.ts";
+import { atOwnBase, baseOfNow, ownedBy } from "./home.ts";
 import { dayOf, MINUTES_PER_DAY, minuteOfDay, type GameTime } from "./time.ts";
 
 export type Admission = NonNullable<GameState["admission"]>;
@@ -98,6 +98,17 @@ export function admissionLine(state: GameState, content: Content): string | null
     ? ` 대표가 권할 자리: ${post.label}${past && posts(content)?.by_past[past.id] === a.post ? ` (붕괴 전에 ${josa(past.label, "이었다/였다")}는 것을 보고)` : ""}${asks.length ? `. 면담에서 ${asks.join("·")} 자리를 대신 청할 수 있다` : ""}.`
     : "";
   return `손님: ${name}에 손님으로 들어 있다 (아직 식구가 아니다${a.offers ? `, 대표의 권유를 ${a.offers}번 사양했다` : ""}). ${here ? "이 땅에서는 재워 주고 밤을 넘기면 끼니를 준다." : "그 거점에 돌아가면 다시 손님으로 묵는다."}${postLine} 대표의 면담은 이야기가 연다 (GM이 먼저 가입시키지 않는다).`;
+}
+
+/**
+ * 거점 드나듦 (12-368, 유소진 판: 식구가 동행과 우리 거점에 돌아오는데 서술이 문지기 허락·출입 눈치를 지어냈다):
+ * 우리 무리 거점과 손님으로 든 무리의 거점은 묻지 않고 드나든다. 검문·허락은 이야기나 결과 문구가 알릴 때만
+ */
+export function passLine(state: GameState, content: Content): string | null {
+  const zone = state.playerZone;
+  if (!zone || content.locations[zone]?.kind !== "base") return null;
+  const who = atOwnBase(state, content) ? "우리 거점이다" : guestOf(state) ? "손님으로 든 거점이다" : null;
+  return who ? `${who}: 주인공과 동행·짝(동물 포함)은 담 문과 초소를 묻지 않고 드나든다. 시스템이 알리지 않은 검문·통행 허락·출입 눈치를 지어내지 않는다.` : null;
 }
 
 function posts(content: Content) {

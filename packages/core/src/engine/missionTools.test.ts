@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Rng } from "../rng.ts";
-import { checkPromotion, evaluateMission } from "../game/missions.ts";
+import { activeMissionOf, checkPromotion, evaluateMission } from "../game/missions.ts";
 
 const PROMO = TEST_CONTENT.scenario.promotion;
 import { createTestStore, TEST_CONTENT } from "../testing.ts";
@@ -132,7 +132,7 @@ describe("명령 불복종", () => {
     expect(player).toMatchObject({ merit: -2, disobedience: 1 });
   });
 
-  it("기한이 지나면 시간이 흐른 직후 기한 초과로 끝난다", () => {
+  it("기한이 지나도 임무는 남고, 빈손으로 늦게 보고하면 그때 기한 초과로 셈한다 (12-369)", () => {
     const env = withLeader(setup(() => 0.999));
     executeTool("assign_mission", { template_id: "m_guard" }, env.ctx);
     // 05:30 → 20:00 (기한 17:30)
@@ -141,8 +141,14 @@ describe("명령 불복종", () => {
       { intent: "잔다", check: null, deed: null, target: null, narration_summary: null, for_mission: false, activity: { kind: "sleep", until: "night" } },
       env.ctx,
     );
-    expect(out.ok && out.extra).toContainEqual(expect.objectContaining({ type: "mission", event: "expired" }));
+    expect(out.ok && out.extra).not.toContainEqual(expect.objectContaining({ type: "mission", event: "expired" }));
+    expect(activeMissionOf(env.store.getState().missions, "player")).toBeTruthy();
+    expect(env.store.getState().characters.player).toMatchObject({ merit: 0, disobedience: 0 });
+    const r = executeTool("report_mission", { final: true }, env.ctx);
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(r.ok && r.resultText).toContain("기한을 넘겨 빈손으로 보고");
     expect(env.store.getState().characters.player).toMatchObject({ merit: -2, disobedience: 1 });
+    expect(activeMissionOf(env.store.getState().missions, "player")).toBeFalsy();
   });
 });
 

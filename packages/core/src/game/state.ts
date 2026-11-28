@@ -60,7 +60,8 @@ import { startingSkills } from "./creation.ts";
 // 128: 큰 이야기 인물 (offstage, 이벤트 npc_arrived)
 // 130: 필수품 (공통 규칙 25, 12-357). traps.item, trap_set.item
 // 131: 가방 (공통 규칙 26, 12-358). bags, bagSeq, equipped.back, 이벤트 bag_packed·item_transferred.bagId·item_stashed.bagId·item_equipped.bagId
-export const SAVE_SCHEMA_VERSION = 132;
+// 133: 함께 걷던 사람 (12-368). walkingWith. 기한이 지나도 남는 임무 (12-369): mission_reported.disobedience, 이벤트 walkers_released
+export const SAVE_SCHEMA_VERSION = 133;
 
 /** 계획 목표가 바뀌면 그 목표에 쌓인 공(credits)을 비운다: 다른 목표의 "덕분에"로 옮겨 붙지 않게 (PT37 약탈조원) */
 function retarget(clock: { target: string; credits?: unknown }, target: string): void {
@@ -668,6 +669,8 @@ export function createGameSchemas(s: Scenario) {
     knockedOut: z.record(z.string(), z.number().int()).default({}),
     /** 마지막으로 오간 길 (길 위의 이야기, 12-53) */
     lastRoute: z.strictObject({ from: z.string(), to: z.string() }).nullable().default(null),
+    /** 바로 앞 이동(구역·장소)에 with로 함께 온 사람 (12-368, 유소진 판: with를 빠뜨려 하늘을 두고 떠났다). 다음 이동에서 with·leave로 정해야 한다 (공통 규칙 15) */
+    walkingWith: z.array(z.string()).default([]),
     /** 구역마다 오늘 뒤진 횟수 (수색, 기획서 4.7) */
     /** 오늘 뒤진 곳: count는 뒤진 양(수색 범위가 있으면 deplete_minutes 단위, 12-355), hurt는 그날 그곳 수색으로 다쳤는지 (다시 다치지 않는다) */
     zoneSearches: z.record(z.string(), z.strictObject({ day: z.number().int(), count: z.number().int(), hurt: z.boolean().optional() })).default({}),
@@ -1177,7 +1180,11 @@ export function createGameSchemas(s: Scenario) {
       outcome: z.enum(["success", "partial", "failed"]),
       late: z.boolean(),
       merit: z.number().int(),
+      /** 기한을 넘겨 빈손으로 보고했고 탓할 까닭이 없어 무리의 규율이 불복종으로 친다 (12-369, 예전의 기한 초과) */
+      disobedience: z.boolean().optional(),
     }),
+    /** 함께 걷던 사람을 놓아준다 (12-369, 임무 보고: 임무로 함께 다니던 사람은 더 따라오지 않는다) */
+    z.strictObject({ type: z.literal("walkers_released") }),
     /** disobedience: 무리의 규율이 이것을 불복종으로 치는지 (기획서 9.9). 이전 세이브는 true */
     /** 판정·활동이 아닌 결과 조건(goal, bring)을 채웠다 (플레이 테스트 11) */
     z.strictObject({ type: z.literal("mission_requirement_met"), missionId: z.string(), index: z.number().int().min(0) }),
@@ -1252,13 +1259,13 @@ export function createGameSchemas(s: Scenario) {
     /** 주인공이 부대와 마주쳤다 (공통 규칙 23). player: 주인공이 봤다, party: 부대가 주인공을 봤다 */
     z.strictObject({ type: z.literal("party_sighted"), key: z.string(), player: z.boolean(), party: z.boolean() }),
 
-    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional(), /** 도착하는 장소 (장소 개편: 길). 장소가 없는 구역이면 null */ place: z.string().nullable().optional() }),
+    z.strictObject({ type: z.literal("zone_moved"), from: z.string().nullable(), to: z.string(), with: z.array(z.string()).optional(), /** with 가운데 GM이 고른 함께 걷는 사람 (12-368) */ walking: z.array(z.string()).optional(), /** 도착하는 장소 (장소 개편: 길). 장소가 없는 구역이면 null */ place: z.string().nullable().optional() }),
     /** 같은 구역 안에서 장소를 옮겼다 (12-244). null이면 구역의 장소를 정하지 않은 곳 */
     // with: 동행 말고 함께 옮겨 가는 장면의 인물 (공통 규칙 15 comesAlong)
     /** 가 보지 않고 장소를 알게 됐다 (설계 목록 C-1: 들은 단편·테스트). 있어 본 곳은 applyEvent가 저절로 기록한다 */
     z.strictObject({ type: z.literal("place_learned"), zone: z.string(), place: z.string() }),
     z.strictObject({ type: z.literal("npc_knocked_out"), npcId: z.string(), until: z.number().int() }),
-    z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional() }),
+    z.strictObject({ type: z.literal("place_moved"), from: z.string().nullable(), to: z.string().nullable(), with: z.array(z.string()).optional(), walking: z.array(z.string()).optional() }),
     /** GM이 즉흥 장소를 만들었다 (12-244) */
     z.strictObject({ type: z.literal("place_spawned"), id: z.string(), zone: z.string(), name: z.string(), indoor: z.boolean(), owner: z.string().nullable(), at: z.string().nullable().optional(), shop: z.string().optional() }),
     z.strictObject({ type: z.literal("weather_set"), day: z.number().int(), weatherId: z.string() }),
@@ -1526,6 +1533,7 @@ export const EMPTY_STATE: GameState = {
   infested: {},
   keptExtras: {},
   lastRoute: null,
+  walkingWith: [],
   options: { mature: false, dialogue: "novel" },
   memos: {},
   stashes: {},
@@ -2601,6 +2609,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (!next.scene.present.includes(event.npcId)) throw new Error(`장면에 없음: ${event.npcId}`);
       perceive(next, event.npcId);
       next.scene.present = next.scene.present.filter((id) => id !== event.npcId);
+      next.walkingWith = (next.walkingWith ?? []).filter((id) => id !== event.npcId);
       // 스스로 자리를 뜬 사람은 일과로 돌아간다 (머무는 자리 없음)
       delete next.npcStays[event.npcId];
       {
@@ -2701,6 +2710,9 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (next.offers) next.offers.templateIds = next.offers.templateIds.filter((id) => id !== m.templateId);
       break;
     }
+    case "walkers_released":
+      next.walkingWith = [];
+      break;
     case "disobedience_forgiven": {
       const c = mustGet(next.characters, event.characterId, "캐릭터");
       c.disobedience = Math.max(0, c.disobedience - 1);
@@ -2723,6 +2735,10 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       assignee.merit += event.merit;
       if (event.type === "mission_reported") {
         mission.status = event.outcome === "success" ? "completed" : event.outcome;
+        if (event.disobedience) {
+          assignee.disobedience += 1;
+          next.disobedienceAt = { ...next.disobedienceAt, [assignee.id]: state.time };
+        }
       } else {
         mission.status = event.type === "mission_abandoned" ? "abandoned" : "expired";
         if (event.type === "mission_expired" && event.excused) mission.excused = event.excused;
@@ -2895,6 +2911,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
       if (event.to !== state.playerPlace) next.offBalanceUntil = null;
       for (const id of next.scene.present) perceive(next, id);
       const along = event.with ?? [];
+      next.walkingWith = (event.walking ?? []).filter((id) => !next.companions.includes(id));
       const keep = (id: string) => next.companions.includes(id) || along.includes(id);
       // 두고 온 사람은 그 시간대가 끝날 때까지 그 자리에 머문다 (12-253)
       leaveBehind(next, next.scene.present.filter((id) => !keep(id)), zone, event.from, state.time);
@@ -2955,6 +2972,7 @@ function reduce(state: GameState, next: GameState, event: GameEvent): GameState 
           if (c?.captive) c.captive = null;
         }
         const along = (event.with ?? []).filter((id) => !next.companions.includes(id));
+        next.walkingWith = (event.walking ?? []).filter((id) => !next.companions.includes(id));
         // 두고 온 사람은 떠난 구역의 그 자리에 머문다 (12-253)
         leaveBehind(next, next.scene.present.filter((id) => !next.companions.includes(id) && !along.includes(id)), event.from, state.playerPlace, state.time);
         next.scene.present = [...next.companions, ...along].filter((id) => {

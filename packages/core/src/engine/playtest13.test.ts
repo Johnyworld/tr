@@ -199,10 +199,16 @@ describe("플레이 테스트 13의 남은 버그", () => {
     ctx.store.append({ type: "player_captured", by: enemy, zone, held: {} });
     ctx.store.append({ type: "time_advanced", activity: "wait", from: w.state().time, to: m.deadline + 30 });
     runMissionStartOfTurn(ctx);
-    const after = w.state().missions[m.id]!;
-    expect(after.status).toBe("expired");
-    expect(after.excused).toContain("붙잡혀");
-    expect(w.state().characters[w.state().playerId]!.merit).toBe(merit);
+    // 기한이 지나도 임무는 남는다: 풀려나 돌아와 보고해야 끝난다 (12-369)
+    expect(w.state().missions[m.id]!.status).toBe("active");
+    ctx.store.append({ type: "player_released", returned: true });
+    ctx.store.append({ type: "zone_moved", from: w.state().playerZone, to: w.state().runStartZone ?? w.state().playerZone! });
+    w.executeTool("npc_presence", { npc_id: commander, action: "enter" });
+    const r = w.executeTool("report_mission", { final: true });
+    expect(r.ok, r.ok ? "" : r.error).toBe(true);
+    expect(r.ok && r.resultText).toContain("붙잡혀");
+    expect(w.state().missions[m.id]!.status).not.toBe("active");
+    expect(w.state().characters[w.state().playerId]!.merit).toBeGreaterThanOrEqual(merit);
     expect(w.state().characters[w.state().playerId]!.disobedience).toBe(0);
   });
 

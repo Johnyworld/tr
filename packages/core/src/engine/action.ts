@@ -94,7 +94,7 @@ import type { GameState } from "../game/state.ts";
 import type { Content } from "../content/schemas.ts";
 import { hurtResentment, reduceHarm, wrongedResentment } from "../rules/damage.ts";
 import { enterScene } from "./extras.ts";
-import {searchSpot, comesAlong, pursuers, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
+import {searchSpot, comesAlong, undecidedWalkers, pursuers, directionTo, knowsZone, roadTo, currentPlace, nearestRoad, peopleAt, placeById, placeChoices, resolvePlace, unknownDoors, doorLabel, knowsPlace, stepsBetween, whereIs, npcPlaceAt, type Place, whereLabel, arrivalPlace, movePlayer } from "../rules/place.ts";
 
 /**
  * 턴 진행의 유일한 입구 (기획서 11.6 take_action). 두 플레이 모드가 같은 함수를 쓴다.
@@ -268,7 +268,11 @@ export function createTakeActionSchema(s: Scenario) {
     with: z
       .array(z.string())
       .default([])
-      .describe("이번 행동을 함께하는 장면의 인물 id (같이 숨는 사람, 같이 싸우는 사람, 업거나 부축해 데려가는 사람, 같이 걷는 사람). target은 행동을 하는 대상이고, with는 곁에서 함께하는 사람이다. with의 사람은 맞서는 상대가 되지 않고, 그 일을 잘하면 판정을 돕고(+1, 한 사람), place_to와 함께면 같이 옮겨 간다. 동행·분대는 넣지 않아도 내 편이다. 아니면 []"),
+      .describe("이번 행동을 함께하는 장면의 인물 id (같이 숨는 사람, 같이 싸우는 사람, 업거나 부축해 데려가는 사람, 같이 걷는 사람). target은 행동을 하는 대상이고, with는 곁에서 함께하는 사람이다. with의 사람은 맞서는 상대가 되지 않고, 그 일을 잘하면 판정을 돕고(+1, 한 사람), place_to·move_to와 함께면 같이 옮겨 간다. 동행·분대는 넣지 않아도 내 편이다. 아니면 []"),
+    leave: z
+      .array(z.string())
+      .default([])
+      .describe("place_to·move_to로 옮길 때 일부러 두고 가는 사람 id. 바로 앞 이동에 함께 온 사람은 이번에도 with(데려감)나 leave(두고 감) 중 하나에 넣어야 한다: 빠뜨리면 이동이 거절된다. 아니면 []"),
     prepare: z
       .string()
       .nullable()
@@ -434,7 +438,7 @@ export const PLACE_MOVE_MINUTES = 5;
  * 같은 구역 안의 장소로 옮긴다 (공통 규칙 15). along: 동행 말고 함께 가는 장면의 인물 (comesAlong).
  * 바닥의 물건은 장소마다 남는다. 돌려줄 한 줄
  */
-function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved: readonly string[] = [], pending: readonly string[] = []): string {
+function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved: readonly string[] = [], pending: readonly string[] = [], walking: readonly string[] = []): string {
   const { store, content } = ctx;
   const s0 = store.getState();
   const from = currentPlace(s0, content)?.id ?? null;
@@ -447,7 +451,7 @@ function movePlace(ctx: ToolContext, to: Place | null, along: string[], involved
   const bound = along.filter((id) => !involved.includes(id) && !s0.companions.includes(id));
   // 모르던 곳에 들어서면 그곳이 무엇인지 알게 된다 (설계 목록 C-1)
   const fresh = !!to && !knowsPlace(s0, content, s0.playerZone, to.id);
-  movePlayer(ctx, { zone: s0.playerZone!, place: to?.id ?? null }, "walk", { with: along });
+  movePlayer(ctx, { zone: s0.playerZone!, place: to?.id ?? null }, "walk", { with: along, walking });
   // 이웃 장소 5분, 한 칸 더 멀 때마다 5분 (장소 개편)
   const steps = stepsBetween(s0, content, from, to?.id ?? null);
   const minutes = PLACE_MOVE_MINUTES * (Number.isFinite(steps) ? Math.max(1, steps) : 1);
@@ -831,7 +835,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     // 따돌리려는 은밀의 상대는 함께 가지 않는다: 실패하면 쫓아온다 (PT15 분대장: 따돌리려던 감염체가 판정 전에 "함께 왔다")
     // 판정을 건 이동(물러나기·달아나기)의 상대와 이야기 배역은 옮길 때 따라오지 않는다: 판정이 빗나가면 그때 쫓아온다 (PT22 분대장·졸병: 물러나기에 성공했는데 감염체가 "함께 왔다")
     const involved = [input.target, input.treatment?.target, ...input.with].filter((id): id is string => !!id && id !== input.check?.opponent);
-    if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved), involved };
+    if ((to?.id ?? null) !== (currentPlace(start, content)?.id ?? null)) placeMove = { to, along: comesAlong(start, content, to?.id ?? null, involved).filter((id) => !input.leave.includes(id)), involved };
   }
   // 함께하는 사람은 장면에 있어야 한다 (공통 규칙 8의 내 편, 사용자 결정 PT14: target 말고 with)
   const strayWith = input.with.find((id) => (!start.scene.present.includes(id) && !arriving.includes(id)) || id === start.playerId);
@@ -839,6 +843,14 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   // 구역을 옮길 때 with의 사람은 함께 간다 (PT15). 갇힌 사람은 내가 함께 갇혀 달아날 때만 데려간다
   const lockedWith = input.move_to && !heldOf(player) ? input.with.find((id) => !!heldOf(start.characters[id])) : undefined;
   if (lockedWith) return { ok: false, error: `${josa(playerCalls(start, content, lockedWith), "은/는")} 갇혀 있어 데려갈 수 없다. 먼저 풀어 줄 방법을 찾는다 (시간은 흐르지 않았다).` };
+  // 함께 걷던 사람을 말없이 두고 가지 않는다 (공통 규칙 15, 12-368): 바로 앞 이동에 함께 온 사람은 이번에도 데려갈지 두고 갈지 정한다
+  if (input.move_to || placeMove) {
+    const undecided = undecidedWalkers(start, [...input.with, ...input.leave, ...(placeMove ? placeMove.involved : [])]);
+    if (undecided.length) {
+      const names = undecided.map((id) => `${playerCalls(start, content, id)}(${id})`).join(", ");
+      return { ok: false, error: `바로 앞 이동에 함께 온 사람이 있다: ${names}. 이번에도 데려가면 with에, 두고 가면 leave에 넣고 다시 부른다 (시간은 흐르지 않았다).` };
+    }
+  }
   store.append({ type: "turn_started", turn: start.turn + 1, input: input.intent });
   const settingDisplays: ToolDisplayEvent[] = [];
   // 설정 거스르기 (공통 규칙 16): 굴려서 해내지 못하면 이 행동은 일어나지 않는다 (장소 옮기기도, PT14)
@@ -932,7 +944,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
   }
 
   // 장소 옮기기: 거절할 일을 모두 거른 뒤에 옮긴다 (막힌 행동의 이동·시간이 남지 않게)
-  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved, input.check ? [input.check.opponent, ...Object.values(start.activeStorylet?.cast ?? {}), ...fightMembersHere(start)].filter((id): id is string => !!id) : []));
+  if (placeMove) lines.push(movePlace(ctx, placeMove.to, placeMove.along, placeMove.involved, input.check ? [input.check.opponent, ...Object.values(start.activeStorylet?.cast ?? {}), ...fightMembersHere(start)].filter((id): id is string => !!id) : [], input.with));
   for (const id of arriving) {
     if (store.getState().scene.present.includes(id)) continue;
     enterScene(ctx, id);
@@ -1566,7 +1578,7 @@ function takeActionInner(input: TakeActionInput, ctx: ToolContext): TakeActionRe
     const repelled = input.move_to === myBase ? chasing0.filter((id) => store.getState().characters[id]?.factionId !== player.factionId) : [];
     const chasing = chasing0.filter((id) => !repelled.includes(id));
     const alongZone = [...comesAlong(start, content, null, input.with), ...chasing];
-    movePlayer(ctx, { zone: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone) }, "travel", { with: alongZone });
+    movePlayer(ctx, { zone: input.move_to, place: arrivalPlace(start, content, input.move_to, start.playerZone) }, "travel", { with: alongZone, walking: input.with });
     if (chasing.length && start.playerZone) chaseParties(ctx, start.playerZone, input.move_to, chasing);
     if (deposited) lines.push(`맡겨 둔 것을 돌려받고 떠났다: ${Object.entries(deposited).map(([id, n]) => `${content.items[id]?.name ?? id}${n > 1 ? ` ×${n}` : ""}`).join(", ")}.`);
     // 끌고 온 포로: 우리 무리의 거점에 닿으면 우리 무리의 포로가 된다 (12-55)

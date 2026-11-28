@@ -14,7 +14,7 @@ import { harmTrack, incapacitatingSymptom} from "../scenario/scenario.ts";
 import { infestationOf, worstOverrun } from "../game/infestation.ts";
 import { occupationOf } from "../game/occupation.ts";
 import { changeStanding } from "./growth.ts";
-import { issueArmory, returnArmory } from "./armory.ts";
+import { issueArmory, issueOutfit, returnArmory } from "./armory.ts";
 import { playerCalls } from "../game/acquaintance.ts";
 import { assignBuddy, releaseBuddies } from "./companionTools.ts";
 import { disciplineOf, hasAccess } from "../game/culture.ts";
@@ -221,7 +221,7 @@ const assignMission = defineTool({
       assigneeId: player.id,
       giverId: commander.id,
       assignedAt: state.time,
-      deadline: missionDeadline(state.time, template.deadline_hours, template.urgent ?? false, travelAllowance(ctx, template.where, player.factionId)),
+      deadline: missionDeadline(state.time, template.deadline_hours, template.urgent ?? false, travelAllowance(ctx, template.where, player.factionId), errandTrip(ctx, template)),
       // 서로 바꿔 쓸 수 있는 판정을 적어 둔다 (교섭 ↔ 위협·거짓말)
       requirements: structuredClone(template.requirements).map((r) => {
         if (!("check" in r)) return r;
@@ -248,7 +248,9 @@ const assignMission = defineTool({
     const buddy = template.buddy ? assignBuddy(ctx, mission.id, commander.id) : null;
     // 작전이면 무기고가 무기·탄약을 빌려준다 (기획서 4.8)
     const armoryLine = issueArmory(ctx, mission);
-    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (buddy ? `\n짝: ${josa(`${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})`, "이/가")} 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : template.buddy ? "\n짝: 이 임무는 둘이 짝지어 나서는 것이 규칙인데, 지금은 곁에 붙일 여유 인원이 없어 혼자 나선다 (불이익 없음). 상관이 그렇게 한마디 하는 정도로만 서술하고 짝을 지어내지 않는다." : "");
+    // 바깥 일이면 나갈 채비 (12-365): 지니지 않은 것만
+    const outfitLine = outsideMission(state, ctx.content, template.where) ? issueOutfit(ctx) : null;
+    const buddyLine = (armoryLine ? `\n${armoryLine}` : "") + (outfitLine ? `\n${outfitLine}` : "") + (buddy ? `\n짝: ${josa(`${playerCalls(ctx.store.getState(), ctx.content, buddy)}(${buddy})`, "이/가")} 이 임무 동안 함께 다닌다 (2인 1조). 임무가 끝나면 자기 자리로 돌아간다.` : template.buddy ? "\n짝: 이 임무는 둘이 짝지어 나서는 것이 규칙인데, 지금은 곁에 붙일 여유 인원이 없어 혼자 나선다 (불이익 없음). 상관이 그렇게 한마디 하는 정도로만 서술하고 짝을 지어내지 않는다." : "");
     // 가는 길 (플레이 테스트 11: "남쪽 텃밭"이 어디로 이어지는지 몰라 반나절을 헤맸다)
     const route = mission.place?.zone && state.playerZone ? routeBetween(ctx.content, state.playerZone, mission.place.zone) : null;
     const routeLine = route && route.length > 1 ? `\n가는 길: ${route.map((z) => `${ctx.content.locations[z]?.name ?? z}(${z})`).join(" → ")}` : mission.place?.zone && route === null ? "\n가는 길: 지금 아는 길로는 닿지 않는다" : "";
@@ -343,7 +345,7 @@ const reportMission = defineTool({
     }
     ctx.store.append({ type: "cargo_set", missionId: mission.id, items: {} });
     const reported = ctx.store.getState().missions[mission.id]!;
-    const result = evaluateMission(reported, state.time, short);
+    const result = evaluateMission(reported, state.time, short, outsideMission(state, ctx.content, ctx.content.missions[mission.templateId]?.where));
     ctx.store.append({ type: "mission_reported", missionId: mission.id, ...result });
     // 완수는 상관이 보고로 확인한 성실함으로 남는다 (관계 변화는 상관의 가치관으로 계산).
     // 판정이 걸린 임무(위험한 일)를 다 해냈을 때만 상관의 믿음과 존중이 오른다. 시간만 채우는 보초·일부 완수는 오르지 않는다 (플레이 테스트 13: 신뢰가 13일 내내 0이라 진급이 막혔다)
@@ -467,7 +469,7 @@ const reportMission = defineTool({
       ...(short ? ["받아 올 값이 모자라 일부 완수까지다."] : []),
       ...unmetLines(ctx.content.scenario, reported),
       ...(supplies && !party && result.outcome !== "failed" ? ["무리 창고에 따로 든 것은 없다 (분대를 보내지 않은 일)."] : []),
-      `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.`,
+      `상관(${giver.name})이 결과에 맞게 반응하는 장면을 서술하라.${outsideMission(state, ctx.content, ctx.content.missions[mission.templateId]?.where) ? outsideRegardFor(ctx, giver.factionId) : ""}`,
       // 주인공이 실제로 찾은 물건과는 따로 셈한다 (플레이 테스트 11: 약을 못 찾았는데 "구해 온 의약품"이라고 했다)
       ...(supplied.length
         ? [
@@ -546,6 +548,45 @@ const abandonMission = defineTool({
     };
   },
 });
+
+/** 바깥 일에서 돌아온 사람을 맞는 마음 (12-364): 시나리오의 outside_regard + 무리의 결. 바깥 일이 아니거나 글이 없으면 빈 글 */
+function outsideRegardFor(ctx: ToolContext, factionId: string | null | undefined): string {
+  const world = ctx.content.scenario.outside_regard;
+  const own = factionId ? ctx.content.factions[factionId]?.culture?.outside_regard : undefined;
+  const text = [world, own].filter(Boolean).join(" ");
+  return text ? ` 바깥 일이다. 반응은 이 마음을 따른다 (늦었거나 못 해냈어도 꾸짖지 않는다): ${text}` : "";
+}
+
+/**
+ * 담 밖으로 나가는 일인가 (12-363): 일하는 곳이 우리 무리 거점이 아니다 (바깥·근처·적 땅, 또는 거점이 아닌 구역).
+ * 늦은 보고에도 공적을 깎지 않고, 상관은 나갔다 온 것을 높이 친다
+ */
+export function outsideMission(state: GameState, content: Content, where: string | readonly string[] | null | undefined): boolean {
+  if (!where) return false;
+  const zones = typeof where === "string" ? [where] : where;
+  return zones.some((z) => z === "outside" || z === "near" || z === "enemy" || !(content.locations[z]?.kind === "base" && ownedBy(state, z, state.characters[state.playerId]?.factionId)));
+}
+
+/**
+ * 먼 일인지 보는 오가는 길 (12-362): 임무 자리까지(travelAllowance)와, 구해 올 것(bring)이 나는 가장 가까운 구역까지의
+ * 왕복 가운데 긴 쪽. 셈은 travelAllowance와 같다 (구역 수 × 이동 한 번의 가장 긴 시간 × 2: 지름길을 아는지는 묻지 않는다).
+ * 구해 올 것이 구역에서 나지 않는 물건이면 임무 자리만 본다
+ */
+function errandTrip(ctx: ToolContext, template: { where?: string | readonly string[] | null; requirements: readonly MissionRequirement[] }): number {
+  const state = ctx.store.getState();
+  const place = travelAllowance(ctx, template.where, state.characters[state.playerId]?.factionId ?? null);
+  const start = state.playerZone;
+  const wants = template.requirements.flatMap((r) => ("bring" in r ? [r.bring] : []));
+  if (!start || !wants.length) return place;
+  const yields = (z: string) => wants.some((w) => ((ctx.content.locations[z]?.yields as Record<string, number> | undefined)?.[w] ?? 0) > 0);
+  const seen = new Set([start]);
+  let frontier = [start];
+  for (let hops = 0; frontier.length; hops++) {
+    if (frontier.some(yields)) return Math.max(place, hops * 2 * ACTIVITY_COSTS.travel.max);
+    frontier = frontier.flatMap((z) => neighbors(ctx.content, z)).filter((z) => !seen.has(z) && seen.add(z));
+  }
+  return place;
+}
 
 /**
  * 기한에 얹는 오가는 시간 (플레이 테스트 12: 첫 임무가 이동 + 4시간 보초 + 빗나감으로 기한을 넘겨 진급이 막혔다).

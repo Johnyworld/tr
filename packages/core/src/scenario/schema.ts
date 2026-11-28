@@ -517,6 +517,11 @@ export const scenarioFileSchema = z
     story_lint: z.strictObject({ outdoor: z.array(z.string().min(1)).default([]), waking: z.array(z.string().min(1)).default([]), knows_endings: z.array(z.string().min(1)).default([]), routine_away: z.array(z.string().min(1)).default([]), status_beliefs: z.array(z.string().min(1)).default([]), segments: z.partialRecord(z.enum(TIME_SEGMENTS), z.array(z.string().min(1))).default({}) }).optional(),
     /** notice_minutes: 짓이 상관 귀에 닿는 시간. 그 사이 한 짓은 한 회의에서 함께 다룬다 (12-261, PT16 졸병: 20분 만에 같은 회의가 또 열렸다) */
     offense: z.strictObject({ tags: z.array(id).min(1), min_severity: z.number().int().min(1).max(3), within_days: z.number().int().min(1), notice_minutes: z.number().int().min(0).default(60), /** 무리를 위한 짓이기도 하면(이 태그가 함께 붙으면) 무리는 벌하지 않는다 (PT39 분대장: 탈영 계획을 상관에게 알린 것이 배신으로 규율 회의에 올랐다) */ excuse_tags: z.array(id).default([]) }).optional(),
+    /**
+     * 담 밖 일을 대하는 세계의 마음 (12-364, 사용자 결정: 밖은 무섭고 어렵다. 나간 것만으로 높이 친다).
+     * 바깥 일을 보고할 때 상관의 반응에 붙는다. 무리마다 결은 factions의 culture.outside_regard
+     */
+    outside_regard: z.string().min(1).optional(),
     discipline: z
       .record(
         id,

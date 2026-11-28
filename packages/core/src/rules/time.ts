@@ -88,15 +88,20 @@ export function daylightMinutes(from: GameTime, to: GameTime): number {
   return clamp(to) - clamp(from);
 }
 
+/** 먼 일: 오가는 길이 이만큼(분) 이상이면 급하지 않은 일의 기한을 하루 더 준다 (12-362, 왕복 4시간 = 구역 두 칸 너머) */
+export const FAR_TRIP_MINUTES = 240;
+
 /**
  * 임무 기한 (12-354). 낮 시간 hours시간(+오가는 시간 allowance분)이 지난 때.
- * 급하지 않은 일은 받은 다음 날 낮이 끝나는 때(20시)와 견주어 늦은 쪽
+ * 급하지 않은 일은 받은 다음 날 낮이 끝나는 때(20시)와 견주어 늦은 쪽.
+ * 먼 일(오가는 길 trip분이 FAR_TRIP_MINUTES 이상)이면 그다음 날 20시까지 (12-362, 튜토리얼: 약 구하러 왕복 6시간을 당일치기로 다녀와야 했다)
  */
-export function missionDeadline(start: GameTime, hours: number, urgent: boolean, allowance = 0): GameTime {
+export function missionDeadline(start: GameTime, hours: number, urgent: boolean, allowance = 0, trip = allowance): GameTime {
   const base = addDaylight(start, hours * 60 + allowance);
   if (urgent) return base;
-  const nextDayEnd = start - minuteOfDay(start) + MINUTES_PER_DAY + DAYLIGHT_END;
-  return Math.max(base, nextDayEnd);
+  const days = trip >= FAR_TRIP_MINUTES ? 2 : 1;
+  const dayEnd = start - minuteOfDay(start) + days * MINUTES_PER_DAY + DAYLIGHT_END;
+  return Math.max(base, dayEnd);
 }
 
 /** 1일차가 start(YYYY-MM-DD)인 달력의 날짜: "2032. 11. 8." */

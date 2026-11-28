@@ -496,6 +496,11 @@ export function createContentSchemas(s: Scenario) {
     /** spare: 무기를 다 잃고 우리 거점에 오면 하루 한 번 내주는 근접 무기 (플레이 테스트 13: 붙잡혀 빼앗긴 뒤 끝까지 맨손) */
     armory: z.strictObject({ items: z.record(contentIdSchema, z.number().int().min(1)), ammo_cost: z.number().int().min(0).default(0), spare: contentIdSchema.optional() }).optional(),
     /**
+     * 나갈 채비 (12-365): 바깥 일을 받으면 지니지 않은 것만 내준다 (총은 무기고 armory가 따로). 돌려받지 않는다.
+     * 같은 것(먹을 것은 아무 먹을 것, 물처럼 자원이 붙은 것은 같은 자원)을 이미 지녔으면 주지 않는다. 자원이 붙은 것은 무리 창고에서 하나씩 빠지고, 모자라면 주지 않는다
+     */
+    outfit: z.record(contentIdSchema, z.number().int().min(1)).optional(),
+    /**
      * 포상 (12-171): 임무 보고로 공적이 every의 배수를 새로 넘을 때마다 items에서 하나.
      * 무리 식량이 hungry_days일치 아래면 말뿐인 포상 (상관의 존중 +1)
      */
@@ -584,6 +589,8 @@ export function createContentSchemas(s: Scenario) {
         quarantine_days: z.number().int().min(1).optional(),
         /** 점호 (G2): 이 시간대가 시작될 때 잠들어 있으면 작은 불복종 행적이 남는다 */
         roll_call: z.array(z.enum(TIME_SEGMENTS)).optional(),
+        /** 바깥 일에서 돌아온 사람을 이 무리는 어떻게 맞는지 한 문장 (12-364). 시나리오의 outside_regard에 결을 더한다 */
+        outside_regard: z.string().min(1).optional(),
       })
       .optional(),
   });

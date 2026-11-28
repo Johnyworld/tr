@@ -6,6 +6,7 @@ import { lastFreedAt, playerHeld } from "../rules/held.ts";
 import type { ToolContext, ToolDisplayEvent } from "./toolkit.ts";
 import { loanOf } from "../rules/entrusted.ts";
 import { ownedBy } from "../rules/home.ts";
+import { heldInventory } from "../rules/bags.ts";
 
 /**
  * 무기고 (기획서 4.8): 무장이 필요한 작전에 무리가 무기·탄약을 빌려주고, 임무가 끝나면 거둬들인다.
@@ -75,6 +76,42 @@ export function issueArmory(ctx: ToolContext, mission: MissionInstance): string 
   // 손의 무기를 바꿨으면 알린다 (플레이 테스트 11: 쥐여 준 총 탓에 근접 판정이 말없이 맨손이 됐다)
   const hand = swapped ? ` ${josa(nameOf(content, gun!), "을/를")} 손에 들었다${held ? ` (${josa(nameOf(content, held), "은/는")} 소지품에 있다. 근접전에 쓰려면 equip)` : ""}.` : "";
   return `${lockerLine ? `${lockerLine} ` : ""}무기고에서 ${josa(list, "을/를")} 내줬다 (임무가 끝나면 반납한다).${hand}${ammoShort ? " 무리 창고에 탄약이 모자라 탄약은 받지 못했다." : ""}`;
+}
+
+/**
+ * 나갈 채비 (12-365): 바깥 일을 받을 때 무리의 outfit 가운데 지니지 않은 것만 내준다 (돌려받지 않는다).
+ * 같은 것을 지녔으면 주지 않는다: 같은 물건, 먹을 것이면 아무 먹을 것, 자원이 붙은 것(물병의 물)이면 같은 자원이 붙은 것. 가방 속도 센다.
+ * 자원이 붙은 것은 무리 창고에서 하나씩 빠지고, 창고에 없으면 주지 않는다. 준 것이 없으면 null
+ */
+export function issueOutfit(ctx: ToolContext): string | null {
+  const { store, content } = ctx;
+  const state = store.getState();
+  const me = state.characters[state.playerId];
+  const outfit = me?.factionId ? content.factions[me.factionId]?.outfit : undefined;
+  if (!me || !outfit) return null;
+  const held = heldInventory(state, me.id);
+  const owned = Object.entries(held).filter(([, n]) => n > 0).map(([id]) => content.items[id]).filter((i) => !!i);
+  const given: string[] = [];
+  const short: string[] = [];
+  for (const [id, want] of Object.entries(outfit)) {
+    const item = content.items[id];
+    if (!item) continue;
+    const have = item.kind === "food" ? owned.filter((i) => i.kind === "food").length : item.resource ? owned.filter((i) => i.resource === item.resource).length : (held[id] ?? 0);
+    const need = Math.max(0, want - have);
+    if (!need) continue;
+    let qty = need;
+    if (item.resource) {
+      const stock = store.getState().factions[me.factionId]?.resources[item.resource] ?? 0;
+      qty = Math.min(need, stock);
+      if (qty < need) short.push(nameOf(content, id));
+      if (qty > 0) store.append({ type: "faction_resource_changed", factionId: me.factionId, resource: item.resource, delta: -qty });
+    }
+    if (qty <= 0) continue;
+    store.append({ type: "item_granted", to: me.id, itemId: id, quantity: qty });
+    given.push(`${nameOf(content, id)} ×${qty}`);
+  }
+  if (!given.length && !short.length) return null;
+  return [given.length ? `나서기 전에 무리가 채비로 ${josa(given.join(", "), "을/를")} 챙겨 줬다 (돌려주지 않아도 된다).` : "", short.length ? `무리 창고가 모자라 ${josa(short.join(", "), "은/는")} 받지 못했다.` : ""].filter(Boolean).join(" ");
 }
 
 /** 임무가 끝날 때: 빌린 것을 거둬들인다. 잃어버린 무기가 있으면 공적이 깎인다 */

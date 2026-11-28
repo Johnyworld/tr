@@ -179,6 +179,9 @@ story_lint:
     evening: [해질녘, 해 질 녘, 저녁 무렵, 해가 기울, 노을, 해가 지, 해가 진, 저녁밥]
     night: [한밤, 자정, 깊은 밤, 밤이 깊, 밤하늘, 달빛, 달도 없는 밤]
 
+# 담 밖 일을 대하는 마음 (12-364): 바깥 일을 보고할 때 상관의 반응에 붙는다. 무리마다 결은 culture.outside_regard
+outside_regard: 담 밖은 무섭고 사람을 잃는 곳이다. 나갔다 돌아온 사람은 무엇을 들고 왔든 먼저 반긴다. 늦었거나 빈손이어도 꾸짖지 않고, 다친 데는 없는지 묻고 먹이고 쉬게 한다. 나가 준 것을 고마워하고 높이 친다
+
 # 무리의 규율 단계 (기획서 9.9). 무리마다 factions의 culture.discipline으로 고른다 (*임시* 수치)
 # abandon/expire_merit: 임무를 버리거나 놓쳤을 때의 공적, counts_disobedience: 불복종으로 치는지,
 # max_disobedience: 진급에 허용되는 불복종 수, deed_severity: 불복종 행적의 무게(0이면 남기지 않는다),

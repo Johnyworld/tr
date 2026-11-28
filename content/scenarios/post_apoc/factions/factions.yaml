@@ -8,6 +8,8 @@
   rank_labels: { grunt: 수색대원 }
   # 무기고 (기획서 4.8): 작전에 낡은 소총과 소총탄 두 묶음을 빌려준다
   armory: { items: { old_rifle: 1, rifle_rounds: 2 }, ammo_cost: 4, spare: baseball_bat }
+  # 나갈 채비 (12-365): 바깥 일을 받으면 지니지 않은 것만 내준다
+  outfit: { flashlight: 1, water_bottle: 1, dry_ration: 1 }
   population: 70
   combatants: 25
   resources: { food: 900, water: 500, ammo: 300, medicine: 40, fuel: 150 }
@@ -34,6 +36,7 @@
       - 임무는 직속 상관(분대원은 분대장)에게서 받고 그 상관에게 보고한다
     address: 계급에 님을 붙인다 (분대장님, 간부님). 같은 분대끼리는 이름이나 형·누나
     punishment: 배급 줄이기, 보초 더 서기. 무거우면 회의에 올라가고, 원칙을 어긴 사람은 내보낸다
+    outside_regard: 돌아온 사람에게 먼저 식당 솥에서 국을 떠 준다. "버리지 않는다"는 원칙대로 늦은 사람은 기다리고, 빈손이라도 이름을 불러 맞는다
   plans:
     # 반격: 다 차면 맞닿은 붉은연합의 구역 중 잃은 땅·값진 곳을 친다. 전선 임무와 정찰 이야기가 앞당긴다
     - { id: a_counteroffensive, label: 반격 준비, target_rule: frontier, days: 14 }
@@ -45,6 +48,7 @@
   rank_labels: { grunt: 정찰대원 }
   # 무기고: 마을 사냥총 몇 자루뿐이다
   armory: { items: { shotgun: 1, shells: 2 }, ammo_cost: 3, spare: baseball_bat }
+  outfit: { flashlight: 1, water_bottle: 1, dry_ration: 1 }
   population: 40
   combatants: 14
   resources: { food: 450, water: 350, ammo: 120, medicine: 15, fuel: 60 }
@@ -71,6 +75,7 @@
       - 큰일은 대표가 회의에 부쳐 정한다
     address: 이름이나 아저씨·이모·언니, 대표는 대표님
     punishment: 회의에서 말로 따진다. 당번을 늘리거나 몫을 줄이고, 정말 심하면 단지에서 내보낸다
+    outside_regard: 이웃들이 문간까지 나와 맞는다. 무엇을 구했는지보다 다 같이 돌아왔는지를 먼저 센다
   plans:
     # 흔들림: 다 차면 청솔형제단과의 연합에서 발을 빼고 붉은연합과 화해한다 (한 번뿐, 기획서 9.4 shift).
     # 붉은연합의 회유·뇌물이 당기고, 연합을 지키는 쪽의 이야기가 늦춘다. 버들마을 사람만 안다
@@ -95,6 +100,7 @@
   rank_labels: { grunt: 약탈조원, squad_leader: 조장 }
   # 무기고: 작전에 개조 산탄총과 산탄. 쓴 산탄은 할당량에서 깐다
   armory: { items: { sawn_shotgun: 1, shells: 2 }, ammo_cost: 4, spare: baseball_bat }
+  outfit: { flashlight: 1, water_bottle: 1, dry_ration: 1 }
   population: 200
   combatants: 80
   resources: { food: 3000, water: 1600, ammo: 1200, medicine: 80, fuel: 500 }
@@ -128,6 +134,7 @@
     absence_hours: 12
     address: 조장님·위원님. 조원끼리는 성이나 조 번호로 부른다
     punishment: 배급 삭감, 광장의 본보기, 수용소 경비나 공세 맨 앞줄로 보내기
+    outside_regard: 말로 고마워하지는 않는다. 대신 말없이 어깨를 한 번 치고 들여보내 쉬게 하며, 늦거나 빈손이어도 규율반에 올리지 않는다
   plans:
     # lore/faction_c_inside.md "동쪽 공세". 붉은연합 사람만 안다
     - { id: c_east_offensive, label: 동쪽 공세 준비, target_rule: fixed, target: a_east_post, days: 10 }
@@ -137,6 +144,7 @@
   public: 약과 의술을 가진 작은 무리. 약을 거래 조건으로 쓴다.
   # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
   rank_labels: { grunt: 수비대원 }
+  outfit: { water_bottle: 1, dry_ration: 1, bandage: 1 }
   population: 30
   combatants: 6
   resources: { food: 300, water: 300, ammo: 60, medicine: 200, fuel: 40 }
@@ -162,6 +170,7 @@
       - 진료소 안에서는 누구도 무기를 들지 않는다
     address: 의사는 선생님, 수간호사는 수간호사님, 수습은 이름으로
     punishment: 약제실 출입 금지, 격리실 당직 더 서기. 약을 빼돌리면 내보낸다
+    outside_regard: 돌아오면 먼저 상처부터 본다. 약을 못 구했어도 나가 본 사람의 말이 다음 사람을 살린다며 장부에 적어 둔다
     # 격리 (12-238): 감염체에게 다친 사람을 우리 치료사가 보면(치료·수술·돌봄) 누구든 진료소 격리실에서 사흘. 열이 드러나면 내릴 때까지
     quarantine_days: 3
   plans:
@@ -180,6 +189,8 @@
   public: 교역으로 사는 상인들. 강 하류 정수장의 펌프를 차지하고 물을 판다. 이기는 쪽에 붙을 거라는 말이 많다.
   # 무리에서 부르는 계급 이름 (12-84). 간부가 아니면 누구나 무리의 바깥 일을 맡는 대(수색대)에 속한다
   rank_labels: { grunt: 호위대원 }
+  # 나루상단은 장부의 무리라 채비를 거저 주지 않는다
+
   population: 50
   combatants: 12
   resources: { food: 700, water: 500, ammo: 200, medicine: 30, fuel: 200 }
@@ -205,6 +216,7 @@
       - 누구에게나 판다. 값만 맞으면
     address: 이름이나 대장, 우두머리는 사장님
     punishment: 장부에 빚으로 올린다. 짐이나 약속에 손대면 쫓아내고, 다른 무리에도 소문을 낸다
+    outside_regard: 거저 고마워하지는 않지만, 나갔다 온 길은 값진 것으로 친다. 빈손이어도 본 길과 들은 소문을 귀담아듣는다
   plans:
     # 편들기: 다 차면 그때 가장 큰 무리 쪽에 붙는다 (한 번뿐, shift). 상단 사람이 어느 편에 짐을 실어 주느냐가 당기고 늦춘다
     - id: e_side
@@ -224,6 +236,7 @@
   startable: false
   # 무기고: 탄약이 넘친다
   armory: { items: { old_rifle: 1, rifle_rounds: 4 }, ammo_cost: 2, spare: baseball_bat }
+  outfit: { water_bottle: 1, dry_ration: 1 }
   population: 140
   combatants: 50
   resources: { food: 3200, water: 2400, ammo: 2600, medicine: 220, fuel: 900 }
@@ -248,3 +261,4 @@
     absence_hours: 6
     address: 이름에 씨를 붙인다. 의회 사람은 어르신
     punishment: 배급을 끊는다. 무거우면 "뭍으로 내보낸다" (돌아온 사람은 없다)
+    outside_regard: 뭍에 다녀온 사람은 나루에서 모두가 맞는다. 바다 건너 위험을 아는 섬이라 늦어도 탓하지 않는다

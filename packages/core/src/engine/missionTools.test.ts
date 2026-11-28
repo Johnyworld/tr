@@ -93,6 +93,8 @@ describe("임무 수행과 보고", () => {
     expect(evaluateMission(mission, mission.assignedAt)).toMatchObject({ outcome: "partial", merit: 1 });
     expect(evaluateMission({ ...mission, progress: [0, 0] }, mission.assignedAt).outcome).toBe("failed");
     expect(evaluateMission(mission, mission.deadline + 1)).toMatchObject({ late: true, merit: 0 });
+    // 담 밖 일은 늦게 보고해도 깎지 않는다 (12-363)
+    expect(evaluateMission(mission, mission.deadline + 1, false, true)).toMatchObject({ late: true, merit: 1 });
   });
 
   it("구해 오는 일감은 완수하면 상관의 무리 창고에 들어가고, 일부 완수는 절반", () => {

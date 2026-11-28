@@ -148,8 +148,11 @@ export function isRequirementMet(requirement: MissionRequirement, progress: numb
 
 export type MissionEvaluation = { outcome: "success" | "partial" | "failed"; late: boolean; merit: number };
 
-/** 보고 시점의 결과와 공적 */
-export function evaluateMission(mission: MissionInstance, now: GameTime, collectShort = false): MissionEvaluation {
+/**
+ * 보고 시점의 결과와 공적.
+ * outside: 담 밖으로 나가는 일 (12-363, 사용자 결정): 늦게 보고해도 공적을 깎지 않는다. 밖에 나간 것만으로 높이 친다
+ */
+export function evaluateMission(mission: MissionInstance, now: GameTime, collectShort = false, outside = false): MissionEvaluation {
   const met = mission.requirements.filter((r, i) => isRequirementMet(r, mission.progress[i] ?? 0)).length;
   const full = met === mission.requirements.length ? "success" : met > 0 ? "partial" : "failed";
   // 들키지 않기가 조건인 일에서 들켰으면 일부 완수까지 (플레이 테스트 13)
@@ -163,7 +166,7 @@ export function evaluateMission(mission: MissionInstance, now: GameTime, collect
   const minutes = mission.requirements.reduce((n, r) => n + ("activity" in r ? r.minutes : 0), 0);
   const short = checks === 1 && minutes <= SHORT_MISSION_MINUTES && mission.requirements.every((r) => "check" in r || "activity" in r);
   const base = outcome === "success" && (timeOnly || short) ? MERIT.success_time_only : MERIT[outcome];
-  return { outcome, late, merit: base + (late ? MERIT.late : 0) };
+  return { outcome, late, merit: base + (late && !outside ? MERIT.late : 0) };
 }
 
 const OUTCOME_RANK: Record<CheckOutcome, number> = Object.fromEntries(
